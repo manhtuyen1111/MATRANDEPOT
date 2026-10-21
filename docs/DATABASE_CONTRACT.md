@@ -62,15 +62,19 @@ Một tổ chức có thể giữ nhiều vai trò khác nhau. Không mặc đ�
 
 Quản lý:
 - Số container.
-- Thông tin nhận dạng và đặc tính.
+- Thông tin nhận dạng và đặc tính (`SIZE`, `TYPE`...).
 - Chủ sở hữu.
 - Trạng thái nghiệp vụ.
-- Vị trí hiện tại.
+- Vị trí hiện tại (hỗ trợ ghi nhận ở cấp `Block` khi chưa có `Bay/Row/Tier` và cập nhật vị trí chi tiết `Bay/Row/Tier` sau).
 - Trạng thái có thể cấp hoặc không thể cấp.
+- Trạng thái tạm giữ hoặc khóa xuất theo yêu cầu.
+- Thời gian lưu bãi.
 - Lịch sử vị trí.
 - Lịch sử trạng thái và các nghiệp vụ liên quan.
 
-Quy tắc: một container đang nằm trong bãi chỉ có một vị trí hiện tại hợp lệ.
+Quy tắc:
+- Một container đang nằm trong bãi chỉ có một vị trí hiện tại hợp lệ.
+- Không coi `Block` là một vị trí độc quyền khiến các container khác không thể cùng nằm trong `Block` đó; khi bổ sung vị trí chi tiết hơn (`Bay/Row/Tier`), cập nhật vị trí hiện tại và giữ lịch sử.
 
 ### 3.5. Booking và cấp container
 
@@ -89,19 +93,25 @@ Một container đã được xác nhận gắn với lượt cấp không đư�
 
 Quản lý:
 - Mã lượt nghiệp vụ.
-- Loại tiếp nhận hoặc xuất bãi.
+- Loại tiếp nhận vào bãi (Khách hàng trả container rỗng theo lệnh hãng tàu; `NHẬP TÀU` làm module riêng sau; các loại khác chỉ bổ sung khi được xác nhận) hoặc loại xuất bãi (`CẤP VỎ`, `XUẤT TÀU`, trả container theo lệnh riêng).
 - Container liên quan.
 - Bên yêu cầu dịch vụ.
-- Ảnh và tài liệu.
+- Ảnh cửa container nhìn rõ số container và tài liệu/chứng từ liên quan.
+- Các trường thông tin hiện trường Gate In đã xác nhận:
+  - Phân loại: `DAMAGE`, `AV`.
+  - Phân loại đóng hàng: `M`, `K`, `E`.
+  - Tình trạng vệ sinh: `KHÔNG VỆ SINH`, `QUÉT`, `RỬA NƯỚC`, `VỆ SINH CÔNG NGHIỆP`, `NHỔ ĐINH`, `BÓC TEM`.
+- Các trường thông tin văn phòng bổ sung tại Gate In đã xác nhận:
+  - `SỐ CONTAINER`, `SIZE`, `TYPE`, `SỐ XE`, `ĐẠI DIỆN KHÁCH HÀNG`.
 - Nhân viên thực hiện.
-- Trạng thái quy trình.
+- Trạng thái quy trình (bao gồm trạng thái `GATE IN OK` chỉ đạt được sau khi thanh toán thành công).
 - Thời điểm xác nhận.
 - Điều kiện hoàn tất.
 - Lý do hủy hoặc từ chối.
 
-Gate In phải đáp ứng điều kiện thanh toán bắt buộc trước khi hoàn tất.
+Gate In: Việc tạo yêu cầu thanh toán không đồng nghĩa đã thu tiền thành công; chỉ sau khi thanh toán thành công mới được cập nhật `GATE IN OK`.
 
-Gate Out phải kiểm tra quyền nhận container, trạng thái container và các điều kiện xuất đã được xác định.
+Gate Out: Phải kiểm tra đủ 5 điều kiện đã xác nhận trước khi xuất (có lệnh cấp/lệnh xuất hợp lệ; không bị tạm giữ hoặc khóa xuất; đúng số container được phép xuất; đã thanh toán các khoản phí bắt buộc theo quy định; chứng từ và thủ tục đã hoàn tất).
 
 ### 3.7. Vệ sinh, giám định và sửa chữa
 

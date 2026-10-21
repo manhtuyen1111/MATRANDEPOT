@@ -4,30 +4,32 @@ Danh sách các vấn đề nghiệp vụ cần xác nhận trước khi triển
 
 ## 1. Gate In — Nhập container vào bãi
 
-- [ ] Q-001: Có những loại Gate In nào?
-- [ ] Q-002: Những thông tin nào bắt buộc khi tạo yêu cầu Gate In?
+- [ ] Q-001: *(Đã xác nhận 2 trường hợp: Khách hàng trả rỗng theo lệnh hãng tàu; và `NHẬP TÀU` làm module riêng sau)* — Còn loại tiếp nhận nào khác cần hỗ trợ trong giai đoạn đầu không, và quy trình chi tiết của `NHẬP TÀU` như thế nào?
+- [ ] Q-002: *(Đã xác nhận trường hiện trường: Phân loại `DAMAGE`/`AV`, Phân loại đóng hàng `M`/`K`/`E`, Tình trạng vệ sinh `KHÔNG VỆ SINH`/`QUÉT`/`RỬA NƯỚC`/`VỆ SINH CÔNG NGHIỆP`/`NHỔ ĐINH`/`BÓC TEM`; và trường văn phòng: `SỐ CONTAINER`, `SIZE`, `TYPE`, `SỐ XE`, `ĐẠI DIỆN KHÁCH HÀNG`)* — Danh mục giá trị chuẩn của `SIZE`, `TYPE` là gì? Trường `Tình trạng vệ sinh` chọn một hay chọn nhiều giá trị cùng lúc? Có bắt buộc ghi nhận thêm hãng tàu/chủ vỏ hoặc số lệnh ở bước văn phòng không?
 - [ ] Q-003: Nhân viên hiện trường chụp ảnh cửa container có số container, sau đó xác nhận vào bãi. Cần quy định xử lý thế nào nếu ảnh không rõ hoặc nhập sai số container?
-- [ ] Q-004: Thu phí trước khi hoàn tất Gate In. Ai được xác nhận thanh toán thủ công?
+- [ ] Q-004: Thu phí trước khi hoàn tất Gate In (`GATE IN OK`). Ai được xác nhận thanh toán thủ công để chuyển sang `GATE IN OK`?
 - [ ] Q-005: Nếu khách đã thanh toán nhưng Gate In bị hủy, xử lý hoàn tiền hoặc chuyển tiền thế nào?
+- [ ] Q-030: Sau khi cập nhật `GATE IN OK`, bộ phận tiếp theo nhận xử lý là bộ phận nào (xe nâng, giám định, vệ sinh...) và quy tắc điều phối sang bộ phận tiếp theo dựa trên tiêu chí gì?
 
 ## 2. Vị trí và tồn bãi
 
-- [ ] Q-006: Vị trí bãi gồm những cấp nào? Ví dụ: Block, Bay, Row, Tier.
-- [ ] Q-007: Có cho phép container vào bãi nhưng chưa có vị trí chính thức không?
-- [ ] Q-008: Ai được phép thay đổi vị trí container?
+- [ ] Q-006: *(Đã xác nhận có cấp `Block` và cấp chi tiết `Bay/Row/Tier`; `Block` không phải vị trí độc quyền của một container)* — Danh mục tên các `Block`, quy ước mã hóa `Bay/Row/Tier` và sức chứa tối đa của từng vị trí cụ thể như thế nào?
+- [ ] Q-007: *(Đã xác nhận cho phép ghi nhận vị trí ở cấp `Block` khi chưa có `Bay/Row/Tier`)* — Trong khoảng thời gian từ lúc `GATE IN OK` đến trước khi xếp vào `Block`, trạng thái vị trí của container được ghi nhận như thế nào?
+- [ ] Q-008: Ai được phép thay đổi vị trí container (cập nhật `Block` hoặc cập nhật chi tiết `Bay/Row/Tier`)?
 - [ ] Q-009: Quy trình xử lý khi hệ thống và vị trí thực tế không khớp là gì?
+- [ ] Q-031: Ai có thẩm quyền đặt và gỡ trạng thái tạm giữ / khóa xuất container, và cần lưu những thông tin bắt buộc nào khi khóa/mở khóa?
 
 ## 3. Booking và cấp container
 
-- [ ] Q-010: Một booking có thể cấp nhiều container không?
+- [ ] Q-010: Một booking/lệnh cấp có thể cấp nhiều container không?
 - [ ] Q-011: Ai được quyền chọn container để cấp cho khách?
 - [ ] Q-012: Khi đổi container đã giữ chỗ, điều kiện mở khóa container cũ là gì?
 - [ ] Q-013: Nếu hai nhân viên đồng thời chọn cùng một container, hệ thống cần xử lý thế nào?
 
 ## 4. Gate Out — Xuất container khỏi bãi
 
-- [ ] Q-014: Điều kiện bắt buộc để hoàn tất Gate Out là gì?
-- [ ] Q-015: Có trường hợp được xuất container khi chưa thanh toán đủ không?
+- [ ] Q-014: *(Đã xác nhận 3 trường hợp xuất: `CẤP VỎ`, `XUẤT TÀU`, trả theo lệnh riêng; và 5 điều kiện kiểm tra: có lệnh hợp lệ, không bị tạm giữ/khóa xuất, đúng số container, đã thanh toán phí bắt buộc, hoàn tất chứng từ/thủ tục)* — Chi tiết các khoản phí bắt buộc và bộ chứng từ bắt buộc đối với từng trường hợp (`CẤP VỎ`, `XUẤT TÀU`, trả theo lệnh riêng) khác nhau như thế nào?
+- [ ] Q-015: Có trường hợp được xuất container khi chưa thanh toán đủ (ví dụ theo diện công nợ) không?
 - [ ] Q-016: Ai được phép hủy hoặc sửa một lượt Gate Out đã xác nhận?
 
 ## 5. Dịch vụ và sửa chữa

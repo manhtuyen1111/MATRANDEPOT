@@ -195,4 +195,4 @@ Thông báo cho người dùng phải dễ hiểu; log kỹ thuật không đư�
 
 - Các thao tác cập nhật nhiều bảng liên quan cần transaction khi phù hợp.
 - Dùng ràng buộc database để bảo vệ các điều kiện quan trọng.
-- Xác định cơ chế id
+- Xác định cơ chế idempotency (chống xử lý lặp) cho các thao tác tạo giao dịch, trừ quỹ Phiếu thu mẹ (`TTT`), xác nhận webhook chuyển khoản API (`TTTT`) và hoàn tất nghiệp vụ (`GATE IN OK`, `Gate Out`).

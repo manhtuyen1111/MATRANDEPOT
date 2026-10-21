@@ -2,7 +2,7 @@
 
 ## 1. Mục đích
 
-Mô tả các quy trình vận hành bãi container rỗng. Đây là tài liệu nghiệp vụ đầu vào cho thiết kế database, phân quyền, giao diện và kiểm thử.
+Mô tả các quy trình vận hành bãi container rỗng xuyên suốt toàn bộ thời gian ở bãi. Đây là tài liệu nghiệp vụ đầu vào cho thiết kế database, phân quyền, giao diện và kiểm thử.
 
 ## 2. Các đối tượng tham gia
 
@@ -23,29 +23,59 @@ Danh sách vai trò và quyền chi tiết sẽ được xác định trong tài
 
 ## 3. Quy trình Gate In — Nhập bãi
 
+### 3.1. Các trường hợp container vào bãi đã xác nhận
+- **Khách hàng trả container rỗng về bãi** theo lệnh của hãng tàu.
+- **`NHẬP TÀU`**: bãi tổ chức xe kéo của bãi vận chuyển số lượng lớn container từ cảng về. Đây là nghiệp vụ riêng, sẽ xây dựng module tương ứng sau.
+- Các loại tiếp nhận khác chỉ được ghi nhận khi đã được xác nhận; không tự bổ sung như quy tắc chính thức.
+
+### 3.2. Luồng thực hiện Gate In
 1. Tiếp nhận yêu cầu hoặc xác định loại lượt nhập bãi.
-2. Ghi nhận số container và thông tin liên quan.
-3. Nhân viên hiện trường chụp ảnh cửa container, ưu tiên ảnh nhìn rõ số container.
-4. Nhân viên hiện trường xác nhận container đến bãi.
-5. Văn phòng tiếp nhận và kiểm tra thông tin, ảnh.
-6. Xác định dịch vụ và khoản phí phải thu.
-7. Ghi nhận giao dịch thanh toán.
-8. Chỉ hoàn tất Gate In sau khi phí bắt buộc đã được xác nhận thanh toán.
-9. Điều phối việc dỡ container và bố trí vị trí.
-10. Ghi nhận vị trí hiện tại, trạng thái và lịch sử nghiệp vụ.
+2. Nhân viên cổng/hiện trường chụp ảnh cửa container, ảnh phải nhìn rõ số container.
+3. Nhân viên hiện trường ghi nhận thông tin ban đầu và xác nhận container đến bãi. Các trường thông tin hiện trường đã xác nhận gồm:
+   - **Phân loại**: `DAMAGE`, `AV`.
+   - **Phân loại đóng hàng**: `M`, `K`, `E`.
+   - **Tình trạng vệ sinh**: `KHÔNG VỆ SINH`, `QUÉT`, `RỬA NƯỚC`, `VỆ SINH CÔNG NGHIỆP`, `NHỔ ĐINH`, `BÓC TEM`.
+4. Văn phòng tiếp nhận, kiểm tra lệnh/chứng từ, hình ảnh và bổ sung các trường đã xác nhận:
+   - `SỐ CONTAINER`
+   - `SIZE`
+   - `TYPE`
+   - `SỐ XE`
+   - `ĐẠI DIỆN KHÁCH HÀNG`
+5. Văn phòng xác định dịch vụ, khoản phí phải thu và xác nhận phương thức thanh toán thuộc 1 trong 3 loại:
+   - **`TTT` (Thanh toán trước):** Quét mã QR thanh toán của Phiếu thu mẹ vào chứng từ; nếu hợp lệ thì thông báo và trừ dần vào Phiếu thu mẹ.
+   - **`TTS` (Thanh toán sau):** Kiểm tra thông tin `TTS` ở các nguồn; nếu xác nhận đủ điều kiện thì ghi chú (`note`) ở chứng từ là `TTS`.
+   - **`TTTT` (Thanh toán trực tiếp):** Thanh toán chuyển khoản (API) hoặc Thanh toán tiền mặt.
+6. Ghi nhận giao dịch/xác nhận chứng từ thanh toán (việc tạo yêu cầu thanh toán không đồng nghĩa đã hoàn tất thanh toán).
+7. Chỉ sau khi thanh toán/xác nhận hợp lệ mới được cập nhật trạng thái `GATE IN OK` (hoàn tất Gate In).
+8. Sau `GATE IN OK`, chuyển sang hàng chờ **Xe nâng / Hạ bãi** để bố trí vị trí; đồng thời nếu phân loại là `DAMAGE` hoặc có yêu cầu vệ sinh (khác `KHÔNG VỆ SINH`) thì tự động tạo phiếu **Giám định / Vệ sinh** tương ứng.
+9. Ghi nhận vị trí hiện tại (cấp `Block` hoặc chi tiết `Bay/Row/Tier`), trạng thái và lịch sử nghiệp vụ khi container được bố trí vào bãi.
 
-Các trạng thái trung gian, trường hợp từ chối, hủy, thanh toán lỗi và container chưa dỡ phải được đặc tả riêng.
+Các trạng thái trung gian, bộ phận nhận chuyển tiếp sau `GATE IN OK`, trường hợp từ chối, hủy, thanh toán lỗi và container chưa dỡ phải được đặc tả riêng.
 
-## 4. Quy trình quản lý tồn bãi
+## 4. Quy trình quản lý tồn bãi và các hoạt động phát sinh tại bãi
 
+### 4.1. Các hoạt động có thể phát sinh khi container nằm tại bãi
+- Lưu bãi và theo dõi tồn/thời gian lưu.
+- Giám định, ghi nhận tình trạng.
+- Vệ sinh container.
+- Sửa chữa container.
+- Di chuyển, đảo chuyển trong bãi.
+- Tạm giữ hoặc khóa xuất theo yêu cầu.
+- Xử lý chứng từ, lệnh hãng tàu và yêu cầu khách hàng.
+
+**Nguyên tắc:** Không mặc định tất cả container đều phải thực hiện mọi dịch vụ.
+
+### 4.2. Quản lý vị trí và di chuyển trong bãi
 1. Tra cứu container theo số container.
 2. Xem vị trí hiện tại và trạng thái.
-3. Ghi nhận các lần di chuyển trong bãi.
-4. Kiểm tra tính hợp lệ trước khi di chuyển.
-5. Cập nhật vị trí hiện tại và lưu lịch sử.
-6. Ngăn hai thao tác đồng thời tạo ra hai vị trí hiện tại cho cùng một container.
+3. Mỗi container đang trong bãi chỉ có một vị trí hiện tại; lịch sử di chuyển phải được lưu.
+4. Có thể ghi nhận vị trí ở cấp `Block` khi chưa xác định `Bay/Row/Tier`; không coi `Block` là một vị trí độc quyền khiến các container khác không thể cùng nằm trong `Block` đó.
+5. Khi bổ sung vị trí chi tiết hơn (`Bay/Row/Tier`), cập nhật vị trí hiện tại và giữ lịch sử.
+6. Ghi nhận các lần di chuyển, đảo chuyển trong bãi; kiểm tra tính hợp lệ trước khi di chuyển.
+7. Cập nhật vị trí hiện tại và lưu lịch sử.
+8. Ngăn hai thao tác đồng thời tạo ra hai vị trí hiện tại cho cùng một container.
 
-Quy tắc đặt tên khu, block, bay, row, tier và sức chứa chưa được chốt.
+Quy tắc đặt tên khu, block, bay, row, tier chi tiết và sức chứa chưa được chốt.
 
 ## 5. Quy trình vệ sinh container
 
@@ -57,7 +87,7 @@ Quy tắc đặt tên khu, block, bay, row, tier và sức chứa chưa được
 6. Ghi nhận phí và trạng thái thanh toán theo chính sách dịch vụ.
 7. Lưu lịch sử công việc.
 
-Chi tiết các loại vệ sinh và tiêu chuẩn nghiệm thu sẽ được xác định sau.
+Các phân loại tình trạng vệ sinh ghi nhận tại Gate In đã xác nhận gồm: `KHÔNG VỆ SINH`, `QUÉT`, `RỬA NƯỚC`, `VỆ SINH CÔNG NGHIỆP`, `NHỔ ĐINH`, `BÓC TEM`. Tiêu chuẩn nghiệm thu và quy trình xử lý chi tiết sẽ được xác định sau.
 
 ## 6. Quy trình giám định
 
@@ -95,10 +125,23 @@ Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 
 ## 9. Quy trình Gate Out — Xuất bãi
 
+### 9.1. Các trường hợp container ra khỏi bãi đã xác nhận
+- **`CẤP VỎ`** cho khách hàng hoặc xe khách theo lệnh cấp của hãng tàu.
+- **`XUẤT TÀU`**: bãi tổ chức xe kéo đưa container từ bãi ra cảng.
+- **Trả container** cho hãng tàu hoặc đơn vị khác theo lệnh riêng.
+
+### 9.2. Điều kiện kiểm tra bắt buộc trước khi xuất container
+- Có lệnh cấp/lệnh xuất hợp lệ.
+- Không bị tạm giữ hoặc khóa xuất.
+- Đúng số container được phép xuất.
+- Đã thanh toán các khoản phí bắt buộc theo quy định.
+- Chứng từ và thủ tục đã hoàn tất.
+
+### 9.3. Luồng thực hiện Gate Out
 1. Tiếp nhận yêu cầu xuất container.
-2. Kiểm tra booking hoặc quyền nhận container.
-3. Kiểm tra container, trạng thái và điều kiện xuất.
-4. Kiểm tra phí và các điều kiện bắt buộc.
+2. Kiểm tra lệnh cấp/lệnh xuất, booking hoặc quyền nhận container.
+3. Kiểm tra đúng số container được phép xuất, trạng thái container và đảm bảo container không bị tạm giữ hoặc khóa xuất.
+4. Kiểm tra đã thanh toán các khoản phí bắt buộc và hoàn tất chứng từ, thủ tục.
 5. Xác nhận container được đưa ra khỏi vị trí lưu bãi.
 6. Ghi nhận thời điểm xuất, người thực hiện và bằng chứng liên quan.
 7. Cập nhật tồn bãi và lịch sử.
@@ -106,12 +149,25 @@ Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 
 ## 10. Quy trình tài chính và thanh toán
 
+### 10.1. Ba loại hình thanh toán đã xác nhận
+1. **THANH TOÁN TRƯỚC (`TTT`) — Phiếu thu mẹ & Mã QR:**
+   - Khách hàng đóng thanh toán 1 lô trước đó. Hệ thống cho tạo **Phiếu thu mẹ** trước cho khách hàng.
+   - Khách hàng nhận được một **mã QR thanh toán** (mã QR này là code thanh toán thay phiếu thu).
+   - Khi văn phòng yêu cầu thanh toán, khách hàng quét mã này vào **CHỨNG TỪ**. Nếu chứng từ và số dư hợp lệ, hệ thống thông báo và trừ dần trong Phiếu thu mẹ.
+2. **THANH TOÁN SAU (`TTS`):**
+   - Nhân viên văn phòng kiểm tra thông tin `TTS` ở các nguồn.
+   - Nếu xác nhận `TTS` thì ghi chú (`note`) ở **CHỨNG TỪ** là `TTS`.
+3. **THANH TOÁN TRỰC TIẾP (`TTTT`):**
+   - Thanh toán chuyển khoản (API).
+   - Thanh toán tiền mặt.
+
+### 10.2. Luồng xử lý tài chính
 1. Xác định dịch vụ phát sinh phí.
 2. Xác định bên chịu phí và bên thực tế thanh toán.
-3. Tạo khoản phải thu và giao dịch thanh toán tương ứng.
-4. Hỗ trợ ghi nhận thanh toán thủ công và tích hợp cổng thanh toán khi được triển khai.
+3. Nhân viên tác nghiệp văn phòng xác nhận khoản thu thuộc trường hợp nào (`TTT`, `TTS`, hay `TTTT`).
+4. Tạo khoản phải thu, chứng từ và giao dịch thanh toán tương ứng (trừ quỹ `TTT`, ghi nhận `TTS`, hoặc thu `TTTT` qua Tiền mặt / API Chuyển khoản).
 5. Ghi nhận trạng thái chờ, thành công, thất bại hoặc hoàn tiền.
-6. Đối soát giao dịch với khoản phải thu.
+6. Đối soát giao dịch với khoản phải thu và theo dõi số dư Phiếu thu mẹ (`TTT`) / công nợ (`TTS`).
 7. Lưu lịch sử điều chỉnh và người thực hiện.
 8. Ngăn ghi nhận trùng giao dịch khi hệ thống nhận lại cùng một yêu cầu.
 
