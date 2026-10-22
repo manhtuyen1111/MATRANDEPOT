@@ -1,756 +1,312 @@
-import React, { useState } from 'react';
-import {
-  CheckCircle2,
-  Clock,
-  FileSpreadsheet,
-  FileText,
-  MapPin,
-  Printer,
-  QrCode,
-  Receipt,
-  Sparkles,
-  Wrench,
-  X,
-} from 'lucide-react';
+import React from 'react';
+import { CheckCircle2, Clock, Printer, QrCode, X } from 'lucide-react';
+import { ContainerStatus, FeeLineItem, GateOutOrder, K80InternalTicket, PaymentVoucher } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
-import { K80InternalTicket } from '../types/depot';
+import { formatLocation } from '../services/core';
+import { paymentLabelOf } from '../services/payments';
+import { formatViTime } from './shared';
 
 interface Props {
-  masterDossierCode: string | null;
+  masterDossierCode: string | null; // Mã hồ sơ HẠ VỎ (IN-...) hoặc CẤP VỎ (OUT-...)
   state: DepotState;
   onClose: () => void;
   onOpenK80Ticket?: (ticket: K80InternalTicket) => void;
 }
 
-function formatViTime(iso?: string): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
-}
+const CONTAINER_STATUS: Record<ContainerStatus, string> = {
+  PENDING_GATE_IN: 'Đang làm thủ tục hạ vỏ',
+  WAITING_PLACEMENT: 'Chờ hạ vỏ',
+  IN_YARD: 'Đang tồn bãi',
+  ALLOCATED: 'Đã lập lệnh cấp',
+  GATED_OUT: 'Đã OUT',
+};
 
-export const MasterDossierModal: React.FC<Props> = ({
-  masterDossierCode,
-  state,
-  onClose,
-  onOpenK80Ticket,
-}) => {
-  const [showReceiptPrintView, setShowReceiptPrintView] =
-    useState<boolean>(false);
+const OUT_STATUS: Record<GateOutOrder['status'], string> = {
+  PAYMENT_PENDING: 'Chờ thanh toán',
+  PENDING_FORKLIFT: 'Chờ xe nâng',
+  GATE_OUT_OK: 'Đã OUT',
+  CANCELLED: 'Đã hủy',
+};
 
+const Field: React.FC<{ label: string; value?: React.ReactNode; mono?: boolean }> = ({ label, value, mono }) => (
+  <div>
+    <dt className="text-[10px] font-semibold uppercase text-slate-500">{label}</dt>
+    <dd className={`text-xs font-semibold text-slate-900 ${mono ? 'font-mono' : ''}`}>{value || '-'}</dd>
+  </div>
+);
+
+const Confirm: React.FC<{ done: boolean; by?: string; at?: string; pending?: string }> = ({ done, by, at, pending }) => (
+  <div className="flex items-start gap-2 text-[11px]">
+    {done ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> : <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />}
+    <div>
+      {done ? (
+        <>
+          <span className="block font-semibold text-slate-900">{by || '-'}</span>
+          <span className="text-slate-500">{formatViTime(at)}</span>
+        </>
+      ) : (
+        <span className="text-amber-700">{pending || 'Đang chờ'}</span>
+      )}
+    </div>
+  </div>
+);
+
+const Dept: React.FC<{ title: string; confirm: React.ReactNode; children: React.ReactNode }> = ({ title, confirm, children }) => (
+  <section className="grid grid-cols-1 gap-3 border-b border-slate-200 py-3 last:border-0 sm:grid-cols-[1fr_190px]">
+    <div>
+      <h4 className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-700">{title}</h4>
+      <div className="text-xs text-slate-700">{children}</div>
+    </div>
+    <div className="sm:border-l sm:border-slate-100 sm:pl-3">{confirm}</div>
+  </section>
+);
+
+const FeeTable: React.FC<{ lines?: FeeLineItem[]; voucher?: PaymentVoucher }> = ({ lines, voucher }) => {
+  if (!voucher && !lines?.length) return <p className="text-slate-500">Chưa lập chứng từ chi phí.</p>;
+  return (
+    <div className="space-y-1">
+      {lines && lines.length > 0 && (
+        <table className="w-full text-xs">
+          <tbody className="divide-y divide-slate-100">
+            {lines.map((l) => (
+              <tr key={l.id}>
+                <td className="py-1 pr-2 text-slate-700">{l.name}</td>
+                <td className="py-1 text-right font-mono">{formatVnd(l.amountInclVat)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {voucher && (
+        <p className="text-[11px] text-slate-600">
+          Chứng từ <span className="font-mono">{voucher.voucherNo}</span> • Tổng <strong className="font-mono">{formatVnd(voucher.amount)}</strong> •{' '}
+          {voucher.status === 'PENDING' ? 'Chờ thanh toán' : voucher.status === 'CANCELLED' ? 'Đã hủy' : paymentLabelOf(voucher)}
+        </p>
+      )}
+    </div>
+  );
+};
+
+export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, onClose, onOpenK80Ticket }) => {
   if (!masterDossierCode) return null;
 
-  const gateIn = state.gateInOrders.find(
-    (o) =>
-      o.masterDossierCode === masterDossierCode ||
-      o.orderCode === masterDossierCode
-  );
-  const container = state.containers.find(
-    (c) => c.masterDossierCode === masterDossierCode
-  );
-  const vouchers = state.vouchers.filter(
-    (v) => v.masterDossierCode === masterDossierCode
-  );
-  const workOrders = state.workOrders.filter(
-    (w) => w.masterDossierCode === masterDossierCode
-  );
-  const locations = state.locationHistory.filter(
-    (l) => l.masterDossierCode === masterDossierCode
-  );
-  const gateOut = state.gateOutOrders.find(
-    (g) => g.masterDossierCode === masterDossierCode
-  );
+  const outMatch = state.gateOutOrders.find((o) => o.gateOutCode === masterDossierCode);
+  const visitCode = outMatch?.masterDossierCode || masterDossierCode;
 
-  // Dữ liệu tổng hợp của Container
-  const contNo = container?.containerNo || gateIn?.containerNo || 'CHƯA CẬP NHẬT';
-  const size = container?.size || gateIn?.size || '—';
-  const type = container?.type || gateIn?.type || '—';
-  const shippingLine =
-    container?.shippingLineCode || gateIn?.shippingLineCode || '—';
-  const customerRep = container?.customerRep || gateIn?.customerRep || '—';
-  const truckNo = gateIn?.truckNo || container?.allocatedTruckNo || '—';
-  const conditionClass =
-    container?.conditionClass || gateIn?.conditionClass || 'AV';
-  const stuffingClass =
-    container?.stuffingClass || gateIn?.stuffingClass || 'E';
-  const manufactureYear =
-    container?.manufactureYear || gateIn?.manufactureYear || 2020;
-  const cleaningItems =
-    container?.cleaningItems || gateIn?.cleaningItems || ['KHÔNG VỆ SINH'];
-  const damageRemarks =
-    container?.damageRemarks || gateIn?.damageRemarks || [];
+  const gateIn = state.gateInOrders.find((o) => o.masterDossierCode === visitCode || o.orderCode === visitCode);
+  const container = state.containers.find((c) => c.masterDossierCode === visitCode);
+  const outOrders = state.gateOutOrders.filter((o) => o.masterDossierCode === visitCode);
+  const workOrders = state.workOrders.filter((w) => w.masterDossierCode === visitCode);
+  const locations = state.locationHistory.filter((l) => l.masterDossierCode === visitCode);
+  const inVoucher = gateIn?.voucherId
+    ? state.vouchers.find((v) => v.id === gateIn.voucherId)
+    : state.vouchers.find((v) => v.masterDossierCode === visitCode && v.serviceType === 'GATE_IN');
+  const dossierCodes = new Set([visitCode, ...outOrders.map((o) => o.gateOutCode)]);
+  const receipts = state.paymentReceipts.filter((r) => r.dossierCode && dossierCodes.has(r.dossierCode));
+  const tickets = state.k80Tickets.filter((t) => t.masterDossierCode === visitCode);
 
-  // 1. Trạng thái hoàn thành Phần 1: GIÁM ĐỊNH + VĂN PHÒNG
-  const inspectorConfirmed = Boolean(gateIn || container);
-  const inspectorName =
-    gateIn?.fieldStaffName || 'Lê Hoàng Giám Định (Hạ vỏ & Báo giá)';
-  const inspectorTime = gateIn?.fieldRecordedAt || container?.gateInAt;
+  if (!gateIn && !container && outOrders.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+        <div className="w-full max-w-sm rounded-lg bg-white p-5 text-center text-xs">
+          <p className="mb-3">Không tìm thấy hồ sơ <span className="font-mono font-bold">{masterDossierCode}</span>.</p>
+          <button type="button" onClick={onClose} className="rounded-md border border-slate-300 px-3 py-1.5 font-semibold">Đóng</button>
+        </div>
+      </div>
+    );
+  }
 
-  const officeConfirmed = Boolean(
-    gateIn?.status === 'GATE_IN_OK' || container
-  );
-  const officeName =
-    gateIn?.gateInOkBy ||
-    gateIn?.officeStaffName ||
-    vouchers[0]?.confirmedBy ||
-    'Trần Thị Minh (Văn Phòng)';
-  const officeTime =
-    gateIn?.gateInOkAt ||
-    gateIn?.officeVerifiedAt ||
-    vouchers[0]?.confirmedAt ||
-    container?.gateInAt;
-
-  // 2. Trạng thái hoàn thành Phần 2: VỆ SINH
+  const containerNo = container?.containerNo || gateIn?.containerNo || outMatch?.containerNo;
+  const conditionClass = container?.conditionClass || gateIn?.conditionClass;
+  const stuffingClass = container?.stuffingClass || gateIn?.stuffingClass;
+  const cleaningItems = container?.cleaningItems || gateIn?.cleaningItems || [];
   const requiresCleaning = cleaningItems.some((i) => i !== 'KHÔNG VỆ SINH');
   const cleaningWo = workOrders.find((w) => w.category === 'CLEANING');
-  const cleaningDone = Boolean(
-    !requiresCleaning ||
-      (container && !container.needsCleaning) ||
-      cleaningWo?.workStatus === 'COMPLETED'
-  );
-  const cleaningConfirmedBy =
-    cleaningWo?.completedBy ||
-    cleaningWo?.assignedTo ||
-    (requiresCleaning ? 'Vũ Văn Vệ Sinh' : 'Không yêu cầu vệ sinh');
-  const cleaningConfirmedAt =
-    cleaningWo?.completedAt || (!requiresCleaning ? officeTime : container?.gateInAt);
-
-  // 3. Trạng thái hoàn thành Phần 3: XE NÂNG
-  const latestLocation = locations[0];
-  const forkliftDone = Boolean(
-    container?.currentBlock ||
-      container?.status === 'GATED_OUT' ||
-      latestLocation
-  );
-  const forkliftConfirmedBy =
-    latestLocation?.performedBy ||
-    gateOut?.confirmedBy ||
-    'Phạm Hoàng Xe Nâng';
-  const forkliftConfirmedAt =
-    latestLocation?.performedAt ||
-    gateOut?.confirmedAt ||
-    (container?.currentBlock ? container.gateInAt : undefined);
-
-  // 4. Trạng thái hoàn thành Phần 4: BÁO GIÁ - SỬA CHỮA
   const inspectionWo = workOrders.find((w) => w.category === 'INSPECTION');
   const repairWo = workOrders.find((w) => w.category === 'REPAIR');
-  const hadDamage = Boolean(
-    gateIn?.conditionClass === 'DAMAGE' ||
-      container?.conditionClass === 'DAMAGE' ||
-      inspectionWo ||
-      repairWo
-  );
-  const quotationDone = Boolean(
-    !hadDamage ||
-      (container && !container.needsQuotation) ||
-      repairWo?.approvalStatus === 'APPROVED'
-  );
-  const repairDone = Boolean(
-    !hadDamage ||
-      (container && !container.needsQuotation && !container.needsRepair) ||
-      repairWo?.workStatus === 'COMPLETED'
-  );
-  const repairConfirmedBy =
-    repairWo?.completedBy ||
-    repairWo?.approvedBy ||
-    repairWo?.assignedTo ||
-    'Đặng Kỹ Thuật Sửa Chữa';
-  const repairConfirmedAt =
-    repairWo?.completedAt || repairWo?.createdAt || container?.gateInAt;
-
-  // Hàm mở IN ĐIỀU ĐỘNG (Phiếu K80)
-  const handlePrintDieuDongK80 = () => {
-    if (!onOpenK80Ticket) {
-      window.print();
-      return;
-    }
-    const existingK80 = state.k80Tickets.find(
-      (t) =>
-        t.masterDossierCode === masterDossierCode ||
-        t.containerNo === contNo
-    );
-    if (existingK80) {
-      onOpenK80Ticket(existingK80);
-      return;
-    }
-
-    const fallbackTicket: K80InternalTicket = {
-      ticketCode: `K80-${masterDossierCode.slice(-6)}`,
-      masterDossierCode,
-      qrCode: container?.activeQrCode || gateIn?.k80QrCode || `QR-K80-${contNo}`,
-      operationMode: container?.status === 'ALLOCATED' ? 'CAP_VO' : 'HA_VO',
-      isPaid: true,
-      paymentLabel: 'Đã xác nhận thanh toán tại Văn phòng',
-      containerNo: contNo,
-      size,
-      type,
-      conditionClass,
-      damageRemarks,
-      stuffingClass,
-      cleaningItems,
-      manufactureYear,
-      truckNo,
-      customerRep,
-      issuedAt: officeTime || new Date().toISOString(),
-      issuedBy: officeName,
-    };
-    onOpenK80Ticket(fallbackTicket);
-  };
-
-  // Tổng tiền phiếu thu
-  const primaryVoucher = vouchers[0];
-  const feeLines = gateIn?.feeLines || [];
-  const totalAmountInclVat =
-    primaryVoucher?.amount ||
-    gateIn?.feeAmount ||
-    (conditionClass === 'DAMAGE' ? 1150000 : 650000);
+  const placement = [...locations].reverse().find((l) => l.actionType === 'INITIAL_BLOCK');
+  const activeOut = outOrders.find((o) => o.status !== 'CANCELLED');
+  const latestTicket = tickets[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto">
-      <div className="my-auto w-full max-w-4xl rounded-xl border border-slate-300 bg-white p-5 shadow-2xl max-h-[92vh] overflow-y-auto space-y-4 text-xs">
-        {/* ================================================================ */}
-        {/* HEADER: HỒ SƠ CỦA 1 CONTAINER TẠI BÃI LÀ PHIẾU EEIR CÓ TÊN LÀ MÃ HỒ SƠ */}
-        {/* ================================================================ */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-slate-800 pb-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white font-black text-sm">
-              EEIR
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-mono text-base font-black text-slate-900">
-                  PHIẾU EEIR: <span className="text-blue-700">{masterDossierCode}</span>
-                </h2>
-                <span className="rounded bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white">
-                  Cont: {contNo} ({size}&apos;{type})
-                </span>
-                <span
-                  className={`rounded px-2 py-0.5 text-[11px] font-bold ${
-                    conditionClass === 'DAMAGE'
-                      ? 'bg-rose-100 text-rose-700'
-                      : 'bg-emerald-100 text-emerald-700'
-                  }`}
-                >
-                  {conditionClass}
-                </span>
-              </div>
-              <p className="mt-0.5 text-[11px] text-slate-500">
-                Hồ sơ điện tử xuyên suốt vòng đời Container tại bãi MATRAN DEPOT • Hãng tàu: <strong>{shippingLine}</strong> • Khách hàng: <strong>{customerRep}</strong>
-              </p>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-2 sm:p-4" role="dialog" aria-modal="true" aria-label="Hồ sơ container">
+      <div className="my-4 w-full max-w-4xl rounded-lg border border-slate-300 bg-white shadow-xl">
+        <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase text-slate-500">Hồ sơ container</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-lg font-bold text-slate-900">{containerNo || 'Chưa có số container'}</span>
+              <span className="rounded border border-slate-300 px-1.5 py-0.5 font-mono text-[11px]">{visitCode}</span>
+              {activeOut && <span className="rounded border border-slate-300 px-1.5 py-0.5 font-mono text-[11px]">{activeOut.gateOutCode}</span>}
+              {container && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700">{CONTAINER_STATUS[container.status]}</span>}
+              {container?.isOnHold && <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[11px] font-semibold text-rose-700">Đang khóa: {container.holdReason}</span>}
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-50"
-          >
+          <button type="button" onClick={onClose} aria-label="Đóng hồ sơ" className="rounded-md border border-slate-300 p-1.5 text-slate-600 hover:bg-slate-50">
             <X className="h-4 w-4" />
-            Đóng hồ sơ
           </button>
-        </div>
+        </header>
 
-        {/* GHI CHÚ VĂN PHÒNG (NẾU CÓ TRONG TỒN VỎ) */}
-        {container?.officeNote && (
-          <div className="rounded-lg border-2 border-amber-400 bg-amber-50 px-3.5 py-2.5 text-amber-950">
-            <span className="font-bold uppercase text-[11px] text-amber-800 block">
-              📌 Ghi chú Văn phòng (Tồn vỏ):
-            </span>
-            <p className="font-bold text-xs mt-0.5">{container.officeNote}</p>
-            {container.officeNoteUpdatedBy && (
-              <span className="text-[10px] text-amber-700">
-                Cập nhật bởi: {container.officeNoteUpdatedBy} ({formatViTime(container.officeNoteUpdatedAt)})
-              </span>
+        <div className="space-y-4 px-5 py-4">
+          <dl className="grid grid-cols-1 gap-4 rounded-md border border-slate-200 p-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2">
+              <p className="col-span-2 text-[10px] font-bold uppercase text-slate-400">A. Nhận diện</p>
+              <Field label="Số container" value={containerNo} mono />
+              <Field label="Hãng tàu" value={container?.shippingLineCode || gateIn?.shippingLineCode} />
+              <Field label="Size" value={container?.size || gateIn?.size} />
+              <Field label="Type" value={container?.type || gateIn?.type} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <p className="col-span-2 text-[10px] font-bold uppercase text-slate-400">B. Tình trạng</p>
+              <Field label="Trạng thái" value={conditionClass} />
+              <Field label="Phân loại đóng hàng" value={stuffingClass} />
+              <Field label="AGE" value={container?.manufactureYear || gateIn?.manufactureYear} />
+              <Field label="Vị trí" value={container ? formatLocation(container) : '-'} mono />
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <p className="text-[10px] font-bold uppercase text-slate-400">C. Khách hàng & vận tải (Hạ vỏ)</p>
+              <Field label="Khách hàng" value={gateIn?.customerRep || container?.customerRep} />
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Thông tin vận tải" value={gateIn?.truckNo || container?.truckNo} />
+                <Field label="SĐT vận tải" value={gateIn?.driverPhone || container?.driverPhone} />
+              </div>
+            </div>
+          </dl>
+
+          {container?.officeNote && (
+            <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              <strong>Ghi chú văn phòng:</strong> {container.officeNote}
+              {container.officeNoteUpdatedBy && <span className="text-amber-700"> — {container.officeNoteUpdatedBy}, {formatViTime(container.officeNoteUpdatedAt)}</span>}
+            </p>
+          )}
+
+          <div>
+            {gateIn && (
+              <Dept title="Giám định — Hạ vỏ" confirm={<Confirm done by={gateIn.fieldStaffName} at={gateIn.fieldRecordedAt} />}>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <img src={gateIn.doorPhotoUrl} alt="Ảnh cửa container" className="h-24 w-full rounded border border-slate-200 object-cover sm:w-36" />
+                  <dl className="grid flex-1 grid-cols-2 gap-2">
+                    <Field label="Trạng thái" value={`${gateIn.conditionClass}${gateIn.damageRemarks.length ? ` — ${gateIn.damageRemarks.join(', ')}` : ''}`} />
+                    <Field label="Đóng hàng" value={gateIn.stuffingClass} />
+                    <Field label="Vệ sinh" value={gateIn.cleaningItems.join(' + ')} />
+                    <Field label="AGE" value={gateIn.manufactureYear} />
+                  </dl>
+                </div>
+              </Dept>
+            )}
+
+            {gateIn && (
+              <Dept
+                title="Văn phòng — Hạ vỏ"
+                confirm={<Confirm done={gateIn.status === 'GATE_IN_OK'} by={gateIn.gateInOkBy} at={gateIn.gateInOkAt} pending={gateIn.status === 'PAYMENT_PENDING' ? 'Chờ thanh toán' : 'Chờ văn phòng'} />}
+              >
+                {gateIn.orderDocNo && <p className="mb-1">Số lệnh / chứng từ: <span className="font-mono">{gateIn.orderDocNo}</span></p>}
+                <FeeTable lines={inVoucher?.feeLines || gateIn.feeLines} voucher={inVoucher} />
+              </Dept>
+            )}
+
+            {requiresCleaning && (
+              <Dept
+                title="Vệ sinh"
+                confirm={<Confirm done={cleaningWo?.workStatus === 'COMPLETED' || (container ? !container.needsCleaning : false)} by={cleaningWo?.completedBy} at={cleaningWo?.completedAt} pending="Chờ vệ sinh" />}
+              >
+                Hạng mục: <strong>{cleaningItems.join(' + ')}</strong>
+                {cleaningWo?.resultNotes && <p className="text-slate-500">{cleaningWo.resultNotes}</p>}
+              </Dept>
+            )}
+
+            {(container || locations.length > 0) && (
+              <Dept title="Xe nâng — Vị trí bãi" confirm={<Confirm done={Boolean(placement)} by={placement?.performedBy} at={placement?.performedAt} pending="Chờ hạ vỏ" />}>
+                {locations.length === 0 ? (
+                  <p className="text-slate-500">Chưa có tác nghiệp vị trí.</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {locations.map((l) => (
+                      <li key={l.id} className="flex flex-wrap items-baseline justify-between gap-2 text-[11px]">
+                        <span>
+                          <strong>{l.actionType === 'YARD_SHIFT' ? 'ĐẢO CHUYỂN' : l.actionType === 'INITIAL_BLOCK' ? 'HẠ VỎ' : l.actionType === 'GATE_OUT_CLEAR' ? 'OUT' : l.actionType}</strong>{' '}
+                          <span className="font-mono">{l.fromLocation} → {l.toLocation}</span>
+                        </span>
+                        <span className="text-slate-500">{l.performedBy} • {formatViTime(l.performedAt)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Dept>
+            )}
+
+            {(inspectionWo || conditionClass === 'DAMAGE' || container?.quotationAmount) && (
+              <Dept
+                title="Báo giá"
+                confirm={<Confirm done={Boolean(repairWo) || inspectionWo?.workStatus === 'COMPLETED'} by={repairWo?.approvedBy || inspectionWo?.completedBy} at={repairWo?.createdAt || inspectionWo?.completedAt} pending={inspectionWo?.workStatus === 'CANCELLED' ? 'Đóng khi cấp vỏ DAMAGE' : 'Chờ báo giá'} />}
+              >
+                {repairWo ? (
+                  <>Remark sửa chữa: <strong>{repairWo.items.join(', ')}</strong>{repairWo.estimateCost > 0 && <> • <strong className="font-mono">{formatVnd(repairWo.estimateCost)}</strong></>}</>
+                ) : (
+                  <>Hư hỏng ghi nhận: <strong>{(inspectionWo?.items || gateIn?.damageRemarks || []).join(', ') || '-'}</strong></>
+                )}
+              </Dept>
+            )}
+
+            {repairWo && (
+              <Dept title="Sửa chữa" confirm={<Confirm done={repairWo.workStatus === 'COMPLETED'} by={repairWo.completedBy} at={repairWo.completedAt} pending={repairWo.workStatus === 'CANCELLED' ? 'Đóng khi cấp vỏ DAMAGE' : 'Chờ sửa chữa'} />}>
+                <p>Remark sửa chữa: <strong>{repairWo.items.join(', ')}</strong> • Giờ công: <strong>{repairWo.laborHours ?? '-'}</strong></p>
+                {repairWo.repairTeamName && (
+                  <p>Tổ: <strong>{repairWo.repairTeamName}</strong> — {(repairWo.repairMembers || []).join(', ')}</p>
+                )}
+              </Dept>
+            )}
+
+            {outOrders.map((o) => {
+              const v = state.vouchers.find((x) => x.id === o.voucherId);
+              return (
+                <Dept
+                  key={o.id}
+                  title={`Cấp vỏ — ${o.gateOutCode} (${OUT_STATUS[o.status]})`}
+                  confirm={
+                    <div className="space-y-2">
+                      <Confirm done by={o.createdBy ? `Lập lệnh: ${o.createdBy}` : 'Lập lệnh'} at={o.createdAt} />
+                      {o.status !== 'CANCELLED' && <Confirm done={o.status === 'GATE_OUT_OK'} by={o.confirmedBy ? `OUT: ${o.confirmedBy}` : undefined} at={o.confirmedAt} pending={OUT_STATUS[o.status]} />}
+                    </div>
+                  }
+                >
+                  <dl className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <Field label="Booking" value={o.bookingNo} mono />
+                    <Field label="Khách hàng" value={o.receiverRep} />
+                    <Field label="Thông tin vận tải" value={o.truckNo} />
+                    <Field label="SĐT vận tải" value={o.driverPhone} />
+                  </dl>
+                  {o.status === 'CANCELLED' ? <p className="text-slate-500">Lý do hủy: {o.cancelReason}</p> : <FeeTable lines={o.feeLines} voucher={v} />}
+                </Dept>
+              );
+            })}
+
+            {receipts.length > 0 && (
+              <Dept title="Phiếu thu" confirm={<Confirm done by={receipts[0].issuedBy} at={receipts[0].issuedAt} />}>
+                <ul className="space-y-0.5">
+                  {receipts.map((r) => (
+                    <li key={r.id} className="font-mono text-[11px]">
+                      {r.receiptNo} • {formatVnd(r.amount)} • {r.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'} • {r.dossierCode}
+                    </li>
+                  ))}
+                </ul>
+              </Dept>
             )}
           </div>
-        )}
-
-        {/* CHẾ ĐỘ XEM IN PHIẾU THU (KHI BẤM NÚT IN PHIẾU THU) */}
-        {showReceiptPrintView ? (
-          <div className="rounded-xl border-2 border-slate-800 bg-white p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-300 pb-3">
-              <div>
-                <h3 className="text-base font-black text-slate-900">
-                  PHIẾU THU DỊCH VỤ BÃI (ĐÃ BAO GỒM VAT)
-                </h3>
-                <p className="font-mono text-xs font-bold text-blue-700">
-                  Kèm theo Phiếu EEIR: {masterDossierCode} • Số chứng từ:{' '}
-                  {primaryVoucher?.voucherNo || `PT-${masterDossierCode}`}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowReceiptPrintView(false)}
-                className="rounded border border-slate-300 px-3 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50"
-              >
-                ← Quay lại Phiếu EEIR
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 rounded-lg bg-slate-50 p-3 border border-slate-200">
-              <div>
-                <p>
-                  <strong>Khách hàng / Đơn vị nộp:</strong> {customerRep}
-                </p>
-                <p>
-                  <strong>Số Container:</strong>{' '}
-                  <span className="font-mono font-bold">{contNo}</span> ({size}
-                  &apos;{type})
-                </p>
-                <p>
-                  <strong>Hãng tàu:</strong> {shippingLine} •{' '}
-                  <strong>Số xe:</strong> {truckNo}
-                </p>
-              </div>
-              <div>
-                <p>
-                  <strong>Hình thức thanh toán:</strong>{' '}
-                  <span className="font-bold text-emerald-700">
-                    {primaryVoucher?.paymentCategory || 'TTT / Đã thu'}
-                  </span>
-                </p>
-                <p>
-                  <strong>Người lập / xác nhận thu:</strong> {officeName}
-                </p>
-                <p>
-                  <strong>Thời gian xác nhận:</strong>{' '}
-                  {formatViTime(officeTime)}
-                </p>
-              </div>
-            </div>
-
-            <table className="w-full border-collapse border border-slate-300 text-xs">
-              <thead>
-                <tr className="bg-slate-100 font-bold text-slate-800">
-                  <th className="border border-slate-300 px-3 py-2 text-left">
-                    STT
-                  </th>
-                  <th className="border border-slate-300 px-3 py-2 text-left">
-                    Hạng mục biểu giá (Đã bao gồm VAT)
-                  </th>
-                  <th className="border border-slate-300 px-3 py-2 text-right">
-                    Thành tiền (VNĐ)
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {feeLines.length > 0 ? (
-                  feeLines.map((line, i) => (
-                    <tr key={line.id}>
-                      <td className="border border-slate-300 px-3 py-2">
-                        {i + 1}
-                      </td>
-                      <td className="border border-slate-300 px-3 py-2 font-semibold">
-                        [{line.catalogCode}] {line.name}
-                      </td>
-                      <td className="border border-slate-300 px-3 py-2 text-right font-mono font-bold">
-                        {formatVnd(line.amountInclVat)}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td className="border border-slate-300 px-3 py-2">1</td>
-                    <td className="border border-slate-300 px-3 py-2 font-semibold">
-                      Phí dịch vụ nâng hạ &amp; tác nghiệp container {contNo} (
-                      {size}&apos;{type} — Đã bao gồm VAT)
-                    </td>
-                    <td className="border border-slate-300 px-3 py-2 text-right font-mono font-bold">
-                      {formatVnd(totalAmountInclVat)}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-              <tfoot>
-                <tr className="bg-emerald-50 font-black text-slate-900">
-                  <td
-                    colSpan={2}
-                    className="border border-slate-300 px-3 py-2.5 text-right uppercase"
-                  >
-                    TỔNG CỘNG ĐÃ THU (ĐÃ BAO GỒM VAT):
-                  </td>
-                  <td className="border border-slate-300 px-3 py-2.5 text-right font-mono text-sm text-emerald-700">
-                    {formatVnd(totalAmountInclVat)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 font-black text-white hover:bg-emerald-700"
-              >
-                <Printer className="h-4 w-4" />
-                Xác Nhận In Phiếu Thu Ngay
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* ================================================================ */
-          /* NỘI DUNG PHIẾU EEIR SẮP XẾP THEO TỪNG TÁC NGHIỆP BỘ PHẬN */
-          /* ================================================================ */
-          <div className="space-y-3.5">
-            {/* PHẦN 1: BỘ PHẬN GIÁM ĐỊNH + VĂN PHÒNG (LÀ CÙNG 1 PHẦN) */}
-            <div className="rounded-xl border border-slate-300 bg-white overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2.5">
-                <div className="flex items-center gap-2 font-black text-slate-900 text-xs uppercase">
-                  <FileText className="h-4 w-4 text-blue-600" />
-                  <span>PHẦN 1: TÁC NGHIỆP GIÁM ĐỊNH + VĂN PHÒNG</span>
-                </div>
-                {inspectorConfirmed && officeConfirmed ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-300">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                    ✓ ĐÃ XÁC NHẬN HOÀN THÀNH
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
-                    <Clock className="h-3.5 w-3.5" />
-                    Đang chờ Văn phòng hoàn tất
-                  </span>
-                )}
-              </div>
-
-              <div className="p-4 space-y-3">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                  {/* Ảnh cửa cont do Giám định chụp */}
-                  <div className="md:col-span-4">
-                    <img
-                      src={
-                        gateIn?.doorPhotoUrl ||
-                        'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80'
-                      }
-                      alt="Ảnh cửa container"
-                      className="h-36 w-full rounded-lg border border-slate-300 object-cover"
-                    />
-                  </div>
-
-                  {/* Thông tin Giám định + Văn phòng gộp chung */}
-                  <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                      <span className="text-[10px] text-slate-500 block">
-                        SỐ CONTAINER / SIZE - TYPE
-                      </span>
-                      <span className="font-mono text-sm font-black text-slate-900">
-                        {contNo} ({size}&apos;{type})
-                      </span>
-                    </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                      <span className="text-[10px] text-slate-500 block">
-                        TRẠNG THÁI / ĐÓNG HÀNG / AGE
-                      </span>
-                      <span className="font-bold text-slate-900">
-                        {conditionClass} • Loại {stuffingClass} • Năm{' '}
-                        {manufactureYear}
-                      </span>
-                    </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                      <span className="text-[10px] text-slate-500 block">
-                        HÃNG TÀU &amp; SỐ XE
-                      </span>
-                      <span className="font-bold text-slate-900">
-                        {shippingLine} • Xe: {truckNo}
-                      </span>
-                    </div>
-                    <div className="col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                      <span className="text-[10px] text-slate-500 block">
-                        ĐẠI DIỆN KHÁCH HÀNG &amp; PHƯƠNG ÁN VỆ SINH
-                      </span>
-                      <span className="font-bold text-slate-900">
-                        {customerRep} • VS: {cleaningItems.join(' + ')}
-                      </span>
-                    </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                      <span className="text-[10px] text-slate-500 block">
-                        TỔNG THU (ĐÃ GỒM VAT)
-                      </span>
-                      <span className="font-mono font-black text-emerald-700">
-                        {formatVnd(totalAmountInclVat)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* DÒNG XÁC NHẬN HOÀN THÀNH CỦA GIÁM ĐỊNH & VĂN PHÒNG */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 pt-2 border-t border-slate-200">
-                  <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-2">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-emerald-800 block">
-                        Xác nhận Giám định hiện trường:
-                      </span>
-                      <span className="font-bold text-slate-900">
-                        {inspectorName}
-                      </span>
-                      <span className="block font-mono text-[11px] text-slate-600">
-                        Thời gian: {formatViTime(inspectorTime)}
-                      </span>
-                    </div>
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                  </div>
-
-                  <div
-                    className={`flex items-center justify-between rounded-lg border px-3 py-2 ${
-                      officeConfirmed
-                        ? 'border-emerald-200 bg-emerald-50/70'
-                        : 'border-slate-200 bg-slate-50'
-                    }`}
-                  >
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-emerald-800 block">
-                        Xác nhận Văn phòng (Chứng từ &amp; Thu phí):
-                      </span>
-                      <span className="font-bold text-slate-900">
-                        {officeConfirmed ? officeName : 'Đang chờ xác nhận'}
-                      </span>
-                      <span className="block font-mono text-[11px] text-slate-600">
-                        Thời gian:{' '}
-                        {officeConfirmed ? formatViTime(officeTime) : '—'}
-                      </span>
-                    </div>
-                    {officeConfirmed ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                    ) : (
-                      <Clock className="h-5 w-5 text-amber-500 shrink-0" />
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* PHẦN 2: BỘ PHẬN VỆ SINH */}
-            <div className="rounded-xl border border-slate-300 bg-white overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2.5">
-                <div className="flex items-center gap-2 font-black text-slate-900 text-xs uppercase">
-                  <Sparkles className="h-4 w-4 text-blue-600" />
-                  <span>PHẦN 2: BỘ PHẬN VỆ SINH</span>
-                </div>
-                {cleaningDone ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-300">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                    ✓ ĐÃ XÁC NHẬN HOÀN THÀNH
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
-                    <Clock className="h-3.5 w-3.5" />
-                    Đang chờ Bộ phận Vệ sinh thực hiện
-                  </span>
-                )}
-              </div>
-
-              <div className="p-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-slate-600">
-                    Hạng mục vệ sinh chỉ định:{' '}
-                    <strong className="text-slate-900">
-                      {cleaningItems.join(' + ')}
-                    </strong>
-                  </p>
-                  {cleaningWo?.resultNotes && (
-                    <p className="mt-0.5 text-[11px] text-emerald-700 font-semibold">
-                      Kết quả: {cleaningWo.resultNotes}
-                    </p>
-                  )}
-                </div>
-
-                {cleaningDone && (
-                  <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-2">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-emerald-800 block">
-                        Người xác nhận hoàn thành: {cleaningConfirmedBy}
-                      </span>
-                      <span className="font-mono text-[11px] text-slate-600">
-                        Thời gian: {formatViTime(cleaningConfirmedAt)}
-                      </span>
-                    </div>
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* PHẦN 3: BỘ PHẬN XE NÂNG */}
-            <div className="rounded-xl border border-slate-300 bg-white overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2.5">
-                <div className="flex items-center gap-2 font-black text-slate-900 text-xs uppercase">
-                  <MapPin className="h-4 w-4 text-emerald-600" />
-                  <span>PHẦN 3: BỘ PHẬN XE NÂNG (VỊ TRÍ BÃI)</span>
-                </div>
-                {forkliftDone ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-300">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                    ✓ ĐÃ XÁC NHẬN HOÀN THÀNH
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
-                    <Clock className="h-3.5 w-3.5" />
-                    Đang chờ Xe nâng cập nhật vị trí
-                  </span>
-                )}
-              </div>
-
-              <div className="p-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-slate-600">
-                    Vị trí lưu bãi hiện tại:{' '}
-                    <strong className="font-mono text-sm text-blue-700">
-                      {container?.currentBlock
-                        ? container.currentBay
-                          ? `${container.currentBlock} / Bay ${container.currentBay} - Row ${container.currentRow} - Tier ${container.currentTier}`
-                          : `${container.currentBlock} (Cấp Block)`
-                        : container?.status === 'GATED_OUT'
-                        ? 'Đã cấp vỏ / Xuất khỏi bãi'
-                        : 'Chờ Xe nâng hạ vỏ'}
-                    </strong>
-                  </p>
-                  {latestLocation && (
-                    <p className="mt-0.5 text-[11px] text-slate-500">
-                      Tác nghiệp gần nhất: {latestLocation.fromLocation} →{' '}
-                      {latestLocation.toLocation} ({latestLocation.reason})
-                    </p>
-                  )}
-                </div>
-
-                {forkliftDone && (
-                  <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-2">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-emerald-800 block">
-                        Người xác nhận hoàn thành: {forkliftConfirmedBy}
-                      </span>
-                      <span className="font-mono text-[11px] text-slate-600">
-                        Thời gian: {formatViTime(forkliftConfirmedAt)}
-                      </span>
-                    </div>
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* PHẦN 4: BỘ PHẬN BÁO GIÁ - SỬA CHỮA */}
-            <div className="rounded-xl border border-slate-300 bg-white overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2.5">
-                <div className="flex items-center gap-2 font-black text-slate-900 text-xs uppercase">
-                  <Wrench className="h-4 w-4 text-indigo-600" />
-                  <span>PHẦN 4: BỘ PHẬN BÁO GIÁ - SỬA CHỮA</span>
-                </div>
-                {repairDone && quotationDone ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-300">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                    ✓ ĐÃ XÁC NHẬN HOÀN THÀNH
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
-                    <Clock className="h-3.5 w-3.5" />
-                    {container?.needsQuotation
-                      ? 'Đang chờ Báo giá'
-                      : 'Đang chờ Sửa chữa'}
-                  </span>
-                )}
-              </div>
-
-              <div className="p-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  {!hadDamage ? (
-                    <p className="text-emerald-700 font-semibold">
-                      Container đạt chuẩn AV ngay từ đầu vào — Không phát sinh Báo giá / Sửa chữa.
-                    </p>
-                  ) : (
-                    <div className="space-y-1">
-                      <p className="text-slate-700">
-                        Hạng mục hư hỏng / sửa chữa:{' '}
-                        <strong>
-                          {(
-                            repairWo?.items ||
-                            inspectionWo?.items ||
-                            damageRemarks
-                          ).join(', ') || 'Đã nghiệm thu sửa chữa đạt AV'}
-                        </strong>
-                      </p>
-                      {(repairWo?.estimateCost || container?.quotationAmount) && (
-                        <p className="text-slate-700">
-                          Chi phí báo giá M&amp;R:{' '}
-                          <strong className="font-mono text-emerald-700">
-                            {formatVnd(
-                              repairWo?.estimateCost ||
-                                container?.quotationAmount ||
-                                0
-                            )}
-                          </strong>
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {repairDone && quotationDone && (
-                  <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-2">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-emerald-800 block">
-                        Người xác nhận hoàn thành:{' '}
-                        {hadDamage ? repairConfirmedBy : inspectorName}
-                      </span>
-                      <span className="font-mono text-[11px] text-slate-600">
-                        Thời gian:{' '}
-                        {formatViTime(
-                          hadDamage ? repairConfirmedAt : inspectorTime
-                        )}
-                      </span>
-                    </div>
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================================================================ */}
-        {/* DÒNG CUỐI CÙNG: 3 NÚT TÁC NGHIỆP ĐỐI VỚI HỒ SƠ ĐÓ */}
-        {/* IN ĐIỀU ĐỘNG (PHIẾU K80) • IN EEIR • IN PHIẾU THU */}
-        {/* ================================================================ */}
-        <div className="border-t-2 border-slate-800 pt-3.5">
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-            <button
-              type="button"
-              onClick={handlePrintDieuDongK80}
-              className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-xs font-black text-white shadow-xs hover:bg-blue-700"
-            >
-              <QrCode className="h-4 w-4" />
-              IN ĐIỀU ĐỘNG (PHIẾU K80)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setShowReceiptPrintView(false);
-                setTimeout(() => window.print(), 100);
-              }}
-              className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-black text-white shadow-xs hover:bg-slate-800"
-            >
-              <FileSpreadsheet className="h-4 w-4" />
-              IN EEIR ({masterDossierCode})
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowReceiptPrintView(true)}
-              className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-xs font-black text-white shadow-xs hover:bg-emerald-700"
-            >
-              <Receipt className="h-4 w-4" />
-              IN PHIẾU THU
-            </button>
-          </div>
         </div>
+
+        <footer className="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-5 py-3">
+          {latestTicket && onOpenK80Ticket && (
+            <button type="button" onClick={() => onOpenK80Ticket(latestTicket)} className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+              <QrCode className="h-4 w-4" />
+              In phiếu K80
+            </button>
+          )}
+          <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
+            <Printer className="h-4 w-4" />
+            In hồ sơ
+          </button>
+        </footer>
       </div>
     </div>
   );

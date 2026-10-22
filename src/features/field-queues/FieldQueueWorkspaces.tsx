@@ -1,217 +1,150 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Camera,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Eye,
-  FileSpreadsheet,
-  MapPin,
-  QrCode,
-  ShieldAlert,
-  X,
-} from 'lucide-react';
+import { Camera, CheckCircle2, ChevronDown, ChevronUp, FileSpreadsheet, MapPin, QrCode, X } from 'lucide-react';
 import { ContainerRecord } from '../../types/depot';
 import { DepotState, formatVnd } from '../../services/depotStore';
 import {
   approveDamageQuotation,
   completeCleaningTask,
-  completeForkliftShift,
   completeRepairTask,
   executeGateOut,
   updateContainerLocation,
 } from '../../services/depotOperations';
+import { formatLocation } from '../../services/core';
+import {
+  ContainerNo,
+  EMPTY_SLOT,
+  Feedback,
+  inputCls,
+  isSlotComplete,
+  labelCls,
+  primaryBtn,
+  SlotPicker,
+  SlotValue,
+} from '../../components/shared';
+
+export type FieldQueueMode = 'VS_CHO_VE_SINH' | 'XN_CHO_HA_VO' | 'XN_CHO_CAP_VO' | 'BG_CHO_BAO_GIA' | 'SC_CHO_SUA_CHUA';
 
 interface Props {
-  mode:
-    | 'VS_CHO_VE_SINH'
-    | 'XN_CHO_HA_VO'
-    | 'XN_CHO_CAP_VO'
-    | 'XN_DAO_CHUYEN_SUA_CHUA'
-    | 'XN_DAO_CHUYEN_KE_GD'
-    | 'BG_CHO_BAO_GIA'
-    | 'SC_CHO_SUA_CHUA';
+  mode: FieldQueueMode;
   state: DepotState;
   onUpdateState: (next: DepotState) => void;
   initialScannedQr?: string;
-  onOpenDossier?: (masterDossierCode: string) => void;
+  onOpenDossier?: (code: string) => void;
 }
 
-export const FieldQueueWorkspaces: React.FC<Props> = ({
-  mode,
-  state,
-  onUpdateState,
-  initialScannedQr = '',
-  onOpenDossier,
-}) => {
+const sortFifo = (arr: ContainerRecord[]) => [...arr].sort((a, b) => a.gateInAt.localeCompare(b.gateInAt));
+
+// Hàng chờ của từng bộ phận — cùng điều kiện với kiểm tra nghiệp vụ trong services
+export function getFieldQueue(state: DepotState, mode: FieldQueueMode): ContainerRecord[] {
+  const active = state.containers.filter((c) => c.status !== 'GATED_OUT');
+  switch (mode) {
+    case 'VS_CHO_VE_SINH':
+      return sortFifo(active.filter((c) => c.needsCleaning));
+    case 'XN_CHO_HA_VO':
+      // CR-03: có yêu cầu vệ sinh thì phải vệ sinh xong mới vào hàng chờ hạ vỏ
+      return sortFifo(active.filter((c) => c.status === 'WAITING_PLACEMENT' && !c.needsCleaning));
+    case 'XN_CHO_CAP_VO':
+      return sortFifo(
+        active.filter(
+          (c) =>
+            c.status === 'ALLOCATED' &&
+            state.gateOutOrders.some(
+              (o) => o.containerNo === c.containerNo && o.masterDossierCode === c.masterDossierCode && o.status === 'PENDING_FORKLIFT'
+            )
+        )
+      );
+    case 'BG_CHO_BAO_GIA':
+      return sortFifo(active.filter((c) => c.conditionClass === 'DAMAGE' && c.needsQuotation));
+    case 'SC_CHO_SUA_CHUA':
+      return sortFifo(active.filter((c) => c.needsRepair));
+  }
+}
+
+const TITLES: Record<FieldQueueMode, { dept: string; name: string }> = {
+  VS_CHO_VE_SINH: { dept: 'Bộ phận Vệ sinh', name: 'Chờ vệ sinh' },
+  XN_CHO_HA_VO: { dept: 'Bộ phận Xe nâng', name: 'Chờ hạ vỏ' },
+  XN_CHO_CAP_VO: { dept: 'Bộ phận Xe nâng', name: 'Chờ cấp vỏ' },
+  BG_CHO_BAO_GIA: { dept: 'Bộ phận Báo giá', name: 'Chờ báo giá' },
+  SC_CHO_SUA_CHUA: { dept: 'Bộ phận Sửa chữa', name: 'Chờ sửa chữa' },
+};
+
+export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateState, initialScannedQr = '', onOpenDossier }) => {
   const [scannedQr, setScannedQr] = useState(initialScannedQr);
-  const [scannedContainer, setScannedContainer] =
-    useState<ContainerRecord | null>(null);
-
-  // Vị trí bắt buộc cập nhật đối với Bộ phận Xe nâng trước khi XÁC NHẬN HOÀN TẤT (Khởi tạo rỗng để bắt buộc chọn theo trình tự)
-  const [selectedBlock, setSelectedBlock] = useState<string>('');
-  const [bay, setBay] = useState('');
-  const [row, setRow] = useState('');
-  const [tier, setTier] = useState('');
-
-  // Danh sách chờ tác nghiệp mặc định ẨN ở dưới, kích vào mới mở xem chi tiết
-  const [showWaitingList, setShowWaitingList] = useState<boolean>(false);
-  const [expandedDetailId, setExpandedDetailId] = useState<string | null>(null);
-
-  // Camera quét QR trên điện thoại
-  const [cameraOpen, setCameraOpen] = useState<boolean>(false);
+  const [scanned, setScanned] = useState<ContainerRecord | null>(null);
+  const [slot, setSlot] = useState<SlotValue>(EMPTY_SLOT);
+  const [showList, setShowList] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [quote, setQuote] = useState<Record<string, { hours: string; items: string }>>({});
+  const [teamId, setTeamId] = useState('');
+  const [memberIds, setMemberIds] = useState<string[]>([]);
+  const activeTeams = state.repairTeams.filter((t) => t.isActive);
+  const selectedTeam = activeTeams.find((t) => t.id === teamId);
+  // Chọn tổ → mặc định chọn hết nhân viên đang hoạt động trong tổ (DEC-043)
+  const chooseTeam = (id: string) => {
+    setTeamId(id);
+    setMemberIds(activeTeams.find((t) => t.id === id)?.members.filter((m) => m.isActive).map((m) => m.id) || []);
+  };
+  const repairWoOf = (c: ContainerRecord) =>
+    state.workOrders.find(
+      (w) =>
+        w.masterDossierCode === c.masterDossierCode &&
+        w.category === 'REPAIR' &&
+        w.workStatus === 'OPEN'
+    );
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const [quoteAmount, setQuoteAmount] = useState<number>(1850000);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const queue = getFieldQueue(state, mode);
+  const title = TITLES[mode];
 
   const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
     setCameraOpen(false);
   };
-
-  useEffect(() => {
-    return () => stopCamera();
-  }, []);
-
-  // Reset trạng thái khi chuyển qua lại giữa các menu bộ phận
+  useEffect(() => () => stopCamera(), []);
   useEffect(() => {
     stopCamera();
-    setScannedContainer(null);
-    setShowWaitingList(false);
-    setExpandedDetailId(null);
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    setSelectedBlock('');
-    setBay('');
-    setRow('');
-    setTier('');
+    setScanned(null);
+    setShowList(false);
+    setError(null);
+    setSuccess(null);
+    setSlot(EMPTY_SLOT);
   }, [mode]);
 
-  // Lọc hàng chờ của từng bộ phận (FIFO)
-  const sortFifo = <T extends { gateInAt: string }>(arr: T[]): T[] =>
-    [...arr].sort(
-      (a, b) => new Date(a.gateInAt).getTime() - new Date(b.gateInAt).getTime()
+  // Chỉ nhận container đang nằm trong hàng chờ của bộ phận này
+  const lookup = (raw: string) => {
+    setError(null);
+    setSuccess(null);
+    const code = raw.trim().toUpperCase();
+    if (!code) return setError('Vui lòng quét hoặc nhập mã QR trên phiếu K80.');
+    const found = queue.find(
+      (c) =>
+        c.activeQrCode.toUpperCase() === code ||
+        c.masterDossierCode.toUpperCase() === code ||
+        c.outDossierCode?.toUpperCase() === code ||
+        c.containerNo === code
     );
-
-  const cleaningQueue = sortFifo(
-    state.containers.filter(
-      (c) => c.status !== 'GATED_OUT' && c.needsCleaning
-    )
-  );
-  const forkliftHaVoQueue = sortFifo(
-    state.containers.filter((c) => c.status === 'WAITING_PLACEMENT')
-  );
-  const forkliftCapVoQueue = sortFifo(
-    state.containers.filter((c) => c.status === 'ALLOCATED')
-  );
-  const forkliftShiftRepairQueue = sortFifo(
-    state.containers.filter(
-      (c) => c.status !== 'GATED_OUT' && c.forkliftShiftTask === 'HA_SUA_CHUA'
-    )
-  );
-  const forkliftShiftRackQueue = sortFifo(
-    state.containers.filter(
-      (c) =>
-        c.status !== 'GATED_OUT' && c.forkliftShiftTask === 'HA_KE_GIAM_DINH'
-    )
-  );
-  const quotationQueue = sortFifo(
-    state.containers.filter(
-      (c) =>
-        c.status !== 'GATED_OUT' &&
-        c.conditionClass === 'DAMAGE' &&
-        c.needsQuotation
-    )
-  );
-  const repairQueue = sortFifo(
-    state.containers.filter(
-      (c) => c.status !== 'GATED_OUT' && c.needsRepair
-    )
-  );
-
-  const currentQueue: ContainerRecord[] =
-    mode === 'VS_CHO_VE_SINH'
-      ? cleaningQueue
-      : mode === 'XN_CHO_HA_VO'
-      ? forkliftHaVoQueue
-      : mode === 'XN_CHO_CAP_VO'
-      ? forkliftCapVoQueue
-      : mode === 'XN_DAO_CHUYEN_SUA_CHUA'
-      ? forkliftShiftRepairQueue
-      : mode === 'XN_DAO_CHUYEN_KE_GD'
-      ? forkliftShiftRackQueue
-      : mode === 'BG_CHO_BAO_GIA'
-      ? quotationQueue
-      : repairQueue;
-
-  const isForkliftMode =
-    mode === 'XN_CHO_HA_VO' ||
-    mode === 'XN_CHO_CAP_VO' ||
-    mode === 'XN_DAO_CHUYEN_SUA_CHUA' ||
-    mode === 'XN_DAO_CHUYEN_KE_GD';
-
-  // Tìm container trong hàng chờ khi quét mã QR trên phiếu K80
-  const lookupContainerByQr = (rawCode: string) => {
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    const code = rawCode.trim().toUpperCase();
-    if (!code) {
-      setErrorMsg('Vui lòng quét hoặc nhập Mã QR trên tờ phiếu K80.');
-      return;
-    }
-
-    const found =
-      currentQueue.find(
-        (c) =>
-          c.activeQrCode.toUpperCase() === code ||
-          c.masterDossierCode.toUpperCase() === code ||
-          c.containerNo.toUpperCase() === code
-      ) ||
-      state.containers.find(
-        (c) =>
-          c.status !== 'GATED_OUT' &&
-          (c.activeQrCode.toUpperCase() === code ||
-            c.masterDossierCode.toUpperCase() === code ||
-            c.containerNo.toUpperCase() === code)
-      );
-
     if (!found) {
-      setScannedContainer(null);
-      setErrorMsg(
-        `Không tìm thấy container nào khớp với mã QR "${code}" trong danh sách chờ.`
-      );
-      return;
+      setScanned(null);
+      return setError(`Mã "${code}" không có trong danh sách ${title.name.toLowerCase()} của ${title.dept}.`);
     }
-
     setScannedQr(found.activeQrCode);
-    setScannedContainer(found);
-    setSelectedBlock('');
-    setBay('');
-    setRow('');
-    setTier('');
+    setScanned(found);
+    setSlot(EMPTY_SLOT);
   };
 
   useEffect(() => {
-    if (initialScannedQr) {
-      setScannedQr(initialScannedQr);
-      lookupContainerByQr(initialScannedQr);
-    }
+    if (initialScannedQr) lookup(initialScannedQr);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialScannedQr]);
 
-  const handleOpenCameraScan = async () => {
-    setErrorMsg(null);
+  const openCamera = async () => {
+    setError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-        audio: false,
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
       streamRef.current = stream;
       setCameraOpen(true);
       setTimeout(() => {
@@ -221,748 +154,282 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({
         }
       }, 50);
     } catch {
-      // Nếu thiết bị không có camera trực tiếp, tự động quét container đầu tiên trong hàng chờ
-      if (currentQueue[0]) {
-        lookupContainerByQr(currentQueue[0].activeQrCode);
-      } else {
-        setErrorMsg('Hiện không có container nào trong hàng chờ để quét.');
-      }
+      setError('Thiết bị không mở được camera. Vui lòng nhập mã QR thủ công.');
     }
   };
 
-  // Xử lý khi bấm nút XÁC NHẬN HOÀN TẤT sau khi đã quét QR (và cập nhật VỊ TRÍ với Xe nâng)
-  const handleConfirmComplete = () => {
-    if (!scannedContainer) return;
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
+  const run = (fn: () => DepotState, message: string) => {
+    setError(null);
+    setSuccess(null);
     try {
-      if (mode === 'VS_CHO_VE_SINH') {
-        const next = completeCleaningTask(state, {
-          containerNo: scannedContainer.containerNo,
-          scannedQrCode: scannedContainer.activeQrCode,
-        });
-        onUpdateState(next);
-        setSuccessMsg(
-          `Đã xác nhận hoàn tất VỆ SINH cho container ${scannedContainer.containerNo} (Hồ sơ: ${scannedContainer.masterDossierCode})!`
-        );
-        setScannedContainer(null);
-        setScannedQr('');
-      } else if (mode === 'XN_CHO_HA_VO') {
-        if (!selectedBlock) {
-          throw new Error(
-            'Bộ phận Xe nâng bắt buộc chọn VỊ TRÍ (Block / Bay-Row-Tier) trước khi Xác nhận hoàn tất.'
-          );
-        }
-        const next = updateContainerLocation(state, {
-          containerNo: scannedContainer.containerNo,
-          scannedQrCode: scannedContainer.activeQrCode,
-          blockCode: selectedBlock,
-          bay,
-          row,
-          tier,
-          reason: `Xe nâng quét QR K80 (${scannedContainer.activeQrCode}) hạ vỏ vào vị trí ${selectedBlock}`,
-        });
-        onUpdateState(next);
-        setSuccessMsg(
-          `Đã cập nhật VỊ TRÍ (${selectedBlock}${
-            bay ? ` / ${bay}-${row}-${tier}` : ''
-          }) và xác nhận hoàn tất HẠ VỎ cho container ${
-            scannedContainer.containerNo
-          }!`
-        );
-        setScannedContainer(null);
-        setScannedQr('');
-      } else if (
-        mode === 'XN_DAO_CHUYEN_SUA_CHUA' ||
-        mode === 'XN_DAO_CHUYEN_KE_GD'
-      ) {
-        if (!selectedBlock) {
-          throw new Error(
-            'Bộ phận Xe nâng bắt buộc chọn VỊ TRÍ khu vực đảo chuyển trước khi Xác nhận hoàn tất.'
-          );
-        }
-        let next = completeForkliftShift(state, {
-          containerNo: scannedContainer.containerNo,
-          scannedQrCode: scannedContainer.activeQrCode,
-          shiftType:
-            mode === 'XN_DAO_CHUYEN_SUA_CHUA'
-              ? 'HA_SUA_CHUA'
-              : 'HA_KE_GIAM_DINH',
-          targetBlock: selectedBlock,
-        });
-        if (bay && row && tier) {
-          next = updateContainerLocation(next, {
-            containerNo: scannedContainer.containerNo,
-            blockCode: selectedBlock,
-            bay,
-            row,
-            tier,
-            reason: 'Cập nhật vị trí chi tiết sau khi đảo chuyển',
-          });
-        }
-        onUpdateState(next);
-        setSuccessMsg(
-          `Đã cập nhật VỊ TRÍ (${selectedBlock}${
-            bay ? ` / ${bay}-${row}-${tier}` : ''
-          }) và hoàn tất ĐẢO CHUYỂN cho container ${
-            scannedContainer.containerNo
-          }!`
-        );
-        setScannedContainer(null);
-        setScannedQr('');
-      } else if (mode === 'XN_CHO_CAP_VO') {
-        if (!selectedBlock) {
-          throw new Error(
-            'Vui lòng xác nhận VỊ TRÍ lấy vỏ trước khi Xác nhận hoàn tất Cấp vỏ.'
-          );
-        }
-        const next = executeGateOut(state, {
-          gateOutType: 'EMPTY_RELEASE',
-          bookingNo:
-            scannedContainer.allocatedBookingNo ||
-            state.bookings[0]?.bookingNo ||
-            'BK-MSK-2026-109',
-          containerNo: scannedContainer.containerNo,
-          truckNo: scannedContainer.allocatedTruckNo || '15H-686.88',
-          receiverRep: scannedContainer.customerRep || 'Khách nhận vỏ',
-          feeAmount: 0,
-          paymentCategory: 'TTS',
-          ttsNote: `Xe nâng xác nhận lấy vỏ từ vị trí ${selectedBlock} và hoàn tất CẤP VỎ`,
-          documentsVerified: true,
-        });
-        onUpdateState(next);
-        setSuccessMsg(
-          `Đã xác nhận lấy vỏ tại vị trí ${selectedBlock} và hoàn tất CẤP VỎ (Out khỏi bãi) cho container ${scannedContainer.containerNo}!`
-        );
-        setScannedContainer(null);
-        setScannedQr('');
-      } else if (mode === 'SC_CHO_SUA_CHUA') {
-        const next = completeRepairTask(state, {
-          containerNo: scannedContainer.containerNo,
-          scannedQrCode: scannedContainer.activeQrCode,
-        });
-        onUpdateState(next);
-        setSuccessMsg(
-          `Đã xác nhận hoàn tất SỬA CHỮA cho container ${scannedContainer.containerNo} -> Chuyển trạng thái sang AV!`
-        );
-        setScannedContainer(null);
-        setScannedQr('');
-      }
+      onUpdateState(fn());
+      setSuccess(message);
+      setScanned(null);
+      setScannedQr('');
+      setSlot(EMPTY_SLOT);
+      setTeamId('');
+      setMemberIds([]);
     } catch (err) {
-      setErrorMsg(
-        err instanceof Error ? err.message : 'Lỗi xác nhận hoàn tất'
+      setError(err instanceof Error ? err.message : 'Lỗi xác nhận hoàn tất');
+    }
+  };
+
+  const confirm = () => {
+    if (!scanned) return;
+    const no = scanned.containerNo;
+    if (mode === 'VS_CHO_VE_SINH') {
+      run(() => completeCleaningTask(state, { containerNo: no }), `Đã xác nhận hoàn tất VỆ SINH cho ${no}.`);
+    } else if (mode === 'XN_CHO_HA_VO') {
+      run(
+        () =>
+          updateContainerLocation(state, {
+            containerNo: no,
+            ...slot,
+            reason: `Xe nâng quét QR K80 (${scanned.activeQrCode}) hạ vỏ`,
+          }),
+        `Đã hạ vỏ ${no} vào ${slot.blockCode}${slot.bay ? ` / ${slot.bay}-${slot.row}-${slot.tier}` : ''}.`
+      );
+    } else if (mode === 'XN_CHO_CAP_VO') {
+      run(
+        () => executeGateOut(state, { containerNo: no, pickupBlock: scanned.currentBlock || undefined }),
+        `Đã hoàn tất CẤP VỎ — ${no} đã OUT khỏi bãi.`
+      );
+    } else if (mode === 'SC_CHO_SUA_CHUA') {
+      run(
+        () => completeRepairTask(state, { containerNo: no, teamId, memberIds }),
+        `Đã hoàn tất SỬA CHỮA ${no} → AV (${selectedTeam?.name}).`
       );
     }
   };
 
-  const titles: Record<
-    Props['mode'],
-    { dept: string; name: string; count: number }
-  > = {
-    VS_CHO_VE_SINH: {
-      dept: 'BỘ PHẬN VỆ SINH',
-      name: 'CHỜ VỆ SINH',
-      count: cleaningQueue.length,
-    },
-    XN_CHO_HA_VO: {
-      dept: 'BỘ PHẬN XE NÂNG',
-      name: 'CHỜ HẠ VỎ',
-      count: forkliftHaVoQueue.length,
-    },
-    XN_CHO_CAP_VO: {
-      dept: 'BỘ PHẬN XE NÂNG',
-      name: 'CHỜ CẤP VỎ',
-      count: forkliftCapVoQueue.length,
-    },
-    XN_DAO_CHUYEN_SUA_CHUA: {
-      dept: 'BỘ PHẬN XE NÂNG — ĐẢO CHUYỂN',
-      name: '+ HẠ SỬA CHỮA',
-      count: forkliftShiftRepairQueue.length,
-    },
-    XN_DAO_CHUYEN_KE_GD: {
-      dept: 'BỘ PHẬN XE NÂNG — ĐẢO CHUYỂN',
-      name: '+ HẠ KỆ GIÁM ĐỊNH',
-      count: forkliftShiftRackQueue.length,
-    },
-    BG_CHO_BAO_GIA: {
-      dept: 'BỘ PHẬN BÁO GIÁ',
-      name: 'CHỜ BÁO GIÁ',
-      count: quotationQueue.length,
-    },
-    SC_CHO_SUA_CHUA: {
-      dept: 'BỘ PHẬN SỬA CHỮA',
-      name: 'CHỜ SỬA CHỮA',
-      count: repairQueue.length,
-    },
-  };
-
-  const headerInfo = titles[mode];
-
-  // Riêng màn hình BỘ PHẬN BÁO GIÁ (Văn phòng/Báo giá duyệt dự toán cont DAMAGE)
   if (mode === 'BG_CHO_BAO_GIA') {
     return (
       <div className="mx-auto w-full max-w-2xl space-y-3 pb-16">
-        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
-          <div>
-            <span className="text-[11px] font-bold text-slate-500 block">
-              {headerInfo.dept}
-            </span>
-            <h2 className="text-sm font-bold text-slate-900">
-              {headerInfo.name}
-            </h2>
-          </div>
-          <span className="rounded bg-blue-600 px-2.5 py-1 text-xs font-bold text-white">
-            Đang chờ: {headerInfo.count} cont
-          </span>
-        </div>
-
-        {errorMsg && (
-          <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-            <ShieldAlert className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
-        {successMsg && (
-          <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        <div className="space-y-2.5">
-          {quotationQueue.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-xs text-slate-400">
-              Không có container DAMAGE nào đang chờ Báo giá.
-            </div>
-          ) : (
-            quotationQueue.map((c) => (
-              <div
-                key={c.id}
-                className="rounded-lg border border-slate-200 bg-white p-4 space-y-3 text-xs"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onOpenDossier?.(c.masterDossierCode)}
-                      className="rounded bg-blue-600 px-2 py-0.5 font-mono font-bold text-white"
-                    >
-                      {c.masterDossierCode}
-                    </button>
-                    <span className="font-mono text-sm font-bold text-slate-900">
-                      {c.containerNo} ({c.size}&apos;{c.type} • AGE{' '}
-                      {c.manufactureYear})
-                    </span>
-                  </div>
-                  <span className="rounded bg-rose-100 px-2 py-0.5 font-bold text-rose-700">
-                    DAMAGE
+        <QueueHeader dept={title.dept} name={title.name} count={queue.length} />
+        <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
+        {queue.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-xs text-slate-500">
+            Không có container DAMAGE nào đang chờ báo giá.
+          </p>
+        ) : (
+          queue.map((c) => {
+            const q = quote[c.id] || { hours: '', items: c.damageRemarks.join(', ') };
+            const setQ = (patch: Partial<typeof q>) => setQuote((prev) => ({ ...prev, [c.id]: { ...q, ...patch } }));
+            return (
+              <div key={c.id} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
+                    <span className="text-slate-500">{c.size}/{c.type} • AGE {c.manufactureYear} • {formatLocation(c)}</span>
                   </span>
-                </div>
-
-                <p className="text-slate-700">
-                  Lỗi hư hỏng:{' '}
-                  <strong>
-                    {c.damageRemarks.join(', ') || 'Cần báo giá sửa chữa'}
-                  </strong>
-                </p>
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={quoteAmount}
-                    onChange={(e) => setQuoteAmount(Number(e.target.value))}
-                    className="w-36 rounded border border-slate-300 px-3 py-2 font-bold"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = approveDamageQuotation(state, {
-                        containerNo: c.containerNo,
-                        quotationAmount: Number(quoteAmount),
-                        quotationItems:
-                          c.damageRemarks.length > 0
-                            ? c.damageRemarks
-                            : ['Sửa chữa hư hỏng tổng hợp'],
-                      });
-                      onUpdateState(next);
-                      setSuccessMsg(
-                        `Đã duyệt báo giá (${formatVnd(quoteAmount)}) cho ${
-                          c.containerNo
-                        } -> Đẩy sang CHỜ SỬA CHỮA & Xe nâng HẠ SỬA CHỮA.`
-                      );
-                    }}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded bg-blue-600 py-2 font-bold text-white hover:bg-blue-700"
-                  >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    Xác Nhận Báo Giá
+                  <button type="button" onClick={() => onOpenDossier?.(c.masterDossierCode)} className="font-mono text-blue-700 hover:underline">
+                    {c.masterDossierCode}
                   </button>
                 </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
+                  <label className="block sm:col-span-3">
+                    <span className={labelCls}>Remark sửa chữa * (phân cách bằng dấu phẩy)</span>
+                    <input value={q.items} onChange={(e) => setQ({ items: e.target.value })} placeholder="Móp vách, Hư sàn..." className={inputCls} />
+                  </label>
+                  <label className="block">
+                    <span className={labelCls}>Giờ công sửa chữa *</span>
+                    <input type="number" min={0} step={0.5} inputMode="decimal" value={q.hours} onChange={(e) => setQ({ hours: e.target.value })} placeholder="VD: 2.5" className={`${inputCls} font-mono`} />
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  disabled={!q.items.trim() || !(Number(q.hours) > 0)}
+                  onClick={() =>
+                    run(
+                      () =>
+                        approveDamageQuotation(state, {
+                          containerNo: c.containerNo,
+                          quotationItems: q.items.split(','),
+                          laborHours: Number(q.hours),
+                        }),
+                      `Đã cập nhật ${c.containerNo} → Chờ sửa chữa.`
+                    )
+                  }
+                  className={`${primaryBtn} w-full`}
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Cập nhật sang Chờ sửa chữa
+                </button>
               </div>
-            ))
-          )}
-        </div>
+            );
+          })
+        )}
       </div>
     );
   }
 
-  // ============================================================================
-  // GIAO DIỆN TỐI ƯU MOBILE CHO BỘ PHẬN XE NÂNG - VỆ SINH - SỬA CHỮA:
-  // 1. Chỉ hiển thị "Quét Mã QR Trên Phiếu K80 Để Xác Nhận Nhanh:"
-  // 2. Khi quét scan -> hiển thị thông tin sơ bộ của container + cập nhật VỊ TRÍ (với Xe nâng) + nút XÁC NHẬN HOÀN TẤT
-  // 3. Danh sách chờ tác nghiệp ẩn ở dưới, kích vào mới mở xem chi tiết
-  // ============================================================================
+  const needsSlot = mode === 'XN_CHO_HA_VO';
+  const isRepair = mode === 'SC_CHO_SUA_CHUA';
+  const canConfirm = scanned && (!needsSlot || isSlotComplete(slot)) && (!isRepair || (selectedTeam && memberIds.length > 0));
+
+  const scannedRepair = scanned && isRepair ? repairWoOf(scanned) : undefined;
+
   return (
-    <div className="mx-auto w-full max-w-lg space-y-4 pb-16">
-      {/* TIÊU ĐỀ GỌN NHẸ */}
-      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5">
-        <div>
-          <span className="text-[10px] font-bold uppercase text-blue-700 block">
-            {headerInfo.dept} (Mobile)
-          </span>
-          <h2 className="text-sm font-bold text-slate-900">{headerInfo.name}</h2>
-        </div>
-        <span className="rounded bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
-          Chờ: {headerInfo.count}
+    <div className="mx-auto w-full max-w-lg space-y-3 pb-16">
+      <QueueHeader dept={title.dept} name={title.name} count={queue.length} />
+      <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
+
+      <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+        <span className="flex items-center gap-1.5 text-xs font-bold uppercase text-slate-700">
+          <QrCode className="h-4 w-4 text-slate-500" />
+          Quét mã QR trên phiếu K80
         </span>
-      </div>
-
-      {errorMsg && (
-        <div className="flex items-start justify-between gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-          <div className="flex items-start gap-2">
-            <ShieldAlert className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
-            <span>{errorMsg}</span>
-          </div>
-          <button type="button" onClick={() => setErrorMsg(null)}>
-            <X className="h-4 w-4 text-red-500" />
-          </button>
-        </div>
-      )}
-
-      {successMsg && (
-        <div className="flex items-start justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
-          <div className="flex items-start gap-2">
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
-            <span className="font-medium">{successMsg}</span>
-          </div>
-          <button type="button" onClick={() => setSuccessMsg(null)}>
-            <X className="h-4 w-4 text-emerald-600" />
-          </button>
-        </div>
-      )}
-
-      {/* 1. KHUNG CHÍNH: QUÉT MÃ QR TRÊN PHIẾU K80 ĐỂ XÁC NHẬN NHANH */}
-      <div className="rounded-lg border-2 border-blue-600 bg-white p-4 shadow-xs space-y-3">
-        <label className="flex items-center gap-1.5 text-xs font-bold uppercase text-blue-900">
-          <QrCode className="h-4 w-4 text-blue-600" />
-          Quét Mã QR Trên Phiếu K80 Để Xác Nhận Nhanh:
-        </label>
-
         {cameraOpen ? (
-          <div className="space-y-2 rounded-lg bg-black p-2">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="h-48 w-full rounded object-cover"
-            />
-            <div className="flex gap-2">
-              {currentQueue[0] && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    stopCamera();
-                    lookupContainerByQr(currentQueue[0].activeQrCode);
-                  }}
-                  className="flex-1 rounded-lg bg-blue-600 py-2.5 text-xs font-bold text-white"
-                >
-                  Nhận diện QR ({currentQueue[0].activeQrCode})
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={stopCamera}
-                className="rounded-lg bg-slate-700 px-3 py-2.5 text-xs font-semibold text-white"
-              >
-                Đóng Camera
-              </button>
-            </div>
+          <div className="space-y-2 rounded-md bg-black p-2">
+            <video ref={videoRef} autoPlay playsInline muted className="h-48 w-full rounded object-cover" />
+            <button type="button" onClick={stopCamera} className="w-full rounded-md bg-slate-700 py-2 text-xs font-semibold text-white">
+              Đóng camera
+            </button>
           </div>
         ) : (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              lookupContainerByQr(scannedQr);
-            }}
-            className="space-y-2"
-          >
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={scannedQr}
-                onChange={(e) => setScannedQr(e.target.value.toUpperCase())}
-                placeholder="Quét hoặc nhập Mã QR K80 / Mã Hồ Sơ / Số Cont..."
-                className="flex-1 rounded-lg border border-slate-300 px-3 py-2.5 font-mono text-xs font-bold uppercase text-slate-900"
-              />
-              <button
-                type="submit"
-                className="rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 shrink-0"
-              >
-                Quét Scan
-              </button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={handleOpenCameraScan}
-                className="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-              >
-                <Camera className="h-3.5 w-3.5" />
-                Mở Camera Quét QR
-              </button>
-
-              {/* Gợi ý quét nhanh phiếu K80 đang chờ khi thử nghiệm trên máy tính */}
-              {currentQueue.slice(0, 2).map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => lookupContainerByQr(c.activeQrCode)}
-                  className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-mono text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
-                >
-                  Quét thử: {c.activeQrCode}
-                </button>
-              ))}
-            </div>
+          <form onSubmit={(e) => { e.preventDefault(); lookup(scannedQr); }} className="flex gap-2">
+            <input
+              value={scannedQr}
+              onChange={(e) => setScannedQr(e.target.value.toUpperCase())}
+              placeholder="Mã QR K80 / Mã hồ sơ / Số cont..."
+              className={`${inputCls} font-mono uppercase`}
+            />
+            <button type="submit" className={`${primaryBtn} shrink-0`}>Quét</button>
+            <button type="button" onClick={openCamera} aria-label="Mở camera quét QR" className="shrink-0 rounded-md border border-slate-300 px-3 text-slate-600 hover:bg-slate-50">
+              <Camera className="h-4 w-4" />
+            </button>
           </form>
         )}
       </div>
 
-      {/* 2. KHI QUÉT SCAN XONG -> HIỂN THỊ THÔNG TIN SƠ BỘ CỦA CONTAINER + CẬP NHẬT VỊ TRÍ (VỚI XE NÂNG) + NÚT XÁC NHẬN HOÀN TẤT */}
-      {scannedContainer && (
-        <div className="rounded-lg border-2 border-emerald-600 bg-white p-4 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <div>
-              <span className="text-[11px] font-semibold text-emerald-700 block">
-                Thông tin sơ bộ Container vừa quét QR
-              </span>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="font-mono text-base font-bold text-slate-900">
-                  {scannedContainer.containerNo}
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onOpenDossier?.(scannedContainer.masterDossierCode)
-                  }
-                  className="rounded bg-blue-100 px-2 py-0.5 font-mono text-xs font-bold text-blue-800 hover:bg-blue-200"
-                >
-                  Hồ sơ: {scannedContainer.masterDossierCode}
-                </button>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setScannedContainer(null)}
-              className="rounded border border-slate-200 p-1 text-slate-400 hover:text-slate-700"
-            >
+      {scanned && (
+        <div className="space-y-3 rounded-lg border border-blue-600 bg-white p-4 text-xs">
+          <div className="flex items-center justify-between">
+            <ContainerNo no={scanned.containerNo} locked={scanned.isOnHold} lockReason={scanned.holdReason} className="text-base" />
+            <button type="button" onClick={() => setScanned(null)} aria-label="Bỏ chọn" className="text-slate-400 hover:text-slate-700">
               <X className="h-4 w-4" />
             </button>
           </div>
-
-          {/* THÔNG TIN SƠ BỘ CỦA CONTAINER */}
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="rounded border border-slate-200 bg-slate-50 p-2.5">
-              <span className="text-[11px] text-slate-500 block">
-                Size / Type / AGE
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <dt className="text-slate-500">Size / Type / AGE</dt>
+            <dd className="font-semibold">{scanned.size}/{scanned.type} • {scanned.manufactureYear}</dd>
+            <dt className="text-slate-500">Trạng thái / Đóng hàng</dt>
+            <dd className="font-semibold">{scanned.conditionClass} • {scanned.stuffingClass}</dd>
+            <dt className="text-slate-500">Vệ sinh</dt>
+            <dd className="font-semibold">{scanned.cleaningItems.join(', ')}</dd>
+            <dt className="text-slate-500">Vị trí hiện tại</dt>
+            <dd className="font-mono font-semibold">{formatLocation(scanned)}</dd>
+            {mode === 'XN_CHO_CAP_VO' && (
+              <>
+                <dt className="text-slate-500">Số xe nhận vỏ</dt>
+                <dd className="font-bold text-slate-900">{scanned.allocatedTruckNo || '-'}</dd>
+                <dt className="text-slate-500">SĐT lái xe</dt>
+                <dd className="font-bold text-slate-900">
+                  {scanned.allocatedDriverPhone ? <a href={`tel:${scanned.allocatedDriverPhone}`} className="text-blue-700">{scanned.allocatedDriverPhone}</a> : '-'}
+                </dd>
+                <dt className="text-slate-500">Booking</dt>
+                <dd className="font-mono">{scanned.allocatedBookingNo || '-'}</dd>
+              </>
+            )}
+            {isRepair && (
+              <>
+                <dt className="text-slate-500">Remark sửa chữa</dt>
+                <dd className="font-semibold">{(scannedRepair?.items || scanned.quotationItems || []).join(', ') || '-'}</dd>
+                <dt className="text-slate-500">Giờ công</dt>
+                <dd className="font-semibold">{scannedRepair?.laborHours ?? scanned.quotationLaborHours ?? '-'}</dd>
+              </>
+            )}
+            <dt className="text-slate-500">Hồ sơ</dt>
+            <dd>
+              <button type="button" onClick={() => onOpenDossier?.(scanned.masterDossierCode)} className="font-mono text-blue-700 hover:underline">
+                {scanned.outDossierCode || scanned.masterDossierCode}
+              </button>
+            </dd>
+          </dl>
+          {needsSlot && (
+            <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+              <span className="flex items-center gap-1.5 font-bold text-slate-800">
+                <MapPin className="h-4 w-4 text-slate-500" />
+                Vị trí hạ vỏ *
               </span>
-              <span className="font-mono font-bold text-slate-900">
-                {scannedContainer.size}&apos;{scannedContainer.type} • Năm{' '}
-                {scannedContainer.manufactureYear}
-              </span>
+              <SlotPicker state={state} value={slot} onChange={setSlot} />
             </div>
-
-            <div className="rounded border border-slate-200 bg-slate-50 p-2.5">
-              <span className="text-[11px] text-slate-500 block">
-                Trạng thái & Đóng hàng
-              </span>
-              <span
-                className={`font-bold ${
-                  scannedContainer.conditionClass === 'DAMAGE'
-                    ? 'text-rose-700'
-                    : 'text-emerald-700'
-                }`}
-              >
-                {scannedContainer.conditionClass}
-              </span>{' '}
-              • Đóng hàng: <strong>{scannedContainer.stuffingClass}</strong>
-            </div>
-
-            <div className="col-span-2 rounded border border-slate-200 bg-slate-50 p-2.5">
-              <span className="text-[11px] text-slate-500 block">
-                Tình trạng vệ sinh / Ghi chú
-              </span>
-              <span className="font-bold text-slate-900">
-                {scannedContainer.cleaningItems.join(', ')}
-              </span>
-              {scannedContainer.damageRemarks.length > 0 && (
-                <p className="mt-0.5 text-[11px] text-rose-700">
-                  Hư hỏng: {scannedContainer.damageRemarks.join(', ')}
-                </p>
+          )}
+          {isRepair && (
+            <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+              <label className="block">
+                <span className={labelCls}>Tổ sửa chữa *</span>
+                <select value={teamId} onChange={(e) => chooseTeam(e.target.value)} className={inputCls}>
+                  <option value="">-- Chọn tổ --</option>
+                  {activeTeams.map((t) => <option key={t.id} value={t.id}>{t.code} — {t.name}</option>)}
+                </select>
+              </label>
+              {activeTeams.length === 0 && <p className="text-[11px] text-amber-700">Chưa có tổ sửa chữa. Admin cấu hình tại Danh mục chung → Sửa chữa.</p>}
+              {selectedTeam && (
+                <fieldset>
+                  <legend className={labelCls}>Nhân viên thực hiện * ({memberIds.length}/{selectedTeam.members.filter((m) => m.isActive).length})</legend>
+                  <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                    {selectedTeam.members.filter((m) => m.isActive).map((m) => (
+                      <label key={m.id} className="flex items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5">
+                        <input
+                          type="checkbox"
+                          checked={memberIds.includes(m.id)}
+                          onChange={(e) => setMemberIds((prev) => (e.target.checked ? [...prev, m.id] : prev.filter((x) => x !== m.id)))}
+                        />
+                        {m.fullName}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
               )}
             </div>
-          </div>
-
-          {/* VỚI BỘ PHẬN XE NÂNG: YÊU CẦU CẬP NHẬT THÊM CẢ VỊ TRÍ THEO TỪNG BƯỚC TRƯỚC KHI HIỂN THỊ NÚT XÁC NHẬN HOÀN TẤT */}
-          {isForkliftMode && (
-            <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-2.5 text-xs">
-              <label className="flex items-center gap-1.5 font-bold text-blue-950">
-                <MapPin className="h-4 w-4 text-blue-600" />
-                Cập nhật VỊ TRÍ Container trước khi Xác nhận hoàn tất *
-              </label>
-
-              <div>
-                <span className="mb-1 block text-[11px] font-semibold text-slate-600">
-                  1. Chọn Khu / Block (Chọn xong mới mở phần tiếp theo):
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {state.yardBlocks.map((b) => (
-                    <button
-                      key={b.blockCode}
-                      type="button"
-                      onClick={() => {
-                        setSelectedBlock(b.blockCode);
-                        setBay('');
-                        setRow('');
-                        setTier('');
-                      }}
-                      className={`rounded-lg border py-2 text-xs font-bold transition ${
-                        selectedBlock === b.blockCode
-                          ? 'border-blue-600 bg-blue-600 text-white'
-                          : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      {b.blockCode}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* CHỈ HIỂN THỊ CHỌN BAY / ROW / TIER KHI ĐÃ CHỌN KHU / BLOCK */}
-              {selectedBlock !== '' &&
-                (() => {
-                  const activeBlockCfg =
-                    state.yardBlocks.find((b) => b.blockCode === selectedBlock) ||
-                    state.yardBlocks[0];
-                  const bayOptions = Array.from(
-                    { length: activeBlockCfg?.maxBay || 10 },
-                    (_, i) => String(i + 1).padStart(2, '0')
-                  );
-                  const rowOptions = Array.from(
-                    { length: activeBlockCfg?.maxRow || 6 },
-                    (_, i) => String(i + 1).padStart(2, '0')
-                  );
-                  const tierOptions = Array.from(
-                    { length: activeBlockCfg?.maxTier || 5 },
-                    (_, i) => String(i + 1).padStart(2, '0')
-                  );
-
-                  return (
-                    <div className="grid grid-cols-3 gap-2 pt-1 border-t border-blue-100">
-                      <div>
-                        <span className="mb-1 block text-[10px] text-slate-500">
-                          2. Bay (Theo cấu hình)
-                        </span>
-                        <select
-                          value={bay}
-                          onChange={(e) => {
-                            setBay(e.target.value);
-                            if (!e.target.value) {
-                              setRow('');
-                              setTier('');
-                            }
-                          }}
-                          className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
-                        >
-                          <option value="">-- Cấp Block --</option>
-                          {bayOptions.map((b) => (
-                            <option key={b} value={b}>
-                              Bay {b}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      {bay !== '' && (
-                        <div>
-                          <span className="mb-1 block text-[10px] text-slate-500">
-                            3. Row (Theo cấu hình) *
-                          </span>
-                          <select
-                            value={row}
-                            onChange={(e) => {
-                              setRow(e.target.value);
-                              if (!e.target.value) setTier('');
-                            }}
-                            className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
-                          >
-                            <option value="">-- Chọn Row --</option>
-                            {rowOptions.map((r) => (
-                              <option key={r} value={r}>
-                                Row {r}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                      {bay !== '' && row !== '' && (
-                        <div>
-                          <span className="mb-1 block text-[10px] text-slate-500">
-                            4. Tier (Theo cấu hình) *
-                          </span>
-                          <select
-                            value={tier}
-                            onChange={(e) => setTier(e.target.value)}
-                            className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 font-mono text-xs font-bold"
-                          >
-                            <option value="">-- Chọn Tier --</option>
-                            {tierOptions.map((t) => (
-                              <option key={t} value={t}>
-                                Tier {t}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-            </div>
           )}
-
-          {/* NÚT XÁC NHẬN HOÀN TẤT — CHỈ HIỂN THỊ KHI ĐÃ HOÀN TẤT CÁC PHẦN TRƯỚC */}
-          {(!isForkliftMode ||
-            (selectedBlock !== '' &&
-              (bay === '' || (row !== '' && tier !== '')))) && (
-            <button
-              type="button"
-              onClick={handleConfirmComplete}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 py-3.5 text-sm font-bold text-white hover:bg-emerald-700 active:scale-98"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              XÁC NHẬN HOÀN TẤT
-            </button>
-          )}
+          <button type="button" onClick={confirm} disabled={!canConfirm} className={`${primaryBtn} w-full py-3`}>
+            <CheckCircle2 className="h-4 w-4" />
+            Xác nhận hoàn tất
+          </button>
         </div>
       )}
 
-      {/* 3. DANH SÁCH CHỜ TÁC NGHIỆP (MẶC ĐỊNH ẨN Ở DƯỚI - NẾU CẦN CÓ THỂ KÍCH VÀO XEM CHI TIẾT) */}
-      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setShowWaitingList((prev) => !prev)}
-          className="flex w-full items-center justify-between px-4 py-3 text-left text-xs font-bold text-slate-700 hover:bg-slate-50"
-        >
-          <span>
-            Danh sách chờ tác nghiệp ({currentQueue.length} container) — Kích vào
-            để {showWaitingList ? 'ẩn' : 'xem chi tiết'}
-          </span>
-          {showWaitingList ? (
-            <ChevronUp className="h-4 w-4 text-slate-500" />
-          ) : (
-            <ChevronDown className="h-4 w-4 text-slate-500" />
-          )}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <button type="button" onClick={() => setShowList((v) => !v)} className="flex w-full items-center justify-between px-4 py-3 text-left text-xs font-bold text-slate-700 hover:bg-slate-50">
+          <span>Danh sách chờ ({queue.length})</span>
+          {showList ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
-
-        {showWaitingList && (
-          <div className="border-t border-slate-200 divide-y divide-slate-100">
-            {currentQueue.length === 0 ? (
-              <div className="p-6 text-center text-xs text-slate-400">
-                Hiện không có container nào trong danh sách chờ của bộ phận này.
-              </div>
+        {showList && (
+          <ul className="divide-y divide-slate-100 border-t border-slate-200">
+            {queue.length === 0 ? (
+              <li className="p-6 text-center text-xs text-slate-500">Không có container nào trong danh sách chờ.</li>
             ) : (
-              currentQueue.map((c) => {
-                const isExpanded = expandedDetailId === c.id;
-                return (
-                  <div key={c.id} className="p-3 text-xs space-y-2">
-                    <div
-                      onClick={() =>
-                        setExpandedDetailId(isExpanded ? null : c.id)
-                      }
-                      className="flex cursor-pointer items-center justify-between"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-blue-700">
-                          {c.masterDossierCode}
-                        </span>
-                        <span className="font-mono font-bold text-slate-900">
-                          {c.containerNo}
-                        </span>
-                        <span className="text-slate-500">
-                          ({c.size}&apos;{c.type})
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`rounded px-2 py-0.5 text-[10px] font-bold ${
-                            c.conditionClass === 'DAMAGE'
-                              ? 'bg-rose-100 text-rose-700'
-                              : 'bg-emerald-100 text-emerald-700'
-                          }`}
-                        >
-                          {c.conditionClass}
-                        </span>
-                        <Eye className="h-3.5 w-3.5 text-slate-400" />
-                      </div>
-                    </div>
-
-                    {isExpanded && (
-                      <div className="rounded-md border border-slate-200 bg-slate-50 p-2.5 space-y-1.5">
-                        <p>
-                          <strong>Mã Hồ Sơ Chính:</strong>{' '}
-                          <span className="font-mono font-bold text-blue-700">
-                            {c.masterDossierCode}
-                          </span>{' '}
-                          • <strong>Mã QR K80:</strong>{' '}
-                          <span className="font-mono">{c.activeQrCode}</span>
-                        </p>
-                        <p>
-                          <strong>Đóng hàng:</strong> {c.stuffingClass} •{' '}
-                          <strong>AGE:</strong> {c.manufactureYear} •{' '}
-                          <strong>Vị trí:</strong>{' '}
-                          {c.currentBlock || 'Chờ hạ bãi'}
-                        </p>
-                        <p>
-                          <strong>Vệ sinh:</strong> {c.cleaningItems.join(', ')}
-                        </p>
-                        <div className="flex gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => lookupContainerByQr(c.activeQrCode)}
-                            className="rounded bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700"
-                          >
-                            Nạp lên khung Quét QR để xác nhận
-                          </button>
-                          {onOpenDossier && (
-                            <button
-                              type="button"
-                              onClick={() => onOpenDossier(c.masterDossierCode)}
-                              className="rounded border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                            >
-                              Xem hồ sơ liên thông
-                            </button>
-                          )}
-                        </div>
-                      </div>
+              queue.map((c) => (
+                <li key={c.id}>
+                  <button type="button" onClick={() => lookup(c.activeQrCode)} className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left text-xs hover:bg-slate-50">
+                    <span className="flex items-center gap-2">
+                      <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} />
+                      <span className="text-slate-500">{c.size}/{c.type}</span>
+                    </span>
+                    {mode === 'XN_CHO_CAP_VO' && (
+                      <span className="text-[11px] text-slate-700">{c.allocatedTruckNo || '-'} • {c.allocatedDriverPhone || '-'}</span>
                     )}
-                  </div>
-                );
-              })
+                    {isRepair && <span className="text-[11px] text-slate-700">{repairWoOf(c)?.laborHours ?? c.quotationLaborHours ?? '-'} giờ công</span>}
+                    <span className="font-mono text-[11px] text-slate-500">{formatLocation(c)}</span>
+                  </button>
+                </li>
+              ))
             )}
-          </div>
+          </ul>
         )}
       </div>
     </div>
   );
 };
+
+const QueueHeader: React.FC<{ dept: string; name: string; count: number }> = ({ dept, name, count }) => (
+  <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5">
+    <div>
+      <span className="block text-[11px] font-semibold uppercase text-slate-500">{dept}</span>
+      <h2 className="text-sm font-bold text-slate-900">{name}</h2>
+    </div>
+    <span className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">{count}</span>
+  </div>
+);

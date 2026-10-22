@@ -1,1268 +1,698 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { ClipboardList, Search, Ship, Truck } from 'lucide-react';
 import {
-  CheckCircle2,
-  ClipboardCheck,
-  CreditCard,
-  FileText,
-  Plus,
-  Printer,
-  QrCode,
-  Receipt,
-  ShieldAlert,
-  Ship,
-  Trash2,
-  Truck,
-} from 'lucide-react';
-import {
-  ContainerSize,
-  ContainerType,
-  DirectPaymentMethod,
-  FeeLineItem,
+  ContainerRecord,
+  FieldConditionClass,
   GateInOrder,
+  GateOutOrder,
   K80InternalTicket,
-  PaymentCategory,
 } from '../../types/depot';
+import { DepotState, formatVnd } from '../../services/depotStore';
 import {
-  DepotState,
-  formatVnd,
-  INITIAL_CONTAINER_SIZES,
-  INITIAL_CONTAINER_TYPES,
-  INITIAL_FEE_CATALOG,
-} from '../../services/depotStore';
-import {
-  allocateContainerToBooking,
   confirmGateInPaymentAndComplete,
-  recordGateInFieldStep,
+  confirmReleasePayment,
+  createReleaseOrder,
+  getBookingSummary,
+  releaseAllocatedContainer,
+  releaseBlocker,
+  simulateDemoBankTransfer,
   verifyGateInOfficeAndCreatePayment,
 } from '../../services/depotOperations';
+import { cancelPendingTransaction, pendingTransactionOf } from '../../services/payments';
+import { formatLocation } from '../../services/core';
+import {
+  ContainerNo,
+  EMPTY_PAYMENT,
+  FeeLinesEditor,
+  Feedback,
+  formatViTime,
+  inputCls,
+  isPaymentChoiceComplete,
+  labelCls,
+  PaymentChoice,
+  PaymentPanel,
+  paymentSubmitLabel,
+  PendingTransferPanel,
+  primaryBtn,
+  secondaryBtn,
+  SectionCard,
+  suggestLoloFee,
+} from '../../components/shared';
 
-interface OfficeHaVoProps {
+interface OfficeProps {
   state: DepotState;
   onUpdateState: (next: DepotState) => void;
   onOpenK80Ticket: (ticket: K80InternalTicket) => void;
-  onOpenDossier?: (masterDossierCode: string) => void;
+  onOpenDossier?: (code: string) => void;
 }
 
-export const OfficeHaVoWorkspace: React.FC<OfficeHaVoProps> = ({
-  state,
-  onUpdateState,
-  onOpenK80Ticket,
-  onOpenDossier,
-}) => {
-  const feeCatalog =
-    state.feeCatalog && state.feeCatalog.length > 0
-      ? state.feeCatalog
-      : INITIAL_FEE_CATALOG;
-  const containerSizes =
-    state.containerSizes && state.containerSizes.length > 0
-      ? state.containerSizes
-      : INITIAL_CONTAINER_SIZES;
-  const containerTypes =
-    state.containerTypes && state.containerTypes.length > 0
-      ? state.containerTypes
-      : INITIAL_CONTAINER_TYPES;
-  const customerList = state.partners.filter((p) => p.isCustomer);
-  const shippingLineList = state.partners.filter((p) => p.isShippingLine);
+function errMsg(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback;
+}
 
-  // Danh sách tác nghiệp đang chờ tại Văn phòng Hạ vỏ: Tác nghiệp mới được xác nhận luôn ưu tiên hiển thị trên cùng
+// ============================================================================
+// BỘ PHẬN VĂN PHÒNG — HẠ VỎ
+// ============================================================================
+export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateState, onOpenK80Ticket, onOpenDossier }) => {
+  const customers = state.partners.filter((p) => p.isCustomer);
+  const shippingLines = state.partners.filter((p) => p.isShippingLine);
+
   const pendingOrders = [...state.gateInOrders]
     .filter((o) => o.status !== 'GATE_IN_OK' && o.status !== 'CANCELLED')
-    .sort(
-      (a, b) =>
-        new Date(b.fieldRecordedAt).getTime() -
-        new Date(a.fieldRecordedAt).getTime()
+    .sort((a, b) => b.fieldRecordedAt.localeCompare(a.fieldRecordedAt));
+
+  const [selectedId, setSelectedId] = useState<string>(pendingOrders[0]?.id || '');
+  const order: GateInOrder | undefined = pendingOrders.find((o) => o.id === selectedId) || pendingOrders[0];
+
+  const blankForm = (o?: GateInOrder) => ({
+    contNo: o?.containerNo || '',
+    size: o?.size || '',
+    type: o?.type || '',
+    shippingLineCode: o?.shippingLineCode || '',
+    customerName: o?.customerRep || '',
+    orderDocNo: o?.orderDocNo || '',
+    truckNo: o?.truckNo || '',
+    driverPhone: o?.driverPhone || '',
+  });
+  const [form, setForm] = useState(blankForm(order));
+  const [feeIds, setFeeIds] = useState<string[]>(
+    () =>
+      order?.feeLines
+        ?.map((l) => state.feeCatalog.find((f) => f.code === l.catalogCode)?.id)
+        .filter((x): x is string => Boolean(x)) || []
+  );
+  const [payment, setPayment] = useState<PaymentChoice>(EMPTY_PAYMENT);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
+  const selectOrder = (o: GateInOrder) => {
+    setSelectedId(o.id);
+    setForm(blankForm(o));
+    setFeeIds(
+      o.feeLines
+        ?.map((l) => state.feeCatalog.find((f) => f.code === l.catalogCode)?.id)
+        .filter((x): x is string => Boolean(x)) || []
     );
-
-  const [selectedOrderId, setSelectedOrderId] = useState<string>(
-    pendingOrders[0]?.id || ''
-  );
-  const activeOrder: GateInOrder | undefined =
-    pendingOrders.find((o) => o.id === selectedOrderId) || pendingOrders[0];
-
-  // 5 trường bắt buộc nhân viên văn phòng phải TỰ NHẬP BỔ SUNG (khởi tạo trống nếu chưa nhập)
-  const [contNo, setContNo] = useState<string>(activeOrder?.containerNo || '');
-  const [size, setSize] = useState<'' | ContainerSize>(
-    activeOrder?.size || ''
-  );
-  const [type, setType] = useState<'' | ContainerType>(
-    activeOrder?.type || ''
-  );
-  const [truckNo, setTruckNo] = useState<string>(activeOrder?.truckNo || '');
-  const [customerRep, setCustomerRep] = useState<string>(
-    activeOrder?.customerRep || ''
-  );
-  const [shippingLineCode, setShippingLineCode] = useState<string>(
-    activeOrder?.shippingLineCode || ''
-  );
-  const [orderDocNo, setOrderDocNo] = useState<string>(
-    activeOrder?.orderDocNo || 'EIR-MSK-2026-901'
-  );
-
-  // PHẦN CHI PHÍ TÁCH RIÊNG: Chỉ được chọn từ BIỂU GIÁ đã cấu hình trong DANH MỤC CHUNG (ĐÃ BAO GỒM VAT)
-  const [feeLines, setFeeLines] = useState<FeeLineItem[]>(
-    activeOrder?.feeLines || []
-  );
-  const [selectedCatalogId, setSelectedCatalogId] = useState<string>(
-    feeCatalog[0]?.id || ''
-  );
-  const selectedCatalogItem =
-    feeCatalog.find((c) => c.id === selectedCatalogId) || feeCatalog[0];
-  const customLineAmount = selectedCatalogItem?.defaultAmountInclVat || 0;
-
-  // 3 loại thanh toán: TTT / TTS / TTTT
-  const [paymentCategory, setPaymentCategory] =
-    useState<PaymentCategory>('TTT');
-  const [scannedQrCode, setScannedQrCode] = useState('QR-TTT-VIETLOG-001');
-  const [ttsNote, setTtsNote] = useState(
-    'Đã kiểm tra nguồn TTS hãng tàu/khách hàng hợp lệ'
-  );
-  const [directMethod, setDirectMethod] =
-    useState<DirectPaymentMethod>('BANK_TRANSFER_API');
-  const [providerTxRef] = useState(
-    `VCB-API-${Date.now().toString().slice(-6)}`
-  );
-
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  const totalFeeInclVat = feeLines.reduce(
-    (sum, item) => sum + Number(item.amountInclVat || 0),
-    0
-  );
-
-  const handleSelectOrder = (order: GateInOrder) => {
-    setSelectedOrderId(order.id);
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    // Để trống nếu nhân viên văn phòng chưa nhập bổ sung
-    setContNo(order.containerNo || '');
-    setSize(order.size || '');
-    setType(order.type || '');
-    setTruckNo(order.truckNo || '');
-    setCustomerRep(order.customerRep || '');
-    setShippingLineCode(order.shippingLineCode || '');
-    setOrderDocNo(order.orderDocNo || 'EIR-MSK-2026-901');
-    setFeeLines(order.feeLines || []);
+    setPayment(EMPTY_PAYMENT);
+    setError(null);
+    setSuccess(null);
   };
 
-  // Tự động gợi ý biểu giá NÂNG HẠ khớp với (SIZE - TYPE - HÃNG TÀU) khi nhân viên Văn phòng chọn
-  const autoMatchLoloTariff = (
-    nextSize: string,
-    nextType: string,
-    nextLine: string
-  ) => {
-    if (!nextSize && !nextType && !nextLine) return;
-    const matched =
-      feeCatalog.find(
-        (f) =>
-          f.category === 'NANG_HA' &&
-          (!nextSize || f.size === nextSize) &&
-          (!nextType || f.type === nextType) &&
-          (!nextLine ||
-            f.shippingLineCode === nextLine ||
-            f.shippingLineCode === 'ALL')
-      ) ||
-      feeCatalog.find(
-        (f) => f.category === 'NANG_HA' && (!nextSize || f.size === nextSize)
-      );
-    if (matched) {
-      setSelectedCatalogId(matched.id);
-    }
+  const voucher = order?.voucherId ? state.vouchers.find((v) => v.id === order.voucherId) : undefined;
+  const pendingTx = voucher ? pendingTransactionOf(state, voucher.id) : undefined;
+  const section1Done = Boolean(
+    form.contNo.trim() && form.size && form.type && form.shippingLineCode && form.customerName && form.truckNo.trim() && form.driverPhone.trim()
+  );
+  const suggested = suggestLoloFee(state.feeCatalog, form.size, form.type, form.shippingLineCode)?.id;
+
+  const openTicket = (s: DepotState, code: string) => {
+    const t = s.k80Tickets.find((k) => k.masterDossierCode === code && k.operationMode === 'HA_VO');
+    if (t) onOpenK80Ticket(t);
   };
 
-  // Thêm 1 chi phí từ BIỂU GIÁ trong DANH MỤC CHUNG vào Bảng chi phí của container này
-  const handleAddFeeLine = () => {
-    const cat = feeCatalog.find((c) => c.id === selectedCatalogId);
-    if (!cat) return;
-    const newLine: FeeLineItem = {
-      id: `fl-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-      catalogCode: cat.code,
-      name: cat.name,
-      amountInclVat: Number(cat.defaultAmountInclVat),
-    };
-    setFeeLines((prev) => [...prev, newLine]);
-  };
-
-  const handleRemoveFeeLine = (lineId: string) => {
-    setFeeLines((prev) => prev.filter((l) => l.id !== lineId));
-  };
-
-  // Xử lý lưu hồ sơ văn phòng + chi phí (đã gồm VAT) + xác nhận hình thức thanh toán + in phiếu K80
-  const handleCompleteOfficeHaVo = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeOrder) return;
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    if (
-      !contNo.trim() ||
-      !size ||
-      !type ||
-      !shippingLineCode ||
-      !truckNo.trim() ||
-      !customerRep.trim()
-    ) {
-      setErrorMsg(
-        'Vui lòng nhập SỐ CONTAINER, SỐ XE và chọn đầy đủ SIZE, TYPE, HÃNG TÀU, ĐẠI DIỆN KHÁCH HÀNG theo cấu hình Danh mục chung.'
-      );
-      return;
-    }
-
-    if (feeLines.length === 0) {
-      setErrorMsg(
-        'Vui lòng thêm ít nhất 1 khoản chi phí trong Bảng thể hiện chi phí (Đã bao gồm VAT) trước khi xác nhận thanh toán.'
-      );
-      return;
-    }
-
+    if (!order) return;
+    setError(null);
+    setSuccess(null);
     try {
-      // Bước 1: Lưu 5 thông tin Văn phòng tự nhập bổ sung & Bảng chi phí (Đã bao gồm VAT)
       const afterVerify = verifyGateInOfficeAndCreatePayment(state, {
-        gateInId: activeOrder.id,
-        containerNo: contNo,
-        size,
-        type,
-        truckNo,
-        customerRep,
-        shippingLineCode,
-        orderDocNo,
-        feeLines,
-        feeAmount: totalFeeInclVat,
+        gateInId: order.id,
+        containerNo: form.contNo,
+        size: form.size,
+        type: form.type,
+        truckNo: form.truckNo,
+        driverPhone: form.driverPhone,
+        customerName: form.customerName,
+        shippingLineCode: form.shippingLineCode,
+        orderDocNo: form.orderDocNo,
+        feeCatalogIds: feeIds,
       });
-
-      // Bước 2: Xác nhận Hình thức thanh toán (TTT / TTS / TTTT) -> Cập nhật GATE IN OK & Sinh phiếu K80
-      const afterPayment = confirmGateInPaymentAndComplete(afterVerify, {
-        gateInId: activeOrder.id,
-        paymentCategory,
-        scannedQrCode,
-        ttsNote,
-        directMethod,
-        providerTxRef,
-      });
-
-      onUpdateState(afterPayment);
-      const latestTicket = afterPayment.k80Tickets[0];
-      if (latestTicket) {
-        onOpenK80Ticket(latestTicket);
+      const next = confirmGateInPaymentAndComplete(afterVerify, { gateInId: order.id, ...payment });
+      onUpdateState(next);
+      const done = next.gateInOrders.find((o) => o.id === order.id);
+      if (done?.status === 'GATE_IN_OK') {
+        setSuccess(`GATE IN OK — ${done.containerNo} (hồ sơ ${done.masterDossierCode}). Đã mở phiếu K80.`);
+        openTicket(next, done.masterDossierCode);
+      } else {
+        setSuccess('Đã tạo yêu cầu chuyển khoản QR. Hồ sơ hoàn tất khi ngân hàng xác nhận đã nhận tiền.');
       }
-
-      // Reset form cho phiếu tiếp theo
-      setContNo('');
-      setSize('');
-      setType('');
-      setShippingLineCode('');
-      setTruckNo('');
-      setCustomerRep('');
-      setFeeLines([]);
-
-      setSuccessMsg(
-        `Đã hoàn tất HẠ VỎ (GATE IN OK) cho container ${contNo.toUpperCase()} — Tổng chi phí (đã gồm VAT): ${formatVnd(
-          totalFeeInclVat
-        )}! Đã mở phiếu in K80 kèm Mã QR.`
-      );
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Lỗi xử lý Hạ vỏ');
+      setError(errMsg(err, 'Lỗi xử lý Hạ vỏ'));
+    }
+  };
+
+  const handleSimulate = () => {
+    if (!pendingTx || !order) return;
+    try {
+      const next = simulateDemoBankTransfer(state, { transactionId: pendingTx.id });
+      onUpdateState(next);
+      setSuccess('Ngân hàng (giả lập) đã xác nhận — GATE IN OK.');
+      openTicket(next, order.masterDossierCode);
+    } catch (err) {
+      setError(errMsg(err, 'Lỗi giả lập ngân hàng'));
+    }
+  };
+
+  const handleCancelTransfer = (reason: string) => {
+    if (!pendingTx) return;
+    try {
+      onUpdateState(cancelPendingTransaction(state, { transactionId: pendingTx.id, reason }));
+      setSuccess('Đã hủy yêu cầu chuyển khoản. Có thể chọn lại hình thức thanh toán.');
+    } catch (err) {
+      setError(errMsg(err, 'Lỗi hủy yêu cầu'));
     }
   };
 
   return (
-    <div className="space-y-5">
-      {errorMsg && (
-        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
-          <div>
-            <p className="font-bold">Từ chối thao tác</p>
-            <p>{errorMsg}</p>
-          </div>
-        </div>
-      )}
-
-      {successMsg && (
-        <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-          <div>
-            <p className="font-bold">Hoàn tất thủ tục Văn phòng — Hạ vỏ</p>
-            <p>{successMsg}</p>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* DANH SÁCH CÔNG VIỆC ĐANG CHỜ CỦA VĂN PHÒNG - HẠ VỎ (FIFO) */}
-        <div className="lg:col-span-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-          <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900">
-                Hàng Chờ Văn Phòng — HẠ VỎ
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                Do Giám định gửi sang (FIFO • Xong tự ẩn)
-              </p>
-            </div>
-            <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-xs font-black text-white">
-              {pendingOrders.length} chờ
-            </span>
-          </div>
-
+    <div className="space-y-4">
+      <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <SectionCard
+          className="lg:col-span-4"
+          title="Hàng chờ Văn phòng — Hạ vỏ"
+          icon={<ClipboardList className="h-4 w-4 text-slate-500" />}
+          right={<span className="rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white">{pendingOrders.length}</span>}
+        >
           {pendingOrders.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
-              Hiện không có container nào đang chờ thủ tục Hạ vỏ tại Văn phòng.
-            </div>
+            <p className="py-6 text-center text-xs text-slate-500">Không có hồ sơ nào đang chờ.</p>
           ) : (
-            <div className="space-y-2">
-              {pendingOrders.map((order) => {
-                const isSelected = activeOrder?.id === order.id;
-                const timeStr = new Date(
-                  order.fieldRecordedAt
-                ).toLocaleString('vi-VN', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                });
-                return (
-                  <div
-                    key={order.id}
-                    onClick={() => handleSelectOrder(order)}
-                    className={`cursor-pointer rounded-lg border p-3 text-xs transition ${
-                      isSelected
-                        ? 'border-blue-600 bg-blue-50/80 ring-1 ring-blue-600'
-                        : 'border-slate-200 bg-white hover:bg-slate-50'
+            <ul className="space-y-1.5">
+              {pendingOrders.map((o) => (
+                <li key={o.id}>
+                  <button
+                    type="button"
+                    onClick={() => selectOrder(o)}
+                    className={`flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-xs ${
+                      order?.id === o.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono font-bold text-slate-900">
-                        {order.orderCode}
+                    <span>
+                      <span className="block font-mono font-bold text-slate-900">{o.masterDossierCode}</span>
+                      <span className="text-[11px] text-slate-500">{formatViTime(o.fieldRecordedAt)}</span>
+                    </span>
+                    <span className="text-right">
+                      <span className={`block font-bold ${o.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>
+                        {o.conditionClass}
                       </span>
-                      <span className="font-mono text-[11px] text-slate-600">
-                        {timeStr}
-                      </span>
-                      <span
-                        className={`rounded px-2 py-0.5 text-[10px] font-bold ${
-                          order.conditionClass === 'DAMAGE'
-                            ? 'bg-rose-100 text-rose-700'
-                            : 'bg-emerald-100 text-emerald-700'
-                        }`}
-                      >
-                        {order.conditionClass}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                      {o.status === 'PAYMENT_PENDING' && <span className="text-[10px] text-amber-700">Chờ thanh toán</span>}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
+        </SectionCard>
 
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-600">
-            💡 Hồ sơ sau khi xác nhận hoàn tất sẽ <strong>tự động in Phiếu K80</strong> cho khách hàng và chuyển sang danh sách <strong>TỒN VỎ</strong>. Muốn in lại phiếu tác nghiệp, vui lòng vào mục <strong>TỒN VỎ</strong> và tìm kiếm số container.
-          </div>
-        </div>
-
-        {/* KHUNG THAO TÁC VĂN PHÒNG BÊN PHẢI */}
-        <div className="lg:col-span-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-          {activeOrder ? (
-            <form onSubmit={handleCompleteOfficeHaVo} className="space-y-5">
-              {/* THÔNG TIN & ẢNH CỬA CONT TỪ BỘ PHẬN GIÁM ĐỊNH */}
-              <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row">
-                <img
-                  src={activeOrder.doorPhotoUrl}
-                  alt="Ảnh cửa container do Giám định chụp"
-                  className="h-36 w-52 rounded-xl object-cover border border-slate-300 shrink-0"
-                />
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onOpenDossier?.(
-                          activeOrder.masterDossierCode || activeOrder.orderCode
-                        )
-                      }
-                      className="rounded bg-blue-600 px-2 py-0.5 font-mono font-bold text-white hover:bg-blue-700"
-                    >
-                      Mã Hồ Sơ Chính:{' '}
-                      {activeOrder.masterDossierCode || activeOrder.orderCode}
-                    </button>
-                    <span className="text-slate-500">
-                      Giám định: <strong>{activeOrder.fieldStaffName}</strong>
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <div className="rounded-lg bg-white p-2 border border-slate-200">
-                      <span className="text-[10px] text-slate-500 block">
-                        TRẠNG THÁI GIÁM ĐỊNH
-                      </span>
-                      <span
-                        className={`font-black text-sm ${
-                          activeOrder.conditionClass === 'DAMAGE'
-                            ? 'text-rose-600'
-                            : 'text-emerald-600'
-                        }`}
-                      >
-                        {activeOrder.conditionClass}
-                      </span>
-                      {activeOrder.damageRemarks?.length > 0 && (
-                        <p className="text-[11px] font-medium text-rose-700">
-                          Lỗi: {activeOrder.damageRemarks.join(', ')}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="rounded-lg bg-white p-2 border border-slate-200">
-                      <span className="text-[10px] text-slate-500 block">
-                        ĐÓNG HÀNG & NĂM SINH (AGE)
-                      </span>
-                      <span className="font-black text-sm text-blue-700">
-                        {activeOrder.stuffingClass} • Năm {activeOrder.manufactureYear}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg bg-white p-2 border border-slate-200">
-                    <span className="text-[10px] text-slate-500 block">
-                      PHƯƠNG ÁN VỆ SINH DO GIÁM ĐỊNH CHỌN:
-                    </span>
-                    <span className="font-bold text-indigo-800">
-                      {activeOrder.cleaningItems.join(' + ')}
-                    </span>
-                  </div>
+        <div className="space-y-4 lg:col-span-8">
+          {!order ? (
+            <div className="rounded-lg border border-slate-200 bg-white py-12 text-center text-xs text-slate-500">
+              Tất cả hồ sơ Hạ vỏ đã được xử lý.
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <SectionCard
+                title={
+                  <button type="button" onClick={() => onOpenDossier?.(order.masterDossierCode)} className="font-mono text-blue-700 hover:underline">
+                    Hồ sơ {order.masterDossierCode}
+                  </button>
+                }
+                right={<span className="text-[11px] text-slate-500">Giám định: {order.fieldStaffName}</span>}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <img src={order.doorPhotoUrl} alt="Ảnh cửa container" className="h-28 w-full rounded-md border border-slate-200 object-cover sm:w-44" />
+                  <dl className="grid flex-1 grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                    <dt className="text-slate-500">Trạng thái</dt>
+                    <dd className={`font-bold ${order.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>
+                      {order.conditionClass}
+                      {order.damageRemarks.length > 0 && <span className="font-normal text-slate-600"> — {order.damageRemarks.join(', ')}</span>}
+                    </dd>
+                    <dt className="text-slate-500">Phân loại đóng hàng</dt>
+                    <dd className="font-bold">{order.stuffingClass}</dd>
+                    <dt className="text-slate-500">Vệ sinh</dt>
+                    <dd className="font-semibold">{order.cleaningItems.join(' + ')}</dd>
+                    <dt className="text-slate-500">AGE</dt>
+                    <dd className="font-semibold">{order.manufactureYear}</dd>
+                  </dl>
                 </div>
-              </div>
+              </SectionCard>
 
-              {/* MỤC 1: NHÂN VIÊN VĂN PHÒNG NHẬP & CHỌN THEO CẤU HÌNH DANH MỤC CHUNG */}
-              <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 text-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                  <h4 className="flex items-center gap-1.5 text-sm font-bold text-slate-900">
-                    <ClipboardCheck className="h-4 w-4 text-blue-600" />
-                    1. Nhân Viên Văn Phòng Bổ Sung Hồ Sơ (Nhập xong Phần 1 mới hiển thị Phần 2)
-                  </h4>
-                  <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-900">
-                    Chỉ được chọn theo cấu hình hạng mục
-                  </span>
-                </div>
-
+              <SectionCard title="1. Thông tin hồ sơ">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div>
-                    <label className="mb-1 block font-bold text-slate-700">
-                      SỐ CONTAINER *
-                    </label>
-                    <input
-                      type="text"
-                      value={contNo}
-                      onChange={(e) => setContNo(e.target.value.toUpperCase())}
-                      placeholder="Nhập số cont (VD: MSKU6829104)..."
-                      className="w-full rounded-lg border-2 border-blue-400 bg-blue-50/30 px-3 py-2 font-mono text-sm font-black uppercase placeholder:font-sans placeholder:font-normal placeholder:text-slate-400"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block font-bold text-slate-700">
-                      SIZE (Theo Danh mục chung) *
-                    </label>
-                    <select
-                      value={size}
-                      onChange={(e) => {
-                        const nextSz = e.target.value as '' | ContainerSize;
-                        setSize(nextSz);
-                        autoMatchLoloTariff(nextSz, type, shippingLineCode);
-                      }}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 font-bold"
-                      required
-                    >
-                      <option value="">-- Chọn Size --</option>
-                      {containerSizes.map((sz) => (
-                        <option key={sz} value={sz}>
-                          {sz}&apos;
-                        </option>
-                      ))}
+                  <label>
+                    <span className={labelCls}>Số container *</span>
+                    <input value={form.contNo} onChange={(e) => set({ contNo: e.target.value.toUpperCase() })} placeholder="MSKU6829104" className={`${inputCls} font-mono font-bold uppercase`} />
+                  </label>
+                  <label>
+                    <span className={labelCls}>Size *</span>
+                    <select value={form.size} onChange={(e) => set({ size: e.target.value })} className={inputCls}>
+                      <option value="">-- Chọn --</option>
+                      {state.containerSizes.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
-                  </div>
-                  <div>
-                    <label className="mb-1 block font-bold text-slate-700">
-                      TYPE (Theo Danh mục chung) *
-                    </label>
-                    <select
-                      value={type}
-                      onChange={(e) => {
-                        const nextTp = e.target.value as '' | ContainerType;
-                        setType(nextTp);
-                        autoMatchLoloTariff(size, nextTp, shippingLineCode);
-                      }}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 font-bold"
-                      required
-                    >
-                      <option value="">-- Chọn Type --</option>
-                      {containerTypes.map((tp) => (
-                        <option key={tp} value={tp}>
-                          {tp}
-                        </option>
-                      ))}
+                  </label>
+                  <label>
+                    <span className={labelCls}>Type *</span>
+                    <select value={form.type} onChange={(e) => set({ type: e.target.value })} className={inputCls}>
+                      <option value="">-- Chọn --</option>
+                      {state.containerTypes.map((t) => <option key={t} value={t}>{t}</option>)}
                     </select>
-                  </div>
+                  </label>
+                  <label>
+                    <span className={labelCls}>Hãng tàu *</span>
+                    <select value={form.shippingLineCode} onChange={(e) => set({ shippingLineCode: e.target.value })} className={inputCls}>
+                      <option value="">-- Chọn --</option>
+                      {shippingLines.map((l) => <option key={l.id} value={l.code}>{l.code} — {l.name}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span className={labelCls}>Khách hàng *</span>
+                    <select value={form.customerName} onChange={(e) => set({ customerName: e.target.value })} className={inputCls}>
+                      <option value="">-- Chọn --</option>
+                      {customers.map((c) => <option key={c.id} value={c.name}>[{c.code}] {c.name}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span className={labelCls}>Số lệnh / chứng từ</span>
+                    <input value={form.orderDocNo} onChange={(e) => set({ orderDocNo: e.target.value })} className={inputCls} />
+                  </label>
+                  <label>
+                    <span className={labelCls}>Số xe *</span>
+                    <input value={form.truckNo} onChange={(e) => set({ truckNo: e.target.value.toUpperCase() })} placeholder="15C-882.19" className={`${inputCls} uppercase`} />
+                  </label>
+                  <label>
+                    <span className={labelCls}>SĐT lái xe *</span>
+                    <input type="tel" inputMode="tel" value={form.driverPhone} onChange={(e) => set({ driverPhone: e.target.value })} placeholder="0912345678" className={inputCls} />
+                  </label>
                 </div>
+              </SectionCard>
 
-                {/* CHỈ HIỂN THỊ DÒNG THÔNG TIN TIẾP THEO KHI ĐÃ NHẬP XONG SỐ CONTAINER, SIZE, TYPE */}
-                {Boolean(contNo.trim() && size && type) ? (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 pt-1 border-t border-slate-100">
-                    <div>
-                      <label className="mb-1 block font-bold text-slate-700">
-                        HÃNG TÀU (Theo Danh mục chung) *
-                      </label>
-                      <select
-                        value={shippingLineCode}
-                        onChange={(e) => {
-                          const nextLine = e.target.value;
-                          setShippingLineCode(nextLine);
-                          autoMatchLoloTariff(size, type, nextLine);
-                        }}
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 font-bold text-indigo-900"
-                        required
-                      >
-                        <option value="">-- Chọn Hãng tàu --</option>
-                        {shippingLineList.map((line) => (
-                          <option key={line.id} value={line.code}>
-                            {line.code} — {line.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="mb-1 block font-bold text-slate-700">
-                        SỐ XE *
-                      </label>
-                      <input
-                        type="text"
-                        value={truckNo}
-                        onChange={(e) => setTruckNo(e.target.value.toUpperCase())}
-                        placeholder="Nhập biển số xe (VD: 15C-882.19)..."
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 uppercase font-bold placeholder:font-normal placeholder:normal-case placeholder:text-slate-400"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block font-bold text-slate-700">
-                        ĐẠI DIỆN KHÁCH HÀNG (Theo Danh mục chung) *
-                      </label>
-                      <select
-                        value={customerRep}
-                        onChange={(e) => setCustomerRep(e.target.value)}
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 font-bold text-slate-900"
-                        required
-                      >
-                        <option value="">-- Chọn Khách hàng --</option>
-                        {customerList.map((cust) => (
-                          <option key={cust.id} value={cust.name}>
-                            [{cust.code}] {cust.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+              {section1Done && (
+                <FeeLinesEditor catalog={state.feeCatalog} selectedIds={feeIds} onChange={setFeeIds} suggestedId={suggested} disabled={Boolean(pendingTx)} />
+              )}
+
+              {section1Done && feeIds.length > 0 && (
+                pendingTx ? (
+                  <PendingTransferPanel state={state} transaction={pendingTx} onSimulate={handleSimulate} onCancel={handleCancelTransfer} />
                 ) : (
-                  <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] font-medium text-slate-500">
-                    ↳ Vui lòng nhập xong <strong>SỐ CONTAINER</strong>, chọn <strong>SIZE</strong> và <strong>TYPE</strong> ở trên để mở tiếp mục chọn <strong>HÃNG TÀU, SỐ XE &amp; ĐẠI DIỆN KHÁCH HÀNG</strong>.
-                  </p>
-                )}
-              </div>
+                  <>
+                    <PaymentPanel state={state} value={payment} onChange={setPayment} />
+                    <button type="submit" disabled={!isPaymentChoiceComplete(payment)} className={`${primaryBtn} w-full py-3`}>
+                      {paymentSubmitLabel(payment)}
+                    </button>
+                  </>
+                )
+              )}
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
-              {/* MỤC 2 (TÁCH RIÊNG): CHỈ HIỂN THỊ KHI ĐÃ NHẬP XONG ĐẦY ĐỦ MỤC 1 */}
-              {Boolean(
-                contNo.trim() &&
-                  size &&
-                  type &&
-                  shippingLineCode &&
-                  truckNo.trim() &&
-                  customerRep.trim()
-              ) && (
-                <div className="space-y-3 rounded-xl border-2 border-indigo-200 bg-indigo-50/30 p-4 text-xs">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-200/80 pb-2.5">
-                    <div>
-                      <h4 className="flex items-center gap-1.5 text-sm font-black text-indigo-950">
-                        <Receipt className="h-4 w-4 text-indigo-600" />
-                        2. Phần Chi Phí (Tách Riêng) — Bảng Thể Hiện Chi Phí ĐÃ BAO GỒM VAT
-                      </h4>
-                      <p className="mt-0.5 text-[11px] text-indigo-700">
-                        Chỉ được chọn các biểu giá từ mục{' '}
-                        <strong>
-                          DANH MỤC CHUNG → BIỂU GIÁ (Nâng hạ theo Size - Type - Hãng tàu &amp; Thu gom rác)
-                        </strong>
-                        . Thêm xong chi phí mới hiển thị Phần 3 (Hình thức thanh toán).
-                      </p>
-                    </div>
-                    <span className="rounded bg-indigo-100 px-2.5 py-1 text-[11px] font-bold text-indigo-800">
-                      Cấu hình bởi Admin tại Danh Mục Chung
-                    </span>
-                  </div>
+// ============================================================================
+// BỘ PHẬN VĂN PHÒNG — CẤP VỎ
+// ============================================================================
+type ConditionFilter = 'ALL' | FieldConditionClass;
 
-                  {/* Thanh chọn biểu giá từ DANH MỤC CHUNG để đưa vào Bảng chi phí */}
-                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-12 items-end rounded-xl bg-white p-3 border border-indigo-100">
-                    <div className="sm:col-span-6">
-                      <label className="mb-1 block font-bold text-slate-700">
-                        Chọn từ BIỂU GIÁ (Đã cấu hình trong Danh Mục Chung)
-                      </label>
-                      <select
-                        value={selectedCatalogId}
-                        onChange={(e) => setSelectedCatalogId(e.target.value)}
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 font-bold text-slate-800"
-                      >
-                        <optgroup label="- NÂNG HẠ (Theo từng Size - Type - Hãng tàu)">
-                          {feeCatalog
-                            .filter((item) => item.category === 'NANG_HA')
-                            .map((item) => (
-                              <option key={item.id} value={item.id}>
-                                [{item.size || 'ALL'}&apos; • {item.type || 'ALL'} •{' '}
-                                {item.shippingLineCode || 'ALL'}] {item.name} —{' '}
-                                {formatVnd(item.defaultAmountInclVat)}
-                              </option>
-                            ))}
-                        </optgroup>
-                        <optgroup label="- THU GOM RÁC">
-                          {feeCatalog
-                            .filter((item) => item.category === 'THU_GOM_RAC')
-                            .map((item) => (
-                              <option key={item.id} value={item.id}>
-                                [{item.code}] {item.name} —{' '}
-                                {formatVnd(item.defaultAmountInclVat)}
-                              </option>
-                            ))}
-                        </optgroup>
-                        <optgroup label="- BIỂU GIÁ KHÁC (Vệ sinh / Dịch vụ bãi)">
-                          {feeCatalog
-                            .filter(
-                              (item) =>
-                                item.category !== 'NANG_HA' &&
-                                item.category !== 'THU_GOM_RAC'
-                            )
-                            .map((item) => (
-                              <option key={item.id} value={item.id}>
-                                [{item.code}] {item.name} —{' '}
-                                {formatVnd(item.defaultAmountInclVat)}
-                              </option>
-                            ))}
-                        </optgroup>
-                      </select>
-                    </div>
-                    <div className="sm:col-span-3">
-                      <label className="mb-1 block font-bold text-slate-700">
-                        Đơn giá cấu hình ĐÃ GỒM VAT
-                      </label>
-                      <input
-                        type="text"
-                        value={formatVnd(customLineAmount)}
-                        readOnly
-                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono font-bold text-emerald-700"
+export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateState, onOpenK80Ticket, onOpenDossier }) => {
+  const customers = state.partners.filter((p) => p.isCustomer);
+  const shippingLines = state.partners.filter((p) => p.isShippingLine);
+
+  const [filters, setFilters] = useState({ search: '', line: 'ALL', size: 'ALL', type: 'ALL', condition: 'AV' as ConditionFilter });
+  const [bookingNo, setBookingNo] = useState('');
+  const [showBookingList, setShowBookingList] = useState(false);
+  const [customerName, setCustomerName] = useState('');
+  const [selectedContainerId, setSelectedContainerId] = useState('');
+  const [truckNo, setTruckNo] = useState('');
+  const [driverPhone, setDriverPhone] = useState('');
+  const [feeIds, setFeeIds] = useState<string[]>([]);
+  const [payment, setPayment] = useState<PaymentChoice>(EMPTY_PAYMENT);
+  const [resumeOrderId, setResumeOrderId] = useState<string>('');
+  const [cancelReason, setCancelReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const ready = useMemo(
+    () =>
+      state.containers
+        .filter((c) => releaseBlocker(c) === null)
+        .filter((c) => !filters.search.trim() || c.containerNo.includes(filters.search.trim().toUpperCase()))
+        .filter((c) => filters.line === 'ALL' || c.shippingLineCode === filters.line)
+        .filter((c) => filters.size === 'ALL' || c.size === filters.size)
+        .filter((c) => filters.type === 'ALL' || c.type === filters.type)
+        .filter((c) => filters.condition === 'ALL' || c.conditionClass === filters.condition)
+        .sort((a, b) => a.gateInAt.localeCompare(b.gateInAt)),
+    [state.containers, filters]
+  );
+  const selected: ContainerRecord | undefined = state.containers.find((c) => c.id === selectedContainerId);
+  const summary = bookingNo.trim() ? getBookingSummary(state, bookingNo) : undefined;
+  const pendingOrders = state.gateOutOrders.filter((o) => o.status === 'PAYMENT_PENDING');
+  const resumeOrder = pendingOrders.find((o) => o.id === resumeOrderId);
+  const resumeVoucher = resumeOrder ? state.vouchers.find((v) => v.id === resumeOrder.voucherId) : undefined;
+  const resumeTx = resumeVoucher ? pendingTransactionOf(state, resumeVoucher.id) : undefined;
+
+  const suggested = selected
+    ? suggestLoloFee(state.feeCatalog, selected.size, selected.type, selected.shippingLineCode)?.id
+    : undefined;
+  const part1Done = Boolean(bookingNo.trim() && customerName && selected);
+  const part2Done = part1Done && Boolean(truckNo.trim() && driverPhone.trim());
+
+  const resetForm = () => {
+    setSelectedContainerId('');
+    setTruckNo('');
+    setDriverPhone('');
+    setFeeIds([]);
+    setPayment(EMPTY_PAYMENT);
+  };
+
+  const openTicket = (s: DepotState, gateOutCode: string) => {
+    const t = s.k80Tickets.find((k) => k.outDossierCode === gateOutCode);
+    if (t) onOpenK80Ticket(t);
+  };
+
+  const afterPayment = (next: DepotState, order: GateOutOrder) => {
+    onUpdateState(next);
+    const updated = next.gateOutOrders.find((o) => o.id === order.id)!;
+    if (updated.status === 'PENDING_FORKLIFT') {
+      setSuccess(`Đã lập lệnh CẤP VỎ ${updated.gateOutCode} cho ${updated.containerNo} — phiếu K80 đã mở, chuyển Xe nâng.`);
+      openTicket(next, updated.gateOutCode);
+      setResumeOrderId('');
+    } else {
+      setSuccess(`Đã lập hồ sơ ${updated.gateOutCode}. Đang chờ ngân hàng xác nhận chuyển khoản.`);
+      setResumeOrderId(updated.id);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selected) return;
+    setError(null);
+    setSuccess(null);
+    try {
+      const created = createReleaseOrder(state, {
+        bookingNo,
+        customerName,
+        containerNo: selected.containerNo,
+        truckNo,
+        driverPhone,
+        feeCatalogIds: feeIds,
+      });
+      const order = created.gateOutOrders[0];
+      const next = confirmReleasePayment(created, { gateOutOrderId: order.id, ...payment });
+      afterPayment(next, order);
+      resetForm();
+    } catch (err) {
+      setError(errMsg(err, 'Lỗi lập lệnh cấp vỏ'));
+    }
+  };
+
+  const handleResumePay = () => {
+    if (!resumeOrder) return;
+    setError(null);
+    try {
+      afterPayment(confirmReleasePayment(state, { gateOutOrderId: resumeOrder.id, ...payment }), resumeOrder);
+    } catch (err) {
+      setError(errMsg(err, 'Lỗi thanh toán'));
+    }
+  };
+
+  const handleCancelOrder = (o: GateOutOrder) => {
+    setError(null);
+    try {
+      onUpdateState(releaseAllocatedContainer(state, { containerNo: o.containerNo, reason: cancelReason }));
+      setSuccess(`Đã hủy lệnh ${o.gateOutCode}; ${o.containerNo} trở lại tồn bãi.`);
+      setCancelReason('');
+      setResumeOrderId('');
+    } catch (err) {
+      setError(errMsg(err, 'Lỗi hủy lệnh'));
+    }
+  };
+
+  const statusLabel: Record<GateOutOrder['status'], string> = {
+    PAYMENT_PENDING: 'Chờ thanh toán',
+    PENDING_FORKLIFT: 'Chờ xe nâng',
+    GATE_OUT_OK: 'Đã OUT',
+    CANCELLED: 'Đã hủy',
+  };
+
+  return (
+    <div className="space-y-4">
+      <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
+
+      {pendingOrders.length > 0 && (
+        <SectionCard title={`Hồ sơ cấp vỏ chờ thanh toán (${pendingOrders.length})`}>
+          <ul className="space-y-2 text-xs">
+            {pendingOrders.map((o) => (
+              <li key={o.id} className="rounded-md border border-slate-200 p-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span>
+                    <button type="button" onClick={() => onOpenDossier?.(o.gateOutCode)} className="font-mono font-bold text-blue-700 hover:underline">
+                      {o.gateOutCode}
+                    </button>{' '}
+                    • <span className="font-mono">{o.containerNo}</span> • {o.bookingNo} • {formatVnd(o.feeAmount)}
+                  </span>
+                  <button type="button" onClick={() => { setResumeOrderId(resumeOrderId === o.id ? '' : o.id); setPayment(EMPTY_PAYMENT); }} className={secondaryBtn}>
+                    {resumeOrderId === o.id ? 'Đóng' : 'Tiếp tục'}
+                  </button>
+                </div>
+                {resumeOrderId === o.id && (
+                  <div className="mt-3 space-y-3">
+                    {resumeTx ? (
+                      <PendingTransferPanel
+                        state={state}
+                        transaction={resumeTx}
+                        onSimulate={() => {
+                          try {
+                            afterPayment(simulateDemoBankTransfer(state, { transactionId: resumeTx.id }), o);
+                          } catch (err) {
+                            setError(errMsg(err, 'Lỗi giả lập ngân hàng'));
+                          }
+                        }}
+                        onCancel={(reason) => {
+                          try {
+                            onUpdateState(cancelPendingTransaction(state, { transactionId: resumeTx.id, reason }));
+                          } catch (err) {
+                            setError(errMsg(err, 'Lỗi hủy yêu cầu'));
+                          }
+                        }}
                       />
-                    </div>
-                    <div className="sm:col-span-3">
-                      <button
-                        type="button"
-                        onClick={handleAddFeeLine}
-                        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 font-black text-white shadow-sm hover:bg-indigo-700"
-                      >
-                        <Plus className="h-4 w-4" />
-                        THÊM CHI PHÍ
+                    ) : (
+                      <>
+                        <PaymentPanel state={state} value={payment} onChange={setPayment} />
+                        <button type="button" onClick={handleResumePay} disabled={!isPaymentChoiceComplete(payment)} className={`${primaryBtn} w-full`}>
+                          {paymentSubmitLabel(payment)}
+                        </button>
+                      </>
+                    )}
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="Lý do hủy lệnh cấp..." className={inputCls} />
+                      <button type="button" disabled={!cancelReason.trim()} onClick={() => handleCancelOrder(o)} className={`${secondaryBtn} shrink-0`}>
+                        Hủy lệnh cấp
                       </button>
                     </div>
                   </div>
-
-                  {/* BẢNG THỂ HIỆN CHI PHÍ (ĐÃ BAO GỒM VAT) */}
-                  <div className="overflow-hidden rounded-xl border border-indigo-200 bg-white">
-                    <div className="flex items-center justify-between bg-indigo-900 px-3.5 py-2 text-white">
-                      <span className="font-bold uppercase tracking-wide text-[11px]">
-                        BẢNG THỂ HIỆN CHI PHÍ ({feeLines.length} hạng mục)
-                      </span>
-                      <span className="rounded bg-emerald-500 px-2 py-0.5 text-[10px] font-black text-white">
-                        ĐÃ BAO GỒM VAT
-                      </span>
-                    </div>
-
-                    {feeLines.length === 0 ? (
-                      <div className="p-4 text-center text-slate-500">
-                        Chưa có chi phí nào trong bảng. Vui lòng chọn biểu giá từ{' '}
-                        <strong>DANH MỤC CHUNG</strong> bên trên và bấm{' '}
-                        <strong>+ THÊM CHI PHÍ</strong> để mở tiếp Phần 3 (Hình thức thanh toán).
-                      </div>
-                    ) : (
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-600">
-                            <th className="py-2 px-3 w-12">STT</th>
-                            <th className="py-2 px-3">Mã HM</th>
-                            <th className="py-2 px-3">Hạng mục chi phí (Biểu giá chung)</th>
-                            <th className="py-2 px-3 text-right">
-                              Thành tiền (ĐÃ BAO GỒM VAT)
-                            </th>
-                            <th className="py-2 px-3 text-center w-14">Xóa</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {feeLines.map((line, index) => (
-                            <tr key={line.id} className="hover:bg-slate-50">
-                              <td className="py-2 px-3 font-bold text-slate-500">
-                                {index + 1}
-                              </td>
-                              <td className="py-2 px-3 font-mono text-[11px] font-bold text-indigo-700">
-                                {line.catalogCode}
-                              </td>
-                              <td className="py-2 px-3 font-semibold text-slate-900">
-                                {line.name}
-                              </td>
-                              <td className="py-2 px-3 text-right font-mono font-bold text-emerald-700">
-                                {formatVnd(line.amountInclVat)}
-                              </td>
-                              <td className="py-2 px-3 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveFeeLine(line.id)}
-                                  className="inline-flex items-center justify-center rounded p-1 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
-                                  title="Xóa khoản phí này"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr className="border-t-2 border-indigo-200 bg-emerald-50/70">
-                            <td
-                              colSpan={3}
-                              className="py-2.5 px-3 text-right font-black uppercase text-slate-900"
-                            >
-                              TỔNG CHI PHÍ THANH TOÁN (ĐÃ BAO GỒM VAT):
-                            </td>
-                            <td className="py-2.5 px-3 text-right font-mono text-sm font-black text-emerald-700">
-                              {formatVnd(totalFeeInclVat)}
-                            </td>
-                            <td />
-                          </tr>
-                        </tfoot>
-                      </table>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* MỤC 3: HÌNH THỨC THANH TOÁN — CHỈ HIỂN THỊ KHI ĐÃ XONG MỤC 1 & ĐÃ THÊM CHI PHÍ Ở MỤC 2 */}
-              {Boolean(
-                contNo.trim() &&
-                  size &&
-                  type &&
-                  shippingLineCode &&
-                  truckNo.trim() &&
-                  customerRep.trim() &&
-                  feeLines.length > 0
-              ) && (
-                <>
-                  <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 text-xs">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                      <h4 className="flex items-center gap-1.5 text-sm font-bold text-slate-900">
-                        <CreditCard className="h-4 w-4 text-emerald-600" />
-                        3. Hình Thức Thanh Toán (TTT / TTS / TTTT) &amp; In Phiếu K80 kèm Mã QR
-                      </h4>
-                      <span className="font-mono text-xs font-black text-emerald-700">
-                        Tổng thu (đã gồm VAT): {formatVnd(totalFeeInclVat)}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2.5">
-                      {(
-                        [
-                          {
-                            code: 'TTT',
-                            title: 'TTT — Thanh Toán Trước',
-                            sub: 'Quét QR Phiếu thu mẹ & trừ dần',
-                          },
-                          {
-                            code: 'TTS',
-                            title: 'TTS — Thanh Toán Sau',
-                            sub: 'Check nguồn & Note TTS vào chứng từ',
-                          },
-                          {
-                            code: 'TTTT',
-                            title: 'TTTT — Trực Tiếp',
-                            sub: 'Chuyển khoản (API) / Tiền mặt',
-                          },
-                        ] as const
-                      ).map((opt) => (
-                        <button
-                          key={opt.code}
-                          type="button"
-                          onClick={() => setPaymentCategory(opt.code)}
-                          className={`rounded-xl border p-3 text-left transition ${
-                            paymentCategory === opt.code
-                              ? 'border-emerald-600 bg-emerald-50 ring-1 ring-emerald-600'
-                              : 'border-slate-200 bg-white hover:bg-slate-50'
-                          }`}
-                        >
-                          <p className="font-bold text-slate-900">{opt.title}</p>
-                          <p className="mt-0.5 text-[11px] text-slate-500">
-                            {opt.sub}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-
-                    {paymentCategory === 'TTT' && (
-                      <div className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50/70 p-3">
-                        <QrCode className="h-5 w-5 text-blue-600 shrink-0" />
-                        <select
-                          value={scannedQrCode}
-                          onChange={(e) => setScannedQrCode(e.target.value)}
-                          className="flex-1 rounded-lg border border-blue-300 bg-white px-3 py-2 font-mono font-bold"
-                        >
-                          {state.masterReceipts.map((r) => (
-                            <option key={r.id} value={r.qrCode}>
-                              {r.qrCode} — {r.customerName} (Dư:{' '}
-                              {formatVnd(r.remainingAmount)})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {paymentCategory === 'TTS' && (
-                      <div className="flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50/70 p-3">
-                        <FileText className="h-5 w-5 text-purple-600 shrink-0" />
-                        <input
-                          type="text"
-                          value={ttsNote}
-                          onChange={(e) => setTtsNote(e.target.value)}
-                          placeholder="Note xác nhận TTS trên chứng từ..."
-                          className="flex-1 rounded-lg border border-purple-300 bg-white px-3 py-2"
-                        />
-                      </div>
-                    )}
-
-                    {paymentCategory === 'TTTT' && (
-                      <div className="grid grid-cols-2 gap-2 rounded-xl border border-amber-200 bg-amber-50/70 p-3">
-                        <button
-                          type="button"
-                          onClick={() => setDirectMethod('BANK_TRANSFER_API')}
-                          className={`rounded-lg border py-2 font-bold ${
-                            directMethod === 'BANK_TRANSFER_API'
-                              ? 'border-amber-600 bg-amber-600 text-white'
-                              : 'bg-white text-slate-700'
-                          }`}
-                        >
-                          Chuyển khoản (API)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDirectMethod('CASH')}
-                          className={`rounded-lg border py-2 font-bold ${
-                            directMethod === 'CASH'
-                              ? 'border-amber-600 bg-amber-600 text-white'
-                              : 'bg-white text-slate-700'
-                          }`}
-                        >
-                          Tiền mặt
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-sm hover:bg-emerald-700"
-                  >
-                    <Printer className="h-5 w-5" />
-                    XÁC NHẬN THANH TOÁN (GATE IN OK) &amp; IN PHIẾU K80 CÓ MÃ QR CHO LÁI XE
-                  </button>
-                </>
-              )}
-            </form>
-          ) : (
-            <div className="py-12 text-center text-sm text-slate-500">
-              Tất cả hồ sơ Hạ vỏ trong hàng chờ đã được xử lý xong.
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================================================
-// BỘ PHẬN VĂN PHÒNG — CẤP VỎ (Chỉ các cont AV mới vào danh sách sẵn sàng CẤP VỎ)
-// ============================================================================
-
-export const OfficeCapVoWorkspace: React.FC<OfficeHaVoProps> = ({
-  state,
-  onUpdateState,
-  onOpenK80Ticket,
-  onOpenDossier,
-}) => {
-  // Chỉ các cont AV (không bị Hold, không chờ vệ sinh/sửa chữa) mới nằm trong hàng chờ sẵn sàng CẤP VỎ
-  const avReadyContainers = state.containers.filter(
-    (c) =>
-      c.status === 'IN_YARD' &&
-      c.conditionClass === 'AV' &&
-      !c.isOnHold &&
-      !c.needsRepair
-  );
-
-  const [bookingNo, setBookingNo] = useState('');
-  const [selectedContNo, setSelectedContNo] = useState(
-    avReadyContainers[0]?.containerNo || ''
-  );
-  const [truckNo, setTruckNo] = useState('');
-  const [receiverName, setReceiverName] = useState('');
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  const handleIssueCapVo = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    try {
-      let currentState = state;
-      let booking = currentState.bookings.find(
-        (b) => b.bookingNo === bookingNo.trim().toUpperCase()
-      );
-      const targetCont = currentState.containers.find(
-        (c) => c.containerNo === selectedContNo
-      );
-      if (!targetCont) {
-        throw new Error('Vui lòng chọn container AV cần cấp vỏ.');
-      }
-
-      if (!booking) {
-        booking = {
-          id: `bk-${Date.now()}`,
-          bookingNo: bookingNo.trim().toUpperCase(),
-          releaseType: 'EMPTY_RELEASE',
-          shippingLineCode: targetCont.shippingLineCode,
-          requesterName: receiverName,
-          receiverName,
-          size: targetCont.size,
-          type: targetCont.type,
-          requestedQty: 5,
-          allocatedContainers: [],
-          gatedOutContainers: [],
-          status: 'OPEN',
-          createdAt: new Date().toISOString(),
-        };
-        currentState = {
-          ...currentState,
-          bookings: [booking, ...currentState.bookings],
-        };
-      }
-
-      const next = allocateContainerToBooking(currentState, {
-        bookingId: booking.id,
-        containerNo: selectedContNo,
-        truckNo,
-      });
-
-      onUpdateState(next);
-      const latestTicket = next.k80Tickets[0];
-      if (latestTicket) {
-        onOpenK80Ticket(latestTicket);
-      }
-
-      const remainingAv = next.containers.filter(
-        (c) =>
-          c.status === 'IN_YARD' &&
-          c.conditionClass === 'AV' &&
-          !c.isOnHold
-      );
-      setSelectedContNo(remainingAv[0]?.containerNo || '');
-      setSuccessMsg(
-        `Đã lập lệnh CẤP VỎ cho container AV ${selectedContNo}! Đã in phiếu K80 kèm Mã QR và đẩy sang hàng chờ BỘ PHẬN XE NÂNG -> CHỜ CẤP VỎ.`
-      );
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Lỗi cấp vỏ');
-    }
-  };
-
-  return (
-    <div className="space-y-5">
-      {errorMsg && (
-        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
-          <p>{errorMsg}</p>
-        </div>
-      )}
-
-      {successMsg && (
-        <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-          <p className="font-semibold">{successMsg}</p>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* DANH SÁCH CONT AV ĐỦ ĐIỀU KIỆN TRONG HÀNG CHỜ CẤP VỎ */}
-        <div className="lg:col-span-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-          <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900">
-                Danh Sách Container AV Sẵn Sàng CẤP VỎ
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                Chỉ hiển thị các container đạt trạng thái AV trong bãi
-              </p>
-            </div>
-            <span className="rounded-full bg-emerald-600 px-2.5 py-0.5 text-xs font-black text-white">
-              {avReadyContainers.length} AV
-            </span>
-          </div>
-
-          <div className="space-y-2">
-            {avReadyContainers.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => setSelectedContNo(c.containerNo)}
-                className={`cursor-pointer rounded-xl border p-3 text-xs transition ${
-                  selectedContNo === c.containerNo
-                    ? 'border-emerald-600 bg-emerald-50 ring-1 ring-emerald-600'
-                    : 'border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono font-black text-slate-900">
-                    {c.containerNo} ({c.size}&apos;{c.type})
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenDossier?.(c.masterDossierCode);
-                      }}
-                      className="rounded bg-blue-100 px-2 py-0.5 font-mono text-[10px] font-bold text-blue-800 hover:bg-blue-200"
-                    >
-                      Hồ sơ: {c.masterDossierCode}
-                    </button>
-                    <span className="rounded bg-emerald-100 px-2 py-0.5 font-black text-emerald-800">
-                      AV • Năm {c.manufactureYear}
-                    </span>
-                  </div>
-                </div>
-                <p className="mt-1 text-[11px] text-slate-600">
-                  Vị trí: <strong>{c.currentBlock || 'Bãi'}</strong>{' '}
-                  {c.currentBay ? `(${c.currentBay}-${c.currentRow}-${c.currentTier})` : '(Cấp Block)'}{' '}
-                  • Hãng tàu: <strong>{c.shippingLineCode}</strong>
-                </p>
-              </div>
+                )}
+              </li>
             ))}
-          </div>
-        </div>
-
-        {/* FORM LẬP LỆNH CẤP VỎ & IN PHIẾU K80 */}
-        <div className="lg:col-span-7 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-          <h3 className="mb-4 flex items-center gap-2 text-base font-bold text-slate-900">
-            <Truck className="h-5 w-5 text-emerald-600" />
-            Thao Tác Văn Phòng — CẤP VỎ & In Phiếu K80 Có Mã QR
-          </h3>
-
-          <form onSubmit={handleIssueCapVo} className="space-y-4 text-xs">
-            {/* PHẦN 1: SỐ LỆNH BOOKING & CHỌN CONTAINER AV */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
-              <p className="font-bold text-slate-900">
-                1. Chọn Container AV &amp; Nhập Số Lệnh Cấp / Booking
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block font-bold text-slate-700">
-                    Số Lệnh Cấp / Booking *
-                  </label>
-                  <input
-                    type="text"
-                    value={bookingNo}
-                    onChange={(e) => setBookingNo(e.target.value.toUpperCase())}
-                    placeholder="Nhập số Booking (VD: BK-MSK-2026-109)..."
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono font-bold uppercase"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block font-bold text-slate-700">
-                    Container AV được chọn cấp *
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedContNo}
-                    readOnly
-                    placeholder="Chọn container AV ở danh sách bên trái..."
-                    className="w-full rounded-lg border border-emerald-400 bg-emerald-50 px-3 py-2 font-mono font-black text-emerald-900"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* PHẦN 2: CHỈ HIỂN THỊ KHI ĐÃ XONG PHẦN 1 (CÓ BOOKING & ĐÃ CHỌN CONT AV) */}
-            {Boolean(bookingNo.trim() && selectedContNo) && (
-              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
-                <p className="font-bold text-slate-900">
-                  2. Thông Tin Phương Tiện &amp; Khách Hàng Nhận Vỏ
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1 block font-bold text-slate-700">
-                      Số Xe Vào Nhận Vỏ *
-                    </label>
-                    <input
-                      type="text"
-                      value={truckNo}
-                      onChange={(e) => setTruckNo(e.target.value.toUpperCase())}
-                      placeholder="Nhập biển số xe (VD: 15H-686.88)..."
-                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-bold uppercase"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block font-bold text-slate-700">
-                      Khách Hàng / Bên Nhận Vỏ (Theo Danh mục chung) *
-                    </label>
-                    <select
-                      value={receiverName}
-                      onChange={(e) => setReceiverName(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-bold text-slate-900"
-                      required
-                    >
-                      <option value="">-- Chọn Khách hàng nhận vỏ --</option>
-                      {state.partners
-                        .filter((p) => p.isCustomer)
-                        .map((cust) => (
-                          <option key={cust.id} value={cust.name}>
-                            [{cust.code}] {cust.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* NÚT XÁC NHẬN: CHỈ HIỂN THỊ KHI ĐÃ NHẬP ĐỦ CẢ PHẦN 1 & PHẦN 2 */}
-            {Boolean(
-              bookingNo.trim() &&
-                selectedContNo &&
-                truckNo.trim() &&
-                receiverName.trim()
-            ) && (
-              <button
-                type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-sm hover:bg-emerald-700"
-              >
-                <Printer className="h-5 w-5" />
-                KHÓA PHÂN BỔ CONT &amp; IN PHIẾU K80 (ĐẨY SANG XE NÂNG CHỜ CẤP VỎ)
-              </button>
-            )}
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================================================
-// BỘ PHẬN VĂN PHÒNG — NHẬP TÀU & XUẤT TÀU
-// ============================================================================
-
-export const OfficeVesselBatchWorkspace: React.FC<{
-  mode: 'NHAP_TAU' | 'XUAT_TAU';
-  state: DepotState;
-  onUpdateState: (next: DepotState) => void;
-}> = ({ mode, state, onUpdateState }) => {
-  const [vesselName, setVesselName] = useState('');
-  const [contNo, setContNo] = useState('');
-  const [msg, setMsg] = useState<string | null>(null);
-
-  const handleBatchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (mode === 'NHAP_TAU') {
-      const next = recordGateInFieldStep(state, {
-        gateInType: 'VESSEL_IMPORT',
-        doorPhotoUrl:
-          'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80',
-        initialContainerHint: contNo,
-        conditionClass: 'AV',
-        stuffingClass: 'E',
-        cleaningItems: ['KHÔNG VỆ SINH'],
-        manufactureYear: 2020,
-      });
-      onUpdateState(next);
-      setMsg(
-        `Đã tiếp nhận container ${contNo} thuộc lô NHẬP TÀU (${vesselName}) vào hàng chờ xử lý!`
-      );
-    } else {
-      setMsg(
-        `Đã ghi nhận lệnh XUẤT TÀU (${vesselName}) đưa container ${contNo} ra cảng!`
-      );
-    }
-  };
-
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-blue-50 p-2.5 text-blue-600">
-          <Ship className="h-6 w-6" />
-        </div>
-        <div>
-          <h2 className="text-base font-extrabold text-slate-900">
-            BỘ PHẬN VĂN PHÒNG — {mode === 'NHAP_TAU' ? 'NHẬP TÀU' : 'XUẤT TÀU'}
-          </h2>
-          <p className="text-xs text-slate-500">
-            {mode === 'NHAP_TAU'
-              ? 'Bãi tổ chức đoàn xe kéo vận chuyển lô container rỗng từ cảng về bãi'
-              : 'Bãi tổ chức đoàn xe kéo vận chuyển lô container rỗng từ bãi ra cảng'}
-          </p>
-        </div>
-      </div>
-
-      {msg && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-900">
-          {msg}
-        </div>
+          </ul>
+        </SectionCard>
       )}
 
-      <form onSubmit={handleBatchSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-3 text-xs">
-        <div>
-          <label className="mb-1 block font-bold text-slate-700">
-            1. Tên tàu / Chuyến tàu *
-          </label>
-          <input
-            type="text"
-            value={vesselName}
-            onChange={(e) => setVesselName(e.target.value)}
-            placeholder="Nhập tên tàu / chuyến tàu..."
-            className="w-full rounded-lg border border-slate-300 px-3 py-2"
-            required
-          />
-        </div>
-        {vesselName.trim() !== '' && (
-          <div>
-            <label className="mb-1 block font-bold text-slate-700">
-              2. Số Container trong lô *
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <SectionCard
+          className="lg:col-span-6"
+          title="Danh sách container sẵn sàng CẤP VỎ"
+          right={<span className="rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white">{ready.length}</span>}
+        >
+          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+            <label className="col-span-2 sm:col-span-1">
+              <span className={labelCls}>Số cont</span>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <input value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className={`${inputCls} pl-7 font-mono uppercase`} />
+              </div>
             </label>
-            <input
-              type="text"
-              value={contNo}
-              onChange={(e) => setContNo(e.target.value.toUpperCase())}
-              placeholder="Nhập số container..."
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono uppercase"
-              required
-            />
+            <label>
+              <span className={labelCls}>Hãng tàu</span>
+              <select value={filters.line} onChange={(e) => setFilters({ ...filters, line: e.target.value })} className={inputCls}>
+                <option value="ALL">Tất cả</option>
+                {shippingLines.map((l) => <option key={l.id} value={l.code}>{l.code}</option>)}
+              </select>
+            </label>
+            <label>
+              <span className={labelCls}>Size</span>
+              <select value={filters.size} onChange={(e) => setFilters({ ...filters, size: e.target.value })} className={inputCls}>
+                <option value="ALL">Tất cả</option>
+                {state.containerSizes.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </label>
+            <label>
+              <span className={labelCls}>Type</span>
+              <select value={filters.type} onChange={(e) => setFilters({ ...filters, type: e.target.value })} className={inputCls}>
+                <option value="ALL">Tất cả</option>
+                {state.containerTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </label>
+            <label>
+              <span className={labelCls}>Trạng thái</span>
+              <select value={filters.condition} onChange={(e) => setFilters({ ...filters, condition: e.target.value as ConditionFilter })} className={inputCls}>
+                <option value="AV">AV</option>
+                <option value="DAMAGE">DAMAGE</option>
+                <option value="ALL">ALL</option>
+              </select>
+            </label>
           </div>
-        )}
-        {vesselName.trim() !== '' && contNo.trim() !== '' && (
-          <div className="flex items-end">
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700"
-            >
-              Xác nhận Lệnh {mode === 'NHAP_TAU' ? 'Nhập Tàu' : 'Xuất Tàu'}
-            </button>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-left text-xs">
+              <thead className="border-b border-slate-200 text-[11px] uppercase text-slate-500">
+                <tr>
+                  <th className="py-2 pr-2">Số container</th>
+                  <th className="py-2 pr-2">Size/Type</th>
+                  <th className="py-2 pr-2">Hãng tàu</th>
+                  <th className="py-2 pr-2">Trạng thái</th>
+                  <th className="py-2 pr-2">Đóng hàng</th>
+                  <th className="py-2">Vị trí</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {ready.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-6 text-center text-slate-500">Không có container phù hợp bộ lọc.</td>
+                  </tr>
+                ) : (
+                  ready.map((c) => (
+                    <tr
+                      key={c.id}
+                      onClick={() => { setSelectedContainerId(c.id); setFeeIds([]); }}
+                      className={`cursor-pointer ${selectedContainerId === c.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                    >
+                      <td className="py-2 pr-2"><ContainerNo no={c.containerNo} /></td>
+                      <td className="py-2 pr-2">{c.size}/{c.type}</td>
+                      <td className="py-2 pr-2">{c.shippingLineCode}</td>
+                      <td className={`py-2 pr-2 font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
+                      <td className="py-2 pr-2">{c.stuffingClass}</td>
+                      <td className="py-2 font-mono">{formatLocation(c)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-      </form>
+        </SectionCard>
+
+        <form onSubmit={handleSubmit} className="space-y-4 lg:col-span-6">
+          <SectionCard title="1. Booking & container" icon={<Truck className="h-4 w-4 text-slate-500" />}>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label>
+                <span className={labelCls}>Số booking *</span>
+                <input value={bookingNo} onChange={(e) => setBookingNo(e.target.value.toUpperCase())} placeholder="BK-MSK-2026-109" className={`${inputCls} font-mono uppercase`} />
+              </label>
+              <label>
+                <span className={labelCls}>Khách hàng nhận vỏ *</span>
+                <select value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={inputCls}>
+                  <option value="">-- Chọn --</option>
+                  {customers.map((c) => <option key={c.id} value={c.name}>[{c.code}] {c.name}</option>)}
+                </select>
+              </label>
+            </div>
+
+            {summary && (
+              <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span>
+                    Đã cấp theo booking: <strong className="text-sm">{summary.issued.length}</strong>
+                    {summary.booking?.requestedQty ? ` / ${summary.booking.requestedQty}` : ''} container
+                    <span className="text-slate-500">
+                      {' '}(Chờ TT {summary.waitingPayment.length} • Chờ xe nâng {summary.waitingForklift.length} • Đã OUT {summary.gatedOut.length})
+                      {summary.cancelled.length > 0 && ` • Đã hủy ${summary.cancelled.length}`}
+                    </span>
+                  </span>
+                  {summary.orders.length > 0 && (
+                    <button type="button" onClick={() => setShowBookingList((v) => !v)} className={secondaryBtn}>
+                      {showBookingList ? 'Ẩn danh sách' : 'Xem danh sách'}
+                    </button>
+                  )}
+                </div>
+                {!summary.booking && <p className="mt-1 text-[11px] text-slate-500">Booking mới — sẽ được tạo khi lập lệnh đầu tiên.</p>}
+                {showBookingList && (
+                  <table className="mt-2 w-full text-left text-[11px]">
+                    <tbody className="divide-y divide-slate-200">
+                      {summary.orders.map((o) => (
+                        <tr key={o.id}>
+                          <td className="py-1 pr-2 font-mono">
+                            <button type="button" onClick={() => onOpenDossier?.(o.gateOutCode)} className="text-blue-700 hover:underline">{o.gateOutCode}</button>
+                          </td>
+                          <td className="py-1 pr-2 font-mono">{o.containerNo}</td>
+                          <td className="py-1 pr-2">{statusLabel[o.status]}</td>
+                          <td className="py-1">{formatViTime(o.confirmedAt || o.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            <div className="mt-3 text-xs">
+              <span className={labelCls}>Container được chọn</span>
+              {selected ? (
+                <span>
+                  <ContainerNo no={selected.containerNo} /> • {selected.size}/{selected.type} • {selected.shippingLineCode} •{' '}
+                  <strong className={selected.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}>{selected.conditionClass}</strong>
+                </span>
+              ) : (
+                <span className="text-slate-500">Chọn container ở danh sách bên trái.</span>
+              )}
+            </div>
+          </SectionCard>
+
+          {part1Done && (
+            <SectionCard title="2. Phương tiện">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label>
+                  <span className={labelCls}>Số xe *</span>
+                  <input value={truckNo} onChange={(e) => setTruckNo(e.target.value.toUpperCase())} placeholder="15H-686.88" className={`${inputCls} uppercase`} />
+                </label>
+                <label>
+                  <span className={labelCls}>SĐT lái xe *</span>
+                  <input type="tel" inputMode="tel" value={driverPhone} onChange={(e) => setDriverPhone(e.target.value)} placeholder="0912345678" className={inputCls} />
+                </label>
+              </div>
+            </SectionCard>
+          )}
+
+          {part2Done && <FeeLinesEditor catalog={state.feeCatalog} selectedIds={feeIds} onChange={setFeeIds} suggestedId={suggested} />}
+
+          {part2Done && feeIds.length > 0 && (
+            <>
+              <PaymentPanel state={state} value={payment} onChange={setPayment} />
+              <button type="submit" disabled={!isPaymentChoiceComplete(payment)} className={`${primaryBtn} w-full py-3`}>
+                Lập lệnh cấp vỏ — {paymentSubmitLabel(payment)}
+              </button>
+            </>
+          )}
+        </form>
+      </div>
     </div>
   );
 };
+
+// ============================================================================
+// BỘ PHẬN VĂN PHÒNG — NHẬP TÀU & XUẤT TÀU (DEC-038: để sau, chưa ghi nhận dữ liệu)
+// ============================================================================
+export const OfficeVesselBatchWorkspace: React.FC<{ mode: 'NHAP_TAU' | 'XUAT_TAU' }> = ({ mode }) => (
+  <div className="rounded-lg border border-slate-200 bg-white p-6 text-xs text-slate-700">
+    <div className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-900">
+      <Ship className="h-5 w-5 text-slate-500" />
+      {mode === 'NHAP_TAU' ? 'NHẬP TÀU' : 'XUẤT TÀU'}
+    </div>
+    <p>
+      Phân hệ {mode === 'NHAP_TAU' ? 'NHẬP TÀU (xe kéo bãi đưa lô container từ cảng về)' : 'XUẤT TÀU (xe kéo bãi đưa container ra cảng)'} sẽ được
+      xây dựng ở giai đoạn sau, khi quy trình chi tiết được xác nhận (DEC-038 / OPEN-001).
+    </p>
+    <p className="mt-1 text-slate-500">Màn hình này hiện không ghi nhận dữ liệu để tránh tạo hồ sơ chưa có quy trình.</p>
+  </div>
+);
