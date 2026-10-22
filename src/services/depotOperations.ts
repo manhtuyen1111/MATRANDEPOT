@@ -1,7 +1,9 @@
 import {
+  AppRole,
+  StaffUser,
+  ContainerRecord,
   ContainerSize,
   ContainerType,
-  DirectPaymentMethod,
   FeeLineItem,
   FeeTariffCategory,
   FieldCleaningItem,
@@ -9,49 +11,47 @@ import {
   FieldStuffingClass,
   GateInType,
   GateOutOrder,
-  GateOutType,
   K80InternalTicket,
-  PaymentCategory,
+  ReleaseBooking,
+  ServiceWorkOrder,
 } from '../types/depot';
 import { DepotState, hasRolePermission } from './depotStore';
+import { allocateCode } from './codes';
+import { ASSIGNABLE_ROLES } from './permissions';
+import {
+  appendAudit,
+  assertPermission,
+  findActiveContainer,
+  findActiveContainerByCode,
+  formatLocation,
+  newId,
+  normalizeContainerNo,
+  normalizeDriverPhone,
+  nowIso,
+  SYSTEM_ACTOR,
+  updateContainerById,
+  validateTargetSlot,
+} from './core';
+import {
+  applyBankCallback,
+  BankCallbackInput,
+  demoBankProviderRef,
+  isVoucherSettled,
+  paymentLabelOf,
+  pendingTransactionOf,
+  settleVoucher,
+  SettleOutcome,
+  SettleVoucherInput,
+  cancelPendingTransaction,
+} from './payments';
 
-function nowIso(): string {
-  return new Date().toISOString();
-}
+export {
+  cancelPendingTransaction,
+  confirmPrepaidCash,
+  createMasterPrepaidReceipt,
+} from './payments';
 
-function appendAudit(
-  state: DepotState,
-  actionCode: string,
-  entityType: string,
-  entityCode: string,
-  summary: string,
-  masterDossierCode?: string
-): DepotState {
-  const entry = {
-    id: `aud-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    masterDossierCode,
-    actorName: state.currentUser.fullName,
-    actorRole: state.currentUser.roles[0] || 'OFFICE',
-    actionCode,
-    entityType,
-    entityCode,
-    summary,
-    createdAt: nowIso(),
-  };
-  return {
-    ...state,
-    auditLogs: [entry, ...state.auditLogs],
-  };
-}
-
-export function generateNextMasterDossierCode(state: DepotState): string {
-  const now = new Date();
-  const y = String(now.getFullYear()).slice(-2);
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  const seq = String(state.gateInOrders.length + 1).padStart(3, '0');
-  return `HS-${y}${m}${d}-${seq}`;
-}
+type Actor = { name: string; role: 'SYSTEM' } | undefined;
 
 const LEGACY_CLEANING_MAP: Record<string, FieldCleaningItem> = {
   'KHÔNG VỆ SINH': 'KHÔNG VỆ SINH',
@@ -59,7 +59,7 @@ const LEGACY_CLEANING_MAP: Record<string, FieldCleaningItem> = {
   'WP - QUÉT': 'WP - QUÉT',
   'RỬA NƯỚC': 'WW - RỬA NƯỚC',
   'WW - RỬA NƯỚC': 'WW - RỬA NƯỚC',
-  'VỆ SINH CÔNG NGHIỆP': 'CC - HÓA CHẤT',
+  'VỆ SINH CÔNG NGHIỆP': 'CC - HÓA CHẤT', // DEC-021: CC - HÓA CHẤT chính là VỆ SINH CÔNG NGHIỆP
   'CC - HÓA CHẤT': 'CC - HÓA CHẤT',
   'NHỔ ĐINH': 'RM - NHỔ ĐINH',
   'RM - NHỔ ĐINH': 'RM - NHỔ ĐINH',
@@ -76,7 +76,38 @@ export function normalizeCleaningItems(items: (FieldCleaningItem | string)[]): F
   return Array.from(new Set(mapped));
 }
 
-// 1. BỘ PHẬN GIÁM ĐỊNH — HẠ VỎ (Mobile): Chụp ảnh cửa cont + nhập thông tin ban đầu & XÁC NHẬN TÁC NGHIỆP sang Văn phòng
+// Chi phí chỉ được lấy từ BIỂU GIÁ trong Danh mục chung, chụp lại đơn giá tại thời điểm lập chứng từ
+function buildFeeLines(state: DepotState, feeCatalogIds: string[]): FeeLineItem[] {
+  if (!feeCatalogIds || feeCatalogIds.length === 0) {
+    throw new Error('Vui lòng thêm ít nhất 1 khoản CHI PHÍ (đã bao gồm VAT) từ biểu giá.');
+  }
+  return feeCatalogIds.map((catalogId) => {
+    const cat = state.feeCatalog.find((f) => f.id === catalogId);
+    if (!cat) throw new Error('Biểu giá đã chọn không còn trong Danh mục chung. Vui lòng chọn lại.');
+    return {
+      id: newId('fl'),
+      catalogCode: cat.code,
+      name: cat.name,
+      amountInclVat: Number(cat.defaultAmountInclVat),
+    };
+  });
+}
+
+function sumFees(lines: FeeLineItem[]): number {
+  return lines.reduce((sum, l) => sum + Number(l.amountInclVat || 0), 0);
+}
+
+function assertCustomer(state: DepotState, customerName: string): string {
+  const name = customerName.trim();
+  if (!state.partners.some((p) => p.isCustomer && p.name === name)) {
+    throw new Error('Vui lòng chọn KHÁCH HÀNG theo Danh mục chung.');
+  }
+  return name;
+}
+
+// ============================================================================
+// 1. BỘ PHẬN GIÁM ĐỊNH — HẠ VỎ (Mobile): Chụp ảnh cửa cont + nhập thông tin ban đầu
+// ============================================================================
 export function recordGateInFieldStep(
   state: DepotState,
   input: {
@@ -87,49 +118,36 @@ export function recordGateInFieldStep(
     damageRemarks?: string[];
     stuffingClass: FieldStuffingClass;
     cleaningItems: (FieldCleaningItem | string)[];
-    manufactureYear?: number;
+    manufactureYear: number;
   }
 ): DepotState {
-  if (
-    !hasRolePermission(state.currentUser, [
-      'INSPECTOR',
-      'GATE_STAFF',
-      'YARD_STAFF',
-      'MANAGER',
-    ])
-  ) {
-    throw new Error(
-      'Không đủ quyền: Chỉ Bộ phận Giám định / Hiện trường / Quản lý mới được xác nhận tác nghiệp Hạ vỏ.'
-    );
-  }
-  if (!input.doorPhotoUrl.trim()) {
+  assertPermission(
+    state,
+    'GATE_IN_FIELD',
+    'chỉ Bộ phận Giám định / Hiện trường / Quản lý mới được xác nhận tác nghiệp Hạ vỏ.'
+  );
+  if (!input.doorPhotoUrl?.trim()) {
     throw new Error('Bắt buộc phải chụp 1 ảnh cửa container nhìn rõ số container.');
   }
-
-  const year = input.manufactureYear || 2018;
-  if (year < 1980 || year > 2030) {
+  const year = Number(input.manufactureYear);
+  if (!Number.isInteger(year) || year < 1980 || year > new Date().getFullYear() + 1) {
     throw new Error('Năm sinh container (AGE) phải theo định dạng 4 chữ số hợp lệ (VD: 2001, 2002...).');
   }
 
   const normalizedCleaning = normalizeCleaningItems(input.cleaningItems);
   const remarks = input.conditionClass === 'DAMAGE' ? input.damageRemarks || [] : [];
-  const isGeneratedKey =
-    input.initialContainerHint?.startsWith('HS-') ||
-    input.initialContainerHint?.startsWith('GD-');
-  const masterDossierCode = isGeneratedKey
-    ? input.initialContainerHint!
-    : generateNextMasterDossierCode(state);
-  const orderCode = masterDossierCode;
+  // Mã hồ sơ do hệ thống cấp, không nhận mã sinh ở giao diện (CR-07)
+  const allocated = allocateCode(state, 'IN');
+  const code = allocated.code;
+  const hint = input.initialContainerHint?.trim().toUpperCase();
 
   const newOrder = {
-    id: `gin-${Date.now()}`,
-    masterDossierCode,
-    orderCode,
+    id: newId('gin'),
+    masterDossierCode: code,
+    orderCode: code,
     gateInType: input.gateInType,
     doorPhotoUrl: input.doorPhotoUrl.trim(),
-    initialContainerHint: isGeneratedKey
-      ? undefined
-      : input.initialContainerHint?.trim().toUpperCase(),
+    initialContainerHint: hint && !/^(HS|GD|IN)-/.test(hint) ? hint : undefined,
     conditionClass: input.conditionClass,
     damageRemarks: remarks,
     stuffingClass: input.stuffingClass,
@@ -137,27 +155,26 @@ export function recordGateInFieldStep(
     manufactureYear: year,
     fieldStaffName: state.currentUser.fullName,
     fieldRecordedAt: nowIso(),
-    feeAmount: input.conditionClass === 'DAMAGE' ? 1150000 : 850000,
+    feeAmount: 0,
     status: 'FIELD_RECORDED' as const,
     nextDepartments: [],
   };
 
   return appendAudit(
-    {
-      ...state,
-      gateInOrders: [newOrder, ...state.gateInOrders],
-    },
+    { ...allocated.state, gateInOrders: [newOrder, ...allocated.state.gateInOrders] },
     'GIAM_DINH_HA_VO',
     'GATE_IN',
-    masterDossierCode,
-    `[Hồ sơ ${masterDossierCode}] Giám định khởi tạo MÃ HỒ SƠ CHÍNH & xác nhận Hạ vỏ: Trạng thái ${input.conditionClass}${
+    code,
+    `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: Trạng thái ${input.conditionClass}${
       remarks.length ? ` (${remarks.join(', ')})` : ''
     }, Đóng hàng ${input.stuffingClass}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}`,
-    masterDossierCode
+    code
   );
 }
 
-// 2. BỘ PHẬN VĂN PHÒNG — HẠ VỎ: Kiểm tra chứng từ, bổ sung 5 trường & tạo thanh toán
+// ============================================================================
+// 2. BỘ PHẬN VĂN PHÒNG — HẠ VỎ: Bổ sung hồ sơ & lập chứng từ chi phí (chưa thu tiền)
+// ============================================================================
 export function verifyGateInOfficeAndCreatePayment(
   state: DepotState,
   input: {
@@ -166,256 +183,213 @@ export function verifyGateInOfficeAndCreatePayment(
     size: ContainerSize;
     type: ContainerType;
     truckNo: string;
-    customerRep: string;
+    driverPhone: string;
+    customerName: string;
     shippingLineCode: string;
     orderDocNo: string;
-    feeLines?: FeeLineItem[];
-    feeAmount: number;
+    feeCatalogIds: string[];
   }
 ): DepotState {
-  if (!hasRolePermission(state.currentUser, ['OFFICE', 'MANAGER'])) {
-    throw new Error('Không đủ quyền: Chỉ Bộ phận Văn phòng / Quản lý mới được kiểm tra chứng từ và tạo thanh toán.');
-  }
-
-  const cleanContNo = input.containerNo.trim().toUpperCase();
-  if (!/^[A-Z]{4}\d{7}$/.test(cleanContNo)) {
-    throw new Error('SỐ CONTAINER không hợp lệ (chuẩn 4 chữ cái + 7 chữ số, ví dụ MSKU4089123).');
-  }
-  if (!input.truckNo.trim() || !input.customerRep.trim()) {
-    throw new Error('Văn phòng bắt buộc nhập đầy đủ SỐ CONTAINER, SIZE, TYPE, SỐ XE và ĐẠI DIỆN KHÁCH HÀNG.');
-  }
-
-  const targetOrder = state.gateInOrders.find((o) => o.id === input.gateInId);
-  if (!targetOrder) {
-    throw new Error('Không tìm thấy lượt Hạ vỏ.');
-  }
-  if (targetOrder.status === 'GATE_IN_OK' || targetOrder.status === 'CANCELLED') {
-    throw new Error(`Lượt Hạ vỏ đang ở trạng thái ${targetOrder.status}, không thể tạo lại yêu cầu thanh toán.`);
-  }
-
-  const existingActiveCont = state.containers.find(
-    (c) => c.containerNo === cleanContNo && c.status !== 'GATED_OUT'
-  );
-  if (existingActiveCont) {
-    throw new Error(`Container ${cleanContNo} hiện đang ở trong bãi (${existingActiveCont.status}), không thể Hạ vỏ trùng.`);
-  }
-
-  const voucherNo = targetOrder.voucherNo || `CT-GIN-${Date.now().toString().slice(-6)}`;
-  const voucherId = targetOrder.voucherId || `vch-${Date.now()}`;
-
-  const newVoucher = {
-    id: voucherId,
-    masterDossierCode: targetOrder.masterDossierCode,
-    voucherNo,
-    serviceType: 'GATE_IN' as const,
-    referenceCode: targetOrder.orderCode,
-    containerNo: cleanContNo,
-    shippingLineCode: input.shippingLineCode,
-    payerName: input.customerRep.trim(),
-    amount: input.feeAmount,
-    status: 'PENDING' as const,
-    createdBy: state.currentUser.fullName,
-    createdAt: nowIso(),
-  };
-
-  const vouchers = targetOrder.voucherId
-    ? state.vouchers.map((v) => (v.id === voucherId ? newVoucher : v))
-    : [newVoucher, ...state.vouchers];
-
-  const gateInOrders = state.gateInOrders.map((o) =>
-    o.id === targetOrder.id
-      ? {
-          ...o,
-          containerNo: cleanContNo,
-          size: input.size,
-          type: input.type,
-          truckNo: input.truckNo.trim().toUpperCase(),
-          customerRep: input.customerRep.trim(),
-          shippingLineCode: input.shippingLineCode,
-          orderDocNo: input.orderDocNo.trim(),
-          officeStaffName: state.currentUser.fullName,
-          officeVerifiedAt: nowIso(),
-          feeLines: input.feeLines || [],
-          feeAmount: input.feeAmount,
-          voucherId,
-          voucherNo,
-          status: 'PAYMENT_PENDING' as const,
-        }
-      : o
-  );
-
-  return appendAudit(
-    { ...state, vouchers, gateInOrders },
-    'GATE_IN_OFFICE_VERIFY',
-    'GATE_IN',
-    targetOrder.masterDossierCode,
-    `[Hồ sơ ${targetOrder.masterDossierCode}] Văn phòng bổ sung thông tin cont ${cleanContNo} (${input.size}${input.type}, Xe ${input.truckNo}, ĐD: ${input.customerRep}) & tạo chứng từ ${voucherNo}`,
-    targetOrder.masterDossierCode
-  );
-}
-
-// 3. BỘ PHẬN VĂN PHÒNG — Xác nhận thanh toán (TTT / TTS / TTTT) -> GATE IN OK -> Sinh Phiếu K80 + QR & Đẩy hàng chờ bộ phận
-export function confirmGateInPaymentAndComplete(
-  state: DepotState,
-  input: {
-    gateInId: string;
-    paymentCategory: PaymentCategory;
-    scannedQrCode?: string;
-    ttsNote?: string;
-    directMethod?: DirectPaymentMethod;
-    providerTxRef?: string;
-  }
-): DepotState {
-  if (!hasRolePermission(state.currentUser, ['OFFICE', 'ACCOUNTANT', 'MANAGER'])) {
-    throw new Error('Không đủ quyền xác nhận khoản thu.');
-  }
+  assertPermission(state, 'GATE_IN_OFFICE', 'chỉ Bộ phận Văn phòng / Quản lý mới được kiểm tra chứng từ và lập chi phí.');
 
   const order = state.gateInOrders.find((o) => o.id === input.gateInId);
   if (!order) throw new Error('Không tìm thấy lượt Hạ vỏ.');
-  if (order.status === 'GATE_IN_OK') {
-    throw new Error('Lượt Hạ vỏ này đã ở trạng thái GATE IN OK.');
+  if (order.status === 'GATE_IN_OK' || order.status === 'CANCELLED') {
+    throw new Error(`Lượt Hạ vỏ đang ở trạng thái ${order.status}, không thể lập lại chứng từ.`);
   }
-  if (!order.containerNo || !order.size || !order.type || !order.voucherId) {
-    throw new Error('Chưa hoàn tất bước Văn phòng kiểm tra chứng từ và tạo yêu cầu thanh toán (GIN-004).');
+  const existingVoucher = order.voucherId ? state.vouchers.find((v) => v.id === order.voucherId) : undefined;
+  if (existingVoucher && existingVoucher.status !== 'PENDING') {
+    throw new Error(`Chứng từ ${existingVoucher.voucherNo} đã được xử lý thanh toán, không thể sửa chi phí.`);
+  }
+  if (existingVoucher && pendingTransactionOf(state, existingVoucher.id)) {
+    throw new Error('Chứng từ đang chờ kết quả chuyển khoản. Hủy yêu cầu chuyển khoản trước khi sửa hồ sơ.');
   }
 
+  const contNo = normalizeContainerNo(input.containerNo);
+  if (!state.containerSizes.includes(input.size)) throw new Error('SIZE không có trong Danh mục chung.');
+  if (!state.containerTypes.includes(input.type)) throw new Error('TYPE không có trong Danh mục chung.');
+  if (!state.partners.some((p) => p.isShippingLine && p.code === input.shippingLineCode)) {
+    throw new Error('Vui lòng chọn HÃNG TÀU theo Danh mục chung.');
+  }
+  const customerName = assertCustomer(state, input.customerName);
+  const truckNo = input.truckNo.trim().toUpperCase();
+  if (!truckNo) throw new Error('Văn phòng bắt buộc nhập SỐ XE.');
+  const driverPhone = normalizeDriverPhone(input.driverPhone);
+
+  const active = findActiveContainer(state, contNo);
+  if (active) {
+    throw new Error(`Container ${contNo} hiện đang ở trong bãi (${active.status}), không thể Hạ vỏ trùng.`);
+  }
+  const duplicateOrder = state.gateInOrders.find(
+    (o) =>
+      o.id !== order.id &&
+      o.containerNo === contNo &&
+      o.status !== 'GATE_IN_OK' &&
+      o.status !== 'CANCELLED'
+  );
+  if (duplicateOrder) {
+    throw new Error(`Container ${contNo} đang có hồ sơ Hạ vỏ khác chưa hoàn tất (${duplicateOrder.masterDossierCode}) (GIN-006).`);
+  }
+
+  const feeLines = buildFeeLines(state, input.feeCatalogIds);
+  const amount = sumFees(feeLines);
+
+  let next = state;
+  let voucherNo = existingVoucher?.voucherNo;
+  if (!voucherNo) {
+    const allocated = allocateCode(next, 'CT');
+    voucherNo = allocated.code;
+    next = allocated.state;
+  }
+  const voucher = {
+    id: existingVoucher?.id || newId('vch'),
+    masterDossierCode: order.masterDossierCode,
+    voucherNo,
+    serviceType: 'GATE_IN' as const,
+    referenceCode: order.masterDossierCode,
+    containerNo: contNo,
+    shippingLineCode: input.shippingLineCode,
+    payerName: customerName,
+    amount,
+    feeLines,
+    status: 'PENDING' as const,
+    createdBy: existingVoucher?.createdBy || state.currentUser.fullName,
+    createdAt: existingVoucher?.createdAt || nowIso(),
+  };
+  next = {
+    ...next,
+    vouchers: existingVoucher
+      ? next.vouchers.map((v) => (v.id === voucher.id ? voucher : v))
+      : [voucher, ...next.vouchers],
+    gateInOrders: next.gateInOrders.map((o) =>
+      o.id === order.id
+        ? {
+            ...o,
+            containerNo: contNo,
+            size: input.size,
+            type: input.type,
+            truckNo,
+            driverPhone,
+            customerRep: customerName,
+            shippingLineCode: input.shippingLineCode,
+            orderDocNo: input.orderDocNo.trim(),
+            officeStaffName: state.currentUser.fullName,
+            officeVerifiedAt: nowIso(),
+            feeLines,
+            feeAmount: amount,
+            voucherId: voucher.id,
+            voucherNo,
+            status: 'PAYMENT_PENDING' as const,
+          }
+        : o
+    ),
+  };
+
+  return appendAudit(
+    next,
+    'GATE_IN_OFFICE_VERIFY',
+    'GATE_IN',
+    order.masterDossierCode,
+    `[Hồ sơ ${order.masterDossierCode}] Văn phòng bổ sung cont ${contNo} (${input.size}${input.type}, Xe ${truckNo}, SĐT ${driverPhone}) & lập chứng từ ${voucherNo}: ${amount.toLocaleString('vi-VN')}đ`,
+    order.masterDossierCode
+  );
+}
+
+// ============================================================================
+// 3. VĂN PHÒNG — Thanh toán (TTT / TTS / TTTT) → GATE IN OK khi đã thanh toán / xác nhận hợp lệ
+// ============================================================================
+export function confirmGateInPaymentAndComplete(
+  state: DepotState,
+  input: { gateInId: string } & SettleVoucherInput
+): DepotState {
+  const order = state.gateInOrders.find((o) => o.id === input.gateInId);
+  if (!order) throw new Error('Không tìm thấy lượt Hạ vỏ.');
+  if (order.status === 'GATE_IN_OK') throw new Error('Lượt Hạ vỏ này đã ở trạng thái GATE IN OK.');
+  if (order.status === 'CANCELLED') throw new Error('Lượt Hạ vỏ đã bị hủy.');
+  if (!order.containerNo || !order.voucherId) {
+    throw new Error('Chưa hoàn tất bước Văn phòng kiểm tra chứng từ và lập chi phí (GIN-004).');
+  }
   const voucher = state.vouchers.find((v) => v.id === order.voucherId);
   if (!voucher) throw new Error('Không tìm thấy chứng từ thanh toán.');
 
-  let updatedMasterReceipts = [...state.masterReceipts];
-  let updatedDeductions = [...state.receiptDeductions];
-  let matchedReceiptCode: string | undefined;
-
-  if (input.paymentCategory === 'TTT') {
-    const qr = (input.scannedQrCode || '').trim().toUpperCase();
-    if (!qr) {
-      throw new Error('THANH TOÁN TRƯỚC (TTT): Vui lòng quét mã QR của Phiếu thu mẹ vào chứng từ.');
-    }
-    const receipt = updatedMasterReceipts.find((r) => r.qrCode.toUpperCase() === qr);
-    if (!receipt || receipt.status !== 'ACTIVE') {
-      throw new Error(`Mã QR "${qr}" không tồn tại hoặc không còn hiệu lực.`);
-    }
-    if (receipt.remainingAmount < voucher.amount) {
-      throw new Error(
-        `Số dư Phiếu thu mẹ ${receipt.receiptCode} (${receipt.remainingAmount.toLocaleString('vi-VN')}đ) không đủ để trừ khoản thu (${voucher.amount.toLocaleString('vi-VN')}đ).`
-      );
-    }
-
-    const balanceBefore = receipt.remainingAmount;
-    const balanceAfter = balanceBefore - voucher.amount;
-    matchedReceiptCode = receipt.receiptCode;
-
-    updatedMasterReceipts = updatedMasterReceipts.map((r) =>
-      r.id === receipt.id
-        ? {
-            ...r,
-            remainingAmount: balanceAfter,
-            status: balanceAfter === 0 ? 'EXHAUSTED' : 'ACTIVE',
-          }
-        : r
-    );
-
-    updatedDeductions = [
-      {
-        id: `ded-${Date.now()}`,
-        receiptCode: receipt.receiptCode,
-        qrCode: receipt.qrCode,
-        voucherNo: voucher.voucherNo,
-        containerNo: order.containerNo,
-        deductedAmount: voucher.amount,
-        balanceBefore,
-        balanceAfter,
-        performedBy: state.currentUser.fullName,
-        performedAt: nowIso(),
-      },
-      ...updatedDeductions,
-    ];
-  } else if (input.paymentCategory === 'TTS') {
-    if (!input.ttsNote?.trim()) {
-      throw new Error('THANH TOÁN SAU (TTS): Phải ghi chú (Note) xác nhận TTS trên chứng từ.');
-    }
-  } else if (input.paymentCategory === 'TTTT') {
-    if (!input.directMethod) {
-      throw new Error('THANH TOÁN TRỰC TIẾP (TTTT): Phải chọn Chuyển khoản (API) hoặc Tiền mặt.');
-    }
+  let next = state;
+  let outcome: SettleOutcome = 'SETTLED';
+  if (voucher.status === 'PENDING') {
+    ({ state: next, outcome } = settleVoucher(state, voucher.id, input));
+  } else if (!isVoucherSettled(voucher)) {
+    throw new Error(`Chứng từ ${voucher.voucherNo} ở trạng thái ${voucher.status}, không thể hoàn tất Hạ vỏ.`);
   }
+  if (outcome === 'AWAITING_TRANSFER') return next;
+  return completeGateIn(next, order.id);
+}
 
-  const updatedVouchers = state.vouchers.map((v) =>
-    v.id === voucher.id
-      ? {
-          ...v,
-          paymentCategory: input.paymentCategory,
-          directMethod: input.paymentCategory === 'TTTT' ? input.directMethod : undefined,
-          scannedQrCode: input.paymentCategory === 'TTT' ? input.scannedQrCode?.trim().toUpperCase() : undefined,
-          masterReceiptCode: matchedReceiptCode,
-          ttsNote: input.paymentCategory === 'TTS' ? `TTS - ${input.ttsNote?.trim()}` : undefined,
-          providerTxRef: input.paymentCategory === 'TTTT' ? input.providerTxRef?.trim() : undefined,
-          status: 'CONFIRMED' as const,
-          confirmedBy: state.currentUser.fullName,
-          confirmedAt: nowIso(),
-        }
-      : v
-  );
-
-  const nextDepartments: string[] = ['XE NÂNG - CHỜ HẠ VỎ'];
-  const newWorkOrders = [...state.workOrders];
+// Hoàn tất GATE IN OK: chỉ khi chứng từ CONFIRMED (đã thu / đã trừ quỹ) hoặc DEFERRED (TTS hợp lệ)
+function completeGateIn(state: DepotState, gateInId: string, actor?: Actor): DepotState {
+  const order = state.gateInOrders.find((o) => o.id === gateInId);
+  if (!order || !order.containerNo || !order.size || !order.type) {
+    throw new Error('Hồ sơ Hạ vỏ chưa đủ thông tin để hoàn tất.');
+  }
+  if (order.status === 'GATE_IN_OK') return state;
+  const voucher = state.vouchers.find((v) => v.id === order.voucherId);
+  if (!isVoucherSettled(voucher)) {
+    throw new Error('Không thể cập nhật GATE IN OK khi chưa thanh toán / xác nhận thanh toán hợp lệ (GIN-004).');
+  }
+  if (findActiveContainer(state, order.containerNo)) {
+    throw new Error(`Container ${order.containerNo} đang có lượt lưu bãi chưa OUT.`);
+  }
+  const actorName = actor?.name || state.currentUser.fullName;
+  const now = nowIso();
   const isDamage = order.conditionClass === 'DAMAGE';
   const requiresCleaning = order.cleaningItems.some((item) => item !== 'KHÔNG VỆ SINH');
 
+  // DEC-024 & CR-03: có yêu cầu vệ sinh thì Vệ sinh xác nhận xong mới vào hàng chờ Xe nâng hạ vỏ
+  const nextDepartments: string[] = requiresCleaning
+    ? [`VỆ SINH - CHỜ VỆ SINH (${order.cleaningItems.join(', ')})`, 'XE NÂNG - CHỜ HẠ VỎ (sau khi vệ sinh xong)']
+    : ['XE NÂNG - CHỜ HẠ VỎ'];
+  if (isDamage) nextDepartments.push('BÁO GIÁ - CHỜ BÁO GIÁ');
+
+  const newWorkOrders: ServiceWorkOrder[] = [];
   if (isDamage) {
-    nextDepartments.push('BỘ PHẬN BÁO GIÁ - CHỜ BÁO GIÁ');
-    newWorkOrders.unshift({
-      id: `wo-insp-${Date.now()}`,
+    newWorkOrders.push({
+      id: newId('wo'),
       masterDossierCode: order.masterDossierCode,
-      workOrderCode: `INSP-${Date.now().toString().slice(-6)}`,
+      workOrderCode: `INSP-${order.masterDossierCode}`,
       containerNo: order.containerNo,
       category: 'INSPECTION',
       sourceOrderCode: order.orderCode,
-      items:
-        order.damageRemarks.length > 0
-          ? [...order.damageRemarks]
-          : ['Giám định đầu vào container DAMAGE'],
+      items: order.damageRemarks.length > 0 ? [...order.damageRemarks] : ['Hư hỏng ghi nhận khi Hạ vỏ'],
       estimateCost: 0,
       approvalStatus: 'NOT_REQUIRED',
       workStatus: 'OPEN',
-      assignedTo: 'Lê Hoàng Giám Định (Hạ vỏ & Báo giá)',
-      createdAt: nowIso(),
+      assignedTo: 'Bộ phận Báo giá',
+      createdAt: now,
     });
-  } else {
-    nextDepartments.push('SẴN SÀNG CẤP VỎ (AV)');
   }
-
   if (requiresCleaning) {
-    nextDepartments.push(`BỘ PHẬN VỆ SINH - CHỜ VỆ SINH (${order.cleaningItems.join(', ')})`);
-    newWorkOrders.unshift({
-      id: `wo-cln-${Date.now() + 1}`,
+    newWorkOrders.push({
+      id: newId('wo'),
       masterDossierCode: order.masterDossierCode,
-      workOrderCode: `CLN-${Date.now().toString().slice(-6)}`,
+      workOrderCode: `CLN-${order.masterDossierCode}`,
       containerNo: order.containerNo,
       category: 'CLEANING',
       sourceOrderCode: order.orderCode,
       items: [...order.cleaningItems],
-      estimateCost: order.cleaningItems.length * 150000,
+      estimateCost: 0,
       approvalStatus: 'NOT_REQUIRED',
       workStatus: 'OPEN',
-      assignedTo: 'Vũ Văn Vệ Sinh',
-      createdAt: nowIso(),
+      assignedTo: 'Bộ phận Vệ sinh',
+      createdAt: now,
     });
   }
 
   const k80QrCode = `QR-K80-${order.containerNo}`;
-  const newK80Ticket: K80InternalTicket = {
-    ticketCode: `K80-${Date.now().toString().slice(-6)}`,
+  const ticket: K80InternalTicket = {
+    ticketCode: `K80-${order.masterDossierCode}`,
     masterDossierCode: order.masterDossierCode,
     qrCode: k80QrCode,
     operationMode: 'HA_VO',
-    isPaid: true,
-    paymentLabel:
-      input.paymentCategory === 'TTT'
-        ? 'TTT (Đã trừ Phiếu thu mẹ)'
-        : input.paymentCategory === 'TTS'
-        ? `TTS (${input.ttsNote?.trim()})`
-        : `TTTT (${input.directMethod === 'BANK_TRANSFER_API' ? 'Chuyển khoản API' : 'Tiền mặt'})`,
+    isPaid: voucher!.status === 'CONFIRMED',
+    paymentLabel: paymentLabelOf(voucher!),
     containerNo: order.containerNo,
     size: order.size,
     type: order.type,
@@ -425,40 +399,30 @@ export function confirmGateInPaymentAndComplete(
     cleaningItems: order.cleaningItems,
     manufactureYear: order.manufactureYear,
     truckNo: order.truckNo,
+    driverPhone: order.driverPhone,
     customerRep: order.customerRep,
-    issuedAt: nowIso(),
-    issuedBy: state.currentUser.fullName,
+    issuedAt: now,
+    issuedBy: actorName,
   };
 
-  const updatedGateInOrders = state.gateInOrders.map((o) =>
-    o.id === order.id
-      ? {
-          ...o,
-          k80QrCode,
-          status: 'GATE_IN_OK' as const,
-          gateInOkAt: nowIso(),
-          gateInOkBy: state.currentUser.fullName,
-          nextDepartments,
-        }
-      : o
-  );
-
-  const newContainer = {
-    id: `cnt-${Date.now()}`,
+  const container: ContainerRecord = {
+    id: newId('cnt'),
     masterDossierCode: order.masterDossierCode,
     containerNo: order.containerNo,
     size: order.size,
     type: order.type,
-    manufactureYear: order.manufactureYear || 2018,
-    shippingLineCode: order.shippingLineCode || 'MAERSK',
+    manufactureYear: order.manufactureYear,
+    shippingLineCode: order.shippingLineCode || '',
     customerRep: order.customerRep || '',
-    status: 'WAITING_PLACEMENT' as const,
+    truckNo: order.truckNo,
+    driverPhone: order.driverPhone,
+    status: 'WAITING_PLACEMENT',
     conditionClass: order.conditionClass,
     damageRemarks: order.damageRemarks || [],
     stuffingClass: order.stuffingClass,
     cleaningItems: order.cleaningItems,
     activeQrCode: k80QrCode,
-    isPaid: true,
+    isPaid: voucher!.status === 'CONFIRMED',
     currentBlock: null,
     currentBay: null,
     currentRow: null,
@@ -466,34 +430,36 @@ export function confirmGateInPaymentAndComplete(
     needsCleaning: requiresCleaning,
     needsQuotation: isDamage,
     needsRepair: false,
-    forkliftShiftTask: isDamage ? ('HA_KE_GIAM_DINH' as const) : ('NONE' as const),
+    forkliftShiftTask: 'NONE',
     isOnHold: false,
-    gateInAt: nowIso(),
+    gateInAt: now,
   };
 
   return appendAudit(
     {
       ...state,
-      masterReceipts: updatedMasterReceipts,
-      receiptDeductions: updatedDeductions,
-      vouchers: updatedVouchers,
-      gateInOrders: updatedGateInOrders,
-      workOrders: newWorkOrders,
-      k80Tickets: [newK80Ticket, ...state.k80Tickets],
-      containers: [
-        newContainer,
-        ...state.containers.filter((c) => c.containerNo !== order.containerNo),
-      ],
+      gateInOrders: state.gateInOrders.map((o) =>
+        o.id === order.id
+          ? { ...o, k80QrCode, status: 'GATE_IN_OK' as const, gateInOkAt: now, gateInOkBy: actorName, nextDepartments }
+          : o
+      ),
+      workOrders: [...newWorkOrders, ...state.workOrders],
+      k80Tickets: [ticket, ...state.k80Tickets],
+      // Giữ lại các lượt lưu bãi cũ đã OUT của cùng số container làm lịch sử
+      containers: [container, ...state.containers],
     },
-    `GATE_IN_OK_${input.paymentCategory}`,
+    `GATE_IN_OK_${voucher!.paymentCategory || 'PAID'}`,
     'GATE_IN',
     order.masterDossierCode,
-    `[Hồ sơ ${order.masterDossierCode}] Hoàn tất Hạ vỏ GATE IN OK cho ${order.containerNo} (${input.paymentCategory}) -> In phiếu K80 [${k80QrCode}] -> Chuyển hàng chờ: ${nextDepartments.join(' + ')}`,
-    order.masterDossierCode
+    `[Hồ sơ ${order.masterDossierCode}] GATE IN OK cho ${order.containerNo} (${paymentLabelOf(voucher!)}) -> In phiếu K80 [${k80QrCode}] -> ${nextDepartments.join(' + ')}`,
+    order.masterDossierCode,
+    actor
   );
 }
 
-// 4. BỘ PHẬN XE NÂNG — CHỜ HẠ VỎ & CẬP NHẬT VỊ TRÍ (Hỗ trợ quét mã QR phiếu K80)
+// ============================================================================
+// 4. BỘ PHẬN XE NÂNG — CHỜ HẠ VỎ: ghi nhận vị trí chính thức đầu tiên
+// ============================================================================
 export function updateContainerLocation(
   state: DepotState,
   input: {
@@ -506,805 +472,822 @@ export function updateContainerLocation(
     reason: string;
   }
 ): DepotState {
-  if (!hasRolePermission(state.currentUser, ['FORKLIFT', 'YARD_STAFF', 'MANAGER'])) {
-    throw new Error('Không đủ quyền: Chỉ Bộ phận Xe nâng / Hiện trường / Quản lý mới được cập nhật vị trí.');
-  }
-
-  const block = state.yardBlocks.find((b) => b.blockCode === input.blockCode);
-  if (!block) throw new Error(`Block "${input.blockCode}" không hợp lệ (YARD-003).`);
-
-  const qr = input.scannedQrCode?.trim().toUpperCase();
-  const container = state.containers.find(
-    (c) =>
-      c.status !== 'GATED_OUT' &&
-      (c.containerNo === input.containerNo?.trim().toUpperCase() ||
-        (qr &&
-          (c.activeQrCode.toUpperCase() === qr ||
-            c.masterDossierCode.toUpperCase() === qr ||
-            c.containerNo.toUpperCase() === qr)))
-  );
-
+  assertPermission(state, 'FORKLIFT_OPS', 'chỉ Bộ phận Xe nâng / Hiện trường / Văn phòng / Quản lý mới được hạ vỏ.');
+  const container =
+    findActiveContainer(state, input.containerNo) || findActiveContainerByCode(state, input.scannedQrCode);
   if (!container) {
-    throw new Error('Không tìm thấy container tương ứng với mã QR / Mã Hồ Sơ Chính / số container vừa quét.');
+    throw new Error('Không tìm thấy container tương ứng với mã QR / Mã hồ sơ / số container vừa quét.');
   }
-
-  const cleanBay = input.bay?.trim() || null;
-  const cleanRow = input.row?.trim() || null;
-  const cleanTier = input.tier?.trim() || null;
-
-  const hasAnyDetail = Boolean(cleanBay || cleanRow || cleanTier);
-  const hasAllDetail = Boolean(cleanBay && cleanRow && cleanTier);
-
-  if (hasAnyDetail && !hasAllDetail) {
-    throw new Error('Khi nhập vị trí chi tiết, vui lòng nhập đủ cả 3 thông số Bay, Row, Tier; hoặc để trống cả 3 nếu chỉ ghi nhận ở cấp Block.');
+  if (container.status !== 'WAITING_PLACEMENT') {
+    throw new Error(`Container ${container.containerNo} không nằm trong hàng chờ HẠ VỎ (dùng ĐẢO CHUYỂN cho container đã tồn bãi).`);
   }
-
-  if (hasAllDetail) {
-    const occupied = state.containers.find(
-      (c) =>
-        c.containerNo !== container.containerNo &&
-        c.status !== 'GATED_OUT' &&
-        c.currentBlock === input.blockCode &&
-        c.currentBay === cleanBay &&
-        c.currentRow === cleanRow &&
-        c.currentTier === cleanTier
+  if (container.needsCleaning) {
+    throw new Error(
+      `Container ${container.containerNo} có yêu cầu vệ sinh — Bộ phận Vệ sinh phải xác nhận hoàn tất trước khi Xe nâng hạ vỏ (CR-03).`
     );
-    if (occupied) {
-      throw new Error(
-        `Ô vị trí chi tiết ${input.blockCode} / Bay ${cleanBay} / Row ${cleanRow} / Tier ${cleanTier} đang có container ${occupied.containerNo} nằm (YARD-003).`
-      );
-    }
   }
+  const slot = validateTargetSlot(state, container, input);
+  const toLabel = formatLocation({
+    currentBlock: slot.block,
+    currentBay: slot.bay,
+    currentRow: slot.row,
+    currentTier: slot.tier,
+  });
 
-  const fromLabel = container.currentBlock
-    ? container.currentBay
-      ? `${container.currentBlock} / Bay ${container.currentBay} / Row ${container.currentRow} / Tier ${container.currentTier}`
-      : `${container.currentBlock} (Cấp Block)`
-    : 'Chờ hạ vỏ (GATE-IN)';
-
-  const toLabel = hasAllDetail
-    ? `${input.blockCode} / Bay ${cleanBay} / Row ${cleanRow} / Tier ${cleanTier}`
-    : `${input.blockCode} (Cấp Block — chưa xếp Bay/Row/Tier)`;
-
-  const actionType = !container.currentBlock
-    ? 'INITIAL_BLOCK'
-    : !container.currentBay && hasAllDetail
-    ? 'DETAIL_SLOT_UPDATE'
-    : 'YARD_MOVE';
-
-  const updatedContainers = state.containers.map((c) =>
-    c.containerNo === container.containerNo
-      ? {
-          ...c,
-          status: c.status === 'WAITING_PLACEMENT' ? ('IN_YARD' as const) : c.status,
-          currentBlock: input.blockCode,
-          currentBay: cleanBay,
-          currentRow: cleanRow,
-          currentTier: cleanTier,
-        }
-      : c
-  );
-
-  const historyItem = {
-    id: `loc-${Date.now()}`,
-    masterDossierCode: container.masterDossierCode,
-    containerNo: container.containerNo,
-    fromLocation: fromLabel,
-    toLocation: toLabel,
-    actionType: actionType as 'INITIAL_BLOCK' | 'DETAIL_SLOT_UPDATE' | 'YARD_MOVE',
-    reason: input.reason.trim() || 'Xe nâng xác nhận vị trí trong bãi',
-    performedBy: state.currentUser.fullName,
-    performedAt: nowIso(),
-  };
-
+  const next = updateContainerById(state, container.id, {
+    status: 'IN_YARD',
+    currentBlock: slot.block,
+    currentBay: slot.bay,
+    currentRow: slot.row,
+    currentTier: slot.tier,
+  });
   return appendAudit(
     {
-      ...state,
-      containers: updatedContainers,
-      locationHistory: [historyItem, ...state.locationHistory],
+      ...next,
+      locationHistory: [
+        {
+          id: newId('loc'),
+          masterDossierCode: container.masterDossierCode,
+          containerNo: container.containerNo,
+          fromLocation: 'Chờ hạ vỏ (GATE IN)',
+          toLocation: toLabel,
+          actionType: 'INITIAL_BLOCK',
+          reason: input.reason.trim() || 'Xe nâng hạ vỏ',
+          performedBy: state.currentUser.fullName,
+          performedAt: nowIso(),
+        },
+        ...next.locationHistory,
+      ],
     },
-    'YARD_LOCATION_UPDATE',
+    'YARD_PLACEMENT',
     'CONTAINER',
     container.masterDossierCode,
-    `[Hồ sơ ${container.masterDossierCode}] Xe nâng cập nhật vị trí ${container.containerNo}: ${fromLabel} -> ${toLabel}`,
+    `[Hồ sơ ${container.masterDossierCode}] Xe nâng hạ vỏ ${container.containerNo} vào ${toLabel}`,
     container.masterDossierCode
   );
 }
 
-// 5. BỘ PHẬN VỆ SINH — CHỜ VỆ SINH: Quét mã QR phiếu K80 / Mã Hồ Sơ Chính hoặc bấm xác nhận hoàn thành vệ sinh
+// ============================================================================
+// 5. XE NÂNG — ĐẢO CHUYỂN (CR-01): tác nghiệp vận hành, lưu lịch sử trước/sau
+// ============================================================================
+function assertInYardWithPosition(container: ContainerRecord | undefined): ContainerRecord {
+  if (!container) throw new Error('Không tìm thấy container đang tồn bãi.');
+  if ((container.status !== 'IN_YARD' && container.status !== 'ALLOCATED') || !container.currentBlock) {
+    throw new Error(`Container ${container.containerNo} chưa có vị trí chính thức trong bãi.`);
+  }
+  return container;
+}
+
+export function shiftContainer(
+  state: DepotState,
+  input: { containerId: string; blockCode: string; bay?: string; row?: string; tier?: string; note?: string }
+): DepotState {
+  assertPermission(state, 'FORKLIFT_OPS', 'chỉ Bộ phận Xe nâng / Hiện trường / Văn phòng / Quản lý mới được đảo chuyển.');
+  const container = assertInYardWithPosition(state.containers.find((c) => c.id === input.containerId));
+  const slot = validateTargetSlot(state, container, input);
+  const fromLabel = formatLocation(container);
+  const toLabel = formatLocation({
+    currentBlock: slot.block,
+    currentBay: slot.bay,
+    currentRow: slot.row,
+    currentTier: slot.tier,
+  });
+  if (fromLabel === toLabel) throw new Error('Vị trí mới trùng với vị trí hiện tại.');
+
+  const next = updateContainerById(state, container.id, {
+    currentBlock: slot.block,
+    currentBay: slot.bay,
+    currentRow: slot.row,
+    currentTier: slot.tier,
+    forkliftShiftTask: 'NONE',
+  });
+  return appendAudit(
+    {
+      ...next,
+      locationHistory: [
+        {
+          id: newId('loc'),
+          masterDossierCode: container.masterDossierCode,
+          containerNo: container.containerNo,
+          fromLocation: fromLabel,
+          toLocation: toLabel,
+          actionType: 'YARD_SHIFT',
+          reason: input.note?.trim() || 'ĐẢO CHUYỂN',
+          performedBy: state.currentUser.fullName,
+          performedAt: nowIso(),
+        },
+        ...next.locationHistory,
+      ],
+    },
+    'YARD_SHIFT',
+    'CONTAINER',
+    container.masterDossierCode,
+    `[Hồ sơ ${container.masterDossierCode}] ĐẢO CHUYỂN ${container.containerNo}: ${fromLabel} -> ${toLabel}`,
+    container.masterDossierCode
+  );
+}
+
+// ============================================================================
+// 6. TỒN VỎ — SỬA VỊ TRÍ hành chính (CR-02): không tạo lịch sử tác nghiệp ĐẢO CHUYỂN
+// ============================================================================
+export function correctContainerLocation(
+  state: DepotState,
+  input: { containerId: string; blockCode: string; bay?: string; row?: string; tier?: string }
+): DepotState {
+  assertPermission(state, 'YARD_LOCATION_CORRECT', 'chỉ Văn phòng / Quản lý được sửa vị trí bãi.');
+  const container = assertInYardWithPosition(state.containers.find((c) => c.id === input.containerId));
+  const slot = validateTargetSlot(state, container, input);
+  const fromLabel = formatLocation(container);
+  const toLabel = formatLocation({
+    currentBlock: slot.block,
+    currentBay: slot.bay,
+    currentRow: slot.row,
+    currentTier: slot.tier,
+  });
+  if (fromLabel === toLabel) throw new Error('Vị trí mới trùng với vị trí hiện tại.');
+
+  const next = updateContainerById(state, container.id, {
+    currentBlock: slot.block,
+    currentBay: slot.bay,
+    currentRow: slot.row,
+    currentTier: slot.tier,
+  });
+  // Chỉ ghi nhật ký kiểm toán hệ thống (ai sửa, sửa gì); không phải lịch sử tác nghiệp Xe nâng
+  return appendAudit(
+    next,
+    'YARD_LOCATION_CORRECTION',
+    'CONTAINER',
+    container.masterDossierCode,
+    `[Hồ sơ ${container.masterDossierCode}] Văn phòng SỬA VỊ TRÍ ${container.containerNo}: ${fromLabel} -> ${toLabel}`,
+    container.masterDossierCode
+  );
+}
+
+// ============================================================================
+// 7. BỘ PHẬN VỆ SINH — CHỜ VỆ SINH (Văn phòng được hoàn tất thay — DEC-035)
+// ============================================================================
 export function completeCleaningTask(
   state: DepotState,
-  input: {
-    containerNo?: string;
-    scannedQrCode?: string;
-    notes?: string;
-  }
+  input: { containerNo?: string; scannedQrCode?: string; notes?: string }
 ): DepotState {
-  const qr = input.scannedQrCode?.trim().toUpperCase();
-  const container = state.containers.find(
-    (c) =>
-      c.needsCleaning &&
-      (c.containerNo === input.containerNo?.trim().toUpperCase() ||
-        (qr &&
-          (c.activeQrCode.toUpperCase() === qr ||
-            c.masterDossierCode.toUpperCase() === qr ||
-            c.containerNo.toUpperCase() === qr)))
-  );
-
-  if (!container) {
-    throw new Error('Không tìm thấy container đang chờ vệ sinh khớp với mã QR / Mã Hồ Sơ Chính / số container.');
+  assertPermission(state, 'CLEANING_COMPLETE', 'chỉ Bộ phận Vệ sinh / Văn phòng được xác nhận hoàn tất vệ sinh.');
+  const container =
+    findActiveContainer(state, input.containerNo) || findActiveContainerByCode(state, input.scannedQrCode);
+  if (!container || !container.needsCleaning) {
+    throw new Error('Không tìm thấy container đang chờ vệ sinh khớp với mã QR / Mã hồ sơ / số container.');
   }
-
-  const updatedContainers = state.containers.map((c) =>
-    c.containerNo === container.containerNo ? { ...c, needsCleaning: false } : c
-  );
-
-  const updatedWorkOrders = state.workOrders.map((w) =>
-    w.containerNo === container.containerNo && w.category === 'CLEANING'
-      ? {
-          ...w,
-          workStatus: 'COMPLETED' as const,
-          completedAt: nowIso(),
-          completedBy: state.currentUser.fullName,
-          resultNotes: input.notes || 'Đã quét QR xác nhận hoàn thành vệ sinh',
-        }
-      : w
-  );
-
+  const now = nowIso();
+  const next = updateContainerById(state, container.id, { needsCleaning: false });
   return appendAudit(
     {
-      ...state,
-      containers: updatedContainers,
-      workOrders: updatedWorkOrders,
+      ...next,
+      workOrders: next.workOrders.map((w) =>
+        w.masterDossierCode === container.masterDossierCode && w.category === 'CLEANING' && w.workStatus === 'OPEN'
+          ? {
+              ...w,
+              workStatus: 'COMPLETED' as const,
+              completedAt: now,
+              completedBy: state.currentUser.fullName,
+              resultNotes: input.notes || 'Đã xác nhận hoàn thành vệ sinh',
+            }
+          : w
+      ),
     },
-    'COMPLETE_CLEANING_QR',
+    'COMPLETE_CLEANING',
     'CLEANING',
     container.masterDossierCode,
-    `[Hồ sơ ${container.masterDossierCode}] Bộ phận Vệ sinh hoàn tất vệ sinh [${container.cleaningItems.join(', ')}] cho ${container.containerNo}`,
+    `[Hồ sơ ${container.masterDossierCode}] Hoàn tất vệ sinh [${container.cleaningItems.join(', ')}] cho ${container.containerNo}`,
     container.masterDossierCode
   );
 }
 
-// 6. BỘ PHẬN BÁO GIÁ — CHỜ BÁO GIÁ (Chỉ cont DAMAGE): Xác nhận báo giá -> Đẩy sang CHỜ SỬA CHỮA & XE NÂNG HẠ SỬA CHỮA
+// ============================================================================
+// 8. BỘ PHẬN BÁO GIÁ — CHỜ BÁO GIÁ (vai trò riêng QUOTATION — DEC-026)
+// ============================================================================
 export function approveDamageQuotation(
   state: DepotState,
-  input: {
-    containerNo: string;
-    quotationAmount: number;
-    quotationItems: string[];
-  }
+  // DEC-040: Báo giá chỉ cần REMARK SỬA CHỮA; số tiền không bắt buộc (chưa có API hãng tàu duyệt)
+  // DEC-041: bắt buộc GIỜ CÔNG SỬA CHỮA
+  input: { containerNo: string; quotationItems: string[]; laborHours: number; quotationAmount?: number }
 ): DepotState {
-  const container = state.containers.find(
-    (c) => c.containerNo === input.containerNo && c.needsQuotation
-  );
-  if (!container) {
-    throw new Error('Container không nằm trong hàng chờ Báo giá.');
+  assertPermission(state, 'QUOTATION', 'chỉ Bộ phận Báo giá được xác nhận báo giá.');
+  const container = findActiveContainer(state, input.containerNo);
+  if (!container || !container.needsQuotation) throw new Error('Container không nằm trong hàng chờ Báo giá.');
+  const amount = input.quotationAmount === undefined ? 0 : Number(input.quotationAmount);
+  if (!Number.isFinite(amount) || amount < 0) throw new Error('Số tiền báo giá không hợp lệ.');
+  const items = input.quotationItems.map((i) => i.trim()).filter(Boolean);
+  if (items.length === 0) throw new Error('Vui lòng nhập REMARK SỬA CHỮA.');
+  const laborHours = Number(input.laborHours);
+  if (!Number.isFinite(laborHours) || laborHours <= 0 || laborHours > 1000) {
+    throw new Error('Vui lòng nhập GIỜ CÔNG SỬA CHỮA lớn hơn 0.');
   }
+  const now = nowIso();
 
-  const updatedContainers = state.containers.map((c) =>
-    c.containerNo === container.containerNo
-      ? {
-          ...c,
-          needsQuotation: false,
-          needsRepair: true,
-          forkliftShiftTask: 'HA_SUA_CHUA' as const,
-          quotationAmount: input.quotationAmount,
-          quotationItems: input.quotationItems,
-        }
-      : c
-  );
-
-  const newRepairWo = {
-    id: `wo-rep-${Date.now()}`,
+  const next = updateContainerById(state, container.id, {
+    needsQuotation: false,
+    needsRepair: true,
+    quotationAmount: amount,
+    quotationItems: items,
+    quotationLaborHours: laborHours,
+  });
+  const repairWo: ServiceWorkOrder = {
+    id: newId('wo'),
     masterDossierCode: container.masterDossierCode,
-    workOrderCode: `MNR-${Date.now().toString().slice(-6)}`,
+    workOrderCode: `MNR-${container.masterDossierCode}`,
     containerNo: container.containerNo,
-    category: 'REPAIR' as const,
+    category: 'REPAIR',
     sourceOrderCode: container.masterDossierCode,
-    items: input.quotationItems,
-    estimateCost: input.quotationAmount,
-    approvalStatus: 'APPROVED' as const,
+    items,
+    estimateCost: amount,
+    laborHours,
+    approvalStatus: 'APPROVED',
     approvedBy: state.currentUser.fullName,
-    workStatus: 'OPEN' as const,
-    assignedTo: 'Đặng Kỹ Thuật Sửa Chữa',
-    createdAt: nowIso(),
+    workStatus: 'OPEN',
+    assignedTo: 'Bộ phận Sửa chữa',
+    createdAt: now,
   };
-
   return appendAudit(
     {
-      ...state,
-      containers: updatedContainers,
-      workOrders: [newRepairWo, ...state.workOrders],
+      ...next,
+      workOrders: [
+        repairWo,
+        ...next.workOrders.map((w) =>
+          w.masterDossierCode === container.masterDossierCode && w.category === 'INSPECTION' && w.workStatus === 'OPEN'
+            ? { ...w, workStatus: 'COMPLETED' as const, completedAt: now, completedBy: state.currentUser.fullName }
+            : w
+        ),
+      ],
     },
     'APPROVE_QUOTATION',
     'QUOTATION',
     container.masterDossierCode,
-    `[Hồ sơ ${container.masterDossierCode}] Bộ phận Báo giá hoàn tất báo giá ${container.containerNo} (${input.quotationAmount.toLocaleString('vi-VN')}đ) -> Chuyển sang CHỜ SỬA CHỮA & Xe nâng HẠ SỬA CHỮA`,
+    `[Hồ sơ ${container.masterDossierCode}] Báo giá ${container.containerNo}: REMARK [${items.join(', ')}] • ${laborHours} giờ công${amount ? ` • ${amount.toLocaleString('vi-VN')}đ` : ''} -> CHỜ SỬA CHỮA`,
     container.masterDossierCode
   );
 }
 
-// 7. BỘ PHẬN SỬA CHỮA — CHỜ SỬA CHỮA: Quét QR hoàn tất sửa chữa -> Chuyển cont sang AV sẵn sàng CẤP VỎ
+// ============================================================================
+// 9. BỘ PHẬN SỬA CHỮA — CHỜ SỬA CHỮA: hoàn tất -> AV
+// ============================================================================
 export function completeRepairTask(
   state: DepotState,
-  input: {
-    containerNo?: string;
-    scannedQrCode?: string;
-    notes?: string;
-  }
+  // DEC-043: bắt buộc chọn TỔ SỬA CHỮA và ít nhất 1 thành viên đang hoạt động của tổ
+  input: { containerNo?: string; scannedQrCode?: string; notes?: string; teamId: string; memberIds: string[] }
 ): DepotState {
-  const qr = input.scannedQrCode?.trim().toUpperCase();
-  const container = state.containers.find(
-    (c) =>
-      c.needsRepair &&
-      (c.containerNo === input.containerNo?.trim().toUpperCase() ||
-        (qr &&
-          (c.activeQrCode.toUpperCase() === qr ||
-            c.masterDossierCode.toUpperCase() === qr ||
-            c.containerNo.toUpperCase() === qr)))
-  );
-  if (!container) {
-    throw new Error('Không tìm thấy container đang chờ sửa chữa khớp với mã QR / Mã Hồ Sơ Chính / số container.');
+  assertPermission(state, 'REPAIR', 'chỉ Bộ phận Sửa chữa được xác nhận hoàn tất sửa chữa.');
+  const container =
+    findActiveContainer(state, input.containerNo) || findActiveContainerByCode(state, input.scannedQrCode);
+  if (!container || !container.needsRepair) {
+    throw new Error('Không tìm thấy container đang chờ sửa chữa khớp với mã QR / Mã hồ sơ / số container.');
   }
-
-  const updatedContainers = state.containers.map((c) =>
-    c.containerNo === container.containerNo
-      ? {
-          ...c,
-          needsRepair: false,
-          conditionClass: 'AV' as const,
-          damageRemarks: [],
-        }
-      : c
-  );
-
-  const updatedWorkOrders = state.workOrders.map((w) =>
-    w.containerNo === container.containerNo && w.category === 'REPAIR'
-      ? {
-          ...w,
-          workStatus: 'COMPLETED' as const,
-          completedAt: nowIso(),
-          completedBy: state.currentUser.fullName,
-          resultNotes: input.notes || 'Đã sửa chữa hoàn tất -> Nghiệm thu đạt chuẩn AV',
-        }
-      : w
-  );
-
+  const team = state.repairTeams.find((t) => t.id === input.teamId && t.isActive);
+  if (!team) throw new Error('Vui lòng chọn TỔ SỬA CHỮA.');
+  const members = team.members.filter((m) => m.isActive && input.memberIds.includes(m.id));
+  if (members.length === 0) throw new Error('Phải chọn ít nhất 1 nhân viên trong tổ sửa chữa.');
+  if (members.length !== new Set(input.memberIds).size) {
+    throw new Error('Có nhân viên không thuộc tổ đã chọn hoặc đã ngưng hoạt động.');
+  }
+  const memberNames = members.map((m) => m.fullName);
+  const now = nowIso();
+  const next = updateContainerById(state, container.id, {
+    // DEC-049: bỏ QC — Sửa chữa hoàn tất là chuyển AV
+    needsRepair: false,
+    conditionClass: 'AV',
+    damageRemarks: [],
+  });
   return appendAudit(
     {
-      ...state,
-      containers: updatedContainers,
-      workOrders: updatedWorkOrders,
+      ...next,
+      workOrders: next.workOrders.map((w) =>
+        w.masterDossierCode === container.masterDossierCode && w.category === 'REPAIR' && w.workStatus === 'OPEN'
+          ? {
+              ...w,
+              workStatus: 'COMPLETED' as const,
+              completedAt: now,
+              completedBy: state.currentUser.fullName,
+              resultNotes: input.notes || 'Đã sửa chữa hoàn tất -> AV',
+              repairTeamCode: team.code,
+              repairTeamName: team.name,
+              repairMembers: memberNames,
+            }
+          : w
+      ),
     },
     'COMPLETE_REPAIR_TO_AV',
     'REPAIR',
     container.masterDossierCode,
-    `[Hồ sơ ${container.masterDossierCode}] Bộ phận Sửa chữa hoàn tất sửa chữa ${container.containerNo} -> Chuyển trạng thái sang AV sẵn sàng CẤP VỎ`,
+    `[Hồ sơ ${container.masterDossierCode}] Hoàn tất sửa chữa ${container.containerNo} -> AV • ${team.name}: ${memberNames.join(', ')}`,
     container.masterDossierCode
   );
 }
 
-// 8. BỘ PHẬN XE NÂNG — ĐẢO CHUYỂN (+ HẠ SỬA CHỮA / + HẠ KỆ GIÁM ĐỊNH)
-export function completeForkliftShift(
-  state: DepotState,
-  input: {
-    containerNo?: string;
-    scannedQrCode?: string;
-    shiftType: 'HA_SUA_CHUA' | 'HA_KE_GIAM_DINH';
-    targetBlock: string;
-  }
-): DepotState {
-  const qr = input.scannedQrCode?.trim().toUpperCase();
-  const container = state.containers.find(
-    (c) =>
-      c.forkliftShiftTask === input.shiftType &&
-      (c.containerNo === input.containerNo?.trim().toUpperCase() ||
-        (qr &&
-          (c.activeQrCode.toUpperCase() === qr ||
-            c.masterDossierCode.toUpperCase() === qr ||
-            c.containerNo.toUpperCase() === qr)))
-  );
-  if (!container) {
-    throw new Error('Không tìm thấy container trong danh sách chờ đảo chuyển này.');
-  }
-
-  const label =
-    input.shiftType === 'HA_SUA_CHUA'
-      ? 'Đảo chuyển HẠ SỬA CHỮA'
-      : 'Đảo chuyển HẠ KỆ GIÁM ĐỊNH';
-
-  const updatedContainers = state.containers.map((c) =>
-    c.containerNo === container.containerNo
-      ? {
-          ...c,
-          forkliftShiftTask: 'NONE' as const,
-          currentBlock: input.targetBlock,
-          currentBay: null,
-          currentRow: null,
-          currentTier: null,
-        }
-      : c
-  );
-
-  const locItem = {
-    id: `loc-${Date.now()}`,
-    masterDossierCode: container.masterDossierCode,
-    containerNo: container.containerNo,
-    fromLocation: container.currentBlock || 'Bãi',
-    toLocation: `${input.targetBlock} (${label})`,
-    actionType:
-      input.shiftType === 'HA_SUA_CHUA'
-        ? ('SHIFT_REPAIR' as const)
-        : ('SHIFT_INSPECTION_RACK' as const),
-    reason: label,
-    performedBy: state.currentUser.fullName,
-    performedAt: nowIso(),
-  };
-
-  return appendAudit(
-    {
-      ...state,
-      containers: updatedContainers,
-      locationHistory: [locItem, ...state.locationHistory],
-    },
-    'FORKLIFT_SHIFT_DONE',
-    'CONTAINER',
-    container.masterDossierCode,
-    `[Hồ sơ ${container.masterDossierCode}] Xe nâng hoàn tất ${label} cho container ${container.containerNo} tại ${input.targetBlock}`,
-    container.masterDossierCode
-  );
-}
-
-// 9. TẠM GIỮ / KHÓA XUẤT CONTAINER
+// ============================================================================
+// 10. KHÓA CONTAINER (Tạm giữ / Khóa xuất) — CR-02, DEC-030
+// ============================================================================
 export function toggleContainerHold(
   state: DepotState,
-  input: {
-    containerNo: string;
-    hold: boolean;
-    reason: string;
-  }
+  input: { containerNo: string; hold: boolean; reason: string }
 ): DepotState {
-  if (!hasRolePermission(state.currentUser, ['MANAGER', 'OFFICE'])) {
-    throw new Error('Không đủ quyền đặt/gỡ khóa xuất (Hold).');
+  assertPermission(state, 'CONTAINER_LOCK', 'chỉ Văn phòng / Quản lý được khóa / mở khóa container.');
+  const reason = input.reason.trim();
+  if (!reason) {
+    throw new Error(input.hold ? 'Bắt buộc nhập GHI CHÚ khi khóa container.' : 'Bắt buộc nhập ghi chú khi mở khóa container.');
   }
-  if (!input.reason.trim()) {
-    throw new Error('Bắt buộc nhập lý do tạm giữ / mở khóa xuất.');
+  const container = findActiveContainer(state, input.containerNo);
+  if (!container) throw new Error('Không tìm thấy container đang tồn bãi.');
+  if (container.isOnHold === input.hold) {
+    throw new Error(input.hold ? 'Container đã đang bị khóa.' : 'Container hiện không bị khóa.');
   }
-
-  const targetCont = state.containers.find((c) => c.containerNo === input.containerNo);
-  const updatedContainers = state.containers.map((c) =>
-    c.containerNo === input.containerNo
-      ? {
-          ...c,
-          isOnHold: input.hold,
-          holdReason: input.hold ? input.reason.trim() : undefined,
-          holdBy: input.hold ? state.currentUser.fullName : undefined,
-          holdAt: input.hold ? nowIso() : undefined,
-        }
-      : c
-  );
-
+  const next = updateContainerById(state, container.id, {
+    isOnHold: input.hold,
+    holdReason: input.hold ? reason : undefined,
+    holdBy: input.hold ? state.currentUser.fullName : undefined,
+    holdAt: input.hold ? nowIso() : undefined,
+  });
   return appendAudit(
-    { ...state, containers: updatedContainers },
-    input.hold ? 'CONTAINER_HOLD' : 'CONTAINER_UNHOLD',
+    next,
+    input.hold ? 'CONTAINER_LOCK' : 'CONTAINER_UNLOCK',
     'CONTAINER',
-    targetCont?.masterDossierCode || input.containerNo,
-    `[Hồ sơ ${targetCont?.masterDossierCode || 'N/A'}] ${input.hold ? 'Đặt khóa xuất (Hold)' : 'Gỡ khóa xuất (Unhold)'} container ${input.containerNo}: ${input.reason.trim()}`,
-    targetCont?.masterDossierCode
+    container.masterDossierCode,
+    `[Hồ sơ ${container.masterDossierCode}] ${input.hold ? 'KHÓA' : 'MỞ KHÓA'} container ${container.containerNo}: ${reason}`,
+    container.masterDossierCode
   );
 }
 
-// 10. BOOKING & CẤP VỎ — Khóa phân bổ chống cấp trùng (DEC-006)
-export function allocateContainerToBooking(
+// ============================================================================
+// 11. CẤP VỎ — điều kiện, lập lệnh (thu phí tại Văn phòng như Hạ vỏ), xuất bãi
+// ============================================================================
+
+// DEC-027: AV đã xong toàn bộ quy trình; DAMAGE được cấp theo chỉ định riêng; không cấp khi còn chờ vệ sinh / bị khóa
+export function releaseBlocker(c: ContainerRecord): string | null {
+  if (c.status !== 'IN_YARD') {
+    return c.status === 'ALLOCATED' ? 'Đã lập lệnh cấp' : 'Chưa tồn bãi (chờ hạ vỏ)';
+  }
+  if (c.isOnHold) return 'Container đang bị KHÓA';
+  if (c.needsCleaning) return 'Chưa xác nhận vệ sinh';
+  if (c.conditionClass === 'AV' && (c.needsQuotation || c.needsRepair)) return 'Chưa hoàn tất báo giá / sửa chữa';
+  return null;
+}
+
+export interface BookingSummary {
+  booking?: ReleaseBooking;
+  orders: GateOutOrder[];
+  issued: GateOutOrder[];          // Đã lập lệnh (không tính đã hủy)
+  waitingPayment: GateOutOrder[];
+  waitingForklift: GateOutOrder[];
+  gatedOut: GateOutOrder[];
+  cancelled: GateOutOrder[];
+}
+
+export function getBookingSummary(state: DepotState, rawBookingNo: string): BookingSummary {
+  const bookingNo = rawBookingNo.trim().toUpperCase();
+  const orders = state.gateOutOrders.filter((o) => o.bookingNo.toUpperCase() === bookingNo);
+  return {
+    booking: state.bookings.find((b) => b.bookingNo.toUpperCase() === bookingNo),
+    orders,
+    issued: orders.filter((o) => o.status !== 'CANCELLED'),
+    waitingPayment: orders.filter((o) => o.status === 'PAYMENT_PENDING'),
+    waitingForklift: orders.filter((o) => o.status === 'PENDING_FORKLIFT'),
+    gatedOut: orders.filter((o) => o.status === 'GATE_OUT_OK'),
+    cancelled: orders.filter((o) => o.status === 'CANCELLED'),
+  };
+}
+
+export function createReleaseOrder(
   state: DepotState,
   input: {
-    bookingId: string;
+    bookingNo: string;
+    customerName: string;
     containerNo: string;
-    truckNo?: string;
+    truckNo: string;
+    driverPhone: string;
+    feeCatalogIds: string[];
   }
 ): DepotState {
-  if (!hasRolePermission(state.currentUser, ['OFFICE', 'MANAGER'])) {
-    throw new Error('Không đủ quyền phân bổ và khóa cấp container.');
+  assertPermission(state, 'RELEASE_ORDER', 'chỉ Văn phòng / Quản lý được lập lệnh CẤP VỎ.');
+  const bookingNo = input.bookingNo.trim().toUpperCase();
+  if (!bookingNo) throw new Error('Vui lòng nhập SỐ BOOKING.');
+  const customerName = assertCustomer(state, input.customerName);
+  const container = findActiveContainer(state, input.containerNo);
+  if (!container) throw new Error('Không tìm thấy container đang tồn bãi.');
+  const blocker = releaseBlocker(container);
+  if (blocker) throw new Error(`Container ${container.containerNo} chưa đủ điều kiện CẤP VỎ: ${blocker}.`);
+  const truckNo = input.truckNo.trim().toUpperCase();
+  if (!truckNo) throw new Error('Vui lòng nhập SỐ XE.');
+  const driverPhone = normalizeDriverPhone(input.driverPhone);
+  const feeLines = buildFeeLines(state, input.feeCatalogIds);
+  const amount = sumFees(feeLines);
+
+  let next = state;
+  let booking = next.bookings.find((b) => b.bookingNo.toUpperCase() === bookingNo);
+  if (booking) {
+    if (booking.status === 'CANCELLED') throw new Error(`Booking ${bookingNo} đã bị hủy.`);
+    if (booking.size !== container.size || booking.type !== container.type) {
+      throw new Error(
+        `Kích cỡ/Loại container (${container.size}${container.type}) không khớp Booking ${bookingNo} (${booking.size}${booking.type}).`
+      );
+    }
+    const summary = getBookingSummary(next, bookingNo);
+    if (booking.requestedQty && summary.issued.length >= booking.requestedQty) {
+      throw new Error(`Booking ${bookingNo} đã cấp đủ ${booking.requestedQty} container.`);
+    }
+  } else {
+    booking = {
+      id: newId('bk'),
+      bookingNo,
+      releaseType: 'EMPTY_RELEASE',
+      shippingLineCode: container.shippingLineCode,
+      requesterName: customerName,
+      receiverName: customerName,
+      size: container.size,
+      type: container.type,
+      allocatedContainers: [],
+      gatedOutContainers: [],
+      releasedContainers: [],
+      status: 'OPEN',
+      createdAt: nowIso(),
+    };
+    next = { ...next, bookings: [booking, ...next.bookings] };
   }
 
-  const booking = state.bookings.find((b) => b.id === input.bookingId);
-  if (!booking) throw new Error('Không tìm thấy Booking/Lệnh cấp.');
+  const outCode = allocateCode(next, 'OUT');
+  next = outCode.state;
+  const voucherCode = allocateCode(next, 'CT');
+  next = voucherCode.state;
 
-  if (booking.allocatedContainers.length >= booking.requestedQty) {
-    throw new Error(`Booking ${booking.bookingNo} đã phân bổ đủ số lượng (${booking.requestedQty} container).`);
-  }
-
-  const container = state.containers.find((c) => c.containerNo === input.containerNo);
-  if (!container) throw new Error('Không tìm thấy container.');
-
-  if (container.status === 'ALLOCATED' || container.allocatedBookingNo) {
-    throw new Error(
-      `Chặn cấp trùng (DEC-006): Container ${container.containerNo} đang bị khóa phân bổ cho lệnh ${container.allocatedBookingNo}.`
-    );
-  }
-  if (container.status !== 'IN_YARD') {
-    throw new Error(`Container ${container.containerNo} chưa ở trạng thái tồn bãi sẵn sàng.`);
-  }
-  if (container.conditionClass !== 'AV') {
-    throw new Error(`Chỉ container trạng thái AV mới được phép CẤP VỎ (hiện tại: ${container.conditionClass}).`);
-  }
-  if (container.isOnHold) {
-    throw new Error(`Container ${container.containerNo} đang bị tạm giữ/khóa xuất (${container.holdReason}).`);
-  }
-  if (container.size !== booking.size || container.type !== booking.type) {
-    throw new Error(
-      `Kích cỡ/Loại của container (${container.size}${container.type}) không khớp với yêu cầu của Booking (${booking.size}${booking.type}).`
-    );
-  }
-
-  const nextAllocated = [...booking.allocatedContainers, container.containerNo];
-  const k80QrCode = `QR-OUT-${container.containerNo}`;
-
-  const updatedBookings = state.bookings.map((b) =>
-    b.id === booking.id
-      ? {
-          ...b,
-          allocatedContainers: nextAllocated,
-          status:
-            nextAllocated.length >= b.requestedQty ? ('FULLY_ALLOCATED' as const) : ('OPEN' as const),
-        }
-      : b
-  );
-
-  const updatedContainers = state.containers.map((c) =>
-    c.containerNo === container.containerNo
-      ? {
-          ...c,
-          status: 'ALLOCATED' as const,
-          activeQrCode: k80QrCode,
-          allocatedBookingNo: booking.bookingNo,
-          allocatedTruckNo: input.truckNo?.trim().toUpperCase(),
-          allocatedAt: nowIso(),
-        }
-      : c
-  );
-
-  const k80Ticket: K80InternalTicket = {
-    ticketCode: `K80-OUT-${Date.now().toString().slice(-6)}`,
+  const voucher = {
+    id: newId('vch'),
     masterDossierCode: container.masterDossierCode,
-    qrCode: k80QrCode,
+    voucherNo: voucherCode.code,
+    serviceType: 'GATE_OUT' as const,
+    referenceCode: outCode.code,
+    containerNo: container.containerNo,
+    shippingLineCode: container.shippingLineCode,
+    payerName: customerName,
+    amount,
+    feeLines,
+    status: 'PENDING' as const,
+    createdBy: state.currentUser.fullName,
+    createdAt: nowIso(),
+  };
+  const order: GateOutOrder = {
+    id: newId('gout'),
+    masterDossierCode: container.masterDossierCode,
+    gateOutCode: outCode.code,
+    gateOutType: 'EMPTY_RELEASE',
+    bookingNo,
+    containerNo: container.containerNo,
+    truckNo,
+    driverPhone,
+    receiverRep: customerName,
+    feeLines,
+    feeAmount: amount,
+    voucherId: voucher.id,
+    voucherNo: voucher.voucherNo,
+    k80QrCode: '',
+    chkValidOrder: true,
+    chkNotOnHold: true,
+    chkCorrectContainer: true,
+    chkPaymentSettled: false,
+    chkDocumentsCompleted: true,
+    status: 'PAYMENT_PENDING',
+    createdBy: state.currentUser.fullName,
+    createdAt: nowIso(),
+  };
+  const bookingId = booking.id;
+  next = updateContainerById(
+    {
+      ...next,
+      vouchers: [voucher, ...next.vouchers],
+      gateOutOrders: [order, ...next.gateOutOrders],
+      bookings: next.bookings.map((b) =>
+        b.id === bookingId ? { ...b, allocatedContainers: [...b.allocatedContainers, container.containerNo] } : b
+      ),
+    },
+    container.id,
+    {
+      status: 'ALLOCATED',
+      allocatedBookingNo: bookingNo,
+      allocatedTruckNo: truckNo,
+      allocatedDriverPhone: driverPhone,
+      allocatedAt: nowIso(),
+      outDossierCode: outCode.code,
+    }
+  );
+  return appendAudit(
+    next,
+    'RELEASE_ORDER_CREATED',
+    'GATE_OUT',
+    outCode.code,
+    `[Hồ sơ ${outCode.code}] Lập lệnh CẤP VỎ ${container.containerNo} (${container.conditionClass}) theo booking ${bookingNo}, xe ${truckNo}; chứng từ ${voucher.voucherNo}: ${amount.toLocaleString('vi-VN')}đ`,
+    container.masterDossierCode
+  );
+}
+
+export function confirmReleasePayment(
+  state: DepotState,
+  input: { gateOutOrderId: string } & SettleVoucherInput
+): DepotState {
+  const order = state.gateOutOrders.find((o) => o.id === input.gateOutOrderId);
+  if (!order) throw new Error('Không tìm thấy hồ sơ CẤP VỎ.');
+  if (order.status !== 'PAYMENT_PENDING') throw new Error(`Hồ sơ ${order.gateOutCode} không ở trạng thái chờ thanh toán.`);
+  const voucher = state.vouchers.find((v) => v.id === order.voucherId);
+  if (!voucher) throw new Error('Không tìm thấy chứng từ thanh toán.');
+  let next = state;
+  let outcome: SettleOutcome = 'SETTLED';
+  if (voucher.status === 'PENDING') {
+    ({ state: next, outcome } = settleVoucher(state, voucher.id, input));
+  } else if (!isVoucherSettled(voucher)) {
+    throw new Error(`Chứng từ ${voucher.voucherNo} ở trạng thái ${voucher.status}.`);
+  }
+  if (outcome === 'AWAITING_TRANSFER') return next;
+  return completeReleasePayment(next, order.id);
+}
+
+// Thanh toán xong -> in phiếu K80 CẤP VỎ & đẩy sang XE NÂNG - CHỜ CẤP VỎ
+function completeReleasePayment(state: DepotState, gateOutOrderId: string, actor?: Actor): DepotState {
+  const order = state.gateOutOrders.find((o) => o.id === gateOutOrderId);
+  if (!order) throw new Error('Không tìm thấy hồ sơ CẤP VỎ.');
+  if (order.status !== 'PAYMENT_PENDING') return state;
+  const voucher = state.vouchers.find((v) => v.id === order.voucherId);
+  if (!isVoucherSettled(voucher)) throw new Error('Chưa thanh toán / xác nhận thanh toán hợp lệ.');
+  const container = findActiveContainer(state, order.containerNo);
+  if (!container) throw new Error('Không tìm thấy container của hồ sơ CẤP VỎ.');
+  const actorName = actor?.name || state.currentUser.fullName;
+  const qrCode = `QR-OUT-${order.containerNo}`;
+  const ticket: K80InternalTicket = {
+    ticketCode: `K80-${order.gateOutCode}`,
+    masterDossierCode: container.masterDossierCode,
+    outDossierCode: order.gateOutCode,
+    qrCode,
     operationMode: 'CAP_VO',
-    isPaid: true,
-    paymentLabel: 'ĐÃ XÁC NHẬN LỆNH CẤP VỎ',
+    isPaid: voucher!.status === 'CONFIRMED',
+    paymentLabel: paymentLabelOf(voucher!),
     containerNo: container.containerNo,
     size: container.size,
     type: container.type,
     conditionClass: container.conditionClass,
+    damageRemarks: container.damageRemarks,
     stuffingClass: container.stuffingClass,
     cleaningItems: container.cleaningItems,
     manufactureYear: container.manufactureYear,
-    truckNo: input.truckNo?.trim().toUpperCase(),
-    customerRep: booking.receiverName,
-    targetBlock: container.currentBlock || 'BLOCK-A',
+    truckNo: order.truckNo,
+    driverPhone: order.driverPhone,
+    customerRep: order.receiverRep,
+    targetBlock: container.currentBlock || undefined,
     issuedAt: nowIso(),
-    issuedBy: state.currentUser.fullName,
+    issuedBy: actorName,
   };
-
-  return appendAudit(
+  const next = updateContainerById(
     {
       ...state,
-      bookings: updatedBookings,
-      containers: updatedContainers,
-      k80Tickets: [k80Ticket, ...state.k80Tickets],
+      k80Tickets: [ticket, ...state.k80Tickets],
+      gateOutOrders: state.gateOutOrders.map((o) =>
+        o.id === order.id ? { ...o, status: 'PENDING_FORKLIFT' as const, chkPaymentSettled: true, k80QrCode: qrCode } : o
+      ),
     },
-    'BOOKING_ALLOCATE_LOCK',
-    'BOOKING',
+    container.id,
+    { activeQrCode: qrCode }
+  );
+  return appendAudit(
+    next,
+    'RELEASE_ORDER_PAID',
+    'GATE_OUT',
+    order.gateOutCode,
+    `[Hồ sơ ${order.gateOutCode}] ${paymentLabelOf(voucher!)} -> In phiếu K80 [${qrCode}] -> XE NÂNG - CHỜ CẤP VỎ`,
     container.masterDossierCode,
-    `[Hồ sơ ${container.masterDossierCode}] Văn phòng khóa phân bổ cont AV ${container.containerNo} vào lệnh ${booking.bookingNo}, in phiếu K80 [${k80QrCode}] & chuyển sang XE NÂNG - CHỜ CẤP VỎ`,
-    container.masterDossierCode
+    actor
   );
 }
 
+// Hủy lệnh cấp & giải phóng khóa phân bổ (chỉ khi chưa ghi nhận thanh toán)
 export function releaseAllocatedContainer(
   state: DepotState,
-  input: {
-    bookingId: string;
-    containerNo: string;
-    reason: string;
-  }
+  input: { containerNo: string; reason: string }
 ): DepotState {
-  if (!hasRolePermission(state.currentUser, ['OFFICE', 'MANAGER'])) {
-    throw new Error('Không đủ quyền giải phóng khóa phân bổ container.');
+  assertPermission(state, 'RELEASE_ORDER', 'chỉ Văn phòng / Quản lý được hủy lệnh cấp vỏ.');
+  const reason = input.reason.trim();
+  if (!reason) throw new Error('Bắt buộc nhập lý do đổi/hủy lệnh cấp container (REL-003/REL-004).');
+  const container = findActiveContainer(state, input.containerNo);
+  if (!container || container.status !== 'ALLOCATED') {
+    throw new Error('Container không ở trạng thái đã lập lệnh cấp vỏ.');
   }
-  if (!input.reason.trim()) {
-    throw new Error('Bắt buộc nhập lý do đổi/hủy phân bổ container (REL-003/REL-004).');
-  }
-
-  const booking = state.bookings.find((b) => b.id === input.bookingId);
-  if (!booking) throw new Error('Không tìm thấy Booking.');
-
-  const targetCont = state.containers.find((c) => c.containerNo === input.containerNo);
-  const updatedBookings = state.bookings.map((b) =>
-    b.id === booking.id
-      ? {
-          ...b,
-          allocatedContainers: b.allocatedContainers.filter((no) => no !== input.containerNo),
-          status: 'OPEN' as const,
-        }
-      : b
+  const order = state.gateOutOrders.find(
+    (o) =>
+      o.containerNo === container.containerNo &&
+      o.masterDossierCode === container.masterDossierCode &&
+      (o.status === 'PAYMENT_PENDING' || o.status === 'PENDING_FORKLIFT')
   );
-
-  const updatedContainers = state.containers.map((c) =>
-    c.containerNo === input.containerNo
-      ? {
-          ...c,
-          status: 'IN_YARD' as const,
-          allocatedBookingNo: undefined,
-          allocatedTruckNo: undefined,
-          allocatedAt: undefined,
-        }
-      : c
-  );
-
-  return appendAudit(
-    { ...state, bookings: updatedBookings, containers: updatedContainers },
-    'BOOKING_RELEASE_LOCK',
-    'BOOKING',
-    targetCont?.masterDossierCode || booking.bookingNo,
-    `[Hồ sơ ${targetCont?.masterDossierCode || 'N/A'}] Giải phóng khóa phân bổ container ${input.containerNo} khỏi lệnh ${booking.bookingNo}. Lý do: ${input.reason.trim()}`,
-    targetCont?.masterDossierCode
-  );
-}
-
-// 11. GATE OUT / XE NÂNG CHỜ CẤP VỎ — Kiểm tra đủ 5 điều kiện & quét QR xuất bãi (kết thúc vòng đời Mã Hồ Sơ Chính tại bãi)
-export function executeGateOut(
-  state: DepotState,
-  input: {
-    gateOutType: GateOutType;
-    bookingNo: string;
-    containerNo: string;
-    truckNo: string;
-    receiverRep: string;
-    feeAmount: number;
-    paymentCategory: PaymentCategory;
-    scannedQrCode?: string;
-    ttsNote?: string;
-    directMethod?: DirectPaymentMethod;
-    providerTxRef?: string;
-    documentsVerified: boolean;
-  }
-): DepotState {
-  if (
-    !hasRolePermission(state.currentUser, [
-      'FORKLIFT',
-      'GATE_STAFF',
-      'YARD_STAFF',
-      'OFFICE',
-      'MANAGER',
-    ])
-  ) {
-    throw new Error('Không đủ quyền thực hiện xuất bãi / cấp vỏ.');
-  }
-
-  const container = state.containers.find((c) => c.containerNo === input.containerNo);
-  if (!container) throw new Error('Không tìm thấy container trong hệ thống.');
-  if (container.status === 'GATED_OUT') {
-    throw new Error(`Chặn xuất trùng (GOUT-003): Container ${container.containerNo} đã được xuất bãi trước đó.`);
-  }
-
-  const booking = state.bookings.find((b) => b.bookingNo === input.bookingNo.trim());
-  if (!booking || booking.status === 'CANCELLED') {
-    throw new Error('Điều kiện 1 thất bại: Không tìm thấy lệnh cấp/lệnh xuất hợp lệ (GOUT-002).');
-  }
-  if (container.isOnHold) {
+  if (!order) throw new Error('Không tìm thấy hồ sơ CẤP VỎ đang hiệu lực của container.');
+  const voucher = state.vouchers.find((v) => v.id === order.voucherId);
+  if (isVoucherSettled(voucher)) {
     throw new Error(
-      `Điều kiện 2 thất bại: Container ${container.containerNo} đang bị tạm giữ / khóa xuất (${container.holdReason}).`
+      `Hồ sơ ${order.gateOutCode} đã ghi nhận thanh toán (${paymentLabelOf(voucher!)}). Hủy lệnh cần quy trình hoàn tiền / điều chỉnh công nợ chưa được xác nhận (OPEN-006).`
     );
   }
-  if (!booking.allocatedContainers.includes(container.containerNo)) {
-    throw new Error(
-      `Điều kiện 3 thất bại: Container ${container.containerNo} chưa được khóa phân bổ trong lệnh ${booking.bookingNo}.`
-    );
-  }
-  if (!input.documentsVerified || !input.truckNo.trim() || !input.receiverRep.trim()) {
-    throw new Error('Điều kiện 5 thất bại: Chứng từ, biển số xe nhận hoặc thủ tục xuất bãi chưa hoàn tất.');
-  }
-
-  let updatedMasterReceipts = [...state.masterReceipts];
-  let updatedDeductions = [...state.receiptDeductions];
-  const voucherNo = `CT-GOUT-${Date.now().toString().slice(-6)}`;
-
-  if (input.paymentCategory === 'TTT') {
-    const qr = (input.scannedQrCode || '').trim().toUpperCase();
-    const receipt = updatedMasterReceipts.find((r) => r.qrCode.toUpperCase() === qr && r.status === 'ACTIVE');
-    if (!receipt || receipt.remainingAmount < input.feeAmount) {
-      throw new Error('Điều kiện 4 thất bại: Mã QR Phiếu thu mẹ (TTT) không hợp lệ hoặc không đủ số dư.');
-    }
-    const before = receipt.remainingAmount;
-    const after = before - input.feeAmount;
-    updatedMasterReceipts = updatedMasterReceipts.map((r) =>
-      r.id === receipt.id ? { ...r, remainingAmount: after, status: after === 0 ? 'EXHAUSTED' : 'ACTIVE' } : r
-    );
-    updatedDeductions = [
-      {
-        id: `ded-${Date.now()}`,
-        receiptCode: receipt.receiptCode,
-        qrCode: receipt.qrCode,
-        voucherNo,
-        containerNo: container.containerNo,
-        deductedAmount: input.feeAmount,
-        balanceBefore: before,
-        balanceAfter: after,
-        performedBy: state.currentUser.fullName,
-        performedAt: nowIso(),
-      },
-      ...updatedDeductions,
-    ];
-  } else if (input.paymentCategory === 'TTS') {
-    if (!input.ttsNote?.trim()) {
-      throw new Error('Điều kiện 4 thất bại: Thanh toán sau (TTS) bắt buộc có ghi chú (Note) TTS trên chứng từ.');
-    }
-  } else if (input.paymentCategory === 'TTTT') {
-    if (!input.directMethod) {
-      throw new Error('Điều kiện 4 thất bại: Thanh toán trực tiếp (TTTT) phải chọn Chuyển khoản (API) hoặc Tiền mặt.');
-    }
-  }
-
-  const gateOutCode = `GOUT-${Date.now().toString().slice(-6)}`;
-  const newVoucher = {
-    id: `vch-out-${Date.now()}`,
-    masterDossierCode: container.masterDossierCode,
-    voucherNo,
-    serviceType: 'GATE_OUT' as const,
-    referenceCode: gateOutCode,
-    containerNo: container.containerNo,
-    shippingLineCode: container.shippingLineCode,
-    payerName: input.receiverRep.trim(),
-    amount: input.feeAmount,
-    paymentCategory: input.paymentCategory,
-    directMethod: input.paymentCategory === 'TTTT' ? input.directMethod : undefined,
-    scannedQrCode: input.paymentCategory === 'TTT' ? input.scannedQrCode?.trim().toUpperCase() : undefined,
-    ttsNote: input.paymentCategory === 'TTS' ? `TTS - ${input.ttsNote?.trim()}` : undefined,
-    providerTxRef: input.providerTxRef?.trim(),
-    status: 'CONFIRMED' as const,
-    confirmedBy: state.currentUser.fullName,
-    confirmedAt: nowIso(),
-    createdBy: state.currentUser.fullName,
-    createdAt: nowIso(),
+  let next = state;
+  const pending = voucher ? pendingTransactionOf(next, voucher.id) : undefined;
+  if (pending) next = cancelPendingTransaction(next, { transactionId: pending.id, reason });
+  const now = nowIso();
+  next = {
+    ...next,
+    vouchers: next.vouchers.map((v) => (v.id === voucher?.id ? { ...v, status: 'CANCELLED' as const } : v)),
+    gateOutOrders: next.gateOutOrders.map((o) =>
+      o.id === order.id ? { ...o, status: 'CANCELLED' as const, cancelReason: reason, cancelledAt: now } : o
+    ),
+    bookings: next.bookings.map((b) =>
+      b.bookingNo === order.bookingNo
+        ? {
+            ...b,
+            allocatedContainers: b.allocatedContainers.filter((no) => no !== container.containerNo),
+            releasedContainers: [
+              ...(b.releasedContainers || []),
+              {
+                containerNo: container.containerNo,
+                outDossierCode: order.gateOutCode,
+                reason,
+                releasedBy: state.currentUser.fullName,
+                releasedAt: now,
+              },
+            ],
+            status: b.status === 'FULLY_ALLOCATED' ? ('OPEN' as const) : b.status,
+          }
+        : b
+    ),
   };
-
-  const prevLoc = container.currentBlock
-    ? container.currentBay
-      ? `${container.currentBlock} / Bay ${container.currentBay} / Row ${container.currentRow} / Tier ${container.currentTier}`
-      : `${container.currentBlock} (Cấp Block)`
-    : 'Trong bãi';
-
-  const updatedContainers = state.containers.map((c) =>
-    c.containerNo === container.containerNo
-      ? {
-          ...c,
-          status: 'GATED_OUT' as const,
-          currentBlock: null,
-          currentBay: null,
-          currentRow: null,
-          currentTier: null,
-          gateOutAt: nowIso(),
-        }
-      : c
-  );
-
-  const updatedBookings = state.bookings.map((b) =>
-    b.id === booking.id
-      ? {
-          ...b,
-          gatedOutContainers: [...b.gatedOutContainers, container.containerNo],
-          status:
-            b.gatedOutContainers.length + 1 >= b.requestedQty ? ('COMPLETED' as const) : b.status,
-        }
-      : b
-  );
-
-  const newGateOutOrder: GateOutOrder = {
-    id: `gout-${Date.now()}`,
-    masterDossierCode: container.masterDossierCode,
-    gateOutCode,
-    gateOutType: input.gateOutType,
-    bookingNo: booking.bookingNo,
-    containerNo: container.containerNo,
-    truckNo: input.truckNo.trim().toUpperCase(),
-    receiverRep: input.receiverRep.trim(),
-    feeAmount: input.feeAmount,
-    voucherId: newVoucher.id,
-    voucherNo: newVoucher.voucherNo,
-    k80QrCode: container.activeQrCode,
-    chkValidOrder: true,
-    chkNotOnHold: true,
-    chkCorrectContainer: true,
-    chkPaymentSettled: true,
-    chkDocumentsCompleted: true,
-    status: 'GATE_OUT_OK',
-    confirmedBy: state.currentUser.fullName,
-    confirmedAt: nowIso(),
-    createdAt: nowIso(),
-  };
-
-  const locHistoryItem = {
-    id: `loc-${Date.now()}`,
-    masterDossierCode: container.masterDossierCode,
-    containerNo: container.containerNo,
-    fromLocation: prevLoc,
-    toLocation: `OUT KHỎI BÃI (${input.truckNo.trim().toUpperCase()})`,
-    actionType: 'GATE_OUT_CLEAR' as const,
-    reason: `Xuất bãi theo lệnh ${booking.bookingNo} (${input.gateOutType})`,
-    performedBy: state.currentUser.fullName,
-    performedAt: nowIso(),
-  };
-
+  next = updateContainerById(next, container.id, {
+    status: 'IN_YARD',
+    activeQrCode: `QR-K80-${container.containerNo}`,
+    allocatedBookingNo: undefined,
+    allocatedTruckNo: undefined,
+    allocatedDriverPhone: undefined,
+    allocatedAt: undefined,
+    outDossierCode: undefined,
+  });
   return appendAudit(
-    {
-      ...state,
-      masterReceipts: updatedMasterReceipts,
-      receiptDeductions: updatedDeductions,
-      vouchers: [newVoucher, ...state.vouchers],
-      containers: updatedContainers,
-      bookings: updatedBookings,
-      gateOutOrders: [newGateOutOrder, ...state.gateOutOrders],
-      locationHistory: [locHistoryItem, ...state.locationHistory],
-    },
-    'GATE_OUT_OK',
+    next,
+    'RELEASE_ORDER_CANCELLED',
     'GATE_OUT',
-    container.masterDossierCode,
-    `[Hồ sơ ${container.masterDossierCode}] Hoàn tất xuất bãi (${input.gateOutType}) cho cont ${container.containerNo} theo lệnh ${booking.bookingNo}, xe ${input.truckNo} -> KẾT THÚC VÒNG ĐỜI HỒ SƠ TẠI BÃI`,
+    order.gateOutCode,
+    `[Hồ sơ ${order.gateOutCode}] Hủy lệnh cấp ${container.containerNo} khỏi booking ${order.bookingNo}. Lý do: ${reason}`,
     container.masterDossierCode
   );
 }
 
-// 12. TẠO PHIẾU THU MẸ MỚI CHO KHÁCH HÀNG (TTT)
-export function createMasterPrepaidReceipt(
+// XE NÂNG — CHỜ CẤP VỎ: kiểm tra đủ 5 điều kiện (DEC-015) rồi xuất bãi
+export function executeGateOut(
   state: DepotState,
-  input: {
-    customerName: string;
-    lotDescription: string;
-    totalAmount: number;
-  }
+  input: { containerNo?: string; scannedQrCode?: string; pickupBlock?: string }
 ): DepotState {
-  if (!hasRolePermission(state.currentUser, ['ACCOUNTANT', 'OFFICE', 'MANAGER'])) {
-    throw new Error('Không đủ quyền tạo Phiếu thu mẹ (TTT).');
+  assertPermission(state, 'GATE_OUT_CONFIRM', 'không được xác nhận xuất bãi / cấp vỏ.');
+  const container =
+    findActiveContainer(state, input.containerNo) || findActiveContainerByCode(state, input.scannedQrCode);
+  if (!container) throw new Error('Không tìm thấy container đang trong bãi (có thể đã xuất trước đó — GOUT-003).');
+  if (container.status !== 'ALLOCATED') {
+    throw new Error(`Container ${container.containerNo} chưa có lệnh CẤP VỎ hợp lệ.`);
   }
-  if (!input.customerName.trim() || input.totalAmount <= 0) {
-    throw new Error('Vui lòng nhập khách hàng và số tiền lô trả trước lớn hơn 0.');
+  const order = state.gateOutOrders.find(
+    (o) =>
+      o.containerNo === container.containerNo &&
+      o.masterDossierCode === container.masterDossierCode &&
+      (o.status === 'PAYMENT_PENDING' || o.status === 'PENDING_FORKLIFT')
+  );
+  const booking = order ? state.bookings.find((b) => b.bookingNo === order.bookingNo) : undefined;
+  if (!order || !booking || booking.status === 'CANCELLED') {
+    throw new Error('Điều kiện 1 thất bại: Không có lệnh cấp / booking hợp lệ (GOUT-002).');
+  }
+  if (container.isOnHold) {
+    throw new Error(`Điều kiện 2 thất bại: Container ${container.containerNo} đang bị KHÓA (${container.holdReason}).`);
+  }
+  if (!booking.allocatedContainers.includes(container.containerNo)) {
+    throw new Error(`Điều kiện 3 thất bại: Container ${container.containerNo} không thuộc booking ${booking.bookingNo}.`);
+  }
+  const voucher = state.vouchers.find((v) => v.id === order.voucherId);
+  if (order.status !== 'PENDING_FORKLIFT' || !isVoucherSettled(voucher)) {
+    throw new Error('Điều kiện 4 thất bại: Chưa thanh toán / xác nhận thanh toán phí cấp vỏ tại Văn phòng.');
+  }
+  if (!order.truckNo || !order.driverPhone) {
+    throw new Error('Điều kiện 5 thất bại: Thiếu SỐ XE / SĐT LÁI XE trên hồ sơ cấp vỏ.');
   }
 
-  const seq = String(state.masterReceipts.length + 1).padStart(3, '0');
-  const receiptCode = `PTM-2026-${seq}`;
-  const cleanCode = input.customerName
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
-    .slice(0, 8);
-  const qrCode = `QR-TTT-${cleanCode || 'CUST'}-${seq}`;
+  const now = nowIso();
+  const prevLoc = formatLocation(container);
+  const isDamageRelease = container.conditionClass === 'DAMAGE';
+  const gatedOutCount = booking.gatedOutContainers.length + 1;
 
-  const newReceipt = {
-    id: `mpr-${Date.now()}`,
-    receiptCode,
-    qrCode,
-    customerName: input.customerName.trim(),
-    lotDescription: input.lotDescription.trim() || 'Đóng trước 1 lô container',
-    totalAmount: input.totalAmount,
-    remainingAmount: input.totalAmount,
-    status: 'ACTIVE' as const,
-    createdBy: state.currentUser.fullName,
-    createdAt: nowIso(),
+  let next: DepotState = {
+    ...state,
+    gateOutOrders: state.gateOutOrders.map((o) =>
+      o.id === order.id
+        ? {
+            ...o,
+            status: 'GATE_OUT_OK' as const,
+            chkValidOrder: true,
+            chkNotOnHold: true,
+            chkCorrectContainer: true,
+            chkPaymentSettled: true,
+            chkDocumentsCompleted: true,
+            confirmedBy: state.currentUser.fullName,
+            confirmedAt: now,
+          }
+        : o
+    ),
+    bookings: state.bookings.map((b) =>
+      b.id === booking.id
+        ? {
+            ...b,
+            allocatedContainers: b.allocatedContainers.filter((no) => no !== container.containerNo),
+            gatedOutContainers: [...b.gatedOutContainers, container.containerNo],
+            status: b.requestedQty && gatedOutCount >= b.requestedQty ? ('COMPLETED' as const) : b.status,
+          }
+        : b
+    ),
+    // DAMAGE cấp theo chỉ định: đóng các việc Báo giá / Sửa chữa còn mở của lượt lưu bãi
+    workOrders: isDamageRelease
+      ? state.workOrders.map((w) =>
+          w.masterDossierCode === container.masterDossierCode &&
+          (w.category === 'INSPECTION' || w.category === 'REPAIR') &&
+          w.workStatus === 'OPEN'
+            ? { ...w, workStatus: 'CANCELLED' as const, resultNotes: 'Đóng do cấp vỏ DAMAGE theo chỉ định' }
+            : w
+        )
+      : state.workOrders,
+    locationHistory: [
+      {
+        id: newId('loc'),
+        masterDossierCode: container.masterDossierCode,
+        containerNo: container.containerNo,
+        fromLocation: prevLoc,
+        toLocation: `OUT KHỎI BÃI (${order.truckNo})`,
+        actionType: 'GATE_OUT_CLEAR',
+        reason: `Cấp vỏ theo booking ${booking.bookingNo} (${order.gateOutCode})`,
+        performedBy: state.currentUser.fullName,
+        performedAt: now,
+      },
+      ...state.locationHistory,
+    ],
   };
-
+  next = updateContainerById(next, container.id, {
+    status: 'GATED_OUT',
+    currentBlock: null,
+    currentBay: null,
+    currentRow: null,
+    currentTier: null,
+    needsQuotation: false,
+    needsRepair: false,
+    forkliftShiftTask: 'NONE',
+    gateOutAt: now,
+  });
   return appendAudit(
-    {
-      ...state,
-      masterReceipts: [newReceipt, ...state.masterReceipts],
-    },
-    'CREATE_MASTER_RECEIPT_TTT',
-    'FINANCE',
-    receiptCode,
-    `Tạo Phiếu thu mẹ ${receiptCode} (Mã QR: ${qrCode}) cho ${input.customerName} với số tiền ${input.totalAmount.toLocaleString('vi-VN')}đ`
+    next,
+    'GATE_OUT_OK',
+    'GATE_OUT',
+    order.gateOutCode,
+    `[Hồ sơ ${order.gateOutCode}] Xuất bãi ${container.containerNo} (${container.conditionClass}) từ ${prevLoc}${
+      input.pickupBlock ? ` (xác nhận lấy tại ${input.pickupBlock})` : ''
+    } theo booking ${booking.bookingNo}, xe ${order.truckNo}`,
+    container.masterDossierCode
   );
 }
 
+// ============================================================================
+// 12. KẾT QUẢ CHUYỂN KHOẢN (webhook ngân hàng / giả lập Demo)
+// ============================================================================
+export function processBankTransferCallback(state: DepotState, input: BankCallbackInput): DepotState {
+  const result = applyBankCallback(state, input);
+  const tx = result.transaction;
+  if (result.alreadyProcessed || !tx || tx.status !== 'SUCCEEDED' || tx.purpose !== 'VOUCHER') {
+    return result.state;
+  }
+  const actor: Actor = { name: `${SYSTEM_ACTOR} (Ngân hàng)`, role: 'SYSTEM' };
+  const voucher = result.state.vouchers.find((v) => v.id === tx.voucherId);
+  if (voucher?.serviceType === 'GATE_IN') {
+    const order = result.state.gateInOrders.find((o) => o.voucherId === voucher.id);
+    if (order) return completeGateIn(result.state, order.id, actor);
+  }
+  if (voucher?.serviceType === 'GATE_OUT') {
+    const order = result.state.gateOutOrders.find((o) => o.voucherId === voucher.id);
+    if (order) return completeReleasePayment(result.state, order.id, actor);
+  }
+  return result.state;
+}
+
+// CHỈ DÙNG Ở CHẾ ĐỘ DEMO — giả lập ngân hàng báo có cho một yêu cầu chuyển khoản
+export function simulateDemoBankTransfer(state: DepotState, input: { transactionId: string }): DepotState {
+  assertPermission(state, 'DEMO_BANK_SIMULATOR', 'không được dùng giả lập ngân hàng.');
+  const tx = state.paymentTransactions.find((t) => t.id === input.transactionId);
+  if (!tx || tx.method !== 'BANK_TRANSFER_API') throw new Error('Không tìm thấy yêu cầu chuyển khoản.');
+  return processBankTransferCallback(state, {
+    paymentRef: tx.paymentRef,
+    providerTxRef: demoBankProviderRef(tx.id),
+    amount: tx.amount,
+    success: true,
+  });
+}
+
+// ============================================================================
 // 13. CẤU HÌNH DANH MỤC CHUNG (CHỈ ADMIN CÓ QUYỀN CẤU HÌNH)
+// ============================================================================
 function assertAdmin(state: DepotState): void {
   if (!hasRolePermission(state.currentUser, ['ADMIN'])) {
     throw new Error(
@@ -1334,7 +1317,7 @@ export function addPartnerCatalogItem(
   }
 
   const newPartner = {
-    id: `pt-${Date.now()}`,
+    id: newId('pt'),
     code: cleanCode,
     name: cleanName,
     isShippingLine: input.partnerType === 'SHIPPING_LINE',
@@ -1429,6 +1412,9 @@ export function deleteYardBlockCatalogItem(
   blockCode: string
 ): DepotState {
   assertAdmin(state);
+  if (state.containers.some((c) => c.status !== 'GATED_OUT' && c.currentBlock === blockCode)) {
+    throw new Error(`Không thể xóa ${blockCode}: đang có container tồn bãi tại vị trí này.`);
+  }
   return appendAudit(
     {
       ...state,
@@ -1570,7 +1556,7 @@ export function addDepotFeeCatalogItem(
   }
 
   const newItem = {
-    id: `fee-${Date.now()}`,
+    id: newId('fee'),
     code,
     name: autoName,
     category,
@@ -1612,34 +1598,26 @@ export function deleteDepotFeeCatalogItem(
   );
 }
 
-// 14. CẬP NHẬT GHI CHÚ CỦA NHÂN VIÊN VĂN PHÒNG TRONG DANH SÁCH TỒN VỎ
+// ============================================================================
+// 14. GHI CHÚ CỦA NHÂN VIÊN VĂN PHÒNG TRONG DANH SÁCH TỒN VỎ
+// ============================================================================
 export function updateContainerOfficeNote(
   state: DepotState,
-  input: {
-    containerId: string;
-    officeNote: string;
-  }
+  input: { containerId: string; officeNote: string }
 ): DepotState {
+  assertPermission(state, 'OFFICE_NOTE', 'chỉ Văn phòng / Quản lý được ghi chú tồn vỏ.');
   const target = state.containers.find((c) => c.id === input.containerId);
   if (!target) return state;
 
   const cleanNote = input.officeNote.trim();
-  const updatedContainers = state.containers.map((c) =>
-    c.id === input.containerId
-      ? {
-          ...c,
-          officeNote: cleanNote || undefined,
-          officeNoteUpdatedBy: cleanNote ? state.currentUser.fullName : undefined,
-          officeNoteUpdatedAt: cleanNote ? nowIso() : undefined,
-        }
-      : c
-  );
+  const next = updateContainerById(state, target.id, {
+    officeNote: cleanNote || undefined,
+    officeNoteUpdatedBy: cleanNote ? state.currentUser.fullName : undefined,
+    officeNoteUpdatedAt: cleanNote ? nowIso() : undefined,
+  });
 
   return appendAudit(
-    {
-      ...state,
-      containers: updatedContainers,
-    },
+    next,
     'UPDATE_TON_VO_NOTE',
     'CONTAINER',
     target.masterDossierCode,
@@ -1647,5 +1625,162 @@ export function updateContainerOfficeNote(
       ? `[Hồ sơ ${target.masterDossierCode}] Văn phòng thêm Ghi chú tồn vỏ cho ${target.containerNo}: "${cleanNote}"`
       : `[Hồ sơ ${target.masterDossierCode}] Văn phòng xóa Ghi chú tồn vỏ cho ${target.containerNo}`,
     target.masterDossierCode
+  );
+}
+
+// ============================================================================
+// 15. DANH MỤC CHUNG — TỔ SỬA CHỮA (DEC-042, chỉ ADMIN). Ngưng hoạt động thay vì xóa để giữ lịch sử sửa chữa.
+// ============================================================================
+export function addRepairTeam(state: DepotState, input: { code: string; name: string }): DepotState {
+  assertAdmin(state);
+  const code = input.code.trim().toUpperCase();
+  const name = input.name.trim();
+  if (!code || !name) throw new Error('Vui lòng nhập Mã tổ và Tên tổ sửa chữa.');
+  if (state.repairTeams.some((t) => t.code === code)) throw new Error(`Mã tổ "${code}" đã tồn tại.`);
+  return appendAudit(
+    { ...state, repairTeams: [...state.repairTeams, { id: newId('rt'), code, name, members: [], isActive: true }] },
+    'ADMIN_ADD_REPAIR_TEAM',
+    'CATALOG',
+    code,
+    `[Admin Danh mục chung] Thêm TỔ SỬA CHỮA [${code}] ${name}`
+  );
+}
+
+export function setRepairTeamActive(state: DepotState, input: { teamId: string; isActive: boolean }): DepotState {
+  assertAdmin(state);
+  const team = state.repairTeams.find((t) => t.id === input.teamId);
+  if (!team) throw new Error('Không tìm thấy tổ sửa chữa.');
+  return appendAudit(
+    { ...state, repairTeams: state.repairTeams.map((t) => (t.id === team.id ? { ...t, isActive: input.isActive } : t)) },
+    input.isActive ? 'ADMIN_ACTIVATE_REPAIR_TEAM' : 'ADMIN_DEACTIVATE_REPAIR_TEAM',
+    'CATALOG',
+    team.code,
+    `[Admin Danh mục chung] ${input.isActive ? 'Kích hoạt' : 'Ngưng'} TỔ SỬA CHỮA [${team.code}]`
+  );
+}
+
+// DEC-048: chọn user có sẵn trong hệ thống (staffUserId) hoặc nhập họ tên nhân viên không có tài khoản
+export function addRepairTeamMember(
+  state: DepotState,
+  input: { teamId: string; staffUserId?: string; fullName?: string }
+): DepotState {
+  assertAdmin(state);
+  const team = state.repairTeams.find((t) => t.id === input.teamId);
+  if (!team) throw new Error('Không tìm thấy tổ sửa chữa.');
+  let fullName = (input.fullName || '').trim();
+  let staffUserId: string | undefined;
+  if (input.staffUserId) {
+    const user = state.staffUsers.find((u) => u.id === input.staffUserId);
+    if (!user || !user.isActive) throw new Error('User không tồn tại hoặc đã bị khóa.');
+    if (team.members.some((m) => m.isActive && m.staffUserId === user.id)) {
+      throw new Error(`${user.fullName} đã có trong ${team.name}.`);
+    }
+    staffUserId = user.id;
+    fullName = user.fullName;
+  }
+  if (!fullName) throw new Error('Vui lòng chọn user hoặc nhập họ tên nhân viên.');
+  if (team.members.some((m) => m.isActive && m.fullName.toLowerCase() === fullName.toLowerCase())) {
+    throw new Error(`Nhân viên "${fullName}" đã có trong ${team.name}.`);
+  }
+  const member = { id: newId('rtm'), fullName, isActive: true, staffUserId };
+  return appendAudit(
+    {
+      ...state,
+      repairTeams: state.repairTeams.map((t) => (t.id === team.id ? { ...t, members: [...t.members, member] } : t)),
+    },
+    'ADMIN_ADD_REPAIR_MEMBER',
+    'CATALOG',
+    team.code,
+    `[Admin Danh mục chung] Thêm nhân viên ${fullName} vào ${team.name}`
+  );
+}
+
+export function setRepairTeamMemberActive(
+  state: DepotState,
+  input: { teamId: string; memberId: string; isActive: boolean }
+): DepotState {
+  assertAdmin(state);
+  const team = state.repairTeams.find((t) => t.id === input.teamId);
+  const member = team?.members.find((m) => m.id === input.memberId);
+  if (!team || !member) throw new Error('Không tìm thấy nhân viên trong tổ.');
+  return appendAudit(
+    {
+      ...state,
+      repairTeams: state.repairTeams.map((t) =>
+        t.id === team.id
+          ? { ...t, members: t.members.map((m) => (m.id === member.id ? { ...m, isActive: input.isActive } : m)) }
+          : t
+      ),
+    },
+    input.isActive ? 'ADMIN_ACTIVATE_REPAIR_MEMBER' : 'ADMIN_DEACTIVATE_REPAIR_MEMBER',
+    'CATALOG',
+    team.code,
+    `[Admin Danh mục chung] ${input.isActive ? 'Kích hoạt' : 'Ngưng'} nhân viên ${member.fullName} (${team.name})`
+  );
+}
+
+// ============================================================================
+// 16. DANH MỤC CHUNG — USER & PHÂN QUYỀN (DEC-045, chỉ ADMIN)
+// Chế độ Demo: chỉ quản lý hồ sơ nhân viên. Chế độ Supabase: tài khoản đăng nhập tạo qua Supabase Auth (server-side).
+// ============================================================================
+function cleanRoles(roles: AppRole[]): AppRole[] {
+  const list = Array.from(new Set(roles)).filter((r) => ASSIGNABLE_ROLES.includes(r));
+  if (list.length === 0) throw new Error('Phải chọn ít nhất 1 vai trò.');
+  return list;
+}
+
+function assertKeepsAdmin(state: DepotState, users: StaffUser[]): void {
+  if (!users.some((u) => u.isActive && u.roles.includes('ADMIN'))) {
+    throw new Error('Hệ thống phải còn ít nhất 1 tài khoản ADMIN đang hoạt động.');
+  }
+  void state;
+}
+
+export function addStaffUser(
+  state: DepotState,
+  input: { fullName: string; email: string; roles: AppRole[] }
+): DepotState {
+  assertAdmin(state);
+  const fullName = input.fullName.trim();
+  const email = input.email.trim().toLowerCase();
+  if (!fullName) throw new Error('Vui lòng nhập họ tên.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Email không hợp lệ.');
+  if (state.staffUsers.some((u) => u.email.toLowerCase() === email)) throw new Error(`Email ${email} đã tồn tại.`);
+  const roles = cleanRoles(input.roles);
+  const maxNo = state.staffUsers.reduce((m, u) => Math.max(m, Number(u.staffCode.replace(/\D/g, '')) || 0), 0);
+  const staffCode = `NV-${String(maxNo + 1).padStart(3, '0')}`;
+  const user: StaffUser = { id: newId('usr'), staffCode, fullName, email, roles, isActive: true };
+  return appendAudit(
+    { ...state, staffUsers: [...state.staffUsers, user] },
+    'ADMIN_ADD_USER',
+    'USER',
+    staffCode,
+    `[Admin] Thêm user ${staffCode} ${fullName} — vai trò ${roles.join(', ')}`
+  );
+}
+
+export function updateStaffUser(
+  state: DepotState,
+  input: { userId: string; roles?: AppRole[]; isActive?: boolean }
+): DepotState {
+  assertAdmin(state);
+  const target = state.staffUsers.find((u) => u.id === input.userId);
+  if (!target) throw new Error('Không tìm thấy user.');
+  if (target.id === state.currentUser.id && input.isActive === false) {
+    throw new Error('Không thể tự khóa tài khoản đang đăng nhập.');
+  }
+  const updated: StaffUser = {
+    ...target,
+    roles: input.roles ? cleanRoles(input.roles) : target.roles,
+    isActive: input.isActive ?? target.isActive,
+  };
+  const staffUsers = state.staffUsers.map((u) => (u.id === target.id ? updated : u));
+  assertKeepsAdmin(state, staffUsers);
+  return appendAudit(
+    { ...state, staffUsers, currentUser: state.currentUser.id === target.id ? updated : state.currentUser },
+    'ADMIN_UPDATE_USER',
+    'USER',
+    target.staffCode,
+    `[Admin] Cập nhật user ${target.staffCode} ${target.fullName}: vai trò ${updated.roles.join(', ')}, ${updated.isActive ? 'đang hoạt động' : 'đã khóa'}`
   );
 }

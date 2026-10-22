@@ -12,7 +12,10 @@ import {
   MasterPrepaidReceipt,
   MasterReceiptDeduction,
   Partner,
+  PaymentReceipt,
+  PaymentTransaction,
   PaymentVoucher,
+  RepairTeam,
   ReleaseBooking,
   ServiceWorkOrder,
   StaffUser,
@@ -34,12 +37,17 @@ export interface DepotState {
   masterReceipts: MasterPrepaidReceipt[];
   receiptDeductions: MasterReceiptDeduction[];
   vouchers: PaymentVoucher[];
+  paymentTransactions: PaymentTransaction[];
+  paymentReceipts: PaymentReceipt[];
   gateInOrders: GateInOrder[];
   workOrders: ServiceWorkOrder[];
   bookings: ReleaseBooking[];
   gateOutOrders: GateOutOrder[];
   k80Tickets: K80InternalTicket[];
   auditLogs: AuditLogEntry[];
+  repairTeams: RepairTeam[];
+  // Bộ đếm cấp mã hồ sơ / phiếu (IN-YYMMDD, OUT-YYMMDD, PT-YYYY...). Ở chế độ Supabase do database cấp.
+  codeCounters: Record<string, number>;
 }
 
 export const INITIAL_CONTAINER_SIZES: ContainerSize[] = ['20', '40', '45'];
@@ -74,7 +82,15 @@ export const INITIAL_STAFF: StaffUser[] = [
     staffCode: 'NV-003',
     fullName: 'Lê Hoàng Giám Định (Hạ vỏ & Báo giá)',
     email: 'inspector@matrandepot.vn',
-    roles: ['INSPECTOR', 'GATE_STAFF', 'YARD_STAFF'],
+    roles: ['INSPECTOR'],
+    isActive: true,
+  },
+  {
+    id: 'usr-quotation',
+    staffCode: 'NV-008',
+    fullName: 'Ngô Thị Báo Giá',
+    email: 'quotation@matrandepot.vn',
+    roles: ['QUOTATION'],
     isActive: true,
   },
   {
@@ -104,9 +120,9 @@ export const INITIAL_STAFF: StaffUser[] = [
   {
     id: 'usr-acc',
     staffCode: 'NV-007',
-    fullName: 'Đỗ Kế Toán',
+    fullName: 'Đỗ Thị Thu (Văn phòng)',
     email: 'accounting@matrandepot.vn',
-    roles: ['ACCOUNTANT'],
+    roles: ['OFFICE'],
     isActive: true,
   },
 ];
@@ -548,6 +564,8 @@ export function createInitialState(): DepotState {
         createdAt: '2026-10-21T09:10:00+07:00',
       },
     ],
+    paymentTransactions: [],
+    paymentReceipts: [],
     gateInOrders: [
       {
         id: 'gin-1',
@@ -732,14 +750,73 @@ export function createInitialState(): DepotState {
         createdAt: '2026-10-19T08:28:00+07:00',
       },
     ],
+    repairTeams: [
+      {
+        id: 'rt-1',
+        code: 'TO-SC-01',
+        name: 'Tổ sửa chữa 1',
+        isActive: true,
+        members: [
+          { id: 'rtm-1', fullName: 'Đặng Kỹ Thuật Sửa Chữa', isActive: true, staffUserId: 'usr-repair' },
+          { id: 'rtm-2', fullName: 'Nguyễn Văn Hàn', isActive: true },
+        ],
+      },
+    ],
+    codeCounters: {},
   };
+}
+
+// Bổ sung các trường mới cho dữ liệu demo đã lưu từ phiên bản trước, không xóa dữ liệu cũ
+export function normalizeDepotState(raw: Partial<DepotState>): DepotState {
+  const base = createInitialState();
+  // DEC-047: nhân viên cổng / hiện trường → Giám định; Kế toán → Văn phòng
+  // DEC-049: bỏ QC Sửa chữa → Sửa chữa
+  const LEGACY_ROLE: Record<string, AppRole> = { GATE_STAFF: 'INSPECTOR', YARD_STAFF: 'INSPECTOR', ACCOUNTANT: 'OFFICE', REPAIR_QC: 'REPAIR_STAFF' };
+  const staffUsers = (raw.staffUsers || base.staffUsers).map((u) => ({
+    ...u,
+    roles: Array.from(new Set(u.roles.map((r) => LEGACY_ROLE[r as string] || r))) as AppRole[],
+  }));
+  for (const seed of INITIAL_STAFF) {
+    if (!staffUsers.some((u) => u.id === seed.id)) staffUsers.push(seed);
+  }
+  const currentUser =
+    staffUsers.find((u) => u.id === raw.currentUser?.id) || staffUsers[0];
+
+  // TTS là công nợ (chưa thu tiền) — không còn ghi nhận là CONFIRMED (đã thanh toán)
+  const vouchers = (raw.vouchers || base.vouchers).map((v) =>
+    v.paymentCategory === 'TTS' && v.status === 'CONFIRMED'
+      ? { ...v, status: 'DEFERRED' as const }
+      : v
+  );
+
+  // DEC-049: bỏ bước QC — container đang "chờ nghiệm thu" ở dữ liệu cũ coi như đã sửa xong → AV
+  const containers = (raw.containers || base.containers).map((c) => {
+    const legacy = c as typeof c & { needsQcInspection?: boolean };
+    if (!legacy.needsQcInspection) return c;
+    const { needsQcInspection: _drop, ...rest } = legacy;
+    void _drop;
+    return { ...rest, conditionClass: 'AV' as const, damageRemarks: [] };
+  });
+
+  return {
+    ...base,
+    ...raw,
+    containers,
+    currentUser,
+    staffUsers,
+    vouchers,
+    paymentTransactions: raw.paymentTransactions || [],
+    paymentReceipts: raw.paymentReceipts || [],
+    repairTeams: raw.repairTeams || base.repairTeams,
+    codeCounters: raw.codeCounters || {},
+  } as DepotState;
 }
 
 export function loadDepotState(): DepotState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return createInitialState();
-    return JSON.parse(raw) as DepotState;
+    return normalizeDepotState(JSON.parse(raw) as Partial<DepotState>);
   } catch {
     return createInitialState();
   }
@@ -759,11 +836,7 @@ export function resetDepotState(): DepotState {
   return initial;
 }
 
-export function hasRolePermission(user: StaffUser, allowedRoles: AppRole[]): boolean {
-  if (!user.isActive) return false;
-  if (user.roles.includes('ADMIN')) return true;
-  return user.roles.some((r) => allowedRoles.includes(r));
-}
+export { hasRolePermission } from './permissions';
 
 export function formatVnd(amount: number): string {
   return new Intl.NumberFormat('vi-VN', {
