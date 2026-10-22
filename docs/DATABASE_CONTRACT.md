@@ -207,10 +207,22 @@ Các quan hệ một-nhiều, nhiều-nhiều và điều kiện bắt buộc ph
 - Ma trận quyền và chính sách RLS.
 - Quy tắc lưu ảnh, thời hạn lưu và quyền truy cập.
 
-## 8. Trạng thái
+## 8. Bổ sung từ Change Request 2026-10-22 (phải có trong schema chính thức)
 
-- Nhóm dữ liệu: đã phác thảo.
-- Quan hệ dữ liệu: mới ở mức khái niệm.
-- Tên bảng và tên cột: chưa chốt.
-- SQL và migration: chưa tạo.
+- **Lượt lưu bãi**: mỗi lần container vào bãi là một bản ghi riêng (mã hồ sơ `IN-...`); tối đa 1 lượt đang mở cho mỗi số container (unique index có điều kiện); lượt đã OUT giữ làm lịch sử (DEC-019).
+- **Bộ đếm mã**: `IN-YYMMDD-NNN`, `OUT-YYMMDD-NNN`, `PT-YYYY-NNNNNN` cấp trong database bằng bảng bộ đếm + khóa dòng trong cùng transaction; ràng buộc `UNIQUE` trên từng mã (DEC-032, DEC-037).
+- **Chứng từ phải thu** (`payment_vouchers`): trạng thái `PENDING` / `CONFIRMED` (đã thanh toán) / `DEFERRED` (TTS — công nợ) / `CANCELLED`; lưu dòng chi phí chụp từ biểu giá.
+- **Giao dịch thu tiền** (`payment_transactions`, mới): phương thức (tiền mặt / chuyển khoản), mục đích (chứng từ / nạp Phiếu thu mẹ), trạng thái `PENDING` / `SUCCEEDED` / `FAILED` / `CANCELLED`, mã giao dịch ngân hàng `UNIQUE` (chống xử lý lặp).
+- **Phiếu thu** (`payment_receipts`, mới): `UNIQUE(transaction_id)` — mỗi giao dịch tối đa 1 phiếu; liên kết chứng từ / Phiếu thu mẹ / hồ sơ.
+- **Phiếu thu mẹ**: thêm trạng thái `PENDING_PAYMENT` (chưa dùng được để trừ dần cho tới khi thu tiền nạp).
+- **Hồ sơ cấp vỏ** (`gate_out_orders`): thêm `PAYMENT_PENDING`, SĐT lái xe, dòng chi phí; một container chỉ có tối đa 1 hồ sơ cấp vỏ đang hiệu lực.
+- **Booking**: `requested_qty` có thể rỗng; số đã cấp đếm từ hồ sơ cấp vỏ.
+- **Vai trò** thêm `QUOTATION`. **Gate In** thêm `driver_phone`.
+- **Lịch sử vị trí**: thêm loại `YARD_SHIFT` (ĐẢO CHUYỂN). SỬA VỊ TRÍ hành chính không ghi lịch sử vị trí, chỉ ghi `audit_logs`.
+
+## 9. Trạng thái
+
+- Nhóm dữ liệu: đã phác thảo; bổ sung mục 8.
+- Quan hệ dữ liệu: đã hiện thực ở tầng nghiệp vụ chế độ Demo (`src/services/`), chưa có ở database.
+- SQL và migration: có bản nháp `supabase/migrations/20261021000001_init_matran_depot_schema.sql` — **chưa áp dụng lên Supabase nào** (người dùng xác nhận 2026-10-22), **không khớp** với mục 8 và có lỗ hổng bảo mật (RPC `SECURITY DEFINER` không kiểm tra quyền, RLS thiếu policy). Không được apply; sẽ viết lại toàn bộ ở giai đoạn database.
 - Chính sách RLS: chưa triển khai.

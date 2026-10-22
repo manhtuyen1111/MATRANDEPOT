@@ -129,6 +129,10 @@ Quy ước trạng thái:
   - Nhân viên tác nghiệp văn phòng xác nhận khoản thu thuộc loại `TTT`, `TTS` hoặc `TTTT`; chỉ sau khi thanh toán/xác nhận hợp lệ mới được cập nhật `GATE IN OK`.
   - Sau `GATE IN OK`, container chuyển sang hàng chờ **Xe nâng / Hạ bãi** (xếp vị trí), đồng thời nếu phân loại là `DAMAGE` hoặc có yêu cầu vệ sinh (khác `KHÔNG VỆ SINH`) thì tự động tạo phiếu **Giám định / Vệ sinh** tương ứng.
 - Ảnh hưởng: Cấu trúc dữ liệu và giao diện Gate In phải tách rõ nhóm trường hiện trường (với mảng tình trạng vệ sinh), nhóm trường văn phòng, 3 hình thức thanh toán (`TTT`, `TTS`, `TTTT`), trạng thái `GATE IN OK` và tự động sinh lệnh hạ bãi / dịch vụ sau `GATE IN OK`.
+- Điều chỉnh 2026-10-22 (người dùng xác nhận, CR-04):
+  - Cũ: Văn phòng bổ sung `ĐẠI DIỆN KHÁCH HÀNG`. Mới: ô này đổi thành `SĐT LÁI XE` (bắt buộc). Thông tin khách hàng vẫn được giữ thành trường `KHÁCH HÀNG` (chọn theo Danh mục chung) vì cần cho chứng từ, phiếu thu và hồ sơ (nhóm C — CR-07).
+  - Tên hạng mục vệ sinh được chuẩn hóa theo DEC-021.
+  - Luồng sau `GATE IN OK` được chi tiết hóa ở DEC-024.
 
 ### DEC-017 — Quy tắc Booking nhiều container và phân quyền tác nghiệp
 
@@ -136,6 +140,213 @@ Quy ước trạng thái:
 - Quyết định:
   - Một Booking / Lệnh cấp có thể cấp nhiều container (theo số lượng và kích cỡ yêu cầu); từng container được khóa phân bổ ngay khi được chọn gắn vào Booking.
   - Sử dụng 10 vai trò hệ thống (cho phép kiêm nhiệm); nhân viên tác nghiệp văn phòng (`OFFICE`) xác nhận loại khoản thu (`TTT`, `TTS`, `TTTT`); `MANAGER` và `OFFICE` được đặt/gỡ lệnh tạm giữ hoặc khóa xuất (`Hold`).
+- Điều chỉnh 2026-10-22: bổ sung vai trò thứ 11 `QUOTATION` (Bộ phận Báo giá) — xem DEC-026. Cách nhập booking chi tiết ở DEC-034.
+
+### DEC-018 — Thuật ngữ và các bộ phận tác nghiệp
+
+- Trạng thái: CONFIRMED (2026-10-22 — quy tắc đã có trong code, người dùng xác nhận là ý của mình)
+- Quyết định:
+  - `HẠ VỎ` = Gate In (khách trả container rỗng). `CẤP VỎ` = Gate Out cấp rỗng theo booking. `NHẬP TÀU` / `XUẤT TÀU` = luồng xe kéo bãi với cảng (DEC-038).
+  - Các bộ phận trên menu: Tồn vỏ, Giám định (Hạ vỏ — mobile), Văn phòng (Hạ vỏ, Cấp vỏ, Phiếu thu, Nhập tàu, Xuất tàu), Vệ sinh, Xe nâng (Chờ hạ vỏ, Chờ cấp vỏ, Đảo chuyển), Báo giá, Sửa chữa, Báo cáo, Danh mục chung.
+  - Phiếu K80 = phiếu tác nghiệp nội bộ in nhiệt 80mm, có mã QR để các bộ phận quét xác nhận.
+
+### DEC-019 — Hồ sơ lượt lưu bãi
+
+- Trạng thái: CONFIRMED
+- Quyết định: Mỗi lần container vào bãi tạo một hồ sơ (lượt lưu bãi) do Giám định khởi tạo ở bước đầu; hồ sơ đi theo container đến khi OUT. Lượt đã OUT được giữ nguyên làm lịch sử, container quay lại bãi sẽ có hồ sơ mới. Mã hồ sơ theo DEC-037.
+
+### DEC-020 — Trình tự Giám định Hạ vỏ (mobile)
+
+- Trạng thái: CONFIRMED
+- Quyết định: Ảnh cửa container (bắt buộc) → Trạng thái `DAMAGE`/`AV` (nếu `DAMAGE` thì ghi chú hư hỏng, có gợi ý nhanh) → Phân loại đóng hàng `M`/`K`/`E` → Tình trạng vệ sinh (chọn nhiều; `KHÔNG VỆ SINH` chỉ chọn riêng) → AGE (năm sản xuất, 4 chữ số) → Xác nhận. Đủ từng mục mới mở mục tiếp theo.
+
+### DEC-021 — Mã hạng mục vệ sinh
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: `KHÔNG VỆ SINH`, `WP - QUÉT`, `WW - RỬA NƯỚC`, `CC - HÓA CHẤT`, `RM - NHỔ ĐINH`, `ML - BÓC TEM`. `CC - HÓA CHẤT` chính là `VỆ SINH CÔNG NGHIỆP` trong tài liệu cũ (người dùng xác nhận). Dữ liệu cũ dùng tên cũ được tự động quy đổi.
+
+### DEC-022 — Văn phòng Hạ vỏ
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định:
+  - Mục 1 — Thông tin hồ sơ: `SỐ CONTAINER` (4 chữ cái + 7 chữ số), `SIZE`, `TYPE`, `HÃNG TÀU`, `KHÁCH HÀNG` (chọn theo Danh mục chung), số lệnh/chứng từ (không bắt buộc), `SỐ XE`, `SĐT LÁI XE`.
+  - Mục 2 — `CHI PHÍ (ĐÃ BAO GỒM VAT)`: chỉ chọn từ Biểu giá trong Danh mục chung; không nhập tay số tiền; không có mức phí mặc định theo DAMAGE/AV. Hệ thống gợi ý biểu giá Nâng hạ theo Size–Type–Hãng tàu. Đơn giá được chụp lại vào chứng từ tại thời điểm lập.
+  - Mục 3 — Hình thức thanh toán (DEC-031), chỉ hiện khi đã có ít nhất 1 khoản chi phí.
+
+### DEC-023 — Phiếu K80
+
+- Trạng thái: CONFIRMED
+- Quyết định: Phiếu K80 được in khi `GATE IN OK` (Hạ vỏ) và khi lệnh CẤP VỎ đã thanh toán / xác nhận thanh toán (Cấp vỏ). Phiếu thể hiện trạng thái thanh toán (✓ đã thu / ✗ chưa thu, ví dụ TTS), số container, size, type, AGE, trạng thái, đóng hàng, vệ sinh, số xe, SĐT lái xe, mã hồ sơ và mã QR.
+
+### DEC-024 — Chuyển tiếp sau GATE IN OK (giải quyết Q-030)
+
+- Trạng thái: CONFIRMED (2026-10-22, CR-03)
+- Quyết định:
+  - Có yêu cầu vệ sinh (khác `KHÔNG VỆ SINH`) → vào hàng chờ **Vệ sinh**; chỉ sau khi Vệ sinh xác nhận hoàn tất container mới vào hàng chờ **Xe nâng — Chờ hạ vỏ**. Ràng buộc này được kiểm tra ở tầng nghiệp vụ, không chỉ ẩn trên giao diện.
+  - Không có yêu cầu vệ sinh → vào thẳng **Xe nâng — Chờ hạ vỏ**.
+  - `DAMAGE` → đồng thời vào hàng chờ **Báo giá**.
+  - Mọi hàng chờ xếp FIFO; làm xong thì tự ẩn.
+
+### DEC-025 — Xe nâng hạ vỏ
+
+- Trạng thái: CONFIRMED
+- Quyết định: Xe nâng quét QR K80, bắt buộc chọn `Block`; `Bay/Row/Tier` nhập đủ cả 3 hoặc bỏ trống cả 3. Ô chi tiết phải nằm trong cấu hình Block và không trùng container khác.
+
+### DEC-026 — Luồng DAMAGE: Báo giá → Sửa chữa
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: Báo giá do **vai trò riêng `QUOTATION` (Bộ phận Báo giá)** thực hiện (nhập hạng mục và số tiền). Xác nhận báo giá xong container chuyển sang **Chờ sửa chữa**. Bộ phận Sửa chữa xác nhận hoàn tất → container chuyển sang `AV`.
+- Ghi chú: việc hãng tàu duyệt báo giá trước khi sửa chưa được xác nhận (xem OPEN-007); hiện tại báo giá xong là chuyển sửa ngay.
+
+### DEC-027 — Điều kiện CẤP VỎ
+
+- Trạng thái: CONFIRMED (2026-10-22, CR-05)
+- Quyết định:
+  - Container `AV` chỉ được cấp khi đã xác nhận hết quy trình: đang tồn bãi, đã vệ sinh xong (nếu có), không còn báo giá/sửa chữa đang mở, không bị khóa.
+  - Container còn chờ vệ sinh **không** được cấp (không phải AV hoàn chỉnh).
+  - Container `DAMAGE` vẫn được cấp theo yêu cầu chỉ định riêng, **không cần ghi chú** (người dùng xác nhận); khi OUT, các việc Báo giá/Sửa chữa còn mở của lượt lưu bãi được đóng với ghi chú "cấp vỏ DAMAGE theo chỉ định".
+  - Danh sách sẵn sàng cấp vỏ có bộ lọc Hãng tàu – Size – Type – Trạng thái (`ALL`/`DAMAGE`/`AV`, mặc định `AV`) và hiển thị Phân loại đóng hàng.
+
+### DEC-028 — Danh mục chung
+
+- Trạng thái: CONFIRMED
+- Quyết định: Chỉ `ADMIN` cấu hình; các vai trò khác xem. Gồm: Khách hàng, Hãng tàu (có cờ cho phép TTS), Vị trí bãi (Block với Bay/Row/Tier tối đa), Container (Size, Type), Biểu giá (Nâng hạ theo Size–Type–Hãng tàu, Thu gom rác, Khác — giá đã gồm VAT). Mỗi mục là một mục con trên menu Danh mục chung (CR-06).
+
+### DEC-029 — Ghi chú Tồn vỏ
+
+- Trạng thái: CONFIRMED
+- Quyết định: Văn phòng / Quản lý thêm ghi chú trên từng container tồn vỏ; container có ghi chú được làm nổi bật và đưa lên đầu danh sách.
+
+### DEC-030 — KHÓA CONTAINER (tạm giữ / khóa xuất) — giải quyết Q-031
+
+- Trạng thái: CONFIRMED (2026-10-22, CR-02)
+- Quyết định: `OFFICE` và `MANAGER` được khóa/mở khóa; bắt buộc nhập ghi chú khi khóa (mở khóa cũng ghi chú). Container bị khóa có biểu tượng khóa cạnh số container; **không được CẤP VỎ / XUẤT VỎ**; **vẫn được ĐẢO CHUYỂN và SỬA VỊ TRÍ**. Lưu người khóa, thời điểm, ghi chú; thao tác được ghi nhật ký kiểm toán.
+
+### DEC-031 — Trạng thái của 3 trường hợp thanh toán
+
+- Trạng thái: CONFIRMED (2026-10-22, CR-04)
+- Quyết định (không coi 3 trường hợp có cùng thời điểm thu tiền / cùng trạng thái):
+  - `TTT`: quét QR Phiếu thu mẹ đang hiệu lực, trừ dần số dư → chứng từ **Đã thanh toán**. Không phát hành phiếu thu mới (tiền đã thu khi nạp Phiếu thu mẹ — người dùng xác nhận). Phiếu thu mẹ chỉ dùng được sau khi tiền nạp đã thu thực tế.
+  - `TTS`: ghi chú TTS trên chứng từ → chứng từ **Thanh toán sau (công nợ)**, chưa thu tiền, không phát hành phiếu thu; vẫn đủ điều kiện hoàn tất nghiệp vụ.
+  - `TTTT — Tiền mặt`: người có quyền bấm xác nhận đã nhận tiền → giao dịch thành công → phát hành phiếu thu → chứng từ **Đã thanh toán**.
+  - `TTTT — Chuyển khoản (API QR)`: tạo yêu cầu thanh toán QR (trạng thái **Chờ thanh toán**, chưa phải đã thu); chỉ khi nhận kết quả hợp lệ từ ngân hàng mới thành công → phát hành phiếu thu → hoàn tất nghiệp vụ tự động. Kết quả gửi lặp (cùng mã giao dịch ngân hàng) không được ghi nhận lại; sai số tiền bị từ chối. Đang chờ chuyển khoản thì phải hủy yêu cầu trước khi đổi hình thức.
+- Ảnh hưởng: `GATE IN OK` và chuyển Xe nâng chờ cấp vỏ chỉ xảy ra khi chứng từ Đã thanh toán hoặc TTS hợp lệ.
+
+### DEC-032 — PHIẾU THU
+
+- Trạng thái: CONFIRMED (2026-10-22, CR-04)
+- Quyết định:
+  - Mỗi giao dịch thu tiền thực tế thành công có đúng một phiếu thu; mã `PT-YYYY-NNNNNN` (đánh số liên tục theo năm — người dùng chọn), duy nhất, không tái sử dụng, do hệ thống cấp (không sinh ở giao diện).
+  - Không tạo phiếu thu khi mới có chi phí, yêu cầu thanh toán hoặc mã QR.
+  - Menu PHIẾU THU (Kế toán, Văn phòng, Quản lý): lọc theo khoảng ngày, tìm theo mã phiếu thu / số container / mã hồ sơ, lọc hình thức và trạng thái; không tự tải toàn bộ; có phân trang; xem chi tiết và truy ngược hồ sơ.
+  - Kế toán (`ACCOUNTANT`) tạo **phiếu thu TTT** (nạp Phiếu thu mẹ) tại menu PHIẾU THU, chọn đối tác, số tiền, hình thức Tiền mặt hoặc Chuyển khoản API QR. Phiếu ở trạng thái Chờ thanh toán cho tới khi Kế toán xác nhận tiền mặt hoặc ngân hàng xác nhận chuyển khoản.
+
+### DEC-033 — Thu phí CẤP VỎ
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: Cấp vỏ thu phí tại **Văn phòng** khi lập lệnh, quy trình như Hạ vỏ (Chi phí từ biểu giá → TTT/TTS/TTTT). Chỉ khi đã thanh toán / TTS hợp lệ mới in phiếu K80 cấp vỏ và chuyển sang Xe nâng — Chờ cấp vỏ. Xe nâng không tự ghi nhận phí.
+- Hủy lệnh cấp: được hủy khi chưa ghi nhận thanh toán (giải phóng khóa phân bổ, lưu lý do); đã ghi nhận thanh toán thì chặn cho tới khi có quy trình hoàn tiền / điều chỉnh công nợ (OPEN-006).
+
+### DEC-034 — Booking khi cấp vỏ
+
+- Trạng thái: CONFIRMED (2026-10-22, giải quyết Q-010)
+- Quyết định: Văn phòng chỉ cần nhập **số booking**; số lượng xem trên chứng từ booking. Hệ thống tự đếm và hiển thị số container đã cấp theo booking (chờ thanh toán / chờ xe nâng / đã OUT, tách riêng số đã hủy) và cho mở danh sách. Booking chưa có trong hệ thống được tạo ở lần lập lệnh đầu tiên, không gán số lượng.
+
+### DEC-035 — Quyền hoàn tất công việc các bộ phận
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: Không tách người làm và người duyệt. Vệ sinh: bộ phận Vệ sinh và **Văn phòng**. Xe nâng (hạ vỏ, đảo chuyển): bộ phận Xe nâng và **Văn phòng** (giữ thêm Hiện trường, Quản lý như hiện có). Báo giá: chỉ Bộ phận Báo giá. Sửa chữa: chỉ Bộ phận Sửa chữa. `ADMIN` có toàn quyền.
+
+### DEC-036 — ĐẢO CHUYỂN và SỬA VỊ TRÍ
+
+- Trạng thái: CONFIRMED (2026-10-22, CR-01, CR-02)
+- Quyết định:
+  - **ĐẢO CHUYỂN** (Xe nâng): tác nghiệp vận hành cho bất kỳ container đang tồn bãi; màn hình có tìm số container, lọc SIZE và TIẾN ĐỘ (gồm Chờ sửa chữa); lưu lịch sử gồm tên tác nghiệp, thời gian, nhân sự, vị trí trước/sau. Thay cho hai mục cũ HẠ SỬA CHỮA / HẠ KỆ GIÁM ĐỊNH (đã gỡ khỏi menu).
+  - **SỬA VỊ TRÍ** (Văn phòng / Quản lý, tại Tồn vỏ): điều chỉnh hành chính, không tạo lịch sử tác nghiệp ĐẢO CHUYỂN, không ghi là hoạt động Xe nâng; chỉ ghi nhật ký kiểm toán hệ thống.
+  - Vị trí chính thức chỉ đến từ HẠ VỎ, ĐẢO CHUYỂN hoặc SỬA VỊ TRÍ; chưa có thì hiển thị `-`. Chỉ sửa vị trí / đảo chuyển container đã có vị trí chính thức.
+
+### DEC-037 — Mã hồ sơ HẠ VỎ / CẤP VỎ
+
+- Trạng thái: CONFIRMED (2026-10-22, CR-07)
+- Quyết định: Hồ sơ HẠ VỎ `IN-YYMMDD-NNN`, hồ sơ CẤP VỎ `OUT-YYMMDD-NNN` (ví dụ `IN-261022-005`, `OUT-261022-001`); duy nhất, do hệ thống cấp. Hồ sơ cũ mang mã `HS-...` / `GO-...` được giữ nguyên, không đổi mã. Ở chế độ Supabase, số thứ tự phải được cấp trong database (an toàn khi thao tác đồng thời).
+
+### DEC-038 — NHẬP TÀU / XUẤT TÀU
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: Để giai đoạn sau. Menu vẫn hiển thị nhưng màn hình không ghi nhận dữ liệu cho tới khi quy trình chi tiết được xác nhận (OPEN-001).
+
+### DEC-040 — Báo giá chỉ cần REMARK SỬA CHỮA (giải quyết OPEN-007)
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: Hiện chưa có API với hãng tàu nên **không cần bước hãng tàu duyệt**. Nhân viên Báo giá chỉ nhập **REMARK SỬA CHỮA** và có quyền cập nhật container sang **Chờ sửa chữa**. Số tiền báo giá không bắt buộc.
+- Đồng thời xác nhận: giữ trường KHÁCH HÀNG ở Hạ vỏ / Cấp vỏ bên cạnh SĐT LÁI XE (DEC-016 điều chỉnh); sheet XUẤT VỎ = XUẤT TÀU + trả theo lệnh riêng, NHẬP VỎ = NHẬP TÀU (Q-033).
+
+### DEC-041 — Giờ công sửa chữa
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: Khi chuyển container sang Chờ sửa chữa, Bộ phận Báo giá **bắt buộc** nhập REMARK SỬA CHỮA và **GIỜ CÔNG SỬA CHỮA** (số > 0, cho phép số lẻ như 2.5). Bộ phận Sửa chữa thấy remark + giờ công trong chi tiết công việc.
+
+### DEC-042 — Danh mục chung: SỬA CHỮA (tổ sửa chữa)
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: Danh mục chung có mục **Sửa chữa** để chia tổ sửa chữa và thêm nhân viên vào từng tổ. Chỉ ADMIN cấu hình. Tổ / nhân viên **ngưng hoạt động** thay vì xóa để giữ lịch sử. Nhân viên trong tổ nhập theo họ tên, không bắt buộc có tài khoản đăng nhập (giả định — báo lại nếu cần liên kết tài khoản).
+
+### DEC-043 — Xác nhận hoàn tất sửa chữa
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: Khi xác nhận sửa chữa phải chọn **TỔ SỬA CHỮA**; chọn tổ thì hiển thị nhân viên đang hoạt động trong tổ, **mặc định chọn hết**, người dùng được bỏ chọn bất kỳ ai; phải còn ít nhất 1 nhân viên. Lưu tổ + danh sách nhân viên thực hiện vào công việc sửa chữa.
+
+### DEC-044 — Báo cáo Sửa chữa chi tiết
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: Menu Báo cáo có **Sửa chữa chi tiết**: lọc số container / khoảng thời gian (bắt buộc ít nhất 1), tổ sửa chữa, hãng tàu, trạng thái; phân trang; tổng giờ công; xuất Excel. Cột: mã hồ sơ, số cont, size, type, hãng tàu, remark, giờ công, trạng thái, người/ngày báo giá, tổ, nhân viên, người/ngày hoàn tất.
+- Kèm theo: Xe nâng – Chờ cấp vỏ hiển thị SỐ XE, SĐT LÁI XE, booking trong chi tiết công việc; Giám định – Hạ vỏ bỏ nhãn "Mới nhất".
+
+### DEC-045 — USER - PHÂN QUYỀN và giới hạn màn hình theo vai trò
+
+- Trạng thái: CONFIRMED (2026-10-22) — một phần chờ xác nhận (OPEN-009)
+- Quyết định:
+  - Danh mục chung có mục **User - Phân quyền** (chỉ ADMIN): thêm user (họ tên, email, vai trò — chọn nhiều), sửa vai trò, khóa / mở khóa. Luôn còn ≥ 1 ADMIN hoạt động; không tự khóa tài khoản đang dùng.
+  - Vai trò: GIÁM ĐỊNH, VĂN PHÒNG, XE NÂNG, VỆ SINH, BÁO GIÁ, QUẢN LÝ, ADMIN, SỬA CHỮA, **QC SỬA CHỮA** (mới, `REPAIR_QC`).
+  - **Mỗi vai trò chỉ thấy màn làm việc của mình**: Giám định → Hạ vỏ; Xe nâng → Chờ hạ vỏ / Chờ cấp vỏ / Đảo chuyển; Vệ sinh → Chờ vệ sinh; Báo giá → Chờ báo giá; Sửa chữa → Chờ sửa chữa. Văn phòng / Quản lý: các màn văn phòng, Tồn vỏ, Báo cáo, Danh mục (xem) và các màn được làm thay theo DEC-035. ADMIN: tất cả.
+  - Danh mục chung đổi nhãn: "Container", "Sửa chữa".
+- Điều chỉnh bởi DEC-047: bỏ Kế toán (Văn phòng thay), bỏ GATE_STAFF / YARD_STAFF (là Giám định), QC Sửa chữa được nghiệm thu.
+
+### DEC-046 — Báo cáo Hạ vỏ
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: Menu Báo cáo có **Hạ vỏ**, giao diện và cách lọc như Cấp vỏ (số container / khoảng thời gian bắt buộc, hãng tàu, size, phân trang), dữ liệu lấy từ hồ sơ HẠ VỎ: mã hồ sơ, số cont, size/type, hãng tàu, khách hàng, số xe, SĐT lái xe, trạng thái cont, trạng thái hồ sơ, thời gian giám định, GATE IN OK, chi phí (chỉ khối văn phòng).
+
+### DEC-047 — Chốt vai trò: bỏ Kế toán, gộp Cổng/Hiện trường vào Giám định, QC nghiệm thu (giải quyết OPEN-009)
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định:
+  - **Bỏ vai trò Kế toán.** Văn phòng tạo phiếu thu TTT, xác nhận thu tiền mặt, xem Phiếu thu (thay DEC-032 phần "Kế toán"). Quản lý xem được Phiếu thu.
+  - **Nhân viên cổng / hiện trường chính là Giám định** → bỏ `GATE_STAFF`, `YARD_STAFF`; chỉ Giám định (và Quản lý) làm tác nghiệp Giám định – Hạ vỏ.
+  - ~~QC SỬA CHỮA: xem Báo cáo sửa chữa và nghiệm thu~~ — **đã bỏ theo DEC-049**. Luồng DAMAGE: Báo giá → Sửa chữa hoàn tất → **Chờ nghiệm thu** (container vẫn DAMAGE, chưa cấp như AV) → QC **Nghiệm thu đạt** → `AV`. Menu riêng "QC sửa chữa → Chờ nghiệm thu" (mobile).
+  - 9 vai trò chính thức: Giám định, Văn phòng, Xe nâng, Vệ sinh, Báo giá, Quản lý, Admin, Sửa chữa, QC Sửa chữa.
+  - Dữ liệu cũ tự quy đổi: GATE_STAFF / YARD_STAFF → Giám định; ACCOUNTANT → Văn phòng.
+- (Q-035 không còn hiệu lực — DEC-049.)
+
+### DEC-049 — Bỏ vai trò và menu QC Sửa chữa; Đảo chuyển là tác nghiệp mobile
+
+- Trạng thái: CONFIRMED (2026-10-22) — **thay phần QC của DEC-047**
+- Quyết định:
+  - Bỏ vai trò **QC Sửa chữa** và menu **QC sửa chữa → Chờ nghiệm thu**. Vai trò **Sửa chữa** là đủ: Sửa chữa chọn tổ + nhân viên, xác nhận hoàn tất → container chuyển **AV** ngay (không còn bước nghiệm thu). Q-035 không còn cần trả lời.
+  - Còn **8 vai trò**: Giám định, Văn phòng, Xe nâng, Vệ sinh, Báo giá, Quản lý, Admin, Sửa chữa.
+  - Báo cáo Sửa chữa chi tiết: khối Văn phòng / Quản lý (và Admin).
+  - **Xe nâng → Đảo chuyển là tác nghiệp mobile**: khung mobile như các màn hiện trường, danh sách dạng thẻ, container đang chọn hiển thị trên cùng, "Xem thêm" thay phân trang, lịch sử thu gọn.
+  - Dữ liệu cũ: user QC → Sửa chữa; container đang "chờ nghiệm thu" → AV.
+
+### DEC-048 — Thêm user có sẵn vào tổ sửa chữa
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: Danh mục chung → Sửa chữa cho **chọn user đang hoạt động có vai trò Sửa chữa** để thêm vào tổ (liên kết tài khoản, gắn nhãn "user"); vẫn cho nhập họ tên nhân viên không có tài khoản. Không thêm trùng một user vào cùng tổ; user bị khóa không thêm được.
+
+### DEC-039 — Giả lập ngân hàng ở chế độ Demo
+
+- Trạng thái: CONFIRMED (2026-10-22)
+- Quyết định: Khi chưa cấu hình Supabase / API ngân hàng, cho phép nút "Giả lập ngân hàng báo có (DEMO)" cho Văn phòng / Kế toán / Quản lý. Nút đi qua đúng cơ chế xử lý kết quả ngân hàng (chống trùng theo mã giao dịch) và tự ẩn khi cấu hình Supabase.
 
 ## 3. Quyết định kỹ thuật đã xác nhận
 
@@ -153,6 +364,7 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED
 - Quyết định: Responsive web app hỗ trợ cả máy tính (Văn phòng/Kế toán/Quản lý) và điện thoại/tablet (Cổng/Hiện trường/Xe nâng/Vệ sinh/Giám định/M&R).
+- Bổ sung 2026-10-22: các mục menu tác nghiệp mobile (Giám định – Hạ vỏ, Vệ sinh, Xe nâng – Chờ hạ vỏ / Chờ cấp vỏ / Đảo chuyển, Sửa chữa) có biểu tượng điện thoại để phân biệt.
 
 ### DEC-013 — Quản lý thay đổi database
 
@@ -175,14 +387,30 @@ Quy ước trạng thái:
 
 ### OPEN-003 — Trạng thái nghiệp vụ và luồng chuyển tiếp sau GATE IN OK
 
-- Trạng thái: OPEN
-- Đã xác nhận: Trạng thái `GATE IN OK` chỉ được cập nhật sau khi thanh toán thành công; các phân loại hiện trường (`DAMAGE`, `AV`; `M`, `K`, `E`; tình trạng vệ sinh).
-- Cần xác nhận: Bộ phận tiếp theo nhận xử lý sau `GATE IN OK` được xác định theo quy tắc nào; danh mục đầy đủ các trạng thái của container, Gate In, Gate Out, booking, tạm giữ/khóa xuất, vệ sinh, giám định, sửa chữa và thanh toán.
+- Trạng thái: OPEN (một phần đã giải quyết)
+- Đã xác nhận: Trạng thái `GATE IN OK` chỉ được cập nhật sau khi thanh toán thành công; các phân loại hiện trường; bộ phận tiếp theo sau `GATE IN OK` (DEC-024); trạng thái thanh toán (DEC-031).
+- Cần xác nhận: Danh mục trạng thái đầy đủ và chính thức của container, booking, vệ sinh, sửa chữa để chốt schema database.
 
 ### OPEN-004 — Phân quyền
 
+- Trạng thái: OPEN (một phần đã giải quyết)
+- Đã xác nhận: 8 vai trò (DEC-045, DEC-047, DEC-049); quyền hoàn tất từng bộ phận (DEC-035); khóa container (DEC-030); Văn phòng / Quản lý xác nhận thanh toán, Văn phòng làm phiếu thu TTT (DEC-047); menu theo vai trò (DEC-045).
+- Cần xác nhận: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có được làm thay Báo giá / Sửa chữa không.
+
+### OPEN-007 — Hãng tàu duyệt báo giá (ĐÃ GIẢI QUYẾT — DEC-040)
+
 - Trạng thái: OPEN
-- Cần xác nhận: Vai trò thực tế, quyền thao tác và các bước phê duyệt.
+- Cần xác nhận: Có cần bước hãng tàu / chủ vỏ duyệt báo giá trước khi Sửa chữa thực hiện không? Hiện tại báo giá xong chuyển sửa ngay.
+
+### OPEN-009 — Vai trò Kế toán và QC Sửa chữa (ĐÃ GIẢI QUYẾT — DEC-047)
+
+- Trạng thái: OPEN
+- Cần xác nhận: (1) Danh sách vai trò mới không có KẾ TOÁN — ai tạo phiếu thu TTT và xác nhận tiền mặt (hiện là Kế toán)? Gộp vào Văn phòng hay giữ Kế toán? (2) QC SỬA CHỮA làm gì trong quy trình (nghiệm thu sau sửa? có được trả lại sửa lại?) và vào màn nào? (3) Bỏ hẳn GATE_STAFF / YARD_STAFF?
+
+### OPEN-008 — Hủy lệnh cấp đã thanh toán / hoàn tiền
+
+- Trạng thái: OPEN
+- Cần xác nhận: Quy trình hoàn tiền (TTTT), hoàn lại số dư Phiếu thu mẹ (TTT) hoặc hủy công nợ (TTS) khi hủy lệnh cấp hoặc hủy Hạ vỏ đã thanh toán.
 
 ### OPEN-005 — Chính sách tài chính
 
@@ -204,6 +432,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: đã ghi nhận các nội dung xác nhận.
-- Quyết định kỹ thuật: một số mục còn ở mức đề xuất.
-- Các mục OPEN: cần giải quyết trước khi chốt thiết kế database.
+- Quyết định nghiệp vụ: DEC-001 → DEC-049 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
+- Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

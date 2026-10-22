@@ -16,7 +16,7 @@ Mô tả các quy trình vận hành bãi container rỗng xuyên suốt toàn b
 - Nhân viên xe nâng.
 - Nhân viên vệ sinh.
 - Nhân viên giám định và sửa chữa.
-- Kế toán.
+- Nhân viên cổng / hiện trường = Giám định; không còn vai trò Kế toán — Văn phòng đảm nhận (DEC-047).
 - Quản trị hệ thống.
 
 Danh sách vai trò và quyền chi tiết sẽ được xác định trong tài liệu riêng.
@@ -28,29 +28,28 @@ Danh sách vai trò và quyền chi tiết sẽ được xác định trong tài
 - **`NHẬP TÀU`**: bãi tổ chức xe kéo của bãi vận chuyển số lượng lớn container từ cảng về. Đây là nghiệp vụ riêng, sẽ xây dựng module tương ứng sau.
 - Các loại tiếp nhận khác chỉ được ghi nhận khi đã được xác nhận; không tự bổ sung như quy tắc chính thức.
 
-### 3.2. Luồng thực hiện Gate In
-1. Tiếp nhận yêu cầu hoặc xác định loại lượt nhập bãi.
-2. Nhân viên cổng/hiện trường chụp ảnh cửa container, ảnh phải nhìn rõ số container.
-3. Nhân viên hiện trường ghi nhận thông tin ban đầu và xác nhận container đến bãi. Các trường thông tin hiện trường đã xác nhận gồm:
-   - **Phân loại**: `DAMAGE`, `AV`.
+### 3.2. Luồng thực hiện Gate In (HẠ VỎ)
+1. **Giám định (mobile)** bấm (+) tạo tác nghiệp, chụp ảnh cửa container nhìn rõ số container, rồi lần lượt ghi nhận (DEC-020):
+   - **Trạng thái**: `DAMAGE` (kèm ghi chú hư hỏng) hoặc `AV`.
    - **Phân loại đóng hàng**: `M`, `K`, `E`.
-   - **Tình trạng vệ sinh**: `KHÔNG VỆ SINH`, `QUÉT`, `RỬA NƯỚC`, `VỆ SINH CÔNG NGHIỆP`, `NHỔ ĐINH`, `BÓC TEM`.
-4. Văn phòng tiếp nhận, kiểm tra lệnh/chứng từ, hình ảnh và bổ sung các trường đã xác nhận:
-   - `SỐ CONTAINER`
-   - `SIZE`
-   - `TYPE`
-   - `SỐ XE`
-   - `ĐẠI DIỆN KHÁCH HÀNG`
-5. Văn phòng xác định dịch vụ, khoản phí phải thu và xác nhận phương thức thanh toán thuộc 1 trong 3 loại:
-   - **`TTT` (Thanh toán trước):** Quét mã QR thanh toán của Phiếu thu mẹ vào chứng từ; nếu hợp lệ thì thông báo và trừ dần vào Phiếu thu mẹ.
-   - **`TTS` (Thanh toán sau):** Kiểm tra thông tin `TTS` ở các nguồn; nếu xác nhận đủ điều kiện thì ghi chú (`note`) ở chứng từ là `TTS`.
-   - **`TTTT` (Thanh toán trực tiếp):** Thanh toán chuyển khoản (API) hoặc Thanh toán tiền mặt.
-6. Ghi nhận giao dịch/xác nhận chứng từ thanh toán (việc tạo yêu cầu thanh toán không đồng nghĩa đã hoàn tất thanh toán).
-7. Chỉ sau khi thanh toán/xác nhận hợp lệ mới được cập nhật trạng thái `GATE IN OK` (hoàn tất Gate In).
-8. Sau `GATE IN OK`, chuyển sang hàng chờ **Xe nâng / Hạ bãi** để bố trí vị trí; đồng thời nếu phân loại là `DAMAGE` hoặc có yêu cầu vệ sinh (khác `KHÔNG VỆ SINH`) thì tự động tạo phiếu **Giám định / Vệ sinh** tương ứng.
-9. Ghi nhận vị trí hiện tại (cấp `Block` hoặc chi tiết `Bay/Row/Tier`), trạng thái và lịch sử nghiệp vụ khi container được bố trí vào bãi.
+   - **Tình trạng vệ sinh** (chọn nhiều, `KHÔNG VỆ SINH` chọn riêng): `KHÔNG VỆ SINH`, `WP - QUÉT`, `WW - RỬA NƯỚC`, `CC - HÓA CHẤT` (= vệ sinh công nghiệp), `RM - NHỔ ĐINH`, `ML - BÓC TEM` (DEC-021).
+   - **AGE**: năm sản xuất container.
+   Hệ thống cấp mã hồ sơ `IN-YYMMDD-NNN` khi xác nhận (DEC-037) và chuyển sang Văn phòng.
+2. **Văn phòng — Hạ vỏ** (DEC-022):
+   - Mục 1: `SỐ CONTAINER`, `SIZE`, `TYPE`, `HÃNG TÀU`, `KHÁCH HÀNG`, số lệnh/chứng từ, `SỐ XE`, `SĐT LÁI XE`.
+   - Mục 2: `CHI PHÍ (ĐÃ BAO GỒM VAT)` — chỉ chọn từ Biểu giá.
+   - Mục 3: Hình thức thanh toán (DEC-031):
+     - **`TTT` — Thanh toán trước:** quét QR Phiếu thu mẹ đang hiệu lực, trừ dần → đã thanh toán (không phát hành phiếu thu mới).
+     - **`TTS` — Thanh toán sau:** ghi chú TTS trên chứng từ → công nợ, chưa thu tiền.
+     - **`TTTT` — Trực tiếp:** Tiền mặt (người có quyền xác nhận đã nhận → phát hành phiếu thu) hoặc Chuyển khoản API QR (chờ ngân hàng xác nhận → phát hành phiếu thu).
+3. Việc tạo yêu cầu thanh toán / mã QR không đồng nghĩa đã thu tiền. Chỉ khi chứng từ đã thanh toán hoặc TTS hợp lệ mới cập nhật `GATE IN OK` và in phiếu K80 (DEC-023).
+4. Sau `GATE IN OK` (DEC-024):
+   - Có yêu cầu vệ sinh → **Vệ sinh — Chờ vệ sinh**; vệ sinh xong mới vào **Xe nâng — Chờ hạ vỏ**.
+   - Không yêu cầu vệ sinh → **Xe nâng — Chờ hạ vỏ**.
+   - `DAMAGE` → thêm **Báo giá — Chờ báo giá**.
+5. **Xe nâng** quét QR K80, chọn vị trí (Block bắt buộc; Bay/Row/Tier đủ cả 3 hoặc bỏ trống) → vị trí chính thức đầu tiên, lưu lịch sử (DEC-025).
 
-Các trạng thái trung gian, bộ phận nhận chuyển tiếp sau `GATE IN OK`, trường hợp từ chối, hủy, thanh toán lỗi và container chưa dỡ phải được đặc tả riêng.
+Các trường hợp từ chối, hủy Hạ vỏ đã thanh toán và sửa sai số container sau GATE IN OK còn mở (Q-003, Q-005, OPEN-008).
 
 ## 4. Quy trình quản lý tồn bãi và các hoạt động phát sinh tại bãi
 
@@ -77,6 +76,12 @@ Các trạng thái trung gian, bộ phận nhận chuyển tiếp sau `GATE IN O
 
 Quy tắc đặt tên khu, block, bay, row, tier chi tiết và sức chứa chưa được chốt.
 
+### 4.3. ĐẢO CHUYỂN, SỬA VỊ TRÍ và KHÓA CONTAINER (DEC-030, DEC-036)
+- **ĐẢO CHUYỂN** (menu Xe nâng): tìm bất kỳ container đang tồn bãi, lọc SIZE / TIẾN ĐỘ (Chờ vệ sinh, Chờ báo giá, Chờ sửa chữa, Đã lập lệnh cấp, Sẵn sàng), chọn vị trí mới; hệ thống lưu lịch sử tác nghiệp (tên tác nghiệp, thời gian, nhân sự, vị trí trước/sau).
+- **SỬA VỊ TRÍ** (menu Tồn vỏ, Văn phòng / Quản lý): chỉnh vị trí hành chính; không tạo lịch sử ĐẢO CHUYỂN, chỉ ghi nhật ký kiểm toán.
+- Vị trí chính thức chỉ đến từ HẠ VỎ, ĐẢO CHUYỂN, SỬA VỊ TRÍ; chưa có thì hiển thị `-`.
+- **KHÓA CONTAINER** (Tồn vỏ, Văn phòng / Quản lý): bắt buộc ghi chú; container bị khóa có biểu tượng khóa, không được CẤP VỎ / XUẤT VỎ, vẫn được ĐẢO CHUYỂN và SỬA VỊ TRÍ.
+
 ## 5. Quy trình vệ sinh container
 
 1. Tiếp nhận yêu cầu vệ sinh.
@@ -87,7 +92,7 @@ Quy tắc đặt tên khu, block, bay, row, tier chi tiết và sức chứa ch�
 6. Ghi nhận phí và trạng thái thanh toán theo chính sách dịch vụ.
 7. Lưu lịch sử công việc.
 
-Các phân loại tình trạng vệ sinh ghi nhận tại Gate In đã xác nhận gồm: `KHÔNG VỆ SINH`, `QUÉT`, `RỬA NƯỚC`, `VỆ SINH CÔNG NGHIỆP`, `NHỔ ĐINH`, `BÓC TEM`. Tiêu chuẩn nghiệm thu và quy trình xử lý chi tiết sẽ được xác định sau.
+Các phân loại tình trạng vệ sinh ghi nhận tại Gate In (DEC-021): `KHÔNG VỆ SINH`, `WP - QUÉT`, `WW - RỬA NƯỚC`, `CC - HÓA CHẤT` (vệ sinh công nghiệp), `RM - NHỔ ĐINH`, `ML - BÓC TEM`. Bộ phận Vệ sinh hoặc Văn phòng xác nhận hoàn tất (DEC-035); container có yêu cầu vệ sinh chỉ vào hàng chờ Xe nâng hạ vỏ sau khi vệ sinh xong (DEC-024). Tiêu chuẩn nghiệm thu và trạng thái chi tiết sẽ được xác định sau (Q-017).
 
 ## 6. Quy trình giám định
 
@@ -112,6 +117,13 @@ Các phân loại tình trạng vệ sinh ghi nhận tại Gate In đã xác nh�
 
 Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 
+### 7.1. Luồng DAMAGE hiện áp dụng (DEC-026)
+1. Container `DAMAGE` sau `GATE IN OK` vào hàng chờ **Báo giá**.
+2. **Bộ phận Báo giá** (vai trò `QUOTATION`) nhập hạng mục và số tiền → xác nhận → container chuyển **Chờ sửa chữa**.
+3. **Bộ phận Sửa chữa** chọn tổ + nhân viên, xác nhận hoàn tất → container chuyển **AV** (DEC-049, không còn bước QC).
+4. Xe nâng dùng ĐẢO CHUYỂN (lọc TIẾN ĐỘ = Chờ sửa chữa) để hạ container tới khu sửa chữa.
+5. Không cần hãng tàu duyệt (DEC-040). Báo giá nhập remark + giờ công (DEC-041); Sửa chữa chọn tổ + nhân viên khi hoàn tất (DEC-043).
+
 ## 8. Quy trình Booking và cấp container
 
 1. Tiếp nhận booking hoặc yêu cầu cấp container.
@@ -122,6 +134,14 @@ Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 6. Nếu đổi hoặc hủy, xử lý việc giải phóng khóa theo quy tắc được phê duyệt.
 7. Điều phối lấy container và kiểm tra trước khi xuất.
 8. Lưu container đã cấp và lịch sử liên quan.
+
+### 8.1. Luồng CẤP VỎ tại Văn phòng (DEC-027, DEC-033, DEC-034)
+1. Nhập **số booking** → hệ thống hiển thị số container đã cấp theo booking (chờ thanh toán / chờ xe nâng / đã OUT, tách riêng đã hủy) và cho mở danh sách. Chọn **khách hàng nhận vỏ**.
+2. Chọn container từ danh sách sẵn sàng cấp vỏ (lọc Hãng tàu – Size – Type – Trạng thái `ALL`/`DAMAGE`/`AV`, mặc định `AV`; hiển thị Phân loại đóng hàng). Container bị khóa hoặc còn chờ vệ sinh không xuất hiện.
+3. Nhập `SỐ XE`, `SĐT LÁI XE`.
+4. `CHI PHÍ (ĐÃ BAO GỒM VAT)` từ biểu giá → Hình thức thanh toán (TTT / TTS / TTTT như Hạ vỏ).
+5. Hệ thống cấp mã hồ sơ `OUT-YYMMDD-NNN`, khóa phân bổ container. Đã thanh toán / TTS hợp lệ → in phiếu K80 cấp vỏ, chuyển **Xe nâng — Chờ cấp vỏ**. Chuyển khoản đang chờ → hồ sơ nằm ở "Hồ sơ cấp vỏ chờ thanh toán".
+6. Xe nâng quét QR → hệ thống kiểm tra đủ 5 điều kiện (DEC-015) → OUT.
 
 ## 9. Quy trình Gate Out — Xuất bãi
 
@@ -173,6 +193,12 @@ Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 
 Chính sách thu trước, thu sau, công nợ và hoàn tiền phải được xác định riêng cho từng dịch vụ. Quy tắc Gate In hiện tại yêu cầu thanh toán trước khi hoàn tất.
 
+### 10.3. PHIẾU THU (DEC-032)
+- Phiếu thu chỉ phát hành khi có **giao dịch thu tiền thực tế thành công** (tiền mặt được xác nhận, hoặc chuyển khoản được ngân hàng xác nhận); mã `PT-YYYY-NNNNNN`; mỗi giao dịch một phiếu.
+- TTT khi Hạ vỏ / Cấp vỏ chỉ ghi lần trừ dần, liên kết về Phiếu thu mẹ; TTS không phát hành phiếu thu.
+- **Văn phòng tạo phiếu thu TTT** (nạp Phiếu thu mẹ — DEC-047) tại menu PHIẾU THU: chọn đối tác, số tiền, Tiền mặt hoặc Chuyển khoản API QR → Chờ thanh toán → khi thu thành công thì phát hành phiếu thu và Phiếu thu mẹ mới dùng được để trừ dần.
+- Tra cứu phiếu thu theo khoảng ngày, mã phiếu thu, số container, mã hồ sơ, hình thức, trạng thái; xem chi tiết và truy ngược hồ sơ.
+
 ## 11. Báo cáo và kiểm soát
 
 - Tồn bãi theo vị trí và trạng thái.
@@ -181,6 +207,11 @@ Chính sách thu trước, thu sau, công nợ và hoàn tiền phải được 
 - Booking, cấp container và xuất bãi.
 - Phí dịch vụ, thanh toán, công nợ và đối soát.
 - Nhật ký thao tác và các trường hợp ngoại lệ.
+
+### 11.1. Menu BÁO CÁO hiện hành (CR-08)
+- **Hạ vỏ** (DEC-046), **Cấp vỏ**, **Nhập tàu**, **Xuất tàu**: tìm theo số container hoặc lọc theo khoảng thời gian (+ hãng tàu, size). Không tự tải dữ liệu khi mở trang; giới hạn 50 dòng / trang. Cột chi phí chỉ hiện với Văn phòng / Quản lý.
+- **Tổng hợp**: bắt buộc chọn khoảng thời gian (tối đa 366 ngày) trước khi tạo; xuất Excel 5 sheet: HẠ VỎ, CẤP VỎ (theo khoảng thời gian), XUẤT VỎ, NHẬP VỎ (theo quy tắc từng loại hồ sơ — xem Q-033), TỒN VỎ (tại thời điểm lập). Chỉ Văn phòng / Quản lý.
+- Ba mục báo cáo cũ (TỒN VỎ / HẠ VỎ / CẤP VỎ) đã gỡ khỏi menu; dữ liệu và chức năng tác nghiệp không bị xóa.
 
 ## 12. Nguyên tắc dữ liệu
 

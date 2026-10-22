@@ -64,6 +64,11 @@ Chỉ bắt đầu tạo schema chính thức khi:
 
 ## 5. Trạng thái hiện tại
 
-Đang ở giai đoạn chuẩn bị và xác nhận nghiệp vụ.
+Cập nhật 2026-10-22:
+
+- Nghiệp vụ Giai đoạn 1 đã chốt phần lớn (DEC-018 → DEC-039); còn mở OPEN-001 → OPEN-008.
+- Có migration bản nháp `20261021000001_init_matran_depot_schema.sql`, **chưa áp dụng ở đâu**, không khớp nghiệp vụ hiện tại → sẽ **viết lại** (được phép sửa trực tiếp vì chưa apply), tách thành nhiều file theo thứ tự: enum → bảng → hàm hỗ trợ / bộ đếm mã → RPC theo phân hệ → RLS → dữ liệu mẫu dev.
+- Mọi bước nghiệp vụ là một RPC trong transaction: kiểm tra quyền, kiểm tra trạng thái trước, khóa dòng, chống xử lý lặp, ghi audit. Frontend không ghi trực tiếp vào bảng.
+- Kiểm thử bằng pgTAP (`supabase test db`) trên máy local trước khi apply lên môi trường test.
 
 Chưa coi schema PostgreSQL hoặc migration nào là chính thức.
