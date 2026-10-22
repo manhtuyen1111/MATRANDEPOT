@@ -4,13 +4,13 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-22 — Claude Code
-Trạng thái chung: **GĐ 3 (Change Request ở chế độ Demo) — xong phần code, chờ bạn thử trên trình duyệt và commit.**
+Trạng thái chung: **GĐ 3 xong code, đã push nhánh `feature/cr-2026-10-batch1`** — chờ bạn thử trên trình duyệt, tạo PR và merge `main`. Phiên tiếp theo: bắt đầu từ mục A / B.
 Kiểm thử mới nhất: `npm test` **42/42 pass** • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
 |---|---|---|
-| 1 | Commit nhánh `feature/cr-2026-10-batch1` (đề xuất 4 commit: nghiệp vụ / giao diện / tài liệu / harness) rồi merge `main`? | Khóa kết quả GĐ 3 |
+| 1 | Nhánh `feature/cr-2026-10-batch1` **đã push lên GitHub** (4 commit, 2026-10-22). Tạo Pull Request và merge vào `main` khi bạn đã thử xong | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/feature/cr-2026-10-batch1 |
 | 2 | Q-034: Excel `.xls` (XML, đang dùng) hay `.xlsx` chuẩn (phải cài thư viện)? | Báo cáo Tổng hợp, Sửa chữa |
 | 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
 | 4 | OPEN-003, Q-006: danh mục trạng thái chính thức, danh sách Block thật | Chặn GĐ 4 database |
@@ -89,3 +89,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-22 — Claude Code: P3-f (DEC-047, 048); thêm mục C (logic đã chốt) và E (tài khoản demo).
 - 2026-10-22 — Claude Code: P3-g (DEC-049) — bỏ QC, Đảo chuyển mobile, thêm "Lưu ý chung" (AGENTS.md mục 8).
 - 2026-10-22 — Claude Code: P3-h (tiêu đề Giám định – Hạ vỏ); đồng bộ ROADMAP, ACCEPTANCE_TESTS, CHANGELOG, README với kết quả 42/42.
+- 2026-10-22 — Claude Code: commit 4 nhóm (services / ui / docs / harness) và push nhánh lên GitHub. Chưa merge `main`.
