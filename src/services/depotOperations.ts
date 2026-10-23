@@ -18,6 +18,7 @@ import {
 } from '../types/depot';
 import { DepotState, hasRolePermission } from './depotStore';
 import { allocateCode } from './codes';
+import { markVesselImportPlaced } from './vessel';
 import { ASSIGNABLE_ROLES } from './permissions';
 import {
   appendAudit,
@@ -491,7 +492,8 @@ export function updateContainerLocation(
     currentRow: slot.row,
     currentTier: slot.tier,
   });
-  return appendAudit(
+  // DEC-069: cont NHẬP TÀU được xe nâng hạ → hoàn thành trong danh sách tàu
+  return markVesselImportPlaced(appendAudit(
     {
       ...next,
       locationHistory: [
@@ -514,7 +516,7 @@ export function updateContainerLocation(
     container.masterDossierCode,
     `[Hồ sơ ${container.masterDossierCode}] Xe nâng hạ vỏ ${container.containerNo} vào ${toLabel}`,
     container.masterDossierCode
-  );
+  ), container.id);
 }
 
 // ============================================================================
@@ -815,6 +817,7 @@ export function releaseBlocker(c: ContainerRecord): string | null {
   if (c.status !== 'IN_YARD') {
     return c.status === 'ALLOCATED' ? 'Đã lập lệnh cấp' : 'Chưa tồn bãi (chờ hạ vỏ)';
   }
+  if (c.vesselExportItemId) return 'Đang trong danh sách XUẤT TÀU';
   if (c.isOnHold) return 'Container đang bị KHÓA';
   if (c.needsCleaning) return 'Chưa xác nhận vệ sinh';
   if (c.conditionClass === 'AV' && (c.needsQuotation || c.needsRepair)) return 'Chưa hoàn tất báo giá / sửa chữa';

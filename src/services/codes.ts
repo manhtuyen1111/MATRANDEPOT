@@ -13,11 +13,13 @@ import type { DepotState } from './depotStore';
 // Chế độ Supabase: bắt buộc cấp trong database (bảng bộ đếm + khóa dòng trong cùng transaction).
 // ============================================================================
 
-export type CodeSeries = 'HV' | 'CV' | 'PT' | 'PTT' | 'CT';
+export type CodeSeries = 'HV' | 'CV' | 'NT' | 'XT' | 'PT' | 'PTT' | 'CT';
 
 const SERIES_FORMAT: Record<CodeSeries, { period: 'day' | 'year'; digits: number }> = {
   HV: { period: 'day', digits: 3 },
   CV: { period: 'day', digits: 3 },
+  NT: { period: 'day', digits: 3 },
+  XT: { period: 'day', digits: 3 },
   CT: { period: 'day', digits: 4 },
   PT: { period: 'year', digits: 6 },
   PTT: { period: 'year', digits: 3 },
@@ -38,6 +40,9 @@ function existingCodes(state: DepotState, series: CodeSeries): string[] {
       return state.gateInOrders.map((o) => o.masterDossierCode);
     case 'CV':
       return state.gateOutOrders.map((o) => o.gateOutCode);
+    case 'NT':
+    case 'XT':
+      return (state.vesselLists || []).flatMap((l) => l.items.map((i) => i.dossierCode || '')).filter((c) => c.startsWith(series));
     case 'PT':
       return (state.paymentReceipts || []).map((r) => r.receiptNo);
     case 'PTT':

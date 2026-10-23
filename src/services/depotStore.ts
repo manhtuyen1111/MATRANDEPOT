@@ -22,6 +22,7 @@ import {
   ServiceWorkOrder,
   StaffUser,
   YardBlock,
+  VesselList,
 } from '../types/depot';
 
 const STORAGE_KEY = 'matran_depot_erp_state_v7';
@@ -49,6 +50,7 @@ export interface DepotState {
   auditLogs: AuditLogEntry[];
   repairTeams: RepairTeam[];
   companyProfile: CompanyProfile;
+  vesselLists: VesselList[]; // NHẬP TÀU / XUẤT TÀU (DEC-069)
   // Bộ đếm cấp mã hồ sơ / phiếu (HV-YYMMDD, CV-YYMMDD, PT-YYYY...). Ở chế độ Supabase do database cấp.
   codeCounters: Record<string, number>;
 }
@@ -775,6 +777,7 @@ export function createInitialState(): DepotState {
       taxCode: '',
       bankAccount: '',
     },
+    vesselLists: [],
     codeCounters: {},
   };
 }
@@ -824,6 +827,7 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
     paymentReceipts: raw.paymentReceipts || [],
     repairTeams: raw.repairTeams || base.repairTeams,
     companyProfile: { ...base.companyProfile, ...(raw.companyProfile || {}) },
+    vesselLists: raw.vesselLists || [],
     codeCounters: raw.codeCounters || {},
   } as DepotState;
 }
