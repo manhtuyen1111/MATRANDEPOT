@@ -532,6 +532,21 @@ Quy ước trạng thái:
   - **Sắp xếp**: danh sách container luôn theo **size 20 → 40 → 45, cùng size thì số cont A→Z** (`sortVesselItems`) — ở màn Giám định / Xe nâng, chi tiết Văn phòng, chọn từ tồn vỏ.
   - **Tìm kiếm** ở màn Giám định / Xe nâng giống Tồn vỏ: **lọc ngay khi gõ** (số cont chứa chuỗi đã nhập); bấm tìm khi chỉ còn 1 cont khớp thì chọn luôn.
 
+### DEC-071 — Màn hiện trường Nhập tàu / Xuất tàu: theo dõi đã làm / chờ làm
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-069, DEC-070
+- Bối cảnh: màn cũ chỉ hiện cont đang chờ; cont làm xong biến mất → người tác nghiệp không biết đã làm những cont nào, khó kiểm soát.
+- Quyết định — **một mẫu màn chung** cho Giám định → Nhập tàu, Xe nâng → Nhập tàu, Giám định → Xuất tàu, Xe nâng → Xuất tàu:
+  - **Khung tiến độ luôn ở trên**: tàu (chọn tàu nếu có nhiều, kèm xong/tổng), **ĐÃ XONG / TỔNG** chữ lớn + thanh tiến độ, số **chờ làm**, số **chưa tới lượt**, **"Bạn đã làm"**, và **số cont theo từng xe**.
+  - **Tab Chờ làm / Đã xong / Tất cả.** Mỗi thẻ có biểu tượng trạng thái: ○ chờ làm, ⏱ chưa tới lượt (xám), ✓ đã xong (xanh, kèm **số xe, người làm — "Bạn" nếu là mình, giờ**). Thẻ đã xong bấm vào mở hồ sơ, không làm lại được.
+  - **Chống làm trùng**: tìm / gõ trúng cont đã làm → báo **"ĐÃ <bước> — người, giờ, xe. Không làm lại."**; cont chưa tới lượt → báo lý do; cont không có trong danh sách → báo rõ "KHÔNG có trong danh sách tàu".
+  - Dải **"Vừa <bước>"**: 5 cont vừa xác nhận gần nhất (số cont, xe, giờ, link hồ sơ).
+  - Trạng thái từng bước do service tính (`vesselStepInfo`, `vesselStepSummary`):
+    - Giám định Nhập tàu: chờ làm = chưa giám định; xong = đã giám định.
+    - Xe nâng Nhập tàu: **chưa tới lượt** = chưa giám định hoặc còn chờ Vệ sinh; chờ làm = đã giám định, xong vệ sinh (nếu có); xong = đã hạ bãi. Hạ cont dùng chung hàm và bộ chọn vị trí của Hạ vỏ.
+    - Xuất tàu (Giám định / Xe nâng dùng chung tiến độ): chờ làm = chưa xuất; xong = đã xuất.
+  - Xe nâng → Nhập tàu chuyển sang mẫu màn này (bỏ màn hàng chờ lọc `vesselOnly`).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -621,6 +636,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-070 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-071 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

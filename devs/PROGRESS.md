@@ -4,10 +4,10 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-070), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069), hoàn thiện màn Văn phòng dạng danh sách → chi tiết, sửa / thêm / xóa khi chưa duyệt, sắp xếp + tìm kiếm (DEC-070). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-071), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069), hoàn thiện màn Văn phòng dạng danh sách → chi tiết, sửa / thêm / xóa khi chưa duyệt, sắp xếp + tìm kiếm (DEC-070), màn hiện trường có theo dõi đã làm / chờ làm (DEC-071). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
 
 **Điểm dừng 2026-10-24:** đã **push đầy đủ lên GitHub** (DEC-050 → DEC-069). Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
-Kiểm thử mới nhất: `npm test` **72/72 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+Kiểm thử mới nhất: `npm test` **73/73 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
@@ -51,6 +51,7 @@ Kiểm thử mới nhất: `npm test` **72/72 pass** (3 file test) • `npm run 
 | Nhập tàu | Văn phòng lập danh sách (tên tàu, thời gian, **hãng tàu**, số xe, cont – size – type) → **Giám định** xác nhận cont thực tế, chọn xe, DAMAGE/AV, M/K/E, vệ sinh, AGE → mã **NT-** → **Vệ sinh → Chờ vệ sinh** (nếu có, chung hàng chờ Hạ vỏ) → Xe nâng hạ + vị trí → **tồn vỏ ngay, cấp vỏ được**; DAMAGE như Hạ vỏ; hết danh sách → Văn phòng / Quản lý **duyệt**. Không thu phí, không K80 | 069, 070 |
 | Xuất tàu | Văn phòng lập danh sách **chọn từ Tồn vỏ** (mọi cont tồn bãi trừ cont khóa / đã lập lệnh cấp / đã trong danh sách khác) → mã **XT-** từng cont, cont không cấp vỏ được → **Giám định / Xe nâng** chọn cont + gán xe → OUT → **duyệt**. Không thu phí, không K80 | 069, 070 |
 | Danh sách tàu (Văn phòng) | Màn chính = danh sách đang thực hiện, nút **Lập danh sách** bên phải tiêu đề, bấm dòng → chi tiết; **chưa duyệt** thì sửa thông tin (hãng tàu chỉ đổi khi chưa giám định), thêm cont, bỏ cont chờ, **xóa** (khi chưa tác nghiệp cont nào); cont luôn xếp **size 20 → 40, số cont A→Z**; Giám định / Xe nâng tìm cont lọc ngay khi gõ như Tồn vỏ | 070 |
+| Màn hiện trường tàu | Giám định / Xe nâng × Nhập / Xuất tàu dùng 1 mẫu: **tiến độ trên cùng** (xong/tổng, chờ làm, chưa tới lượt, **bạn đã làm**, số cont theo xe), tab **Chờ làm / Đã xong / Tất cả**, thẻ ✓ kèm xe + người + giờ, **gõ trúng cont đã làm → báo, không làm lại**, dải "Vừa xong" | 071 |
 
 ## D. ĐÃ HOÀN THÀNH
 | Mã | Việc | Ngày | Kết quả | Kiểm thử | Nhánh |
@@ -81,6 +82,7 @@ Kiểm thử mới nhất: `npm test` **72/72 pass** (3 file test) • `npm run 
 | P4-pre12 | Mã hồ sơ HV- / CV- / PTT- (+ NT- / XT-), đổi mã cũ khi nạp dữ liệu | 2026-10-24 | DEC-068 | 63/63 • build PASS | agent/claude/p4-prep-xlsx |
 | P7-01 | **Nhập tàu / Xuất tàu** bản Demo: nghiệp vụ `vessel.ts`, Văn phòng lập / duyệt, mobile Giám định / Vệ sinh / Xe nâng, hồ sơ NT- / XT-, Báo cáo + Tổng hợp | 2026-10-24 | DEC-069 | **68/68 • build PASS**; **chưa thử trên trình duyệt / điện thoại** | agent/claude/p4-prep-xlsx |
 | P7-02 | Nhập / Xuất tàu: bỏ menu Vệ sinh → Nhập tàu; Văn phòng danh sách → chi tiết, sửa / thêm cont / xóa khi chưa duyệt; sắp xếp size → số cont; tìm như Tồn vỏ | 2026-10-24 | DEC-070 | **72/72 • build PASS**; chưa thử trên trình duyệt | agent/claude/p4-prep-xlsx |
+| P7-03 | Màn hiện trường Nhập / Xuất tàu: theo dõi đã làm / chờ làm, chống làm trùng; Xe nâng Nhập tàu dùng chung mẫu | 2026-10-24 | DEC-071 | **73/73 • build PASS**; chưa thử trên điện thoại | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -149,3 +151,5 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-24 — Claude Code: push nhánh agent/claude/p4-prep-xlsx lên GitHub (DEC-067 → DEC-069); cập nhật tiến độ, bàn giao.
 - 2026-10-24 — Claude Code: P7-02 (DEC-070) hoàn thiện Nhập tàu / Xuất tàu. 72/72 • build PASS.
 - **Bàn giao bổ sung (P7-02):** hàm mới trong `src/services/vessel.ts`: `updateVesselList`, `addVesselListItems`, `deleteVesselList`, `sortVesselItems` (dùng chung `buildImportItems` / `buildExportItems` với `createVesselList`). Màn `OfficeVesselWorkspace` có 3 chế độ LIST / CREATE / DETAIL. Menu `VS_NHAP_TAU` đã gỡ (10 màn mobile). Test xlsx Tổng hợp nâng timeout 20s (trước đây lâu lâu quá 5s).
+- 2026-10-24 — Claude Code: P7-03 (DEC-071) theo dõi tác nghiệp hiện trường Nhập / Xuất tàu. 73/73 • build PASS.
+- **Bàn giao bổ sung (P7-03):** `VesselFieldMobile` phục vụ 4 menu `GD_NHAP_TAU`, `XN_NHAP_TAU`, `GD_XUAT_TAU`, `XN_XUAT_TAU` (bước `NT_INSPECT` / `NT_PLACE` / `XT_EXPORT`). Trạng thái thẻ lấy từ `vesselStepInfo`; tổng hợp từ `vesselStepSummary` (`src/services/vessel.ts`). Đã gỡ `vesselOnly` khỏi `FieldQueueWorkspaces` và `VesselProgressPanel`.
