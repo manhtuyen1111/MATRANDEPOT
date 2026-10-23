@@ -203,7 +203,13 @@ describe('DEC-069: màn Nhập tàu / Xuất tàu', () => {
     const gd = strip(renderToString(<VesselFieldMobile kind="GD_NHAP_TAU" state={as(both, 'usr-inspector')} onUpdateState={noop} />));
     expect(gd).toContain('max-w-lg');
     expect(gd).toContain('TCLU1234567');
-    expect(gd).toContain('Tiến độ NHẬP TÀU');
+    expect(gd).toContain('Chờ làm (1)');
+    expect(gd).toContain('Đã xong (0)');
+    expect(gd).toContain('Bạn đã làm');
+    expect(gd).toContain('15C-111.11: 0');
+    const xnNt = strip(renderToString(<VesselFieldMobile kind="XN_NHAP_TAU" state={as(both, 'usr-forklift')} onUpdateState={noop} />));
+    expect(xnNt).toContain('đã hạ bãi');
+    expect(xnNt).toContain('Chưa về — chờ Giám định');
     const xn = strip(renderToString(<VesselFieldMobile kind="XN_XUAT_TAU" state={as(both, 'usr-forklift')} onUpdateState={noop} />));
     expect(xn).toContain('max-w-lg');
     expect(xn).toContain('Bộ phận Xe nâng');

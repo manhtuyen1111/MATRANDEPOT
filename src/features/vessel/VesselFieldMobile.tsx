@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Search, X } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Search, Truck, X } from 'lucide-react';
 import {
   CLEANING_ITEM_OPTIONS,
   DAMAGE_QUICK_SUGGESTIONS,
@@ -10,40 +10,53 @@ import {
   VesselMode,
 } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
-import { executeVesselExport, inspectVesselImportItem, openVesselLists, sortVesselItems } from '../../services/vessel';
-import { Feedback, inputCls, labelCls, primaryBtn } from '../../components/shared';
-import { ChoiceButtons, VesselProgressPanel } from './VesselShared';
+import { updateContainerLocation } from '../../services/depotOperations';
+import {
+  executeVesselExport,
+  inspectVesselImportItem,
+  openVesselLists,
+  sortVesselItems,
+  VesselFieldStep,
+  vesselStepInfo,
+  vesselStepSummary,
+} from '../../services/vessel';
+import { formatDateTime } from '../../services/datetime';
+import { EMPTY_SLOT, Feedback, inputCls, isSlotComplete, labelCls, primaryBtn, SlotPicker, SlotValue } from '../../components/shared';
+import { ChoiceButtons } from './VesselShared';
 
-export type VesselFieldMode = 'GD_NHAP_TAU' | 'GD_XUAT_TAU' | 'XN_XUAT_TAU';
+export type VesselFieldMode = 'GD_NHAP_TAU' | 'GD_XUAT_TAU' | 'XN_NHAP_TAU' | 'XN_XUAT_TAU';
 
-const TITLES: Record<VesselFieldMode, { dept: string; name: string; mode: VesselMode }> = {
-  GD_NHAP_TAU: { dept: 'Bộ phận Giám định', name: 'Nhập tàu', mode: 'NHAP_TAU' },
-  GD_XUAT_TAU: { dept: 'Bộ phận Giám định', name: 'Xuất tàu', mode: 'XUAT_TAU' },
-  XN_XUAT_TAU: { dept: 'Bộ phận Xe nâng', name: 'Xuất tàu', mode: 'XUAT_TAU' },
+const TITLES: Record<VesselFieldMode, { dept: string; name: string; mode: VesselMode; step: VesselFieldStep; action: string; doneWord: string }> = {
+  GD_NHAP_TAU: { dept: 'Bộ phận Giám định', name: 'Nhập tàu', mode: 'NHAP_TAU', step: 'NT_INSPECT', action: 'Xác nhận cont nhập tàu', doneWord: 'giám định' },
+  XN_NHAP_TAU: { dept: 'Bộ phận Xe nâng', name: 'Nhập tàu', mode: 'NHAP_TAU', step: 'NT_PLACE', action: 'Xác nhận hạ bãi', doneWord: 'hạ bãi' },
+  GD_XUAT_TAU: { dept: 'Bộ phận Giám định', name: 'Xuất tàu', mode: 'XUAT_TAU', step: 'XT_EXPORT', action: 'Xác nhận xuất tàu', doneWord: 'xuất tàu' },
+  XN_XUAT_TAU: { dept: 'Bộ phận Xe nâng', name: 'Xuất tàu', mode: 'XUAT_TAU', step: 'XT_EXPORT', action: 'Xác nhận xuất tàu', doneWord: 'xuất tàu' },
 };
 const QUICK_YEARS = [2005, 2008, 2010, 2012, 2015, 2017, 2018, 2019, 2020, 2021, 2022, 2023];
-const PAGE = 10;
+const PAGE = 15;
+type Tab = 'TODO' | 'DONE' | 'ALL';
 
-// MOBILE — NHẬP TÀU (Giám định xác nhận cont về) / XUẤT TÀU (Giám định, Xe nâng chọn cont + gán xe) — DEC-069
+// MOBILE — NHẬP TÀU / XUẤT TÀU (DEC-069, DEC-071): tiến độ + "đã làm / chờ làm" rõ ràng cho từng bộ phận
 export const VesselFieldMobile: React.FC<{
   kind: VesselFieldMode;
   state: DepotState;
   onUpdateState: (next: DepotState) => void;
   onOpenDossier?: (code: string) => void;
 }> = ({ kind, state, onUpdateState, onOpenDossier }) => {
-  const title = TITLES[kind];
-  const isImport = title.mode === 'NHAP_TAU';
-  const lists = openVesselLists(state, title.mode);
+  const t = TITLES[kind];
+  const isInspect = t.step === 'NT_INSPECT';
+  const isPlace = t.step === 'NT_PLACE';
+  const lists = openVesselLists(state, t.mode);
   const [listId, setListId] = useState('');
   const list = lists.find((l) => l.id === listId) || lists[0];
-  const pending = list ? sortVesselItems(list.items.filter((i) => i.status === 'PENDING')) : [];
+  const rows = list ? sortVesselItems(list.items).map((item) => ({ item, info: vesselStepInfo(state, t.step, item) })) : [];
+  const sum = list ? vesselStepSummary(state, t.step, list) : undefined;
+
+  const [tab, setTab] = useState<Tab>('TODO');
   const [code, setCode] = useState('');
   const [itemId, setItemId] = useState('');
-  const item = pending.find((i) => i.id === itemId);
-  // Tìm như Tồn vỏ: lọc ngay khi gõ (chứa chuỗi)
-  const q = code.trim().toUpperCase();
-  const shownList = q && !item ? pending.filter((i) => i.containerNo.includes(q)) : pending;
   const [shown, setShown] = useState(PAGE);
+  const [recent, setRecent] = useState<{ no: string; truck?: string; at: string; code?: string }[]>([]);
   const [truckNo, setTruckNo] = useState('');
   const [condition, setCondition] = useState<FieldConditionClass | ''>('');
   const [damage, setDamage] = useState<string[]>([]);
@@ -51,10 +64,17 @@ export const VesselFieldMobile: React.FC<{
   const [stuffing, setStuffing] = useState<FieldStuffingClass | ''>('');
   const [cleaning, setCleaning] = useState<FieldCleaningItem[]>([]);
   const [year, setYear] = useState('');
+  const [slot, setSlot] = useState<SlotValue>(EMPTY_SLOT);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
-  const reset = () => {
+  const active = rows.find((r) => r.item.id === itemId && r.info.status === 'TODO');
+  const item = active?.item;
+  // Tìm như Tồn vỏ: lọc ngay khi gõ (số cont chứa chuỗi)
+  const q = code.trim().toUpperCase();
+  const tabRows = rows.filter((r) => tab === 'ALL' || (tab === 'DONE' ? r.info.status === 'DONE' : r.info.status !== 'DONE'));
+  const shownRows = q && !item ? tabRows.filter((r) => r.item.containerNo.includes(q)) : tabRows;
+
+  const resetForm = () => {
     setItemId('');
     setCode('');
     setTruckNo('');
@@ -64,29 +84,42 @@ export const VesselFieldMobile: React.FC<{
     setStuffing('');
     setCleaning([]);
     setYear('');
+    setSlot(EMPTY_SLOT);
   };
 
   const pick = (i: VesselListItem) => {
-    reset();
+    resetForm();
     setError(null);
-    setSuccess(null);
     setItemId(i.id);
     setCode(i.containerNo);
   };
 
+  // Bấm tìm: đúng 1 cont khớp → mở; cont đã làm / chưa tới lượt → báo rõ, không cho làm trùng
   const lookup = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
-    const no = code.trim().toUpperCase();
-    const matches = pending.filter((i) => i.containerNo.includes(no) || i.dossierCode === no);
-    const found = matches.length === 1 ? matches[0] : pending.find((i) => i.containerNo === no);
-    if (!found && matches.length > 1) return setError(`Có ${matches.length} container khớp "${no}" — chọn trong danh sách bên dưới.`);
-    if (!found) {
+    if (!q) return;
+    const matches = rows.filter((r) => r.item.containerNo.includes(q) || r.item.dossierCode === q);
+    const exact = rows.find((r) => r.item.containerNo === q || r.item.dossierCode === q);
+    const hit = exact || (matches.length === 1 ? matches[0] : undefined);
+    if (!hit) {
       setItemId('');
-      return setError(`Container "${no}" không có trong danh sách ${title.name.toLowerCase()} đang chờ${list ? ` của tàu ${list.vesselName}` : ''}.`);
+      if (matches.length > 1) {
+        setTab('ALL');
+        return setError(`Có ${matches.length} container khớp "${q}" — chọn trong danh sách bên dưới.`);
+      }
+      return setError(`Container "${q}" KHÔNG có trong danh sách tàu ${list?.vesselName || ''}. Kiểm tra lại số cont hoặc báo Văn phòng.`);
     }
-    pick(found);
+    if (hit.info.status === 'DONE') {
+      setItemId('');
+      setTab('DONE');
+      return setError(`${hit.item.containerNo} ĐÃ ${t.doneWord.toUpperCase()} — ${hit.info.by || ''} lúc ${formatDateTime(hit.info.at)}${hit.info.truckNo ? `, xe ${hit.info.truckNo}` : ''}. Không làm lại.`);
+    }
+    if (hit.info.status === 'WAIT') {
+      setItemId('');
+      return setError(`${hit.item.containerNo}: ${hit.info.note} — chưa tới lượt ${t.doneWord}.`);
+    }
+    pick(hit.item);
   };
 
   const toggleCleaning = (c: FieldCleaningItem) => {
@@ -97,91 +130,147 @@ export const VesselFieldMobile: React.FC<{
 
   const remarks = [...damage, ...damageNote.split(',').map((s) => s.trim()).filter(Boolean)];
   const ready = Boolean(
-    item && truckNo && (!isImport || (condition && (condition === 'AV' || remarks.length > 0) && stuffing && cleaning.length > 0 && /^\d{4}$/.test(year)))
+    item &&
+      (isPlace
+        ? isSlotComplete(slot)
+        : truckNo && (!isInspect || (condition && (condition === 'AV' || remarks.length > 0) && stuffing && cleaning.length > 0 && /^\d{4}$/.test(year))))
   );
 
   const confirm = () => {
     if (!item || !list) return;
     setError(null);
-    setSuccess(null);
     try {
-      const next = isImport
-        ? inspectVesselImportItem(state, {
-            listId: list.id,
-            itemId: item.id,
-            actualContainerNo: code,
-            truckNo,
-            conditionClass: condition as FieldConditionClass,
-            damageRemarks: remarks,
-            stuffingClass: stuffing as FieldStuffingClass,
-            cleaningItems: cleaning,
-            manufactureYear: Number(year),
-          })
-        : executeVesselExport(state, { listId: list.id, itemId: item.id, truckNo });
+      let next: DepotState;
+      if (isInspect) {
+        next = inspectVesselImportItem(state, {
+          listId: list.id, itemId: item.id, actualContainerNo: code, truckNo,
+          conditionClass: condition as FieldConditionClass, damageRemarks: remarks, stuffingClass: stuffing as FieldStuffingClass,
+          cleaningItems: cleaning, manufactureYear: Number(year),
+        });
+      } else if (isPlace) {
+        next = updateContainerLocation(state, { containerNo: item.containerNo, ...slot, reason: `Xe nâng hạ cont NHẬP TÀU (tàu ${list.vesselName})` });
+      } else {
+        next = executeVesselExport(state, { listId: list.id, itemId: item.id, truckNo });
+      }
       onUpdateState(next);
-      const done = next.vesselLists.find((l) => l.id === list.id)!.items.find((i) => i.id === item.id)!;
-      setSuccess(
-        isImport
-          ? `Đã xác nhận ${item.containerNo} — hồ sơ ${done.dossierCode} → ${cleaning.some((c) => c !== 'KHÔNG VỆ SINH') ? 'chờ VỆ SINH' : 'chờ XE NÂNG hạ'}.`
-          : `Đã XUẤT TÀU ${item.containerNo} (xe ${truckNo}) — cont đã OUT khỏi bãi.`
-      );
-      reset();
+      const after = next.vesselLists.find((l) => l.id === list.id)!.items.find((i) => i.id === item.id)!;
+      const info = vesselStepInfo(next, t.step, after);
+      setRecent((prev) => [{ no: item.containerNo, truck: info.truckNo, at: info.at || new Date().toISOString(), code: after.dossierCode }, ...prev].slice(0, 5));
+      resetForm();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lỗi xác nhận');
     }
   };
 
+  const pct = sum && sum.total ? Math.round((sum.done / sum.total) * 100) : 0;
+
   return (
     <div className="mx-auto w-full max-w-lg space-y-3 pb-16">
       <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5">
         <div>
-          <span className="block text-[11px] font-semibold uppercase text-slate-500">{title.dept}</span>
-          <h2 className="text-sm font-bold text-slate-900">{title.name}</h2>
+          <span className="block text-[11px] font-semibold uppercase text-slate-500">{t.dept}</span>
+          <h2 className="text-sm font-bold text-slate-900">{t.name}</h2>
         </div>
-        <span className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">{pending.length}</span>
+        <span className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-white" title="Số cont chờ làm">{sum?.todo ?? 0}</span>
       </div>
-      <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
 
-      {!list ? (
+      {!list || !sum ? (
         <p className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-xs text-slate-500">
-          Chưa có danh sách {title.name.toLowerCase()} nào — chờ Văn phòng lập danh sách.
+          Chưa có danh sách {t.name.toLowerCase()} nào — chờ Văn phòng lập danh sách.
         </p>
       ) : (
         <>
-          {lists.length > 1 && (
-            <label className="block rounded-lg border border-slate-200 bg-white p-3">
-              <span className={labelCls}>Tàu</span>
-              <select value={list.id} onChange={(e) => { setListId(e.target.value); reset(); }} className={`${inputCls} py-2.5 text-sm font-bold`}>
-                {lists.map((l) => <option key={l.id} value={l.id}>{l.vesselName}</option>)}
+          {/* TIẾN ĐỘ — luôn ở trên: tàu, xong / tổng, bạn đã làm, theo xe */}
+          <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 text-xs">
+            {lists.length > 1 ? (
+              <select value={list.id} onChange={(e) => { setListId(e.target.value); resetForm(); setError(null); }} className={`${inputCls} py-2 text-sm font-black`} aria-label="Chọn tàu">
+                {lists.map((l) => {
+                  const s = vesselStepSummary(state, t.step, l);
+                  return <option key={l.id} value={l.id}>{l.vesselName} — xong {s.done}/{s.total}</option>;
+                })}
               </select>
-            </label>
+            ) : (
+              <p className="text-sm font-black text-slate-900">Tàu {list.vesselName} <span className="font-mono text-[11px] font-normal text-slate-500">{formatDateTime(list.plannedAt)}</span></p>
+            )}
+            <div className="flex items-end justify-between">
+              <p>
+                <span className="font-mono text-2xl font-black text-emerald-700">{sum.done}</span>
+                <span className="font-mono text-base font-bold text-slate-500"> / {sum.total}</span>
+                <span className="ml-1 text-[11px] text-slate-600">đã {t.doneWord}</span>
+              </p>
+              <p className="text-right text-[11px] text-slate-600">
+                Chờ làm <strong className="text-slate-900">{sum.todo}</strong>
+                {sum.wait > 0 && <> • chưa tới lượt <strong className="text-amber-700">{sum.wait}</strong></>}
+                <br />
+                Bạn đã làm <strong className="text-blue-700">{sum.mine}</strong>
+              </p>
+            </div>
+            <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
+              <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+            </div>
+            {!isPlace && sum.byTruck.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {sum.byTruck.map((b) => (
+                  <span key={b.truckNo} className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-semibold ${b.count ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-slate-200 text-slate-500'}`}>
+                    <Truck className="h-3 w-3" />
+                    {b.truckNo}: {b.count}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {recent.length > 0 && (
+            <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-2.5 text-[11px] text-emerald-900">
+              <p className="mb-1 font-bold uppercase">Vừa {t.doneWord}</p>
+              <ul className="space-y-0.5">
+                {recent.map((r, i) => (
+                  <li key={`${r.no}-${i}`} className="flex flex-wrap items-center justify-between gap-1">
+                    <span className="flex items-center gap-1 font-mono text-sm font-black"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />{r.no}</span>
+                    <span>{r.truck ? `xe ${r.truck} • ` : ''}{formatDateTime(r.at).slice(11)}</span>
+                    {r.code && <button type="button" onClick={() => onOpenDossier?.(r.code!)} className="font-mono text-blue-700 underline">{r.code}</button>}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
+          <Feedback error={error} onClose={() => setError(null)} />
+
           <form onSubmit={lookup} className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
-            <span className={labelCls}>{isImport ? 'Số container về thực tế *' : 'Số container xuất tàu'} — tàu {list.vesselName}</span>
+            <span className={labelCls}>{isInspect ? 'Số container về thực tế *' : 'Tìm số container'} (gõ vài số cuối để lọc)</span>
             <div className="flex gap-2">
-              <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="TCLU1234567" className={`${inputCls} py-2.5 font-mono text-base font-bold uppercase`} />
-              <button type="submit" className={`${primaryBtn} shrink-0`}><Search className="h-4 w-4" /></button>
+              <input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); if (item) setItemId(''); }} placeholder="TCLU1234567" className={`${inputCls} py-2.5 font-mono text-base font-bold uppercase`} />
+              <button type="submit" className={`${primaryBtn} shrink-0`} aria-label="Tìm"><Search className="h-4 w-4" /></button>
             </div>
           </form>
 
           {item && (
             <div className="space-y-3 rounded-lg border-2 border-blue-600 bg-white p-3 text-xs">
               <div className="relative rounded-lg bg-slate-900 px-4 py-3 text-white">
-                <button type="button" onClick={reset} aria-label="Bỏ chọn" className="absolute right-2 top-2 text-slate-300 hover:text-white"><X className="h-4 w-4" /></button>
+                <button type="button" onClick={resetForm} aria-label="Bỏ chọn" className="absolute right-2 top-2 text-slate-300 hover:text-white"><X className="h-4 w-4" /></button>
+                <p className="text-[10px] font-semibold uppercase text-slate-300">Đang tác nghiệp</p>
                 <p className="font-mono text-3xl font-black tracking-wider">{item.containerNo}</p>
                 <p className="mt-1 text-sm font-bold">
                   {item.size} / {item.type}
-                  {!isImport && <> • {item.conditionClass} • {item.stuffingClass} • <span className="font-mono">{item.locationAtList}</span></>}
+                  {t.mode === 'XUAT_TAU' && <> • {item.conditionClass} • {item.stuffingClass} • <span className="font-mono">{item.locationAtList}</span></>}
+                  {isPlace && <> • {item.conditionClass} • xe {item.truckNo}</>}
                 </p>
               </div>
 
-              <div className="space-y-1.5">
-                <span className="block text-xs font-bold text-slate-800">SỐ XE *</span>
-                <ChoiceButtons options={list.truckNos} value={truckNo} onChange={setTruckNo} />
-              </div>
+              {isPlace ? (
+                <div className="space-y-1.5">
+                  <span className="block text-xs font-bold text-slate-800">VỊ TRÍ HẠ *</span>
+                  <SlotPicker state={state} value={slot} onChange={setSlot} />
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <span className="block text-xs font-bold text-slate-800">SỐ XE *</span>
+                  <ChoiceButtons options={list.truckNos} value={truckNo} onChange={setTruckNo} />
+                </div>
+              )}
 
-              {isImport && (
+              {isInspect && (
                 <>
                   <div className="space-y-1.5">
                     <span className="block text-xs font-bold text-slate-800">TRẠNG THÁI : DAMAGE / AV *</span>
@@ -240,53 +329,72 @@ export const VesselFieldMobile: React.FC<{
 
               <button type="button" onClick={confirm} disabled={!ready} className={`${primaryBtn} w-full py-3 text-sm`}>
                 <CheckCircle2 className="h-4 w-4" />
-                {isImport ? 'Xác nhận cont nhập tàu' : 'Xác nhận xuất tàu'}
+                {t.action}
               </button>
             </div>
           )}
 
+          {/* DANH SÁCH: Chờ làm / Đã xong / Tất cả — xếp size 20 → 40, số cont A→Z */}
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-            <p className="border-b border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700">Đang chờ ({shownList.length}{q ? ` / ${pending.length}` : ''}) — xếp theo size 20 → 40, số cont A→Z</p>
-            {pending.length === 0 ? (
-              <p className="p-6 text-center text-xs text-slate-500">Đã xong hết danh sách — chờ Văn phòng duyệt.</p>
+            <div className="grid grid-cols-3 border-b border-slate-200 text-xs font-bold" role="tablist">
+              {([
+                ['TODO', `Chờ làm (${sum.todo + sum.wait})`],
+                ['DONE', `Đã xong (${sum.done})`],
+                ['ALL', `Tất cả (${sum.total})`],
+              ] as [Tab, string][]).map(([k, lbl]) => (
+                <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => { setTab(k); setShown(PAGE); }}
+                  className={`py-2.5 ${tab === k ? 'border-b-2 border-blue-600 text-blue-700' : 'text-slate-500'}`}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+            {shownRows.length === 0 ? (
+              <p className="p-6 text-center text-xs text-slate-500">
+                {q ? `Không có cont khớp "${q}" trong mục này.` : tab === 'TODO' ? `Đã ${t.doneWord} hết danh sách — chờ Văn phòng duyệt.` : 'Chưa có cont nào.'}
+              </p>
             ) : (
               <ul className="divide-y divide-slate-100">
-                {shownList.slice(0, shown).map((i) => (
-                  <li key={i.id}>
-                    <button type="button" onClick={() => pick(i)} className={`flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-xs ${i.id === itemId ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
-                      <span className="font-mono text-sm font-bold text-slate-900">{i.containerNo}</span>
-                      <span className="text-slate-600">{i.size}/{i.type}</span>
-                      {!isImport && <span className="font-mono text-[11px] text-slate-500">{i.locationAtList}</span>}
-                    </button>
-                  </li>
-                ))}
+                {shownRows.slice(0, shown).map(({ item: i, info }) => {
+                  const mine = info.status === 'DONE' && info.by === state.currentUser.fullName;
+                  const Icon = info.status === 'DONE' ? CheckCircle2 : info.status === 'WAIT' ? Clock : Circle;
+                  return (
+                    <li key={i.id}>
+                      <button
+                        type="button"
+                        onClick={() => (info.status === 'TODO' ? pick(i) : i.dossierCode && info.status === 'DONE' ? onOpenDossier?.(i.dossierCode) : undefined)}
+                        className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-xs ${
+                          i.id === itemId ? 'bg-blue-50' : info.status === 'DONE' ? 'bg-emerald-50/50' : info.status === 'WAIT' ? 'bg-slate-50 text-slate-500' : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        <Icon className={`h-5 w-5 shrink-0 ${info.status === 'DONE' ? 'text-emerald-600' : info.status === 'WAIT' ? 'text-amber-500' : 'text-slate-300'}`} />
+                        <span className="min-w-0 flex-1">
+                          <span className={`block font-mono text-sm font-black ${info.status === 'DONE' ? 'text-emerald-800' : 'text-slate-900'}`}>{i.containerNo}</span>
+                          <span className="block text-[11px] text-slate-500">
+                            {i.size}/{i.type}
+                            {t.mode === 'XUAT_TAU' && i.locationAtList && info.status !== 'DONE' ? ` • ${i.locationAtList}` : ''}
+                            {' • '}{info.note}
+                          </span>
+                        </span>
+                        {info.status === 'DONE' && (
+                          <span className="shrink-0 text-right text-[11px]">
+                            {info.truckNo && <span className="block font-bold text-slate-800">{info.truckNo}</span>}
+                            <span className={`block ${mine ? 'font-bold text-blue-700' : 'text-slate-500'}`}>{mine ? 'Bạn' : info.by} • {formatDateTime(info.at).slice(11, 16)}</span>
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
-            {shownList.length > shown && (
+            {shownRows.length > shown && (
               <button type="button" onClick={() => setShown(shown + PAGE)} className="w-full border-t border-slate-200 py-2.5 text-xs font-semibold text-blue-700">
-                Xem thêm ({shownList.length - shown})
+                Xem thêm ({shownRows.length - shown})
               </button>
             )}
           </div>
-
-          {isImport && list.items.some((i) => i.dossierCode) && (
-            <div className="rounded-lg border border-slate-200 bg-white p-3 text-[11px] text-slate-600">
-              <p className="mb-1 font-bold uppercase">Đã giám định</p>
-              <ul className="space-y-0.5">
-                {list.items.filter((i) => i.dossierCode).slice(0, 5).map((i) => (
-                  <li key={i.id} className="flex justify-between gap-2">
-                    <button type="button" onClick={() => onOpenDossier?.(i.dossierCode!)} className="font-mono text-blue-700 hover:underline">{i.dossierCode}</button>
-                    <span className="font-mono">{i.containerNo}</span>
-                    <span>{i.status === 'DONE' ? 'Đã hạ bãi' : 'Chờ vệ sinh / hạ'}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </>
       )}
-
-      <VesselProgressPanel lists={lists} mode={title.mode} selectedId={list?.id} onSelect={(id) => { setListId(id); reset(); }} />
     </div>
   );
 };

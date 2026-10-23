@@ -201,3 +201,29 @@ describe('DEC-070: sắp xếp danh sách tàu', () => {
     expect(sortVesselItems(rows).map((r) => r.containerNo)).toEqual(['AAAU0000002', 'BBBU0000001', 'ZZZU0000001', 'AAAU0000001', 'CCCU0000001']);
   });
 });
+
+describe('DEC-071: theo dõi tác nghiệp hiện trường từng bộ phận', () => {
+  it('Giám định / Xe nâng nhập tàu, xuất tàu: chờ làm / chưa tới lượt / đã xong, của tôi, theo xe', async () => {
+    const v = await import('../src/services/vessel');
+    const office = as(createInitialState(), 'usr-office');
+    let { state: s, listId } = v.createVesselList(office, {
+      mode: 'NHAP_TAU', vesselName: 'Tàu T', plannedAt: PLANNED, truckNos: ['15C-1', '15C-2'], shippingLineCode: 'MAERSK',
+      importItems: [{ containerNo: 'TCLU1000001', size: '20', type: 'DC' }, { containerNo: 'TCLU1000002', size: '40', type: 'HC' }],
+    });
+    const [a, b] = s.vesselLists[0].items;
+    s = v.inspectVesselImportItem(as(s, 'usr-inspector'), { listId, itemId: a.id, actualContainerNo: a.containerNo, truckNo: '15C-2', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['WW'], manufactureYear: 2015 });
+    const list = () => s.vesselLists[0];
+    const gd = v.vesselStepSummary(s, 'NT_INSPECT', list());
+    expect(gd).toMatchObject({ total: 2, done: 1, todo: 1, wait: 0, mine: 1 });
+    expect(gd.byTruck).toEqual([{ truckNo: '15C-1', count: 0 }, { truckNo: '15C-2', count: 1 }]);
+    expect(v.vesselStepInfo(s, 'NT_INSPECT', list().items[0])).toMatchObject({ status: 'DONE', truckNo: '15C-2' });
+    // Xe nâng: cont đã giám định nhưng còn chờ vệ sinh → chưa tới lượt; cont chưa về → chưa tới lượt
+    expect(v.vesselStepSummary(s, 'NT_PLACE', list())).toMatchObject({ todo: 0, wait: 2, done: 0 });
+    expect(v.vesselStepInfo(s, 'NT_PLACE', list().items[0]).note).toMatch(/Vệ sinh/);
+    expect(v.vesselStepInfo(s, 'NT_PLACE', list().items.find((i) => i.id === b.id)!).note).toMatch(/Giám định/);
+    s = completeCleaningTask(as(s, 'usr-cleaning'), { containerNo: a.containerNo });
+    expect(v.vesselStepInfo(s, 'NT_PLACE', list().items[0]).status).toBe('TODO');
+    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: a.containerNo, blockCode: 'BLOCK-A', reason: '' });
+    expect(v.vesselStepSummary(s, 'NT_PLACE', list())).toMatchObject({ done: 1, mine: 1 });
+  });
+});

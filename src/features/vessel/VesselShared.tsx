@@ -1,6 +1,6 @@
 import React from 'react';
 import { Ship } from 'lucide-react';
-import { VesselList, VesselMode, VESSEL_MODE_LABELS } from '../../types/depot';
+import { VesselList } from '../../types/depot';
 import { vesselListProgress } from '../../services/vessel';
 import { formatDateTime } from '../../services/datetime';
 
@@ -30,34 +30,6 @@ export const VesselListTitle: React.FC<{ list: VesselList }> = ({ list }) => (
     {list.shippingLineCode && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">{list.shippingLineCode}</span>}
     {list.status === 'APPROVED' && <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">ĐÃ DUYỆT</span>}
   </span>
-);
-
-// Tiến độ các danh sách đang mở (dùng ở màn mobile các bộ phận)
-export const VesselProgressPanel: React.FC<{ lists: VesselList[]; mode: VesselMode; selectedId?: string; onSelect?: (id: string) => void }> = ({
-  lists,
-  mode,
-  selectedId,
-  onSelect,
-}) => (
-  <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
-    <p className="text-[11px] font-bold uppercase text-slate-600">Tiến độ {VESSEL_MODE_LABELS[mode]} ({lists.length} danh sách)</p>
-    {lists.length === 0 ? (
-      <p className="text-xs text-slate-500">Chưa có danh sách {VESSEL_MODE_LABELS[mode].toLowerCase()} nào đang mở.</p>
-    ) : (
-      lists.map((l) => (
-        <button
-          key={l.id}
-          type="button"
-          onClick={() => onSelect?.(l.id)}
-          disabled={!onSelect}
-          className={`block w-full space-y-1.5 rounded-md border p-2.5 text-left text-xs ${selectedId === l.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'} disabled:cursor-default`}
-        >
-          <VesselListTitle list={l} />
-          <VesselProgressBar list={l} />
-        </button>
-      ))
-    )}
-  </div>
 );
 
 // Nút chọn lớn cho màn mobile (một lựa chọn)

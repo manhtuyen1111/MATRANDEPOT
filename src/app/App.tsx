@@ -120,7 +120,7 @@ const MENU: MenuGroup[] = [
 ];
 
 const FIELD_QUEUE_MENUS: FieldQueueMode[] = ['VS_CHO_VE_SINH', 'XN_CHO_HA_VO', 'XN_CHO_CAP_VO', 'BG_CHO_BAO_GIA', 'SC_CHO_SUA_CHUA'];
-const VESSEL_FIELD_MENUS: VesselFieldMode[] = ['GD_NHAP_TAU', 'GD_XUAT_TAU', 'XN_XUAT_TAU'];
+const VESSEL_FIELD_MENUS: VesselFieldMode[] = ['GD_NHAP_TAU', 'GD_XUAT_TAU', 'XN_NHAP_TAU', 'XN_XUAT_TAU'];
 const CATALOG_TABS: Partial<Record<WorkspaceMenuId, CatalogTab>> = {
   DM_KHACH_HANG: 'KHACH_HANG',
   DM_HANG_TAU: 'HANG_TAU',
@@ -416,9 +416,6 @@ export const App: React.FC = () => {
           {activeMenu === 'VP_XUAT_TAU' && <OfficeVesselWorkspace mode="XUAT_TAU" state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
           {VESSEL_FIELD_MENUS.includes(activeMenu as VesselFieldMode) && (
             <VesselFieldMobile key={activeMenu} kind={activeMenu as VesselFieldMode} state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />
-          )}
-          {activeMenu === 'XN_NHAP_TAU' && (
-            <FieldQueueWorkspaces key={activeMenu} mode="XN_CHO_HA_VO" vesselOnly state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />
           )}
           {FIELD_QUEUE_MENUS.includes(activeMenu as FieldQueueMode) && (
             <FieldQueueWorkspaces

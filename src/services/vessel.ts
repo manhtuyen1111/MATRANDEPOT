@@ -520,3 +520,59 @@ export function parseTruckList(text: string): string[] {
 export function sortVesselItems<T extends { containerNo: string; size: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => Number(a.size) - Number(b.size) || a.containerNo.localeCompare(b.containerNo));
 }
+
+// ---------------------------------------------------------------------------
+// THEO DÕI TÁC NGHIỆP HIỆN TRƯỜNG (DEC-071): mỗi bộ phận biết cont nào mình phải làm / đã làm / chưa tới lượt
+// ---------------------------------------------------------------------------
+export type VesselFieldStep = 'NT_INSPECT' | 'NT_PLACE' | 'XT_EXPORT';
+export type VesselStepStatus = 'TODO' | 'WAIT' | 'DONE';
+
+export interface VesselStepInfo {
+  status: VesselStepStatus;
+  note: string;      // Mô tả ngắn hiển thị trên thẻ
+  by?: string;
+  at?: string;
+  truckNo?: string;
+}
+
+export function vesselStepInfo(state: DepotState, step: VesselFieldStep, item: VesselListItem): VesselStepInfo {
+  if (step === 'NT_INSPECT') {
+    return item.status === 'PENDING'
+      ? { status: 'TODO', note: 'Chờ giám định' }
+      : { status: 'DONE', note: item.status === 'DONE' ? 'Đã giám định • đã hạ bãi' : 'Đã giám định', by: item.inspectedBy, at: item.inspectedAt, truckNo: item.truckNo };
+  }
+  if (step === 'NT_PLACE') {
+    if (item.status === 'DONE') return { status: 'DONE', note: 'Đã hạ bãi', by: item.doneBy, at: item.doneAt, truckNo: item.truckNo };
+    if (item.status === 'PENDING') return { status: 'WAIT', note: 'Chưa về — chờ Giám định' };
+    const c = state.containers.find((x) => x.id === item.containerId);
+    if (c?.needsCleaning) return { status: 'WAIT', note: 'Chờ Vệ sinh xong', truckNo: item.truckNo };
+    return { status: 'TODO', note: 'Chờ hạ bãi', truckNo: item.truckNo };
+  }
+  return item.status === 'DONE'
+    ? { status: 'DONE', note: 'Đã xuất tàu', by: item.doneBy, at: item.doneAt, truckNo: item.truckNo }
+    : { status: 'TODO', note: 'Chờ xuất' };
+}
+
+export interface VesselStepSummary {
+  total: number;
+  todo: number;
+  wait: number;
+  done: number;
+  mine: number;                          // số cont người đang dùng đã làm ở bước này
+  byTruck: { truckNo: string; count: number }[]; // số cont đã làm theo từng xe
+}
+
+export function vesselStepSummary(state: DepotState, step: VesselFieldStep, list: VesselList): VesselStepSummary {
+  const infos = list.items.map((i) => vesselStepInfo(state, step, i));
+  const done = infos.filter((x) => x.status === 'DONE');
+  const counts = new Map<string, number>(list.truckNos.map((t) => [t, 0]));
+  for (const d of done) if (d.truckNo) counts.set(d.truckNo, (counts.get(d.truckNo) || 0) + 1);
+  return {
+    total: infos.length,
+    todo: infos.filter((x) => x.status === 'TODO').length,
+    wait: infos.filter((x) => x.status === 'WAIT').length,
+    done: done.length,
+    mine: done.filter((x) => x.by === state.currentUser.fullName).length,
+    byTruck: Array.from(counts, ([truckNo, count]) => ({ truckNo, count })),
+  };
+}

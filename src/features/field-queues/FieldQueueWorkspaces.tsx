@@ -11,8 +11,6 @@ import {
 } from '../../services/depotOperations';
 import { formatLocation } from '../../services/core';
 import { findTicketByQr, isTicketClosed } from '../../services/driverRoute';
-import { openVesselLists } from '../../services/vessel';
-import { VesselProgressPanel } from '../vessel/VesselShared';
 import {
   ContainerNo,
   EMPTY_SLOT,
@@ -33,7 +31,6 @@ interface Props {
   onUpdateState: (next: DepotState) => void;
   initialScannedQr?: string;
   onOpenDossier?: (code: string) => void;
-  vesselOnly?: boolean; // DEC-069: menu NHẬP TÀU của Vệ sinh / Xe nâng — chỉ cont hồ sơ NT-
 }
 
 const sortFifo = (arr: ContainerRecord[]) => [...arr].sort((a, b) => a.gateInAt.localeCompare(b.gateInAt));
@@ -72,7 +69,7 @@ const TITLES: Record<FieldQueueMode, { dept: string; name: string }> = {
   SC_CHO_SUA_CHUA: { dept: 'Bộ phận Sửa chữa', name: 'Chờ sửa chữa' },
 };
 
-export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateState, initialScannedQr = '', onOpenDossier, vesselOnly }) => {
+export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateState, initialScannedQr = '', onOpenDossier }) => {
   const [scannedQr, setScannedQr] = useState(initialScannedQr);
   const [scanned, setScanned] = useState<ContainerRecord | null>(null);
   const [slot, setSlot] = useState<SlotValue>(EMPTY_SLOT);
@@ -100,9 +97,8 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const allQueue = getFieldQueue(state, mode);
-  const queue = vesselOnly ? allQueue.filter((c) => c.masterDossierCode.startsWith('NT-')) : allQueue;
-  const title = vesselOnly ? { dept: TITLES[mode].dept, name: `Nhập tàu — ${TITLES[mode].name}` } : TITLES[mode];
+  const queue = getFieldQueue(state, mode);
+  const title = TITLES[mode];
 
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -476,7 +472,6 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
           </ul>
         )}
       </div>
-      {vesselOnly && <VesselProgressPanel lists={openVesselLists(state, 'NHAP_TAU')} mode="NHAP_TAU" />}
     </div>
   );
 };
