@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle2, ClipboardList, ListPlus, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ClipboardList, ListChecks, ListPlus, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { FieldConditionClass, VesselList, VesselMode, VESSEL_MODE_LABELS } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import {
@@ -15,7 +15,7 @@ import {
   vesselExportBlocker,
   vesselListProgress,
 } from '../../services/vessel';
-import { formatLocation, storageDays } from '../../services/core';
+import { formatLocation, parseContainerList, storageDays } from '../../services/core';
 import { formatDateTime, parseDateTime } from '../../services/datetime';
 import { can } from '../../services/permissions';
 import { ContainerNo, DateTimeField, Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
@@ -268,21 +268,27 @@ const ImportPaste: React.FC<{ state: DepotState; text: string; onChange: (t: str
   );
 };
 
-const ExportPicker: React.FC<{ state: DepotState; picked: Set<string>; onChange: (s: Set<string>) => void }> = ({ state, picked, onChange }) => {
+export const ExportPicker: React.FC<{ state: DepotState; picked: Set<string>; onChange: (s: Set<string>) => void }> = ({ state, picked, onChange }) => {
   const [search, setSearch] = useState('');
   const [size, setSize] = useState('ALL');
+  // Tìm hàng loạt — giống Tồn vỏ (DEC-073)
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [bulkList, setBulkList] = useState<string[]>([]);
   const [condition, setCondition] = useState<'ALL' | FieldConditionClass>('ALL');
   const yard = useMemo(
     () =>
       sortVesselItems(
         state.containers
           .filter((c) => c.status === 'IN_YARD' || c.status === 'ALLOCATED')
+          .filter((c) => bulkList.length === 0 || bulkList.includes(c.containerNo))
           .filter((c) => !search.trim() || c.containerNo.includes(search.trim().toUpperCase()))
           .filter((c) => size === 'ALL' || c.size === size)
           .filter((c) => condition === 'ALL' || c.conditionClass === condition)
       ),
-    [state.containers, search, size, condition]
+    [state.containers, bulkList, search, size, condition]
   );
+  const notFound = bulkList.filter((no) => !state.containers.some((c) => c.containerNo === no && (c.status === "IN_YARD" || c.status === "ALLOCATED")));
   const selectable = yard.filter((c) => !vesselExportBlocker(c));
   const allPicked = selectable.length > 0 && selectable.every((c) => picked.has(c.id));
   const toggle = (id: string) => {
@@ -316,7 +322,40 @@ const ExportPicker: React.FC<{ state: DepotState; picked: Set<string>; onChange:
             <option value="DAMAGE">DAMAGE</option>
           </select>
         </label>
+        <button type="button" onClick={() => setBulkOpen(!bulkOpen)} className={`${secondaryBtn} ${bulkList.length ? 'border-blue-600 text-blue-700' : ''}`}>
+          <ListChecks className="h-3.5 w-3.5" />
+          Tìm hàng loạt{bulkList.length ? ` (${bulkList.length})` : ''}
+        </button>
       </div>
+      {bulkOpen && (
+        <div className="flex flex-col gap-2 border-t border-slate-100 pt-2 sm:flex-row sm:items-end">
+          <label className="flex-1">
+            <span className={labelCls}>Danh sách số container (mỗi dòng 1 số, hoặc cách nhau bởi dấu phẩy / khoảng trắng)</span>
+            <textarea value={bulkText} onChange={(e) => setBulkText(e.target.value)} rows={3} placeholder={'MSKU4089123\nTGHU2211457'} className={`${inputCls} font-mono uppercase`} />
+          </label>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setBulkList(parseContainerList(bulkText))} disabled={!bulkText.trim()} className={primaryBtn}>Tìm</button>
+            {bulkList.length > 0 && (
+              <button type="button" onClick={() => { setBulkList([]); setBulkText(''); }} className={secondaryBtn}>Bỏ lọc</button>
+            )}
+          </div>
+        </div>
+      )}
+      {bulkList.length > 0 && (
+        <p className="text-[11px] text-slate-600">
+          Tìm thấy <strong>{yard.length}</strong> / {bulkList.length} container — chọn được <strong>{selectable.length}</strong>
+          {selectable.length > 0 && (
+            <button type="button" onClick={() => onChange(new Set([...picked, ...selectable.map((c) => c.id)]))} className="ml-2 font-bold text-blue-700 underline">
+              Chọn tất cả {selectable.length} cont tìm được
+            </button>
+          )}
+        </p>
+      )}
+      {bulkList.length > 0 && notFound.length > 0 && (
+        <p className="rounded-md bg-rose-50 px-3 py-2 text-[11px] text-rose-800">
+          Không có trong tồn vỏ ({notFound.length}): <span className="font-mono">{notFound.join(', ')}</span>
+        </p>
+      )}
       <div className="max-h-80 overflow-auto">
         <table className="w-full min-w-[760px] text-left">
           <thead className="sticky top-0 border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">

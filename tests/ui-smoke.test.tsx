@@ -5,7 +5,7 @@ import { createInitialState, DepotState } from '../src/services/depotStore';
 import { App } from '../src/app/App';
 import { YardFeature } from '../src/features/yard/YardFeature';
 import { OfficeCapVoWorkspace, OfficeHaVoWorkspace } from '../src/features/office/OfficeWorkspaces';
-import { OfficeVesselWorkspace } from '../src/features/vessel/OfficeVesselWorkspace';
+import { ExportPicker, OfficeVesselWorkspace } from '../src/features/vessel/OfficeVesselWorkspace';
 import { VesselFieldMobile } from '../src/features/vessel/VesselFieldMobile';
 import { createVesselList, inspectVesselImportItem } from '../src/services/vessel';
 import { FieldQueueWorkspaces, FieldQueueMode, getFieldQueue } from '../src/features/field-queues/FieldQueueWorkspaces';
@@ -265,5 +265,13 @@ describe('DEC-072: in EEIR đồng bộ với phiếu thu', () => {
     expect(eeir).toMatch(/TÁC NGHIỆP: (HẠ|CẤP) VỎ/);
     expect(eeir).toContain(t.containerNo);
     expect(eeir).toContain('In lúc');
+  });
+});
+
+describe('DEC-073: Lập danh sách XUẤT TÀU có Tìm hàng loạt như Tồn vỏ', () => {
+  it('Bộ chọn cont từ tồn vỏ có nút Tìm hàng loạt', () => {
+    const html = renderToString(<ExportPicker state={as(base, 'usr-office')} picked={new Set()} onChange={noop} />);
+    expect(html).toContain('Tìm hàng loạt');
+    expect(html).toContain('Chọn container từ tồn vỏ');
   });
 });
