@@ -547,6 +547,17 @@ Quy ước trạng thái:
     - Xuất tàu (Giám định / Xe nâng dùng chung tiến độ): chờ làm = chưa xuất; xong = đã xuất.
   - Xe nâng → Nhập tàu chuyển sang mẫu màn này (bỏ màn hàng chờ lọc `vesselOnly`).
 
+### DEC-072 — In EEIR từ hồ sơ; mẫu EEIR và Phiếu thu đồng bộ
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-052, DEC-062, DEC-063
+- Lỗi đã sửa: nút "In hồ sơ" ở Tồn vỏ → hồ sơ container in ra **trang trắng** (CSS in chỉ in vùng `print-area`, hồ sơ không có vùng này).
+- Quyết định:
+  - Giấy in từ hồ sơ là **EEIR** (thông tin Hạ vỏ / Cấp vỏ chi tiết gửi khách hàng **kèm phiếu thu**). Hồ sơ có thanh in cho **từng lượt**: **In EEIR HẠ VỎ / CẤP VỎ** và **In EEIR + phiếu thu**. Bỏ nút "In hồ sơ".
+  - **EEIR và Phiếu thu dùng chung một khung in** (`src/components/ReceiptPrint.tsx`): đầu CÔNG TY → tiêu đề + **Số** (mã hồ sơ / số phiếu) → nhãn **TÁC NGHIỆP** → bảng thông tin → bảng chi tiết → chữ ký 2 bên → "In lúc …". Cùng cỡ chữ, viền, bố cục.
+  - EEIR gồm: số cont, size/type, hãng tàu, trạng thái • đóng hàng, AGE, hư hỏng, vệ sinh, khách hàng, booking (Cấp vỏ) / số lệnh (Hạ vỏ), số xe • SĐT, thời gian GATE IN / OUT, vị trí hạ / lấy, thanh toán, lộ trình các bộ phận đã xác nhận.
+  - In kèm phiếu thu **vẫn đếm số lần in**: đã in trước đó → hỏi xác nhận "In lại", bản in có nhãn BẢN IN LẠI (DEC-063). Văn phòng → Trả chứng từ: lần in tự động = EEIR + phiếu thu; nút "In lại EEIR" chỉ in EEIR.
+  - Kỹ thuật: lệnh in đi qua `PrintPortal` (gắn vào `<body>`, không bị cửa sổ đang mở cắt); khi có lệnh in này, các vùng in khác trên trang bị ẩn — mỗi lần in đúng 1 bộ giấy tờ.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -636,6 +647,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-071 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-072 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

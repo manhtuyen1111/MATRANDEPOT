@@ -80,6 +80,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-071)
 - Màn hiện trường Nhập tàu / Xuất tàu (Giám định, Xe nâng): khung tiến độ (xong/tổng, chờ làm, bạn đã làm, theo xe), tab Chờ làm / Đã xong / Tất cả, báo cont đã làm để chống làm trùng, dải Vừa xong. Xe nâng → Nhập tàu dùng chung mẫu màn này. Kiểm thử: 73/73 pass.
 
+### Fixed (2026-10-24, DEC-072)
+- Hồ sơ container: "In hồ sơ" in ra trang trắng → thay bằng In EEIR / In EEIR + phiếu thu cho từng lượt Hạ vỏ / Cấp vỏ. EEIR và phiếu thu dùng chung khung in (công ty, Số, Tác nghiệp, chữ ký, In lúc). In kèm phiếu thu vẫn đếm số lần in. Trả chứng từ: "In lại EEIR" không in lại phiếu thu. Kiểm thử: 74/74 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

@@ -4,10 +4,10 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-071), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069), hoàn thiện màn Văn phòng dạng danh sách → chi tiết, sửa / thêm / xóa khi chưa duyệt, sắp xếp + tìm kiếm (DEC-070), màn hiện trường có theo dõi đã làm / chờ làm (DEC-071). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-072), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069), hoàn thiện màn Văn phòng dạng danh sách → chi tiết, sửa / thêm / xóa khi chưa duyệt, sắp xếp + tìm kiếm (DEC-070), màn hiện trường có theo dõi đã làm / chờ làm (DEC-071); **sửa In hồ sơ trang trắng → In EEIR, EEIR đồng bộ khung với phiếu thu** (DEC-072). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
 
 **Điểm dừng 2026-10-24:** đã **push đầy đủ lên GitHub** (DEC-050 → DEC-069). Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
-Kiểm thử mới nhất: `npm test` **73/73 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+Kiểm thử mới nhất: `npm test` **74/74 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
@@ -36,7 +36,7 @@ Kiểm thử mới nhất: `npm test` **73/73 pass** (3 file test) • `npm run 
 | Hạ vỏ | Giám định (mobile; được xóa hồ sơ khi Văn phòng chưa thao tác) → Văn phòng (số cont trùng Tồn vỏ bị chặn ngay khi nhập; SĐT lái xe, khách hàng, chi phí từ biểu giá, TTT/TTS/TTTT) → GATE IN OK → (Vệ sinh nếu có) → Xe nâng hạ vỏ → **Văn phòng trả chứng từ** (in EEIR + phiếu thu) | 020–025, 052, 059, 060 |
 | Phiếu K80 | Thông tin chung ở đầu → LỘ TRÌNH các bước (ô ☐ tích tay) → QR; lái xe đi theo thứ tự, quét mã tại từng bộ phận; Văn phòng → Trả chứng từ: 1 ô quét chung, danh sách chờ chia **2 cột HẠ VỎ / CẤP VỎ** (có số lượt) | 052, 064 |
 | Thanh toán | TTT trừ dần Phiếu thu mẹ; TTS = công nợ; Tiền mặt / Chuyển khoản mới phát hành phiếu thu `PT-YYYY-NNNNNN` | 031, 032 |
-| Phiếu thu | Văn phòng tạo phiếu thu TTT và xác nhận tiền mặt; phiếu thu ghi rõ **tác nghiệp** (Hạ vỏ / Cấp vỏ / Thu trước); hồ sơ container link thẳng về Phiếu thu; **mẫu in thống nhất** (thông tin công ty + tác nghiệp); **đếm số lần in**, in lại phải xác nhận + nhãn BẢN IN LẠI | 032, 047, 051, 062, 063 |
+| Phiếu thu | Văn phòng tạo phiếu thu TTT và xác nhận tiền mặt; phiếu thu ghi rõ **tác nghiệp** (Hạ vỏ / Cấp vỏ / Thu trước); hồ sơ container link thẳng về Phiếu thu; **mẫu in thống nhất** (thông tin công ty + tác nghiệp); **đếm số lần in**, in lại phải xác nhận + nhãn BẢN IN LẠI ; **EEIR cùng khung với phiếu thu**, in từ hồ sơ (In EEIR / In EEIR + phiếu thu) | 032, 047, 051, 062, 063, 072 |
 | DAMAGE | Báo giá (remark + giờ công) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → **AV** (không có QC) | 040–043, 049 |
 | Tổ sửa chữa | Danh mục chung → Sửa chữa: thêm tổ; thêm **user Sửa chữa có sẵn** hoặc nhập tên; ngưng thay vì xóa | 042, 048 |
 | Danh mục Công ty | Admin cấu hình tên, MST, địa chỉ, ĐT, email, TK ngân hàng — in ở đầu phiếu thu / EEIR / K80 | 062 |
@@ -83,6 +83,7 @@ Kiểm thử mới nhất: `npm test` **73/73 pass** (3 file test) • `npm run 
 | P7-01 | **Nhập tàu / Xuất tàu** bản Demo: nghiệp vụ `vessel.ts`, Văn phòng lập / duyệt, mobile Giám định / Vệ sinh / Xe nâng, hồ sơ NT- / XT-, Báo cáo + Tổng hợp | 2026-10-24 | DEC-069 | **68/68 • build PASS**; **chưa thử trên trình duyệt / điện thoại** | agent/claude/p4-prep-xlsx |
 | P7-02 | Nhập / Xuất tàu: bỏ menu Vệ sinh → Nhập tàu; Văn phòng danh sách → chi tiết, sửa / thêm cont / xóa khi chưa duyệt; sắp xếp size → số cont; tìm như Tồn vỏ | 2026-10-24 | DEC-070 | **72/72 • build PASS**; chưa thử trên trình duyệt | agent/claude/p4-prep-xlsx |
 | P7-03 | Màn hiện trường Nhập / Xuất tàu: theo dõi đã làm / chờ làm, chống làm trùng; Xe nâng Nhập tàu dùng chung mẫu | 2026-10-24 | DEC-071 | **73/73 • build PASS**; chưa thử trên điện thoại | agent/claude/p4-prep-xlsx |
+| P7-04 | Sửa In hồ sơ (trang trắng) → In EEIR / EEIR + phiếu thu từng lượt; EEIR và phiếu thu chung 1 khung in; lớp in PrintPortal | 2026-10-24 | DEC-072 | **74/74 • build PASS**; **chưa thử in giấy thật** | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -153,3 +154,5 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - **Bàn giao bổ sung (P7-02):** hàm mới trong `src/services/vessel.ts`: `updateVesselList`, `addVesselListItems`, `deleteVesselList`, `sortVesselItems` (dùng chung `buildImportItems` / `buildExportItems` với `createVesselList`). Màn `OfficeVesselWorkspace` có 3 chế độ LIST / CREATE / DETAIL. Menu `VS_NHAP_TAU` đã gỡ (10 màn mobile). Test xlsx Tổng hợp nâng timeout 20s (trước đây lâu lâu quá 5s).
 - 2026-10-24 — Claude Code: P7-03 (DEC-071) theo dõi tác nghiệp hiện trường Nhập / Xuất tàu. 73/73 • build PASS.
 - **Bàn giao bổ sung (P7-03):** `VesselFieldMobile` phục vụ 4 menu `GD_NHAP_TAU`, `XN_NHAP_TAU`, `GD_XUAT_TAU`, `XN_XUAT_TAU` (bước `NT_INSPECT` / `NT_PLACE` / `XT_EXPORT`). Trạng thái thẻ lấy từ `vesselStepInfo`; tổng hợp từ `vesselStepSummary` (`src/services/vessel.ts`). Đã gỡ `vesselOnly` khỏi `FieldQueueWorkspaces` và `VesselProgressPanel`.
+- 2026-10-24 — Claude Code: P7-04 (DEC-072) sửa in hồ sơ → In EEIR, đồng bộ mẫu in EEIR / phiếu thu. 74/74 • build PASS.
+- **Bàn giao bổ sung (P7-04):** mẫu in chung ở `src/components/ReceiptPrint.tsx` (`PrintFrame`, `EeirPrintSheet`, `ReceiptPrintSheet`, `PrintPortal`). Hồ sơ: `DossierPrintBar` trong `MasterDossierModal.tsx` (cần prop `onUpdateState` để đếm lần in phiếu thu). CSS `index.css`: `.print-job` ẩn các vùng in khác khi đang in.
