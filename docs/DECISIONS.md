@@ -517,6 +517,21 @@ Quy ước trạng thái:
 - Báo cáo: **Báo cáo → Nhập tàu / Xuất tàu** (lọc theo thời gian nhập / xuất tàu, tên tàu, số cont; phân trang; Excel). Báo cáo Tổng hợp: sheet NHẬP VỎ / XUẤT VỎ lấy từ dữ liệu này.
 - Code: `src/services/vessel.ts`; quyền `VESSEL_LIST_MANAGE`, `VESSEL_IMPORT_INSPECT`, `VESSEL_EXPORT_EXECUTE`.
 
+### DEC-070 — Hoàn thiện Nhập tàu / Xuất tàu: menu, màn Văn phòng, sửa danh sách, sắp xếp, tìm kiếm
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-069
+- Quyết định:
+  - **Bỏ menu Vệ sinh → Nhập tàu.** Cont nhập tàu có yêu cầu vệ sinh nằm chung trong **Vệ sinh → Chờ vệ sinh** (cùng mục đích, tác nghiệp, kết quả). Còn **10** màn mobile.
+  - **Văn phòng → Nhập tàu / Xuất tàu**: màn chính là **danh sách đang thực hiện** (bảng: tên tàu, thời gian, hãng tàu, số cont, tiến độ, số xe, người lập); **nút Lập danh sách ở bên phải tiêu đề**; bấm một dòng → **chi tiết**.
+  - **Khi chưa DUYỆT thành công**, Văn phòng / Quản lý được:
+    - **Sửa thông tin**: tên tàu, thời gian, danh sách số xe; **hãng tàu** chỉ đổi được khi chưa có cont nào được giám định.
+    - **Thêm cont**: nhập tàu dán từ Excel, xuất tàu chọn từ tồn vỏ (cùng kiểm tra như lúc lập; xuất tàu cấp mã XT- mới).
+    - **Bỏ cont** còn chờ.
+    - **Xóa cả danh sách**: chỉ khi **chưa có cont nào được tác nghiệp** (tránh mất hồ sơ NT- / cont đã OUT); xóa danh sách xuất tàu thì cont mở lại cho cấp vỏ.
+    - Danh sách đã duyệt: chỉ xem.
+  - **Sắp xếp**: danh sách container luôn theo **size 20 → 40 → 45, cùng size thì số cont A→Z** (`sortVesselItems`) — ở màn Giám định / Xe nâng, chi tiết Văn phòng, chọn từ tồn vỏ.
+  - **Tìm kiếm** ở màn Giám định / Xe nâng giống Tồn vỏ: **lọc ngay khi gõ** (số cont chứa chuỗi đã nhập); bấm tìm khi chỉ còn 1 cont khớp thì chọn luôn.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -606,6 +621,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-069 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-070 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

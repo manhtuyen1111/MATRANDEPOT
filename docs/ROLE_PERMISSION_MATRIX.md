@@ -50,11 +50,11 @@ Nguồn duy nhất trong code: `src/services/permissions.ts` (`PERMISSIONS`, `ME
 | Cấu hình Danh mục chung (kể cả tổ sửa chữa, công ty) | ADMIN | DEC-028, DEC-042, DEC-062 |
 | In / in lại phiếu thu (đếm số lần in) | OFFICE, MANAGER | DEC-063 |
 | Khóa / mở khóa, ghi chú hàng loạt ở Tồn vỏ | OFFICE, MANAGER | DEC-067 |
-| Lập / sửa (bỏ cont chờ) / duyệt danh sách NHẬP TÀU, XUẤT TÀU | OFFICE, MANAGER (`VESSEL_LIST_MANAGE`) | DEC-069 |
+| Lập / sửa thông tin / thêm cont / bỏ cont chờ / xóa (chưa tác nghiệp) / duyệt danh sách NHẬP TÀU, XUẤT TÀU — chỉ khi chưa duyệt | OFFICE, MANAGER (`VESSEL_LIST_MANAGE`) | DEC-069, DEC-070 |
 | Giám định NHẬP TÀU (xác nhận cont về) | INSPECTOR, MANAGER (`VESSEL_IMPORT_INSPECT`) | DEC-069 |
 | Tác nghiệp XUẤT TÀU (gán xe, OUT) | INSPECTOR, FORKLIFT, MANAGER (`VESSEL_EXPORT_EXECUTE`) | DEC-069 |
 | Vệ sinh / Xe nâng hạ cont NHẬP TÀU | như Chờ vệ sinh / Chờ hạ vỏ (`CLEANING_COMPLETE`, `FORKLIFT_OPS`) | DEC-069 |
-| Menu mới: Giám định → Nhập tàu, Xuất tàu; Vệ sinh → Nhập tàu; Xe nâng → Nhập tàu, Xuất tàu (mobile) | theo `MENU_ACCESS` | DEC-069 |
+| Menu: Giám định → Nhập tàu, Xuất tàu; Xe nâng → Nhập tàu, Xuất tàu (mobile). Vệ sinh không có menu Nhập tàu (dùng Chờ vệ sinh) | theo `MENU_ACCESS` | DEC-069, DEC-070 |
 | Quản lý User - Phân quyền | ADMIN | DEC-045 |
 | Hiển thị menu | Theo `MENU_ACCESS`: mỗi vai trò chỉ thấy màn của mình | DEC-045 |
 

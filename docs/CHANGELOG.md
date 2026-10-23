@@ -74,6 +74,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Added (2026-10-24, DEC-069)
 - NHẬP TÀU / XUẤT TÀU: Văn phòng lập danh sách theo tàu (tên tàu, thời gian, số xe, container) và duyệt khi xong; Giám định xác nhận cont nhập tàu (mobile); Vệ sinh / Xe nâng có menu Nhập tàu; Giám định / Xe nâng xuất tàu (mobile); hồ sơ NT- / XT-; Báo cáo Nhập tàu / Xuất tàu + sheet NHẬP VỎ / XUẤT VỎ của Tổng hợp. Không thu phí, không K80. Kiểm thử: 68/68 pass.
 
+### Changed (2026-10-24, DEC-070)
+- Bỏ menu Vệ sinh → Nhập tàu (cont nhập tàu vào Chờ vệ sinh). Văn phòng → Nhập tàu / Xuất tàu: danh sách đang thực hiện → chi tiết; sửa thông tin / thêm cont / xóa danh sách khi chưa duyệt. Danh sách cont xếp size 20 → 40, số cont A→Z; ô tìm ở Giám định / Xe nâng lọc ngay khi gõ như Tồn vỏ. Kiểm thử: 72/72 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 
