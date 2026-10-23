@@ -618,3 +618,42 @@ describe('DEC-051: phiếu thu ghi rõ tác nghiệp', () => {
     expect(found.rows[0].receipt!.receiptNo).toBe(ha.receiptNo);
   });
 });
+
+describe('DEC-052: lộ trình phiếu K80 & Văn phòng trả chứng từ', () => {
+  it('Hạ vỏ có vệ sinh: 4 bước; chưa qua Vệ sinh / Xe nâng thì không trả được; xong thì trả 1 lần, kèm phiếu thu', async () => {
+    const { confirmDocumentsReturn, getDriverRoute, ticketsAwaitingReturn } = await import('../src/services/driverRoute');
+    let s = fieldStep(createInitialState(), { cleaningItems: ['WW - RỬA NƯỚC'] });
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const ticket = s.k80Tickets[0];
+    expect(getDriverRoute(s, ticket).map((x) => x.dept)).toEqual(['VĂN PHÒNG', 'VỆ SINH', 'XE NÂNG', 'VĂN PHÒNG']);
+
+    expect(() => confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode })).toThrow(/VỆ SINH/);
+    s = completeCleaningTask(as(s, 'usr-cleaning'), { containerNo: 'MSKU1234567' });
+    expect(() => confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode })).toThrow(/XE NÂNG/);
+    s = placeInYard(s, 'MSKU1234567');
+    expect(ticketsAwaitingReturn(s).map((t) => t.containerNo)).toContain('MSKU1234567');
+    expect(() => confirmDocumentsReturn(as(s, 'usr-forklift'), { scannedQrCode: ticket.qrCode })).toThrow(/Không đủ quyền/);
+
+    const res = confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode });
+    expect(res.pack.receipts).toHaveLength(1);
+    expect(getDriverRoute(res.state, ticket).every((x) => x.done)).toBe(true);
+    expect(() => confirmDocumentsReturn(res.state, { scannedQrCode: ticket.qrCode })).toThrow(/Đã trả chứng từ/);
+  });
+
+  it('Cấp vỏ: Văn phòng → Xe nâng → Văn phòng; TTS không có phiếu thu', async () => {
+    const { confirmDocumentsReturn, getDriverRoute } = await import('../src/services/driverRoute');
+    let s = createReleaseOrder(as(createInitialState(), 'usr-office'), {
+      bookingNo: 'BK-R', customerName: VIETLOG, containerNo: 'MSKU4089123', truckNo: '15H', driverPhone: '0912345678', feeCatalogIds: [FEE_LOLO_40HC_MSK],
+    });
+    s = confirmReleasePayment(as(s, 'usr-office'), { gateOutOrderId: s.gateOutOrders[0].id, paymentCategory: 'TTS', ttsNote: 'x' });
+    const ticket = s.k80Tickets[0];
+    expect(getDriverRoute(s, ticket).map((x) => x.dept)).toEqual(['VĂN PHÒNG', 'XE NÂNG', 'VĂN PHÒNG']);
+    expect(() => confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode })).toThrow(/XE NÂNG/);
+    s = executeGateOut(as(s, 'usr-forklift'), { containerNo: 'MSKU4089123' });
+    const res = confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode });
+    expect(res.pack.dossierCode).toMatch(/^OUT-/);
+    expect(res.pack.receipts).toHaveLength(0);
+  });
+});

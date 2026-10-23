@@ -310,6 +310,18 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
               <X className="h-4 w-4" />
             </button>
           </div>
+          {mode === 'XN_CHO_CAP_VO' && (
+            <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-900 p-3 text-white">
+              <div>
+                <span className="block text-[10px] font-semibold uppercase text-slate-300">Số container</span>
+                <span className="font-mono text-lg font-black tracking-wide">{scanned.containerNo}</span>
+              </div>
+              <div className="text-right">
+                <span className="block text-[10px] font-semibold uppercase text-slate-300">Vị trí hiện tại</span>
+                <span className="font-mono text-lg font-black text-amber-300">{formatLocation(scanned)}</span>
+              </div>
+            </div>
+          )}
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
             <dt className="text-slate-500">Size / Type / AGE</dt>
             <dd className="font-semibold">{scanned.size}/{scanned.type} • {scanned.manufactureYear}</dd>

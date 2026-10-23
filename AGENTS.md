@@ -83,3 +83,4 @@ Một việc chỉ "xong" khi:
 - **Văn phòng làm phần tài chính** (phiếu thu TTT, xác nhận tiền mặt) — không còn Kế toán (DEC-047).
 - **Luồng DAMAGE:** Báo giá (remark + giờ công) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → AV. Không có bước QC (DEC-049).
 - Tóm tắt toàn bộ logic đã chốt: `devs/PROGRESS.md` mục C.
+- **Phiếu K80 = tờ hướng dẫn lái xe** (DEC-052): thông tin chung ở đầu (số cont, số xe, SĐT, thanh toán) → LỘ TRÌNH các bước đánh số có ô ☐ → mã QR. Lộ trình tính trong `src/services/driverRoute.ts` — thêm bộ phận mới vào luồng thì cập nhật `getDriverRoute`. Bước cuối luôn là **Văn phòng → Trả chứng từ** (in EEIR + phiếu thu).

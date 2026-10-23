@@ -48,6 +48,7 @@ Danh sách vai trò và quyền chi tiết sẽ được xác định trong tài
    - Không yêu cầu vệ sinh → **Xe nâng — Chờ hạ vỏ**.
    - `DAMAGE` → thêm **Báo giá — Chờ báo giá**.
 5. **Xe nâng** quét QR K80, chọn vị trí (Block bắt buộc; Bay/Row/Tier đủ cả 3 hoặc bỏ trống) → vị trí chính thức đầu tiên, lưu lịch sử (DEC-025).
+6. **Lái xe quay về Văn phòng → Trả chứng từ**: quét QR K80 → in EEIR + phiếu thu (nếu có). Phiếu K80 có LỘ TRÌNH các bước để lái xe biết đi đâu, tích ☐ từng bước (DEC-052).
 
 Các trường hợp từ chối, hủy Hạ vỏ đã thanh toán và sửa sai số container sau GATE IN OK còn mở (Q-003, Q-005, OPEN-008).
 
@@ -141,7 +142,8 @@ Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 3. Nhập `SỐ XE`, `SĐT LÁI XE`.
 4. `CHI PHÍ (ĐÃ BAO GỒM VAT)` từ biểu giá → Hình thức thanh toán (TTT / TTS / TTTT như Hạ vỏ).
 5. Hệ thống cấp mã hồ sơ `OUT-YYMMDD-NNN`, khóa phân bổ container. Đã thanh toán / TTS hợp lệ → in phiếu K80 cấp vỏ, chuyển **Xe nâng — Chờ cấp vỏ**. Chuyển khoản đang chờ → hồ sơ nằm ở "Hồ sơ cấp vỏ chờ thanh toán".
-6. Xe nâng quét QR → hệ thống kiểm tra đủ 5 điều kiện (DEC-015) → OUT.
+6. Xe nâng quét QR → hệ thống kiểm tra đủ 5 điều kiện (DEC-015) → OUT. Màn quét làm nổi số container + vị trí hiện tại (DEC-053).
+7. Lái xe quay về **Văn phòng → Trả chứng từ**: quét QR → in EEIR + phiếu thu (nếu có) (DEC-052).
 
 ## 9. Quy trình Gate Out — Xuất bãi
 

@@ -360,6 +360,20 @@ Quy ước trạng thái:
   - Trong **hồ sơ container**, mỗi chứng từ (Hạ vỏ, Cấp vỏ) có khung **"Thu tiền — <tác nghiệp>"** nổi bật theo màu trạng thái: đã thu (TTTT → link phiếu thu; TTT → Phiếu thu mẹ + link phiếu thu gốc), công nợ TTS, đang chờ chuyển khoản (link yêu cầu), chưa thanh toán, đã hủy. Mục "Phiếu thu" cuối hồ sơ hiển thị nhãn tác nghiệp và link.
   - Bấm link → đóng hồ sơ, mở **Văn phòng → Phiếu thu** và mở đúng phiếu đó. Chỉ hiện link với người được vào menu Phiếu thu (Văn phòng, Quản lý, Admin); vai trò khác chỉ thấy chữ.
 
+### DEC-052 — Phiếu K80 có LỘ TRÌNH; Văn phòng quét mã trả chứng từ
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định:
+  - **Phiếu K80** bố cục: (1) **thông tin chung ở đầu** — loại tác nghiệp HẠ VỎ / CẤP VỎ, mã hồ sơ, số cont, size/type/AGE, **số xe**, **SĐT lái xe**, trạng thái, vệ sinh, thanh toán; (2) **LỘ TRÌNH** các bước đánh số, mỗi bước ghi bộ phận + việc phải làm, có **ô ☐ để tích bằng bút**; (3) mã QR. Xem trên app thì bước đã xong hiện ✓ + giờ, bước kế tiếp được tô nổi.
+  - Lộ trình: **HẠ VỎ** = Văn phòng thu phí → Vệ sinh (nếu có) → Xe nâng hạ vỏ → **Văn phòng trả chứng từ**. **CẤP VỎ** = Văn phòng thu phí → Xe nâng cấp vỏ → **Văn phòng trả chứng từ**.
+  - **Bước cuối mới — Văn phòng → Trả chứng từ:** lái xe quay về Văn phòng, quét QR phiếu K80 → hệ thống ghi nhận trả chứng từ và **tự mở lệnh in EEIR + phiếu thu (nếu có)**. Chỉ trả được khi đã qua đủ các bộ phận trước; mỗi phiếu trả 1 lần. Quyền: Văn phòng / Quản lý.
+  - EEIR in kèm bảng các bước đã xác nhận (người, giờ) và chỗ ký lái xe / đại diện bãi. TTT / TTS không có phiếu thu (ghi chú trên bộ chứng từ).
+
+### DEC-053 — Xe nâng – Chờ cấp vỏ: làm nổi số container + vị trí
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: Khi quét phiếu ở **Xe nâng → Chờ cấp vỏ**, **SỐ CONTAINER** và **VỊ TRÍ HIỆN TẠI** hiển thị trong khung nền đậm, chữ lớn, ở trên cùng chi tiết công việc.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -449,6 +463,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-051 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-053 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

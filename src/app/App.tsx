@@ -31,6 +31,8 @@ import { YardFeature } from '../features/yard/YardFeature';
 import { CatalogTab, MasterCatalogWorkspace } from '../features/catalog/MasterCatalogWorkspace';
 import { ReportSection, ReportsWorkspace } from '../features/reports/ReportsWorkspace';
 import { ReceiptsWorkspace } from '../features/receipts/ReceiptsWorkspace';
+import { DocumentReturnWorkspace } from '../features/office/DocumentReturnWorkspace';
+import { ticketsAwaitingReturn } from '../services/driverRoute';
 import { RepairTeamCatalog } from '../features/catalog/RepairTeamCatalog';
 import { UserRoleCatalog } from '../features/catalog/UserRoleCatalog';
 
@@ -58,6 +60,7 @@ const MENU: MenuGroup[] = [
       { id: 'VP_HA_VO', label: 'Hạ vỏ' },
       { id: 'VP_CAP_VO', label: 'Cấp vỏ' },
       { id: 'VP_PHIEU_THU', label: 'Phiếu thu' },
+      { id: 'VP_TRA_CHUNG_TU', label: 'Trả chứng từ' },
       { id: 'VP_NHAP_TAU', label: 'Nhập tàu' },
       { id: 'VP_XUAT_TAU', label: 'Xuất tàu' },
     ],
@@ -169,6 +172,7 @@ export const App: React.FC = () => {
     VP_HA_VO: state.gateInOrders.filter((o) => o.status !== 'GATE_IN_OK' && o.status !== 'CANCELLED').length,
     VP_CAP_VO: state.gateOutOrders.filter((o) => o.status === 'PAYMENT_PENDING').length,
     VP_PHIEU_THU: state.paymentTransactions.filter((t) => t.status === 'PENDING').length,
+    VP_TRA_CHUNG_TU: ticketsAwaitingReturn(state).length,
   };
   for (const m of FIELD_QUEUE_MENUS) badges[m] = getFieldQueue(state, m).length;
 
@@ -393,6 +397,7 @@ export const App: React.FC = () => {
           {activeMenu === 'VP_CAP_VO' && (
             <OfficeCapVoWorkspace state={state} onUpdateState={handleUpdateState} onOpenK80Ticket={setActiveK80Ticket} onOpenDossier={setActiveDossierCode} />
           )}
+          {activeMenu === 'VP_TRA_CHUNG_TU' && <DocumentReturnWorkspace state={state} onUpdateState={handleUpdateState} />}
           {activeMenu === 'VP_PHIEU_THU' && <ReceiptsWorkspace state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} focus={receiptFocus} />}
           {activeMenu === 'VP_NHAP_TAU' && <OfficeVesselBatchWorkspace mode="NHAP_TAU" />}
           {activeMenu === 'VP_XUAT_TAU' && <OfficeVesselBatchWorkspace mode="XUAT_TAU" />}
@@ -434,6 +439,7 @@ export const App: React.FC = () => {
 
       <K80TicketModal
         ticket={activeK80Ticket}
+        state={state}
         onClose={() => setActiveK80Ticket(null)}
         onSimulateScanQr={(qr) => {
           setSimulatedQr(qr);

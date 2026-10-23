@@ -31,6 +31,7 @@ export type WorkspaceMenuId =
   | 'VP_HA_VO'
   | 'VP_CAP_VO'
   | 'VP_PHIEU_THU'
+  | 'VP_TRA_CHUNG_TU'
   | 'VP_NHAP_TAU'
   | 'VP_XUAT_TAU'
   | 'VS_CHO_VE_SINH'
@@ -439,6 +440,8 @@ export interface GateInOrder {
   gateInOkAt?: string;
   gateInOkBy?: string;
   nextDepartments: string[];
+  documentsReturnedAt?: string; // Văn phòng quét QR trả chứng từ cho lái xe (DEC-052)
+  documentsReturnedBy?: string;
   cancelReason?: string;
 }
 
@@ -519,6 +522,8 @@ export interface GateOutOrder {
   confirmedAt?: string;
   cancelReason?: string;
   cancelledAt?: string;
+  documentsReturnedAt?: string; // DEC-052
+  documentsReturnedBy?: string;
   createdAt: string;
 }
 

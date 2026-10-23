@@ -14,6 +14,8 @@ import { MasterDossierModal } from '../src/components/MasterDossierModal';
 import { InspectorHaVoMobile } from '../src/features/inspector/InspectorHaVoMobile';
 import { RepairTeamCatalog } from '../src/features/catalog/RepairTeamCatalog';
 import { UserRoleCatalog } from '../src/features/catalog/UserRoleCatalog';
+import { DocumentReturnWorkspace } from '../src/features/office/DocumentReturnWorkspace';
+import { K80TicketModal } from '../src/components/K80TicketModal';
 import { confirmGateInPaymentAndComplete, recordGateInFieldStep, toggleContainerHold, verifyGateInOfficeAndCreatePayment } from '../src/services/depotOperations';
 
 // Smoke test: mỗi màn hình render được với dữ liệu mẫu, không ném lỗi khi render
@@ -103,5 +105,16 @@ describe('DEC-051: hồ sơ container link về Phiếu thu', () => {
     const noLink = renderToString(<MasterDossierModal masterDossierCode={gi.masterDossierCode} state={s} onClose={noop} />);
     expect(noLink).toContain(ptNo);
     expect(noLink).not.toContain("text-blue-700 underline");
+  });
+});
+
+describe('DEC-052: phiếu K80 có lộ trình; màn Trả chứng từ', () => {
+  it('K80 hiển thị thông tin chung + LỘ TRÌNH; màn Trả chứng từ render', () => {
+    const ticket = base.k80Tickets[0];
+    const html = renderToString(<K80TicketModal ticket={ticket} state={base} onClose={noop} />);
+    expect(html).toContain('LỘ TRÌNH');
+    expect(html).toContain('SĐT LÁI XE');
+    expect(html).toContain('nhận EEIR / phiếu thu');
+    expect(renderToString(<DocumentReturnWorkspace state={as(base, 'usr-office')} onUpdateState={noop} />)).toContain('Trả chứng từ');
   });
 });

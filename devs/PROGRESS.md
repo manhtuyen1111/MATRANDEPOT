@@ -4,8 +4,8 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-23 — Claude Code
-Trạng thái chung: **GĐ 3 xong** (nhánh `feature/cr-2026-10-batch1` đã push). Hôm nay (nhánh `agent/claude/p4-prep-xlsx`): Excel .xlsx; phiếu thu ghi tác nghiệp + link từ hồ sơ. **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
-Kiểm thử mới nhất: `npm test` **45/45 pass** • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+Trạng thái chung: **GĐ 3 xong** (nhánh `feature/cr-2026-10-batch1` đã push). Hôm nay (nhánh `agent/claude/p4-prep-xlsx`): Excel .xlsx; phiếu thu ghi tác nghiệp; K80 có lộ trình + Trả chứng từ. **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Kiểm thử mới nhất: `npm test` **48/48 pass** • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
@@ -29,12 +29,13 @@ Kiểm thử mới nhất: `npm test` **45/45 pass** • `npm run build` **PASS*
 | Vai trò | **8 vai trò**: Giám định, Văn phòng, Xe nâng, Vệ sinh, Báo giá, Quản lý, Admin, Sửa chữa. Bỏ Kế toán (Văn phòng thay), nhân viên cổng/hiện trường = Giám định, **bỏ QC Sửa chữa** | 045, 047, 049 |
 | Menu | Mỗi vai trò chỉ thấy màn của mình; Văn phòng / Quản lý thấy khối văn phòng, báo cáo, danh mục (xem); Admin thấy tất cả | 045 |
 | User | Danh mục chung → User - Phân quyền (Admin): thêm, sửa vai trò, khóa; luôn còn ≥ 1 Admin | 045 |
-| Hạ vỏ | Giám định (mobile) → Văn phòng (SĐT lái xe, khách hàng, chi phí từ biểu giá, TTT/TTS/TTTT) → GATE IN OK → (Vệ sinh nếu có) → Xe nâng hạ vỏ | 020–025 |
+| Hạ vỏ | Giám định (mobile) → Văn phòng (SĐT lái xe, khách hàng, chi phí từ biểu giá, TTT/TTS/TTTT) → GATE IN OK → (Vệ sinh nếu có) → Xe nâng hạ vỏ → **Văn phòng trả chứng từ** (in EEIR + phiếu thu) | 020–025, 052 |
+| Phiếu K80 | Thông tin chung ở đầu → LỘ TRÌNH các bước (ô ☐ tích tay) → QR; lái xe đi theo thứ tự, quét mã tại từng bộ phận | 052 |
 | Thanh toán | TTT trừ dần Phiếu thu mẹ; TTS = công nợ; Tiền mặt / Chuyển khoản mới phát hành phiếu thu `PT-YYYY-NNNNNN` | 031, 032 |
 | Phiếu thu | Văn phòng tạo phiếu thu TTT và xác nhận tiền mặt; phiếu thu ghi rõ **tác nghiệp** (Hạ vỏ / Cấp vỏ / Thu trước); hồ sơ container link thẳng về Phiếu thu | 032, 047, 051 |
 | DAMAGE | Báo giá (remark + giờ công) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → **AV** (không có QC) | 040–043, 049 |
 | Tổ sửa chữa | Danh mục chung → Sửa chữa: thêm tổ; thêm **user Sửa chữa có sẵn** hoặc nhập tên; ngưng thay vì xóa | 042, 048 |
-| Cấp vỏ | Nhập booking (tự đếm), chọn cont (AV mặc định, DAMAGE được), số xe + SĐT, chi phí, thanh toán tại Văn phòng → Xe nâng OUT | 027, 033, 034 |
+| Cấp vỏ | Nhập booking (tự đếm), chọn cont (AV mặc định, DAMAGE được), số xe + SĐT, chi phí, thanh toán tại Văn phòng → Xe nâng OUT (khung nổi số cont + vị trí) → **Văn phòng trả chứng từ** | 027, 033, 034, 052, 053 |
 | Vị trí / Khóa | Đảo chuyển (Xe nâng, có lịch sử); Sửa vị trí (Văn phòng, không lịch sử); Khóa bắt buộc ghi chú, không cấp được; Block do Admin cấu hình | 030, 036, 050 |
 | Mã hồ sơ | `IN-YYMMDD-NNN`, `OUT-YYMMDD-NNN` do hệ thống cấp | 037 |
 | Báo cáo | Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp 5 sheet — bắt buộc lọc, phân trang; Excel **.xlsx** | 044, 046, 050 |
@@ -58,6 +59,7 @@ Kiểm thử mới nhất: `npm test` **45/45 pass** • `npm run build` **PASS*
 | P3-h | Tiêu đề Giám định – Hạ vỏ đồng bộ đơn giản như các màn mobile khác (Bộ phận • tên màn • số đang chờ) | 2026-10-22 | — | 42/42 • build PASS | feature/cr-2026-10-batch1 |
 | P4-pre | Xuất Excel .xlsx chuẩn (exceljs, tải khi cần); chốt Block do Admin cấu hình | 2026-10-23 | DEC-050 | **43/43 • build PASS** | agent/claude/p4-prep-xlsx |
 | P4-pre2 | Phiếu thu ghi rõ tác nghiệp + lọc; hồ sơ container: khung Thu tiền nổi bật, link về Văn phòng → Phiếu thu | 2026-10-23 | DEC-051 | **45/45 • build PASS** | agent/claude/p4-prep-xlsx |
+| P4-pre3 | Phiếu K80 có LỘ TRÌNH; menu Văn phòng → Trả chứng từ (quét QR → in EEIR + phiếu thu); Xe nâng – Chờ cấp vỏ nổi số cont + vị trí | 2026-10-23 | DEC-052, 053 | **48/48 • build PASS** | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -81,7 +83,7 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 5. **Admin → Danh mục chung → Sửa chữa**: chọn user Sửa chữa có sẵn để thêm vào tổ. **User - Phân quyền**: thêm user, sửa vai trò, khóa.
 6. Đổi sang từng user ở mục E → kiểm tra mỗi người chỉ thấy đúng màn hình của mình.
 7. **Tồn vỏ**: Khóa (bắt buộc ghi chú), Sửa vị trí. **Xe nâng → Đảo chuyển** (mở trên điện thoại hoặc thu nhỏ trình duyệt): tìm cont, lọc Chờ sửa chữa, chọn thẻ → vị trí mới.
-8. **Văn phòng → Cấp vỏ**: booking, chọn cont, số xe + SĐT, chi phí, thanh toán → **Xe nâng → Chờ cấp vỏ** (thấy số xe, SĐT) → OUT.
+8. **Văn phòng → Cấp vỏ**: booking, chọn cont, số xe + SĐT, chi phí, thanh toán → xem phiếu K80 (lộ trình) → **Xe nâng → Chờ cấp vỏ** (khung đậm số cont + vị trí, số xe, SĐT) → OUT → **Văn phòng → Trả chứng từ** quét mã → in EEIR (+ phiếu thu).
 9. **Văn phòng → Phiếu thu**: tạo phiếu thu TTT tiền mặt → xác nhận → mã `PT-...`, cột **Tác nghiệp**. Mở hồ sơ một container đã thu tiền → bấm link phiếu thu trong khung "Thu tiền" → nhảy thẳng tới phiếu đó.
 10. **Báo cáo**: Hạ vỏ, Cấp vỏ, Sửa chữa chi tiết (lọc theo tổ), Tổng hợp → Tải Excel (file **.xlsx**, mở bằng Excel không còn cảnh báo).
 
@@ -93,3 +95,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-22 — Claude Code: commit 4 nhóm (services / ui / docs / harness) và push nhánh lên GitHub. Chưa merge `main`.
 - 2026-10-23 — Claude Code: P4-pre (DEC-050) — Excel .xlsx; chờ danh mục trạng thái để làm P4-01.
 - 2026-10-23 — Claude Code: P4-pre2 (DEC-051) — tác nghiệp trên phiếu thu, link từ hồ sơ.
+- 2026-10-23 — Claude Code: P4-pre3 (DEC-052, 053) — K80 lộ trình, Trả chứng từ, nổi số cont ở Chờ cấp vỏ.
