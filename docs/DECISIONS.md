@@ -444,7 +444,7 @@ Quy ước trạng thái:
 ### DEC-064 — Trả chứng từ chia 2 phần HẠ VỎ / CẤP VỎ
 
 - Trạng thái: CONFIRMED (2026-10-23)
-- Quyết định: Văn phòng → Trả chứng từ có 2 phần (tab) **TRẢ CHỨNG TỪ HẠ VỎ** và **TRẢ CHỨNG TỪ CẤP VỎ**, mỗi phần có ô quét mã và danh sách đang chờ riêng (kèm số lượng). Quét phiếu khác loại → báo chuyển sang đúng phần.
+- Quyết định (sửa 2026-10-23): Văn phòng → Trả chứng từ chỉ có **1 ô quét mã chung** (nhận cả phiếu Hạ vỏ và Cấp vỏ). Danh sách **Đang chờ trả chứng từ chia 2 cột HẠ VỎ / CẤP VỎ**, mỗi cột có số lượt đang chờ.
 
 ### DEC-065 — Khóa = Remark Văn phòng; cont khóa vẫn hiện ở Cấp vỏ; Excel Tồn vỏ
 

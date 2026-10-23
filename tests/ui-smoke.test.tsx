@@ -165,8 +165,8 @@ describe('DEC-062/064: mẫu in phiếu thu thống nhất; Trả chứng từ 2
     expect(renderToString(<ReceiptPrintSheet state={s} receipt={r} printNo={2} />)).toContain('BẢN IN LẠI');
 
     const ret = renderToString(<DocumentReturnWorkspace state={office} onUpdateState={noop} />);
-    expect(ret.replace(/<!-- -->/g, '')).toContain('TRẢ CHỨNG TỪ HẠ VỎ');
-    expect(ret.replace(/<!-- -->/g, '')).toContain('TRẢ CHỨNG TỪ CẤP VỎ');
+    expect(ret.replace(/<!-- -->/g, '')).toContain('Đang chờ TRẢ CHỨNG TỪ HẠ VỎ');
+    expect(ret.replace(/<!-- -->/g, '')).toContain('Đang chờ TRẢ CHỨNG TỪ CẤP VỎ');
     expect(renderToString(<CompanyCatalog state={as(base, 'usr-admin')} onUpdateState={noop} />)).toContain('Lưu thông tin công ty');
   });
 });

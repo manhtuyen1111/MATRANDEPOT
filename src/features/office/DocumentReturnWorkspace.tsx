@@ -3,7 +3,7 @@ import { FileCheck2, Printer, QrCode, X } from 'lucide-react';
 import { K80InternalTicket } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import { recordReceiptPrint } from '../../services/depotOperations';
-import { confirmDocumentsReturn, DocumentPack, findTicketByQr, getDriverRoute, ticketsAwaitingReturn } from '../../services/driverRoute';
+import { confirmDocumentsReturn, DocumentPack, getDriverRoute, ticketsAwaitingReturn } from '../../services/driverRoute';
 import { formatDateTime } from '../../services/datetime';
 import { ContainerNo, Feedback, inputCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
 import { CompanyHeader, ReceiptPrintSheet } from '../../components/ReceiptPrint';
@@ -11,26 +11,19 @@ import { CompanyHeader, ReceiptPrintSheet } from '../../components/ReceiptPrint'
 type Mode = 'HA_VO' | 'CAP_VO';
 const MODE_LABEL: Record<Mode, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP VỎ' };
 
-// VĂN PHÒNG — TRẢ CHỨNG TỪ (DEC-052, DEC-064): 2 phần HẠ VỎ / CẤP VỎ; quét QR K80 → in EEIR + phiếu thu
+// VĂN PHÒNG — TRẢ CHỨNG TỪ (DEC-052, DEC-064): 1 ô quét chung; danh sách chờ chia 2 cột HẠ VỎ / CẤP VỎ
 export const DocumentReturnWorkspace: React.FC<{
   state: DepotState;
   onUpdateState: (next: DepotState) => void;
 }> = ({ state, onUpdateState }) => {
-  const [mode, setMode] = useState<Mode>('HA_VO');
   const [code, setCode] = useState('');
   const [pack, setPack] = useState<DocumentPack | null>(null);
   const [error, setError] = useState<string | null>(null);
   const allWaiting = ticketsAwaitingReturn(state);
-  const waiting = allWaiting.filter((t) => t.operationMode === mode);
-  const countOf = (m: Mode) => allWaiting.filter((t) => t.operationMode === m).length;
 
   const confirm = (raw: string) => {
     setError(null);
     try {
-      const t = findTicketByQr(state, raw);
-      if (t && t.operationMode !== mode) {
-        throw new Error(`Phiếu này là ${MODE_LABEL[t.operationMode as Mode]} — chuyển sang phần TRẢ CHỨNG TỪ ${MODE_LABEL[t.operationMode as Mode]}.`);
-      }
       const res = confirmDocumentsReturn(state, { scannedQrCode: raw });
       // In tự động bộ chứng từ = 1 lần in của mỗi phiếu thu kèm theo (DEC-063)
       let next = res.state;
@@ -46,49 +39,45 @@ export const DocumentReturnWorkspace: React.FC<{
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="Loại trả chứng từ">
-        {(['HA_VO', 'CAP_VO'] as Mode[]).map((m) => (
-          <button
-            key={m}
-            type="button"
-            role="tab"
-            aria-selected={mode === m}
-            onClick={() => { setMode(m); setError(null); setPack(null); }}
-            className={`rounded-lg border px-4 py-3 text-left text-sm font-black ${mode === m ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
-          >
-            TRẢ CHỨNG TỪ {MODE_LABEL[m]}
-            <span className={`ml-2 rounded px-1.5 py-0.5 text-[11px] ${mode === m ? 'bg-white/20' : 'bg-slate-100'}`}>{countOf(m)} chờ</span>
-          </button>
-        ))}
-      </div>
-
       <Feedback error={error} onClose={() => setError(null)} />
-      <SectionCard title={`Trả chứng từ ${MODE_LABEL[mode]} — quét mã QR phiếu K80`} icon={<QrCode className="h-4 w-4 text-slate-500" />}>
+      <SectionCard title="Trả chứng từ — quét mã QR phiếu K80" icon={<QrCode className="h-4 w-4 text-slate-500" />}>
         <form onSubmit={(e) => { e.preventDefault(); confirm(code); }} className="flex gap-2">
           <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} autoFocus placeholder="Quét mã QR K80 / mã hồ sơ..." className={`${inputCls} py-2.5 font-mono text-sm uppercase`} />
           <button type="submit" disabled={!code.trim()} className={`${primaryBtn} shrink-0`}>Xác nhận & in</button>
         </form>
-        <p className="mt-2 text-[11px] text-slate-500">Chỉ trả được khi lái xe đã đi đủ các bộ phận trên lộ trình. Hệ thống tự in EEIR và phiếu thu (nếu có); mỗi lần in phiếu thu được ghi nhận.</p>
+        <p className="mt-2 text-[11px] text-slate-500">Quét được cả phiếu Hạ vỏ và Cấp vỏ. Chỉ trả được khi lái xe đã đi đủ các bộ phận trên lộ trình. Hệ thống tự in EEIR và phiếu thu (nếu có); mỗi lần in phiếu thu được ghi nhận.</p>
       </SectionCard>
 
-      <SectionCard title={`Đang chờ trả chứng từ ${MODE_LABEL[mode]} (${waiting.length})`} icon={<FileCheck2 className="h-4 w-4 text-slate-500" />}>
-        {waiting.length === 0 ? (
-          <p className="text-xs text-slate-500">Không có lái xe nào đang chờ.</p>
-        ) : (
-          <ul className="divide-y divide-slate-100 text-xs">
-            {waiting.map((t) => (
-              <li key={t.ticketCode} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span className="flex flex-wrap items-center gap-2">
-                  <ContainerNo no={t.containerNo} />
-                  <span className="font-mono text-slate-600">{t.outDossierCode || t.masterDossierCode}</span>
-                  <span className="text-slate-600">Xe {t.truckNo || '-'} • {t.driverPhone || '-'}</span>
-                </span>
-                <button type="button" onClick={() => confirm(t.qrCode)} className={secondaryBtn}>Trả chứng từ</button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </SectionCard>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {(['HA_VO', 'CAP_VO'] as Mode[]).map((m) => {
+          const waiting = allWaiting.filter((t) => t.operationMode === m);
+          return (
+            <SectionCard
+              key={m}
+              title={`Đang chờ TRẢ CHỨNG TỪ ${MODE_LABEL[m]}`}
+              icon={<FileCheck2 className="h-4 w-4 text-slate-500" />}
+              right={<span className="rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white">{waiting.length}</span>}
+            >
+              {waiting.length === 0 ? (
+                <p className="text-xs text-slate-500">Không có lái xe nào đang chờ.</p>
+              ) : (
+                <ul className="divide-y divide-slate-100 text-xs">
+                  {waiting.map((t) => (
+                    <li key={t.ticketCode} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <ContainerNo no={t.containerNo} />
+                        <span className="font-mono text-slate-600">{t.outDossierCode || t.masterDossierCode}</span>
+                        <span className="text-slate-600">Xe {t.truckNo || '-'} • {t.driverPhone || '-'}</span>
+                      </span>
+                      <button type="button" onClick={() => confirm(t.qrCode)} className={secondaryBtn}>Trả chứng từ</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </SectionCard>
+          );
+        })}
+      </div>
 
       {pack && <DocumentPackPrint state={state} pack={pack} onClose={() => setPack(null)} />}
     </div>
