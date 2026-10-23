@@ -18,4 +18,8 @@
   .no-print {
     display: none !important;
   }
+  /* DEC-072: đang in từ lớp in riêng (PrintPortal) thì chỉ in đúng lệnh đó */
+  body:has(.print-job) .print-area:not(.print-job) {
+    display: none !important;
+  }
 }

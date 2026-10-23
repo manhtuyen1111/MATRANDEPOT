@@ -20,7 +20,7 @@ import { UserRoleCatalog } from '../src/features/catalog/UserRoleCatalog';
 import { DocumentReturnWorkspace } from '../src/features/office/DocumentReturnWorkspace';
 import { K80TicketModal } from '../src/components/K80TicketModal';
 import { CompanyCatalog } from '../src/features/catalog/CompanyCatalog';
-import { ReceiptPrintSheet } from '../src/components/ReceiptPrint';
+import { EeirPrintSheet, ReceiptPrintSheet } from '../src/components/ReceiptPrint';
 import { confirmGateInPaymentAndComplete, recordGateInFieldStep, toggleContainerHold, verifyGateInOfficeAndCreatePayment } from '../src/services/depotOperations';
 
 // Smoke test: mỗi màn hình render được với dữ liệu mẫu, không ném lỗi khi render
@@ -246,5 +246,24 @@ describe('DEC-070: menu Vệ sinh không còn Nhập tàu; cont nhập tàu có 
     const html = renderToString(<FieldQueueWorkspaces mode="VS_CHO_VE_SINH" state={as(done, 'usr-cleaning')} onUpdateState={noop} />);
     expect(html).toContain('Chờ vệ sinh');
     expect(renderToString(<App />)).not.toContain('VS_NHAP_TAU');
+  });
+});
+
+describe('DEC-072: in EEIR đồng bộ với phiếu thu', () => {
+  it('Hồ sơ có nút In EEIR (không còn "In hồ sơ" in trang trắng); EEIR cùng khung với phiếu thu: công ty, Số, TÁC NGHIỆP, chữ ký', () => {
+    const s = createInitialState();
+    const t = s.k80Tickets[0];
+    expect(t).toBeTruthy();
+    const strip = (h: string) => h.replace(/<!-- -->/g, '');
+    const dossier = strip(renderToString(<MasterDossierModal masterDossierCode={t.masterDossierCode} state={s} onClose={noop} onUpdateState={noop} />));
+    expect(dossier).toContain('In EEIR');
+    expect(dossier).not.toContain('In hồ sơ');
+    const eeir = strip(renderToString(<EeirPrintSheet state={s} ticket={t} />));
+    expect(eeir).toContain(s.companyProfile.name);
+    expect(eeir).toContain('EEIR — PHIẾU GIAO NHẬN CONTAINER');
+    expect(eeir).toContain(`Số: ${t.operationMode === 'CAP_VO' ? t.outDossierCode : t.masterDossierCode}`);
+    expect(eeir).toMatch(/TÁC NGHIỆP: (HẠ|CẤP) VỎ/);
+    expect(eeir).toContain(t.containerNo);
+    expect(eeir).toContain('In lúc');
   });
 });

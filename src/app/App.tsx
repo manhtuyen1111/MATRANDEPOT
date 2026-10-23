@@ -442,6 +442,7 @@ export const App: React.FC = () => {
         state={state}
         onClose={() => setActiveDossierCode(null)}
         onOpenK80Ticket={setActiveK80Ticket}
+        onUpdateState={handleUpdateState}
         // DEC-051: link thẳng tới Văn phòng → Phiếu thu (chỉ khi user được vào menu Phiếu thu)
         onOpenReceipt={
           canOpenMenu(state.currentUser, 'VP_PHIEU_THU')

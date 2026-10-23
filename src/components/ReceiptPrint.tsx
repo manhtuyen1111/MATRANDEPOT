@@ -1,11 +1,19 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Printer } from 'lucide-react';
-import { CompanyProfile, PAYMENT_METHOD_LABELS, PaymentReceipt, RECEIPT_OPERATION_LABELS } from '../types/depot';
+import { CompanyProfile, K80InternalTicket, PAYMENT_METHOD_LABELS, PaymentReceipt, RECEIPT_OPERATION_LABELS } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
 import { receiptOperationOf } from '../services/payments';
 import { recordReceiptPrint } from '../services/depotOperations';
 import { formatDateTime } from '../services/datetime';
+import { getDriverRoute, ticketContext } from '../services/driverRoute';
 import { secondaryBtn } from './shared';
+
+// ============================================================================
+// GIẤY TỜ IN DÙNG CHUNG (DEC-062, DEC-063, DEC-072)
+//   Mọi giấy tờ cùng 1 khung: đầu CÔNG TY → TIÊU ĐỀ + Số → TÁC NGHIỆP → thông tin → bảng → chữ ký → "In lúc".
+//   EEIR và PHIẾU THU in cùng kích thước, cùng kiểu chữ để gửi khách hàng thành một bộ.
+// ============================================================================
 
 // Khối thông tin CÔNG TY dùng chung cho mọi giấy tờ in (DEC-062)
 export const CompanyHeader: React.FC<{ company: CompanyProfile; title: string; subtitle?: React.ReactNode }> = ({ company, title, subtitle }) => (
@@ -25,35 +33,74 @@ export const CompanyHeader: React.FC<{ company: CompanyProfile; title: string; s
   </div>
 );
 
-// MẪU IN PHIẾU THU THỐNG NHẤT (DEC-062, DEC-063) — dùng ở Văn phòng → Phiếu thu và Trả chứng từ
+// Khung giấy tờ: tiêu đề, số, tác nghiệp, nhãn in lại
+const PrintFrame: React.FC<{ state: DepotState; title: string; number: string; operation: string; reprintNo?: number; children: React.ReactNode }> = ({
+  state,
+  title,
+  number,
+  operation,
+  reprintNo,
+  children,
+}) => (
+  <section className="relative break-inside-avoid border-2 border-slate-800 bg-white p-4 text-xs text-slate-900 print:mb-4">
+    {reprintNo && reprintNo > 1 && (
+      <span className="absolute right-3 top-3 rounded border-2 border-rose-600 px-2 py-0.5 text-[11px] font-black text-rose-600">BẢN IN LẠI — LẦN {reprintNo}</span>
+    )}
+    <CompanyHeader
+      company={state.companyProfile}
+      title={title}
+      subtitle={
+        <>
+          <p className="font-mono text-sm font-bold">Số: {number}</p>
+          <p className="mt-1 inline-block bg-slate-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {operation}</p>
+        </>
+      }
+    />
+    {children}
+  </section>
+);
+
+const InfoGrid: React.FC<{ rows: [string, React.ReactNode, boolean?][] }> = ({ rows }) => (
+  <dl className="mt-3 grid grid-cols-[140px_1fr] gap-x-3 gap-y-1">
+    {rows.map(([label, value, mono]) => (
+      <React.Fragment key={label}>
+        <dt className="text-slate-600">{label}</dt>
+        <dd className={`font-semibold ${mono ? 'font-mono' : ''}`}>{value || '-'}</dd>
+      </React.Fragment>
+    ))}
+  </dl>
+);
+
+const Signatures: React.FC<{ left: string; right: string; rightName?: string }> = ({ left, right, rightName }) => (
+  <div className="mt-5 grid grid-cols-2 text-center">
+    <span>{left}<br /><br /><br />(Ký, ghi rõ họ tên)</span>
+    <span>{right}<br /><br /><br />{rightName || '(Ký, ghi rõ họ tên)'}</span>
+  </div>
+);
+
+const PrintFooter: React.FC<{ note?: string }> = ({ note }) => (
+  <p className="mt-2 text-center text-[10px] text-slate-500">In lúc {formatDateTime(new Date())}{note ? ` • ${note}` : ''}</p>
+);
+
+// ---------------------------------------------------------------------------
+// PHIẾU THU — mẫu duy nhất (DEC-062, DEC-063): Văn phòng → Phiếu thu, Trả chứng từ, Hồ sơ container
+// ---------------------------------------------------------------------------
 export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentReceipt; printNo?: number }> = ({ state, receipt: r, printNo }) => {
-  const company = state.companyProfile;
   const op = RECEIPT_OPERATION_LABELS[receiptOperationOf(state, r)];
   const tx = state.paymentTransactions.find((t) => t.id === r.transactionId);
   const voucher = r.voucherId ? state.vouchers.find((v) => v.id === r.voucherId) : undefined;
   return (
-    <section className="relative border-2 border-slate-800 bg-white p-4 text-xs text-slate-900">
-      {printNo && printNo > 1 && (
-        <span className="absolute right-3 top-3 rounded border-2 border-rose-600 px-2 py-0.5 text-[11px] font-black text-rose-600">BẢN IN LẠI — LẦN {printNo}</span>
-      )}
-      <CompanyHeader
-        company={company}
-        title="PHIẾU THU"
-        subtitle={
-          <>
-            <p className="font-mono text-sm font-bold">Số: {r.receiptNo}</p>
-            <p className="mt-1 inline-block bg-slate-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {op}</p>
-          </>
-        }
+    <PrintFrame state={state} title="PHIẾU THU" number={r.receiptNo} operation={op} reprintNo={printNo}>
+      <InfoGrid
+        rows={[
+          ['Bên thanh toán', r.payerName],
+          ['Mã hồ sơ', r.dossierCode || r.masterReceiptCode, true],
+          ['Số container', r.containerNo, true],
+          ['Chứng từ', r.voucherNo, true],
+          ['Hình thức', `${PAYMENT_METHOD_LABELS[r.method]}${r.providerTxRef ? ` • Mã GD ${r.providerTxRef}` : ''}`],
+          ['Thời gian thu', formatDateTime(tx?.confirmedAt || r.issuedAt), true],
+        ]}
       />
-      <dl className="mt-3 grid grid-cols-[140px_1fr] gap-x-3 gap-y-1">
-        <dt className="text-slate-600">Bên thanh toán</dt><dd className="font-semibold">{r.payerName}</dd>
-        <dt className="text-slate-600">Mã hồ sơ</dt><dd className="font-mono">{r.dossierCode || r.masterReceiptCode || '-'}</dd>
-        <dt className="text-slate-600">Số container</dt><dd className="font-mono font-bold">{r.containerNo || '-'}</dd>
-        <dt className="text-slate-600">Chứng từ</dt><dd className="font-mono">{r.voucherNo || '-'}</dd>
-        <dt className="text-slate-600">Hình thức</dt><dd>{PAYMENT_METHOD_LABELS[r.method]}{r.providerTxRef ? ` • Mã GD ${r.providerTxRef}` : ''}</dd>
-        <dt className="text-slate-600">Thời gian thu</dt><dd className="font-mono">{formatDateTime(tx?.confirmedAt || r.issuedAt)}</dd>
-      </dl>
       {voucher?.feeLines && voucher.feeLines.length > 0 && (
         <table className="mt-3 w-full border-collapse text-left">
           <thead>
@@ -67,17 +114,70 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
         </table>
       )}
       <p className="mt-2 text-right text-sm font-black">TỔNG THU: <span className="font-mono">{formatVnd(r.amount)}</span></p>
-      <div className="mt-5 grid grid-cols-2 text-center">
-        <span>Người nộp tiền<br /><br /><br />(Ký, ghi rõ họ tên)</span>
-        <span>Người thu tiền<br /><br /><br />{r.issuedBy}</span>
-      </div>
-      {company.bankAccount && <p className="mt-3 text-center text-[10px] text-slate-600">TK ngân hàng: {company.bankAccount}</p>}
-      <p className="mt-1 text-center text-[10px] text-slate-500">
-        In lúc {formatDateTime(new Date())}{printNo ? ` • lần in thứ ${printNo}` : ''}
-      </p>
-    </section>
+      <Signatures left="Người nộp tiền" right="Người thu tiền" rightName={r.issuedBy} />
+      {state.companyProfile.bankAccount && <p className="mt-3 text-center text-[10px] text-slate-600">TK ngân hàng: {state.companyProfile.bankAccount}</p>}
+      <PrintFooter note={printNo ? `lần in thứ ${printNo}` : undefined} />
+    </PrintFrame>
   );
 };
+
+// ---------------------------------------------------------------------------
+// EEIR — PHIẾU GIAO NHẬN CONTAINER (DEC-072): thông tin Hạ vỏ / Cấp vỏ chi tiết gửi khách hàng kèm phiếu thu
+// ---------------------------------------------------------------------------
+export const EeirPrintSheet: React.FC<{ state: DepotState; ticket: K80InternalTicket }> = ({ state, ticket: t }) => {
+  const { gateIn, gateOut } = ticketContext(state, t);
+  const isOut = t.operationMode === 'CAP_VO';
+  const dossierCode = isOut ? t.outDossierCode || t.masterDossierCode : t.masterDossierCode;
+  const container = state.containers.find((c) => c.masterDossierCode === t.masterDossierCode);
+  const loc = state.locationHistory.filter((l) => l.masterDossierCode === t.masterDossierCode);
+  const location = isOut
+    ? loc.find((l) => l.actionType === 'GATE_OUT_CLEAR')?.fromLocation
+    : [...loc].reverse().find((l) => l.actionType === 'INITIAL_BLOCK')?.toLocation;
+  const steps = getDriverRoute(state, t);
+  return (
+    <PrintFrame state={state} title="EEIR — PHIẾU GIAO NHẬN CONTAINER" number={dossierCode} operation={isOut ? 'CẤP VỎ' : 'HẠ VỎ'}>
+      <InfoGrid
+        rows={[
+          ['Số container', <span className="text-sm">{t.containerNo}</span>, true],
+          ['Size / Type', `${t.size} / ${t.type}`],
+          ['Hãng tàu', container?.shippingLineCode || gateIn?.shippingLineCode],
+          ['Trạng thái • Đóng hàng', `${t.conditionClass} • ${t.stuffingClass}`],
+          ['AGE', t.manufactureYear],
+          ...(t.damageRemarks?.length ? ([['Hư hỏng', t.damageRemarks.join(', ')]] as [string, React.ReactNode][]) : []),
+          ['Vệ sinh', (t.cleaningItems || []).join(' + ')],
+          ['Khách hàng', isOut ? gateOut?.receiverRep : t.customerRep],
+          ...(isOut ? ([['Booking', gateOut?.bookingNo, true]] as [string, React.ReactNode, boolean][]) : ([['Số lệnh / chứng từ', gateIn?.orderDocNo, true]] as [string, React.ReactNode, boolean][])),
+          ['Số xe • SĐT lái xe', `${t.truckNo || '-'} • ${t.driverPhone || '-'}`],
+          [isOut ? 'Thời gian OUT' : 'Thời gian GATE IN', formatDateTime(isOut ? gateOut?.confirmedAt : gateIn?.gateInOkAt), true],
+          [isOut ? 'Vị trí lấy' : 'Vị trí hạ', location, true],
+          ['Thanh toán', t.paymentLabel],
+        ]}
+      />
+      <table className="mt-3 w-full border-collapse text-left">
+        <thead>
+          <tr className="border-y border-slate-400"><th className="py-1">Bước</th><th className="py-1">Bộ phận</th><th className="py-1">Xác nhận</th></tr>
+        </thead>
+        <tbody>
+          {steps.map((s, i) => (
+            <tr key={s.key} className="border-b border-slate-200">
+              <td className="py-1">{i + 1}. {s.action}</td>
+              <td className="py-1 font-semibold">{s.dept}</td>
+              <td className="py-1">{s.done ? `✓ ${s.doneBy || ''} • ${formatDateTime(s.doneAt)}` : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <Signatures left="Lái xe / Khách hàng" right={`Đại diện ${state.companyProfile.shortName || state.companyProfile.name}`} />
+      <PrintFooter />
+    </PrintFrame>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// LỚP IN: gắn thẳng vào <body> để không bị cắt bởi cửa sổ (modal) đang mở; chỉ hiện khi in
+// ---------------------------------------------------------------------------
+export const PrintPortal: React.FC<{ children: React.ReactNode }> = ({ children }) =>
+  typeof document === 'undefined' ? null : createPortal(<div className="print-area print-job hidden space-y-4 print:block">{children}</div>, document.body);
 
 // Nút IN PHIẾU THU: ghi nhận số lần in; từ lần 2 phải xác nhận "in lại" (DEC-063)
 export const PrintReceiptButton: React.FC<{
