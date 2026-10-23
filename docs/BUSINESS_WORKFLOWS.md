@@ -171,6 +171,23 @@ Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 7. Cập nhật tồn bãi và lịch sử.
 8. Chặn xuất trùng hoặc xuất khi chưa đủ điều kiện.
 
+## 9A. NHẬP TÀU / XUẤT TÀU (DEC-069)
+
+Không thu phí, không phiếu thu, không phiếu K80, không Trả chứng từ. Mỗi container 1 hồ sơ `NT-` / `XT-`. Mọi bộ phận theo dõi tiến độ danh sách; hết danh sách → Văn phòng / Quản lý **Duyệt thành công**.
+
+### 9A.1. NHẬP TÀU
+1. **Văn phòng → Nhập tàu**: lập danh sách — tên tàu, thời gian nhập tàu, hãng tàu (bắt buộc), danh sách số xe, container (số cont – size – type, dán từ Excel được).
+2. **Giám định → Nhập tàu** (mobile): xe chở cont vào bãi → nhập số cont thực tế (phải khớp danh sách) → chọn số xe → Trạng thái DAMAGE / AV → Đóng hàng M / K / E → Vệ sinh (1 hoặc nhiều) → AGE → xác nhận. Hệ thống cấp `NT-YYMMDD-NNN`, tạo lượt lưu bãi.
+3. **Vệ sinh → Nhập tàu** (nếu có yêu cầu vệ sinh): vệ sinh và xác nhận.
+4. **Xe nâng → Nhập tàu**: hạ cont, cập nhật vị trí → cont **có trong Tồn vỏ ngay**, Văn phòng cấp vỏ được.
+5. DAMAGE: đồng thời vào Báo giá → Sửa chữa → AV (như Hạ vỏ).
+6. Hết danh sách → **Văn phòng → Nhập tàu: Duyệt nhập tàu thành công**.
+
+### 9A.2. XUẤT TÀU
+1. **Văn phòng → Xuất tàu**: lập danh sách chọn từ Tồn vỏ (số cont, size, type, trạng thái, phân loại, vị trí hiện tại...) — tên tàu, thời gian xuất tàu, danh sách số xe. Cont khóa / đã lập lệnh cấp / đã trong danh sách khác không chọn được. Hệ thống cấp `XT-YYMMDD-NNN` cho từng cont; cont trong danh sách không cấp vỏ được.
+2. **Giám định / Xe nâng → Xuất tàu** (mobile): chọn cont → gán số xe → xác nhận → cont OUT khỏi bãi.
+3. Hết danh sách → **Văn phòng → Xuất tàu: Duyệt xuất tàu thành công**. Cont còn chờ có thể được Văn phòng bỏ khỏi danh sách.
+
 ## 10. Quy trình tài chính và thanh toán
 
 ### 10.1. Ba loại hình thanh toán đã xác nhận

@@ -12,7 +12,7 @@ Trạng thái chi tiết từng việc: `devs/PROGRESS.md`.
 | 4 | Database Supabase | Viết lại schema, RPC, RLS, pgTAP; hiệu năng dữ liệu lớn theo DEC-066 (DATABASE_CONTRACT mục 10) | `supabase db reset` + `test db` xanh trên máy local | 🔄 Chuẩn bị xong tài liệu (DEC-050 → 066) — ⏸ chờ danh mục trạng thái (OPEN-003) |
 | 5 | Nối Supabase | Lớp gateway Demo/Supabase, đăng nhập, ảnh lên Storage | Luồng Hạ vỏ → Cấp vỏ chạy trên project test | ⏳ |
 | 6 | Thanh toán thật | Webhook ngân hàng (Edge Function), đối soát, hoàn tiền (OPEN-008) | PAY-003 → 007 đạt ở database | ⏳ |
-| 7 | Nhập tàu / Xuất tàu | Đặc tả + làm phân hệ (OPEN-001) | Quy trình được xác nhận + test | ⏳ |
+| 7 | Nhập tàu / Xuất tàu | Đặc tả + làm phân hệ (DEC-069) | Quy trình được xác nhận + test | 🔄 Xong bản Demo (2026-10-24) — chờ bạn thử trên trình duyệt; phần database làm cùng GĐ 4 |
 | 8 | Nghiệm thu người dùng | Chạy thử với nhân viên thật trên môi trường test | Bạn ký nghiệm thu từng phân hệ | ⏳ |
 | 9 | Vận hành | Production, sao lưu/khôi phục, CI GitHub Actions | Diễn tập khôi phục thành công | ⏳ |
 

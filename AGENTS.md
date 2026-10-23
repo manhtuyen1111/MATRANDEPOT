@@ -74,7 +74,7 @@ Một việc chỉ "xong" khi:
 
 - **Vai trò (8):** Giám định, Văn phòng, Xe nâng, Vệ sinh, Báo giá, Quản lý, Admin, Sửa chữa. **Không** thêm lại Kế toán, Nhân viên cổng, Nhân viên hiện trường, QC Sửa chữa (DEC-047, DEC-049). Vai trò mới phải được người dùng xác nhận.
 - **Mỗi vai trò chỉ thấy màn của mình** — cấu hình duy nhất ở `MENU_ACCESS` (`src/services/permissions.ts`). Văn phòng / Quản lý là khối văn phòng; Admin thấy tất cả (DEC-045).
-- **Tác nghiệp mobile** (hiện trường dùng điện thoại): Giám định – Hạ vỏ, Vệ sinh, Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ / **Đảo chuyển**), Sửa chữa.
+- **Tác nghiệp mobile** (hiện trường dùng điện thoại): Giám định – Hạ vỏ / **Nhập tàu** / **Xuất tàu**, Vệ sinh – Chờ vệ sinh / **Nhập tàu**, Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ / **Đảo chuyển** / **Nhập tàu** / **Xuất tàu**), Sửa chữa — tổng **11** biểu tượng mobile.
   - Tiêu đề thống nhất: dòng nhỏ "Bộ phận ..." + tên màn + ô số lượng đang chờ (không thêm mô tả dài).
   - Màn quét mã của Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ) dùng chung **một khung nền đậm**: số container chữ rất lớn → Size / Type + (Trạng thái / Đóng hàng hoặc Vị trí hiện tại). Không lặp lại các thông tin này ở bên dưới (DEC-061).
   - Khung `mx-auto w-full max-w-lg`, một cột, nút lớn, danh sách dạng thẻ (không dùng bảng rộng), "Xem thêm" thay phân trang, phần đang thao tác đặt trên cùng.
@@ -94,3 +94,4 @@ Một việc chỉ "xong" khi:
 - **Khóa container (DEC-030, DEC-065):** nội dung khóa = Remark Văn phòng (`officeNote`). Cấp vỏ hiển thị cả cont khóa (`blockedOnlyByHold`) nhưng không cho chọn — phải mở khóa trước.
 - **Tồn vỏ (DEC-067):** không có cột Thao tác — khóa tại icon cạnh số cont (đỏ / xám mờ); sửa vị trí, ghi chú bằng bút canh phải trong ô; LƯU BÃI = `storageDays` (ngày hạ = 0). Thao tác hàng loạt phải đi qua hàm `bulk…` trong service (gọi lại hàm đơn lẻ), không tự lặp ở giao diện.
 - **Mã hồ sơ (DEC-068):** `HV-` Hạ vỏ, `CV-` Cấp vỏ, `NT-` Nhập tàu, `XT-` Xuất tàu, `PT-` Phiếu thu, `PTT-` Phiếu thu trước. Mã cũ được đổi tự động khi nạp dữ liệu (`renameLegacyCodes`). Không viết cứng tiền tố ở giao diện.
+- **Nhập tàu / Xuất tàu (DEC-069):** nghiệp vụ chỉ ở `src/services/vessel.ts`. Không thu phí, không K80, không Trả chứng từ. Cont NHẬP TÀU sau Giám định đi **chung hàng chờ Vệ sinh / Xe nâng của Hạ vỏ** (không viết luồng riêng); menu Nhập tàu của Vệ sinh / Xe nâng = `FieldQueueWorkspaces` với `vesselOnly`. Bước hạ cont gọi `markVesselImportPlaced` trong `updateContainerLocation`. Cont trong danh sách XUẤT TÀU bị `releaseBlocker` chặn cấp vỏ. Hồ sơ NT- / XT- hiển thị trong `MasterDossierModal` (bước sau khi vào bãi dùng chung `renderYardSteps`).

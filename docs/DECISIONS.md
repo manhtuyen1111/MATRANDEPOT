@@ -272,7 +272,7 @@ Quy ước trạng thái:
 
 ### DEC-038 — NHẬP TÀU / XUẤT TÀU
 
-- Trạng thái: CONFIRMED (2026-10-22)
+- Trạng thái: SUPERSEDED bởi DEC-069 (2026-10-24)
 - Quyết định: Để giai đoạn sau. Menu vẫn hiển thị nhưng màn hình không ghi nhận dữ liệu cho tới khi quy trình chi tiết được xác nhận (OPEN-001).
 
 ### DEC-040 — Báo giá chỉ cần REMARK SỬA CHỮA (giải quyết OPEN-007)
@@ -494,6 +494,29 @@ Quy ước trạng thái:
   - **Đổi cả mã cũ** (người dùng chọn): khi nạp dữ liệu, `IN-`/`HS-` → `HV-`, `OUT-`/`GO-` → `CV-`, `PTM-` → `PTT-` trên toàn bộ dữ liệu (mã, QR `QR-<mã>`, nội dung nhật ký, bộ đếm) — `renameLegacyCodes` trong `src/services/codes.ts`. Phần số giữ nguyên.
   - Mã chỉ cấp qua `allocateCode` (`codes.ts`). Tác nghiệp mới phải thêm tiền tố vào bảng này trước.
 
+### DEC-069 — NHẬP TÀU / XUẤT TÀU (thay DEC-038, giải quyết phần NHẬP TÀU của OPEN-001)
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Chung:
+  - Tác nghiệp theo **danh sách tàu** do **Văn phòng / Quản lý** lập: TÊN TÀU, THỜI GIAN NHẬP / XUẤT TÀU, DANH SÁCH SỐ XE, danh sách container.
+  - **Mỗi container 1 hồ sơ**: `NT-YYMMDD-NNN` / `XT-YYMMDD-NNN` (DEC-068); hồ sơ hiển thị cùng cấu trúc Hạ vỏ / Cấp vỏ (DEC-058).
+  - **Không thu phí, không phiếu thu, không phiếu K80, không Trả chứng từ.**
+  - Mọi bộ phận liên quan có menu riêng và **theo dõi tiến độ** danh sách (xong / chờ). Hết danh sách → **Văn phòng / Quản lý DUYỆT thành công** (chỉ duyệt khi đã xong 100%). Danh sách đã duyệt không thao tác thêm.
+  - Văn phòng được **bỏ container còn chờ** khỏi danh sách (chưa tác nghiệp).
+  - Màn hiện trường tối ưu mobile (`max-w-lg`, nút lớn, "Xem thêm").
+- **NHẬP TÀU** — bộ phận: Văn phòng, Giám định, Vệ sinh, Xe nâng.
+  - Văn phòng lập danh sách: tên tàu, thời gian, **HÃNG TÀU bắt buộc (1 hãng / danh sách)**, số xe, container (SỐ CONT – SIZE – TYPE; dán từ Excel được). Chặn cont đang tồn bãi / đang có hồ sơ Hạ vỏ / đang chờ ở danh sách nhập tàu khác.
+  - **Giám định** (mobile): xác nhận **số cont về thực tế** (phải khớp danh sách), **chọn số xe** (trong danh sách xe), **TRẠNG THÁI DAMAGE / AV***, **ĐÓNG HÀNG M / K / E***, **TÌNH TRẠNG VỆ SINH*** (1 hoặc nhiều), **AGE*** → cấp mã NT-, tạo lượt lưu bãi.
+  - **Vệ sinh** (nếu có) → **Xe nâng hạ cont + cập nhật vị trí** — dùng chung hàng chờ và hàm của Hạ vỏ (menu "Nhập tàu" của Vệ sinh / Xe nâng chỉ lọc cont NT-).
+  - Cont xong bước Xe nâng → **có trong Tồn vỏ ngay**, Văn phòng **Cấp vỏ được ngay**.
+  - **DAMAGE như Hạ vỏ**: vào hàng chờ Báo giá → Sửa chữa → AV.
+- **XUẤT TÀU** — bộ phận: Văn phòng, Giám định, Xe nâng.
+  - Văn phòng lập danh sách **chọn từ Tồn vỏ**, hiển thị đủ: số cont, size, type, hãng tàu, trạng thái, phân loại, vị trí hiện tại, lưu bãi, ghi chú. Được chọn **mọi cont đang tồn bãi**, trừ: cont **đang khóa**, đã lập lệnh cấp vỏ, đã nằm trong danh sách xuất tàu khác (hiện lý do, không chọn được).
+  - Cont đã vào danh sách xuất tàu thì **không Cấp vỏ được** cho tới khi bỏ khỏi danh sách.
+  - **Giám định / Xe nâng** (mobile): chọn container → **gán số xe** (trong danh sách xe) → cont **OUT khỏi bãi** (lịch sử vị trí "XUẤT TÀU <tàu> (<xe>)"); các việc Vệ sinh / Báo giá / Sửa chữa còn mở của lượt lưu bãi được đóng. Cont bị khóa sau khi lập danh sách → phải mở khóa trước khi xuất.
+- Báo cáo: **Báo cáo → Nhập tàu / Xuất tàu** (lọc theo thời gian nhập / xuất tàu, tên tàu, số cont; phân trang; Excel). Báo cáo Tổng hợp: sheet NHẬP VỎ / XUẤT VỎ lấy từ dữ liệu này.
+- Code: `src/services/vessel.ts`; quyền `VESSEL_LIST_MANAGE`, `VESSEL_IMPORT_INSPECT`, `VESSEL_EXPORT_EXECUTE`.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -527,7 +550,7 @@ Quy ước trạng thái:
 ### OPEN-001 — Danh mục loại Gate In bổ sung và chi tiết nghiệp vụ NHẬP TÀU
 
 - Trạng thái: OPEN
-- Đã xác nhận: Khách hàng trả container rỗng theo lệnh hãng tàu và `NHẬP TÀU` (module riêng xây dựng sau).
+- Đã xác nhận: Khách hàng trả container rỗng theo lệnh hãng tàu và `NHẬP TÀU` (module riêng xây dựng sau). **Quy trình NHẬP TÀU đã chốt ở DEC-069 (2026-10-24).**
 - Cần xác nhận: Còn loại tiếp nhận nào khác cần hỗ trợ trong giai đoạn đầu không và quy trình chi tiết của module `NHẬP TÀU` khi triển khai.
 
 ### OPEN-002 — Mô hình vị trí bãi chi tiết
@@ -583,6 +606,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-068 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-069 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
