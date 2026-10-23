@@ -781,7 +781,7 @@ export function toggleContainerHold(
   assertPermission(state, 'CONTAINER_LOCK', 'chỉ Văn phòng / Quản lý được khóa / mở khóa container.');
   const reason = input.reason.trim();
   if (!reason) {
-    throw new Error(input.hold ? 'Bắt buộc nhập GHI CHÚ khi khóa container.' : 'Bắt buộc nhập ghi chú khi mở khóa container.');
+    throw new Error(input.hold ? 'Bắt buộc nhập REMARK VĂN PHÒNG khi khóa container.' : 'Bắt buộc nhập ghi chú khi mở khóa container.');
   }
   const container = findActiveContainer(state, input.containerNo);
   if (!container) throw new Error('Không tìm thấy container đang tồn bãi.');
@@ -793,6 +793,8 @@ export function toggleContainerHold(
     holdReason: input.hold ? reason : undefined,
     holdBy: input.hold ? state.currentUser.fullName : undefined,
     holdAt: input.hold ? nowIso() : undefined,
+    // DEC-065: nội dung khóa chính là Remark Văn phòng (ghi chú tồn vỏ)
+    ...(input.hold ? { officeNote: reason, officeNoteUpdatedBy: state.currentUser.fullName, officeNoteUpdatedAt: nowIso() } : {}),
   });
   return appendAudit(
     next,
@@ -817,6 +819,11 @@ export function releaseBlocker(c: ContainerRecord): string | null {
   if (c.needsCleaning) return 'Chưa xác nhận vệ sinh';
   if (c.conditionClass === 'AV' && (c.needsQuotation || c.needsRepair)) return 'Chưa hoàn tất báo giá / sửa chữa';
   return null;
+}
+
+// DEC-065: container chỉ vướng KHÓA — vẫn hiện ở Cấp vỏ nhưng phải mở khóa trước khi cấp
+export function blockedOnlyByHold(c: ContainerRecord): boolean {
+  return Boolean(c.isOnHold) && releaseBlocker({ ...c, isOnHold: false }) === null;
 }
 
 export interface BookingSummary {

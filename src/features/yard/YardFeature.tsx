@@ -4,10 +4,13 @@ import { DepotState } from '../../services/depotStore';
 import { correctContainerLocation, toggleContainerHold, updateContainerOfficeNote } from '../../services/depotOperations';
 import { formatLocation, getContainerProgress, PROGRESS_LABELS } from '../../services/core';
 import { can } from '../../services/permissions';
+import { yardStockSheet } from '../../services/reports';
+import { fileStamp, formatDateTime } from '../../services/datetime';
 import { ContainerRecord, FieldConditionClass, K80InternalTicket } from '../../types/depot';
 import {
   ContainerNo,
   EMPTY_SLOT,
+  ExportExcelButton,
   Feedback,
   inputCls,
   isSlotComplete,
@@ -86,7 +89,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
     e.stopPropagation();
     setPanel(panel?.id === c.id && panel.kind === kind ? null : { id: c.id, kind });
     setSlot(EMPTY_SLOT);
-    setLockNote('');
+    setLockNote(kind === 'LOCK' && !c.isOnHold ? c.officeNote || '' : '');
   };
 
   return (
@@ -126,6 +129,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
               <option value="DAMAGE">DAMAGE</option>
             </select>
           </label>
+          <ExportExcelButton fileName={`MATRAN_TON_VO_${fileStamp(formatDateTime(new Date()))}.xlsx`} disabled={filtered.length === 0} getSheets={() => [yardStockSheet(filtered)]} />
         </div>
       </div>
 
@@ -245,8 +249,8 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                           ) : (
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                               <label className="flex-1">
-                                <span className={labelCls}>{c.isOnHold ? 'Ghi chú mở khóa *' : 'Ghi chú khóa *'}</span>
-                                <input value={lockNote} onChange={(e) => setLockNote(e.target.value)} placeholder={c.isOnHold ? `Đang khóa: ${c.holdReason}` : 'Lý do khóa container...'} className={inputCls} />
+                                <span className={labelCls}>{c.isOnHold ? 'Ghi chú mở khóa *' : 'Remark Văn phòng (lý do khóa) *'}</span>
+                                <input value={lockNote} onChange={(e) => setLockNote(e.target.value)} placeholder={c.isOnHold ? `Đang khóa: ${c.holdReason}` : 'Remark Văn phòng — ghi vào cột Ghi chú văn phòng'} className={inputCls} />
                               </label>
                               <button
                                 type="button"

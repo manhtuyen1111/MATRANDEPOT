@@ -318,7 +318,7 @@ describe('CR-01/CR-02: ĐẢO CHUYỂN, SỬA VỊ TRÍ, KHÓA CONTAINER', () =>
 
   it('KHÓA: bắt buộc ghi chú; bị khóa thì không CẤP VỎ, vẫn ĐẢO CHUYỂN & SỬA VỊ TRÍ được', () => {
     let s = as(createInitialState(), 'usr-office');
-    expect(() => toggleContainerHold(s, { containerNo: 'MSKU4089123', hold: true, reason: '  ' })).toThrow(/GHI CHÚ/);
+    expect(() => toggleContainerHold(s, { containerNo: 'MSKU4089123', hold: true, reason: '  ' })).toThrow(/REMARK VĂN PHÒNG/);
     s = toggleContainerHold(s, { containerNo: 'MSKU4089123', hold: true, reason: 'Hãng tàu yêu cầu giữ' });
     const c = s.containers.find((x) => x.containerNo === 'MSKU4089123')!;
     expect(c.isOnHold).toBe(true);
@@ -810,5 +810,29 @@ describe('DEC-062 / DEC-063: thông tin công ty; theo dõi số lần in phiế
     let n = res.state;
     for (const r of res.pack.receipts) n = recordReceiptPrint(n, { receiptNo: r.receiptNo });
     expect(n.paymentReceipts[0].printLog).toHaveLength(1);
+  });
+});
+
+describe('DEC-065: khóa = Remark Văn phòng; cont khóa vẫn hiện ở Cấp vỏ; Excel Tồn vỏ', () => {
+  it('Khóa ghi vào Remark Văn phòng; cont chỉ vướng khóa vẫn hiện nhưng phải mở khóa mới cấp được', async () => {
+    const { blockedOnlyByHold, releaseBlocker } = await import('../src/services/depotOperations');
+    const { yardStockSheet } = await import('../src/services/reports');
+    let s = toggleContainerHold(as(createInitialState(), 'usr-office'), { containerNo: 'MSKU4089123', hold: true, reason: 'Giữ theo yêu cầu hãng tàu' });
+    let c = s.containers.find((x) => x.containerNo === 'MSKU4089123')!;
+    expect(c.officeNote).toBe('Giữ theo yêu cầu hãng tàu');
+    expect(blockedOnlyByHold(c)).toBe(true);
+    expect(releaseBlocker(c)).toMatch(/KHÓA/);
+    const sheet = yardStockSheet([c]);
+    expect(sheet.rows[0]).toContain('ĐANG KHÓA');
+    expect(sheet.rows[0]).toContain('Giữ theo yêu cầu hãng tàu');
+    s = toggleContainerHold(s, { containerNo: 'MSKU4089123', hold: false, reason: 'Hãng tàu cho cấp' });
+    c = s.containers.find((x) => x.containerNo === 'MSKU4089123')!;
+    expect(blockedOnlyByHold(c)).toBe(false);
+    expect(releaseBlocker(c)).toBeNull();
+    s = createReleaseOrder(s, {
+      bookingNo: 'BK-NEW-2', customerName: VIETLOG, containerNo: 'MSKU4089123', truckNo: '15H-2', driverPhone: '0912345678',
+      feeCatalogIds: [FEE_LOLO_40HC_MSK],
+    });
+    expect(s.gateOutOrders[0].containerNo).toBe('MSKU4089123');
   });
 });

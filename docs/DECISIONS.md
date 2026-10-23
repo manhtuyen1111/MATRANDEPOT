@@ -446,6 +446,14 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-23)
 - Quyết định: Văn phòng → Trả chứng từ có 2 phần (tab) **TRẢ CHỨNG TỪ HẠ VỎ** và **TRẢ CHỨNG TỪ CẤP VỎ**, mỗi phần có ô quét mã và danh sách đang chờ riêng (kèm số lượng). Quét phiếu khác loại → báo chuyển sang đúng phần.
 
+### DEC-065 — Khóa = Remark Văn phòng; cont khóa vẫn hiện ở Cấp vỏ; Excel Tồn vỏ
+
+- Trạng thái: CONFIRMED (2026-10-23) — bổ sung DEC-030
+- Quyết định:
+  - Khi KHÓA container, nội dung bắt buộc là **REMARK VĂN PHÒNG** (ghi thẳng vào cột Ghi chú văn phòng ở Tồn vỏ), không phải một ghi chú riêng.
+  - Văn phòng → Cấp vỏ: container **đang khóa vẫn hiển thị** trong danh sách (biểu tượng khóa + nhãn), nhưng **không chọn để cấp được** — phải mở khóa ở Tồn vỏ trước.
+  - Tồn vỏ có nút **Xuất Excel** (theo bộ lọc đang chọn; gồm cột khóa, người khóa, Remark Văn phòng).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -535,6 +543,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-064 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-065 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

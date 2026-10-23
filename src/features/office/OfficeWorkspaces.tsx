@@ -15,6 +15,7 @@ import {
   gateInContainerConflict,
   getBookingSummary,
   releaseAllocatedContainer,
+  blockedOnlyByHold,
   releaseBlocker,
   simulateDemoBankTransfer,
   verifyGateInOfficeAndCreatePayment,
@@ -341,7 +342,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
   const ready = useMemo(
     () =>
       state.containers
-        .filter((c) => releaseBlocker(c) === null)
+        .filter((c) => releaseBlocker(c) === null || blockedOnlyByHold(c))
         .filter((c) => !filters.search.trim() || c.containerNo.includes(filters.search.trim().toUpperCase()))
         .filter((c) => filters.line === 'ALL' || c.shippingLineCode === filters.line)
         .filter((c) => filters.size === 'ALL' || c.size === filters.size)
@@ -570,10 +571,13 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                   ready.map((c) => (
                     <tr
                       key={c.id}
-                      onClick={() => { setSelectedContainerId(c.id); setFeeIds([]); }}
-                      className={`cursor-pointer ${selectedContainerId === c.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                      onClick={() => {
+                        if (c.isOnHold) { setError(`Container ${c.containerNo} đang KHÓA (${c.officeNote || c.holdReason || ""}) — mở khóa ở Tồn vỏ trước khi cấp.`); return; }
+                        setError(null); setSelectedContainerId(c.id); setFeeIds([]);
+                      }}
+                      className={`${c.isOnHold ? "cursor-not-allowed bg-rose-50/60 text-slate-500" : "cursor-pointer"} ${selectedContainerId === c.id ? "bg-blue-50" : c.isOnHold ? "" : "hover:bg-slate-50"}`}
                     >
-                      <td className="py-2 pr-2"><ContainerNo no={c.containerNo} /></td>
+                      <td className="py-2 pr-2"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.officeNote || c.holdReason} />{c.isOnHold && <span className="ml-1 text-[10px] font-bold text-rose-700">KHÓA — mở khóa trước khi cấp</span>}</td>
                       <td className="py-2 pr-2">{c.size}/{c.type}</td>
                       <td className="py-2 pr-2">{c.shippingLineCode}</td>
                       <td className={`py-2 pr-2 font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>

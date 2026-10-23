@@ -405,3 +405,15 @@ export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData 
     ]),
   };
 }
+
+// Sheet TỒN VỎ (DEC-065)
+export function yardStockSheet(rows: ContainerRecord[]): SheetData {
+  return {
+    name: 'TỒN VỎ',
+    columns: ['MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'TRẠNG THÁI', 'ĐÓNG HÀNG', 'VỊ TRÍ', 'GATE IN', 'KHÓA', 'NGƯỜI KHÓA', 'KHÓA LÚC', 'REMARK VĂN PHÒNG'],
+    rows: rows.map((c) => [
+      c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, c.conditionClass, c.stuffingClass, formatLocation(c),
+      fmt(c.gateInAt), c.isOnHold ? 'ĐANG KHÓA' : '', c.holdBy || '', fmt(c.holdAt), c.officeNote || '',
+    ]),
+  };
+}
