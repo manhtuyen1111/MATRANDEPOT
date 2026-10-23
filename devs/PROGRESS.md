@@ -4,10 +4,10 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-079), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069), hoàn thiện màn Văn phòng dạng danh sách → chi tiết, sửa / thêm / xóa khi chưa duyệt, sắp xếp + tìm kiếm (DEC-070), màn hiện trường có theo dõi đã làm / chờ làm (DEC-071); **sửa In hồ sơ trang trắng → In EEIR, EEIR đồng bộ khung với phiếu thu** (DEC-072). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-080), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069), hoàn thiện màn Văn phòng dạng danh sách → chi tiết, sửa / thêm / xóa khi chưa duyệt, sắp xếp + tìm kiếm (DEC-070), màn hiện trường có theo dõi đã làm / chờ làm (DEC-071); **sửa In hồ sơ trang trắng → In EEIR, EEIR đồng bộ khung với phiếu thu** (DEC-072). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
 
 **Điểm dừng 2026-10-24:** đã **push đầy đủ lên GitHub** (DEC-050 → DEC-069). Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
-Kiểm thử mới nhất: `npm test` **81/81 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+Kiểm thử mới nhất: `npm test` **83/83 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
@@ -44,7 +44,7 @@ Kiểm thử mới nhất: `npm test` **81/81 pass** (3 file test) • `npm run 
 | Vị trí / Khóa / Tồn vỏ | Đảo chuyển (Xe nâng, có lịch sử); Sửa vị trí = bút ở cột Vị trí (Văn phòng, không lịch sử); **Khóa tại icon cạnh số cont** (đỏ = khóa, xám mờ = không), bắt buộc ghi chú → ghi vào cột **GHI CHÚ** (nền vàng); không có cột Thao tác; cột **DATE IN** (giữa Hãng tàu và Trạng thái) và **LƯU BÃI** = số ngày từ gate in (ngày hạ = 0); **tìm / khóa / ghi chú hàng loạt**; cont khóa vẫn hiện ở Cấp vỏ nhưng phải mở khóa trước; Excel Tồn vỏ đủ cột; Block do Admin cấu hình | 030, 036, 050, 065, 067, 074 |
 | Mã hồ sơ / QR | Ký tự đầu = tác nghiệp: **HV-** Hạ vỏ, **CV-** Cấp vỏ, **NT-** Nhập tàu, **XT-** Xuất tàu (`XX-YYMMDD-NNN`), **PT-** Phiếu thu, **PTT-** Phiếu thu trước (`XX-YYYY-…`); mã cũ IN- / OUT- / PTM- tự đổi khi nạp; QR K80 = `QR-<mã hồ sơ>` (duy nhất), **đóng sau khi trả chứng từ** | 037, 057, 068 |
 | Hồ sơ container | Đầu: thông tin container (số cont lớn) → các bộ phận theo thứ tự, xác nhận ✓ HOÀN THÀNH bên phải → **Thanh toán 1 mục riêng dưới Văn phòng**, link phiếu thu | 058 |
-| Báo cáo | Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp 5 sheet — bắt buộc lọc, phân trang; **Xuất Excel .xlsx theo bộ lọc** ở mọi báo cáo + Phiếu thu | 044, 046, 050, 055 |
+| Báo cáo | Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp 5 sheet — bắt buộc lọc, phân trang; **Xuất Excel .xlsx theo bộ lọc** ở mọi báo cáo + Phiếu thu ; **chi tiết mở cửa sổ trượt bên phải, chọn 20 / 50 / 100 dòng** (docs/UI_DATA_LIST_STANDARD.md) | 044, 046, 050, 055, 080 |
 | Thời gian | Toàn app **dd/MM/yyyy HH:mm:ss** (hiển thị, bộ lọc, in, Excel); bộ lọc mặc định **1 ngày trước → hiện tại** | 054, 056 |
 | Mobile | **10 màn**: Giám định – Hạ vỏ / Nhập tàu / Xuất tàu, Vệ sinh – Chờ vệ sinh (gồm cont Nhập tàu), Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ / Đảo chuyển / Nhập tàu / Xuất tàu), Sửa chữa: khung mobile, biểu tượng điện thoại trên menu; Xe nâng quét mã: khung nền đậm thống nhất (số cont, size/type, trạng thái/đóng hàng hoặc vị trí) | 012, 049, 061 |
 | Dữ liệu lớn | Lọc báo cáo tối đa **3 tháng**; Excel > **20.000 dòng** xuất phía máy chủ; giữ dữ liệu **10 năm**, không xóa; lọc / phân trang trên database | 066 |
@@ -91,6 +91,7 @@ Kiểm thử mới nhất: `npm test` **81/81 pass** (3 file test) • `npm run 
 | P7-08 | Phiếu thu: danh sách full màn hình; phiếu thu trước theo bố cục thanh toán, biểu giá × số lượng, bản in PHIẾU THU TRƯỚC | 2026-10-24 | DEC-077 | **78/78 • build PASS**; chưa thử in giấy | agent/claude/p4-prep-xlsx |
 | P7-09 | Menu: biểu tượng mobile + số đếm thẳng hàng (3 cột cố định) | 2026-10-24 | DEC-078 | **78/78 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-10 | Phiếu thu: sắp lại cột (Phương thức TT, Thời gian / Nhân viên, Trạng thái cạnh Đã in); phiếu thu mẹ liên kết từng lần trừ (chứng từ, hồ sơ, số lượt, còn lại) | 2026-10-24 | DEC-079 | **81/81 • build PASS** | agent/claude/p4-prep-xlsx |
+| P7-11 | Quy chuẩn trang nhiều dữ liệu (docs/UI_DATA_LIST_STANDARD.md): chi tiết trượt phải, chọn 20 / 50 / 100 dòng; áp dụng Phiếu thu, Tồn vỏ, Nhập / Xuất tàu, Báo cáo, Hồ sơ | 2026-10-24 | DEC-080 | **83/83 • build PASS**; chưa thử trên trình duyệt | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -170,3 +171,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-24 — Claude Code: P7-08 (DEC-077) Phiếu thu full màn hình, phiếu thu trước biểu giá × số lượng, bản in riêng. 78/78 • build PASS.
 - 2026-10-24 — Claude Code: P7-09 (DEC-078) menu mobile thẳng hàng. 78/78 • build PASS.
 - 2026-10-24 — Claude Code: P7-10 (DEC-079) phiếu thu sắp lại cột, phiếu thu mẹ liên kết từng lần trừ. 81/81 • build PASS.
+- 2026-10-24 — Claude Code: P7-11 (DEC-080) quy chuẩn trang nhiều dữ liệu + áp dụng. 83/83 • build PASS.

@@ -8,9 +8,9 @@ description: Tạo hoặc sửa màn hình giao diện MATRAN DEPOT (React + Tai
 ## Luật
 - Giao diện KHÔNG tự đặt quy tắc nghiệp vụ. Mọi kiểm tra nằm trong `src/services/`; UI gọi hàm, `try/catch`, hiển thị `err.message` bằng `<Feedback>`.
 - Ẩn/hiện nút theo quyền dùng `can(state.currentUser, 'KEY')` — chỉ để hiển thị.
-- Tái sử dụng `src/components/shared.tsx`: `SectionCard`, `Feedback`, `FeeLinesEditor`, `PaymentPanel`, `PendingTransferPanel`, `SlotPicker`, `Pager`, `ContainerNo` (có biểu tượng khóa), `inputCls/labelCls/primaryBtn/secondaryBtn`.
+- Tái sử dụng `src/components/shared.tsx`: `SectionCard`, `Feedback`, `FeeLinesEditor`, `PaymentPanel`, `PendingTransferPanel`, `SlotPicker`, `Pager`, `DetailDrawer`, `usePageSize`, `ContainerNo` (có biểu tượng khóa), `inputCls/labelCls/primaryBtn/secondaryBtn`.
 - Phong cách: nền trắng/slate, 1 màu nhấn xanh `blue-600`, chữ `text-xs`, không emoji trang trí. Màn hiện trường tối ưu mobile (`max-w-lg`).
-- Danh sách lớn: có lọc, phân trang; báo cáo không tự tải trước khi bấm Tra cứu.
+- Danh sách lớn: theo **`docs/UI_DATA_LIST_STANDARD.md` (DEC-080)** — full chiều ngang, có lọc, `Pager` chọn 20 / 50 / 100 dòng (`usePageSize`), bấm dòng mở `DetailDrawer` (trượt bên phải, không hiện chi tiết bên dưới); báo cáo không tự tải trước khi bấm Tra cứu.
 - Hiển thị đủ trạng thái: rỗng, lỗi, thành công.
 
 ## Thêm màn hình mới

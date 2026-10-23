@@ -80,7 +80,7 @@ Một việc chỉ "xong" khi:
   - Khung `mx-auto w-full max-w-lg`, một cột, nút lớn, danh sách dạng thẻ (không dùng bảng rộng), "Xem thêm" thay phân trang, phần đang thao tác đặt trên cùng.
   - Đánh dấu `mobile: true` ở mục menu trong `src/app/App.tsx` (hiện biểu tượng điện thoại). Mục mobile có số đếm việc chờ (`badges` trong App) → tự tô **cam + nhấp nháy** khi có việc (DEC-075); thêm màn hiện trường mới thì phải thêm số đếm. Dòng menu 3 cột cố định (tên | biểu tượng mobile | số đếm) để biểu tượng thẳng hàng (DEC-078).
   - Smoke test `tests/ui-smoke.test.tsx` kiểm tra số biểu tượng mobile và `max-w-lg` — thêm màn mobile mới thì cập nhật test này.
-- **Màn văn phòng / báo cáo** (máy tính): bảng được, bắt buộc bộ lọc trước khi tải dữ liệu, có phân trang.
+- **Màn văn phòng / báo cáo / tra cứu nhiều dữ liệu** (máy tính): theo **`docs/UI_DATA_LIST_STANDARD.md` (DEC-080)** — danh sách full chiều ngang, bắt buộc bộ lọc, `Pager` có chọn 20 / 50 / 100 dòng (`usePageSize`), **bấm dòng mở chi tiết bằng `DetailDrawer` (cửa sổ trượt bên phải)** — không hiện chi tiết bên dưới, nút tác nghiệp cùng hàng nút Tra cứu.
 - **Văn phòng làm phần tài chính** (phiếu thu TTT, xác nhận tiền mặt) — không còn Kế toán (DEC-047).
 - **Luồng DAMAGE:** Báo giá (remark + giờ công) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → AV. Không có bước QC (DEC-049).
 - Tóm tắt toàn bộ logic đã chốt: `devs/PROGRESS.md` mục C.

@@ -610,6 +610,16 @@ Quy ước trạng thái:
   - **Phiếu thu trước (TTT)**: dòng danh sách hiện mã Phiếu thu mẹ **PTT-** kèm **"Dùng N lượt • còn X đ"**. Chi tiết có khối **Sử dụng phiếu thu mẹ**: Tổng nạp, **Số lượt đã dùng**, Đã trừ, **Còn lại** + bảng **từng lần trừ tiền**: thời gian, tác nghiệp (Hạ vỏ / Cấp vỏ), **mã hồ sơ (bấm mở hồ sơ)**, số cont, **chứng từ**, số tiền trừ, số dư sau, nhân viên (`masterReceiptUsage` trong `payments.ts`).
   - Excel Phiếu thu: cột **PHƯƠNG THỨC TT**, thêm **SỐ LƯỢT ĐÃ DÙNG (TTT)**, **CÒN LẠI (TTT)**.
 
+### DEC-080 — Quy chuẩn trang nhiều dữ liệu: danh sách full màn hình, chi tiết mở cửa sổ trượt bên phải, người dùng chọn số dòng
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Quyết định (chi tiết: `docs/UI_DATA_LIST_STANDARD.md` — mọi trang nhiều dữ liệu phải theo):
+  - Danh sách **chiếm toàn bộ chiều ngang**, đủ cột; thời gian / nhân viên tách cột; trạng thái gần cuối.
+  - **Bấm một dòng → chi tiết mở trong CỬA SỔ TRƯỢT BÊN PHẢI** (`DetailDrawer`), danh sách vẫn thấy phía sau; đóng bằng X / Esc / bấm ra ngoài. **Không** hiện chi tiết bên dưới / bên cạnh, không thay cả trang. Hồ sơ container cũng mở dạng trượt bên phải.
+  - **Người dùng chọn số dòng / trang: 20 / 50 / 100**, nhớ theo từng màn trên trình duyệt (`usePageSize`); hàm tra cứu nhận `pageSize`.
+  - Nút tác nghiệp cùng hàng nút Tra cứu; form tác nghiệp mở dưới khung lọc khi bấm.
+  - Áp dụng ngay: Phiếu thu, Tồn vỏ, Văn phòng → Nhập tàu / Xuất tàu, mọi Báo cáo, Hồ sơ container.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -699,6 +709,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-079 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-080 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
