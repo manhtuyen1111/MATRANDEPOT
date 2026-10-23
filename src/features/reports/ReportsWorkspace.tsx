@@ -17,7 +17,7 @@ import {
 } from '../../services/reports';
 import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
-import { fileStamp } from '../../services/datetime';
+import { defaultLastDayRange, fileStamp } from '../../services/datetime';
 import { DateTimeField, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard } from '../../components/shared';
 
 export type ReportSection = 'BC_HA_VO' | 'BC_CAP_VO' | 'BC_NHAP_TAU' | 'BC_XUAT_TAU' | 'BC_SUA_CHUA' | 'BC_TONG_HOP';
@@ -82,7 +82,7 @@ export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossie
 };
 
 const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => {
-  const [draft, setDraft] = useState<OperationReportFilter>({ containerNo: '', dateFrom: '', dateTo: '', shippingLineCode: '', size: '' });
+  const [draft, setDraft] = useState<OperationReportFilter>(() => ({ containerNo: '', ...defaultLastDayRange(), shippingLineCode: '', size: '' }));
   const [applied, setApplied] = useState<OperationReportFilter | null>(null);
   const [page, setPage] = useState(1);
   const showMoney = can(state.currentUser, 'REPORT_FINANCE');
@@ -234,7 +234,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
 };
 
 const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
-  const [range, setRange] = useState({ dateFrom: '', dateTo: '' });
+  const [range, setRange] = useState(() => defaultLastDayRange());
   const [sheets, setSheets] = useState<SheetData[] | null>(null);
   const [generatedAt, setGeneratedAt] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -298,7 +298,7 @@ const REPAIR_STATUS: Record<string, string> = {
 
 // BÁO CÁO SỬA CHỮA CHI TIẾT (DEC-044): bắt buộc lọc, phân trang, xuất Excel kết quả lọc
 const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) => void }> = ({ state, onOpenDossier }) => {
-  const [draft, setDraft] = useState<RepairReportFilter>({ containerNo: '', dateFrom: '', dateTo: '', teamCode: '', shippingLineCode: '', status: 'ALL' });
+  const [draft, setDraft] = useState<RepairReportFilter>(() => ({ containerNo: '', ...defaultLastDayRange(), teamCode: '', shippingLineCode: '', status: 'ALL' }));
   const [applied, setApplied] = useState<RepairReportFilter | null>(null);
   const [page, setPage] = useState(1);
 

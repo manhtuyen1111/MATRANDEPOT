@@ -118,3 +118,16 @@ describe('DEC-052: phiếu K80 có lộ trình; màn Trả chứng từ', () => 
     expect(renderToString(<DocumentReturnWorkspace state={as(base, 'usr-office')} onUpdateState={noop} />)).toContain('Trả chứng từ');
   });
 });
+
+describe('DEC-056: màn Phiếu thu / Báo cáo mở lần đầu đã điền sẵn 24 giờ gần nhất', () => {
+  it('ô Đến có giá trị dd/MM/yyyy HH:mm:ss', () => {
+    for (const el of [
+      <ReceiptsWorkspace state={as(base, 'usr-office')} onUpdateState={noop} />,
+      <ReportsWorkspace state={base} section="BC_HA_VO" onOpenDossier={noop} />,
+      <ReportsWorkspace state={base} section="BC_SUA_CHUA" onOpenDossier={noop} />,
+      <ReportsWorkspace state={base} section="BC_TONG_HOP" onOpenDossier={noop} />,
+    ]) {
+      expect(renderToString(el)).toMatch(/value="\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}"/);
+    }
+  });
+});

@@ -704,3 +704,11 @@ describe('DEC-055: xuất Excel theo bộ lọc — Phiếu thu & mọi báo cá
     expect(ws.autoFilter).toBeTruthy();
   });
 });
+
+describe('DEC-056: mặc định bộ lọc = 1 ngày trước → hiện tại', () => {
+  it('defaultLastDayRange trả đúng 24 giờ theo định dạng chuẩn', async () => {
+    const { defaultLastDayRange } = await import('../src/services/datetime');
+    const r = defaultLastDayRange(new Date(2026, 9, 23, 10, 10, 10));
+    expect(r).toEqual({ dateFrom: '22/10/2026 10:10:10', dateTo: '23/10/2026 10:10:10' });
+  });
+});

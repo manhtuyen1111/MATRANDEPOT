@@ -378,7 +378,7 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-23)
 - Quyết định: **Mọi chỗ liên quan tới thời gian trong app** (hiển thị, bộ lọc báo cáo / phiếu thu, phiếu K80, EEIR, file Excel, thông báo lỗi) dùng **Ngày/Tháng/Năm Giờ:Phút:Giây**, 24 giờ, ví dụ `23/10/2026 07:05:09`.
-  - Bộ lọc thời gian là ô nhập `dd/mm/yyyy hh:mm:ss` (tự chèn dấu khi gõ số, viền đỏ khi sai, từ chối ngày không tồn tại). Nhập thiếu giờ thì TỪ = 00:00:00, ĐẾN = 23:59:59. Mặc định Phiếu thu: hôm nay 00:00:00 → 23:59:59.
+  - Bộ lọc thời gian là ô nhập `dd/mm/yyyy hh:mm:ss` (tự chèn dấu khi gõ số, viền đỏ khi sai, từ chối ngày không tồn tại). Nhập thiếu giờ thì TỪ = 00:00:00, ĐẾN = 23:59:59. Mặc định: 1 ngày trước → hiện tại (DEC-056).
   - Kỹ thuật: chỉ dùng `src/services/datetime.ts` (`formatDateTime`, `parseDateTime`) và component `DateTimeField`; không dùng `toLocaleString` / `<input type="date">` trực tiếp.
 
 ### DEC-055 — Xuất Excel theo bộ lọc ở Phiếu thu và mọi báo cáo
@@ -387,6 +387,11 @@ Quy ước trạng thái:
 - Quyết định: **Văn phòng → Phiếu thu** và **tất cả báo cáo** (Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp) có nút **Xuất Excel** — xuất **toàn bộ kết quả theo bộ lọc đang áp dụng** (mọi trang), file `.xlsx`.
   - Kiểu file: basic, chuyên nghiệp — 1 dòng tiêu đề đậm nền xám, viền mỏng, cố định dòng tiêu đề, bộ lọc cột, số tiền có dấu phân cách, tự giãn cột; **đủ các cột** của hồ sơ (cùng bộ cột với sheet tương ứng của báo cáo Tổng hợp; Phiếu thu có thêm cột Tác nghiệp, chứng từ, phiếu thu mẹ, mã giao dịch ngân hàng, người/giờ xác nhận).
   - Tên file: `MATRAN_<LOẠI>_<dd-MM-yyyy_HHmmss>.xlsx`.
+
+### DEC-056 — Mặc định khoảng thời gian bộ lọc
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: Phiếu thu và mọi báo cáo, khi mở lần đầu, bộ lọc thời gian **mặc định = 1 ngày trước → thời điểm hiện tại** (ví dụ `22/10/2026 10:10:10` → `23/10/2026 10:10:10`). Người dùng sửa được; thay cho mặc định "hôm nay 00:00:00 → 23:59:59" của DEC-054. Kỹ thuật: `defaultLastDayRange()` trong `src/services/datetime.ts`.
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
@@ -477,6 +482,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-055 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-056 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

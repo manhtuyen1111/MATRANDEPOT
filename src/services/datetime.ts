@@ -78,3 +78,8 @@ export function fileStamp(text?: string): string {
   if (!d) return '';
   return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 }
+
+// DEC-056: mặc định bộ lọc thời gian khi mở Phiếu thu / Báo cáo lần đầu = 1 ngày trước → thời điểm hiện tại
+export function defaultLastDayRange(now = new Date()): { dateFrom: string; dateTo: string } {
+  return { dateFrom: formatDateTime(new Date(now.getTime() - 86_400_000)), dateTo: formatDateTime(now) };
+}

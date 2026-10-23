@@ -13,7 +13,7 @@ import { simulateDemoBankTransfer } from '../../services/depotOperations';
 import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, receiptOperationOf } from '../../services/payments';
 import { collectAllPages, queryReceipts, ReceiptQueryFilter, ReceiptRow, receiptsSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
-import { endOfDayText, fileStamp, startOfDayText } from '../../services/datetime';
+import { defaultLastDayRange, fileStamp } from '../../services/datetime';
 import {
   DateTimeField,
   ExportExcelButton,
@@ -43,7 +43,7 @@ export const ReceiptsWorkspace: React.FC<{
   // Mở thẳng 1 phiếu thu (mã PT- hoặc id giao dịch) khi bấm từ hồ sơ container (DEC-051); nonce để mở lại cùng phiếu
   focus?: { key: string; nonce: number } | null;
 }> = ({ state, onUpdateState, onOpenDossier, focus }) => {
-  const [draft, setDraft] = useState<ReceiptQueryFilter>({ dateFrom: startOfDayText(), dateTo: endOfDayText(), keyword: '', method: 'ALL', status: 'ALL', operation: 'ALL' });
+  const [draft, setDraft] = useState<ReceiptQueryFilter>(() => ({ ...defaultLastDayRange(), keyword: '', method: 'ALL', status: 'ALL', operation: 'ALL' }));
   const [applied, setApplied] = useState<ReceiptQueryFilter | null>(null);
   const [page, setPage] = useState(1);
   const [selectedTxId, setSelectedTxId] = useState('');
