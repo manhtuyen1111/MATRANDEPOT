@@ -4,7 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { createInitialState, DepotState } from '../src/services/depotStore';
 import { App } from '../src/app/App';
 import { YardFeature } from '../src/features/yard/YardFeature';
-import { OfficeCapVoWorkspace, OfficeHaVoWorkspace, OfficeVesselBatchWorkspace } from '../src/features/office/OfficeWorkspaces';
+import { OfficeCapVoWorkspace, OfficeHaVoWorkspace } from '../src/features/office/OfficeWorkspaces';
+import { OfficeVesselWorkspace } from '../src/features/vessel/OfficeVesselWorkspace';
+import { VesselFieldMobile } from '../src/features/vessel/VesselFieldMobile';
+import { createVesselList, inspectVesselImportItem } from '../src/services/vessel';
 import { FieldQueueWorkspaces, FieldQueueMode } from '../src/features/field-queues/FieldQueueWorkspaces';
 import { YardShiftWorkspace } from '../src/features/forklift/YardShiftWorkspace';
 import { ReceiptsWorkspace } from '../src/features/receipts/ReceiptsWorkspace';
@@ -31,7 +34,7 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('MATRAN DEPOT');
     expect(html).toContain('Đảo chuyển');
     expect(html).not.toContain('HẠ SỬA CHỮA');
-    expect(html.match(/aria-label="Tác nghiệp mobile"/g)?.length).toBe(6);
+    expect(html.match(/aria-label="Tác nghiệp mobile"/g)?.length).toBe(11);
   });
 
   it('Tồn vỏ hiển thị biểu tượng khóa và dấu - cho container chưa có vị trí', () => {
@@ -50,7 +53,10 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     const screens: React.ReactElement[] = [
       <OfficeHaVoWorkspace state={office} onUpdateState={noop} onOpenK80Ticket={noop} />,
       <OfficeCapVoWorkspace state={office} onUpdateState={noop} onOpenK80Ticket={noop} />,
-      <OfficeVesselBatchWorkspace mode="NHAP_TAU" />,
+      <OfficeVesselWorkspace mode="NHAP_TAU" state={office} onUpdateState={noop} />,
+      <OfficeVesselWorkspace mode="XUAT_TAU" state={office} onUpdateState={noop} />,
+      <ReportsWorkspace state={base} section="BC_NHAP_TAU" onOpenDossier={noop} />,
+      <ReportsWorkspace state={base} section="BC_XUAT_TAU" onOpenDossier={noop} />,
       <InspectorHaVoMobile state={base} onUpdateState={noop} />,
       <YardShiftWorkspace state={base} onUpdateState={noop} />,
       <ReceiptsWorkspace state={as(base, 'usr-acc')} onUpdateState={noop} />,
@@ -62,7 +68,7 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
       <ReportsWorkspace state={base} section="BC_HA_VO" onOpenDossier={noop} />,
       <ReportsWorkspace state={base} section="BC_SUA_CHUA" onOpenDossier={noop} />,
       <MasterDossierModal masterDossierCode="HV-261019-001" state={base} onClose={noop} />,
-      <MasterDossierModal masterDossierCode="GO-261018-001" state={base} onClose={noop} />,
+      <MasterDossierModal masterDossierCode="CV-261018-001" state={base} onClose={noop} />,
       ...(['VS_CHO_VE_SINH', 'XN_CHO_HA_VO', 'XN_CHO_CAP_VO', 'BG_CHO_BAO_GIA', 'SC_CHO_SUA_CHUA'] as FieldQueueMode[]).map((m) => (
         <FieldQueueWorkspaces key={m} mode={m} state={base} onUpdateState={noop} />
       )),
@@ -172,5 +178,52 @@ describe('DEC-062/064: mẫu in phiếu thu thống nhất; Trả chứng từ 2
     expect(ret.replace(/<!-- -->/g, '')).toContain('Đang chờ TRẢ CHỨNG TỪ HẠ VỎ');
     expect(ret.replace(/<!-- -->/g, '')).toContain('Đang chờ TRẢ CHỨNG TỪ CẤP VỎ');
     expect(renderToString(<CompanyCatalog state={as(base, 'usr-admin')} onUpdateState={noop} />)).toContain('Lưu thông tin công ty');
+  });
+});
+
+describe('DEC-069: màn Nhập tàu / Xuất tàu', () => {
+  it('Văn phòng thấy danh sách + tiến độ; mobile Giám định / Xe nâng / Vệ sinh khung max-w-lg; hồ sơ NT- / XT-', () => {
+    const office = as(createInitialState(), 'usr-office');
+    const nt = createVesselList(office, {
+      mode: 'NHAP_TAU', vesselName: 'Ever Gentle', plannedAt: new Date().toISOString(), truckNos: ['15C-111.11'], shippingLineCode: 'MAERSK',
+      importItems: [{ containerNo: 'TCLU1234567', size: '40', type: 'HC' }],
+    }).state;
+    const yardId = nt.containers.find((c) => c.status === 'IN_YARD')!.id;
+    const both = createVesselList(nt, { mode: 'XUAT_TAU', vesselName: 'Wan Hai', plannedAt: new Date().toISOString(), truckNos: ['15C-333.33'], exportContainerIds: [yardId] }).state;
+    const strip = (h: string) => h.replace(/<!-- -->/g, '');
+
+    const vpNt = strip(renderToString(<OfficeVesselWorkspace mode="NHAP_TAU" state={both} onUpdateState={noop} />));
+    expect(vpNt).toContain('EVER GENTLE');
+    expect(vpNt).toContain('Duyệt NHẬP TÀU thành công');
+    expect(vpNt).toContain('Chờ xe về');
+    const vpXt = strip(renderToString(<OfficeVesselWorkspace mode="XUAT_TAU" state={both} onUpdateState={noop} />));
+    expect(vpXt).toContain('Chọn container từ tồn vỏ');
+    expect(vpXt).toMatch(/XT-\d{6}-001/);
+
+    const gd = strip(renderToString(<VesselFieldMobile kind="GD_NHAP_TAU" state={as(both, 'usr-inspector')} onUpdateState={noop} />));
+    expect(gd).toContain('max-w-lg');
+    expect(gd).toContain('TCLU1234567');
+    expect(gd).toContain('Tiến độ NHẬP TÀU');
+    const xn = strip(renderToString(<VesselFieldMobile kind="XN_XUAT_TAU" state={as(both, 'usr-forklift')} onUpdateState={noop} />));
+    expect(xn).toContain('max-w-lg');
+    expect(xn).toContain('Bộ phận Xe nâng');
+    const vs = strip(renderToString(<FieldQueueWorkspaces mode="VS_CHO_VE_SINH" vesselOnly state={both} onUpdateState={noop} />));
+    expect(vs).toContain('Nhập tàu — Chờ vệ sinh');
+    expect(vs).toContain('max-w-lg');
+
+    const xtCode = both.vesselLists[0].items[0].dossierCode!;
+    expect(strip(renderToString(<MasterDossierModal masterDossierCode={xtCode} state={both} onClose={noop} />))).toContain('Tác nghiệp XUẤT TÀU');
+
+    const ntList = both.vesselLists.find((l) => l.mode === 'NHAP_TAU')!;
+    const inspected = inspectVesselImportItem(as(both, 'usr-inspector'), {
+      listId: ntList.id, itemId: ntList.items[0].id, actualContainerNo: 'TCLU1234567', truckNo: '15C-111.11',
+      conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['WW'], manufactureYear: 2015,
+    });
+    const ntCode = inspected.vesselLists.find((l) => l.id === ntList.id)!.items[0].dossierCode!;
+    const ntHtml = strip(renderToString(<MasterDossierModal masterDossierCode={ntCode} state={inspected} onClose={noop} />));
+    expect(ntHtml).toContain('Tác nghiệp NHẬP TÀU');
+    expect(ntHtml).toContain('Giám định — Nhập tàu');
+    expect(ntHtml).toContain('Vệ sinh');
+    expect(ntHtml).toContain('Văn phòng — Duyệt nhập tàu');
   });
 });

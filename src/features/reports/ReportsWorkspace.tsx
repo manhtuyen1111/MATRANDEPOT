@@ -18,6 +18,7 @@ import {
 import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
 import { defaultLastDayRange, fileStamp } from '../../services/datetime';
+import { VesselReport } from './VesselReport';
 import { DateTimeField, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard } from '../../components/shared';
 
 export type ReportSection = 'BC_HA_VO' | 'BC_CAP_VO' | 'BC_NHAP_TAU' | 'BC_XUAT_TAU' | 'BC_SUA_CHUA' | 'BC_TONG_HOP';
@@ -74,6 +75,9 @@ const GATE_OUT_STATUS: Record<GateOutOrder['status'], string> = {
 export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossier }) => {
   // key theo section để reset bộ lọc khi đổi báo cáo
   if (section === 'BC_SUA_CHUA') return <RepairReport key={section} state={state} onOpenDossier={onOpenDossier} />;
+  if (section === 'BC_NHAP_TAU' || section === 'BC_XUAT_TAU') {
+    return <VesselReport key={section} state={state} mode={section === 'BC_NHAP_TAU' ? 'NHAP_TAU' : 'XUAT_TAU'} onOpenDossier={onOpenDossier} />;
+  }
   return section === 'BC_TONG_HOP' ? (
     <SummaryReport key={section} state={state} />
   ) : (
@@ -105,9 +109,6 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
   return (
     <div className="space-y-4">
       <SectionCard title={TITLES[section]} icon={<Search className="h-4 w-4 text-slate-500" />}>
-        {(section === 'BC_NHAP_TAU' || section === 'BC_XUAT_TAU') && (
-          <p className="mb-3 text-[11px] text-slate-500">Phân hệ {section === 'BC_NHAP_TAU' ? 'Nhập tàu' : 'Xuất tàu'} sẽ xây dựng ở giai đoạn sau; báo cáo hiển thị dữ liệu khi phân hệ đi vào sử dụng.</p>
-        )}
         <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2">
             <span className={labelCls}>Số container</span>

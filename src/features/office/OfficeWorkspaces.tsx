@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ClipboardList, Search, Ship, Truck } from 'lucide-react';
+import { ClipboardList, Search, Truck } from 'lucide-react';
 import {
   ContainerRecord,
   FieldConditionClass,
@@ -689,20 +689,3 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
     </div>
   );
 };
-
-// ============================================================================
-// BỘ PHẬN VĂN PHÒNG — NHẬP TÀU & XUẤT TÀU (DEC-038: để sau, chưa ghi nhận dữ liệu)
-// ============================================================================
-export const OfficeVesselBatchWorkspace: React.FC<{ mode: 'NHAP_TAU' | 'XUAT_TAU' }> = ({ mode }) => (
-  <div className="rounded-lg border border-slate-200 bg-white p-6 text-xs text-slate-700">
-    <div className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-900">
-      <Ship className="h-5 w-5 text-slate-500" />
-      {mode === 'NHAP_TAU' ? 'NHẬP TÀU' : 'XUẤT TÀU'}
-    </div>
-    <p>
-      Phân hệ {mode === 'NHAP_TAU' ? 'NHẬP TÀU (xe kéo bãi đưa lô container từ cảng về)' : 'XUẤT TÀU (xe kéo bãi đưa container ra cảng)'} sẽ được
-      xây dựng ở giai đoạn sau, khi quy trình chi tiết được xác nhận (DEC-038 / OPEN-001).
-    </p>
-    <p className="mt-1 text-slate-500">Màn hình này hiện không ghi nhận dữ liệu để tránh tạo hồ sơ chưa có quy trình.</p>
-  </div>
-);

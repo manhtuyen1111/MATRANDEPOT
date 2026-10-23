@@ -252,11 +252,14 @@ export function buildSummaryReport(state: DepotState, range: DateRange): SheetDa
     state.gateInOrders.filter((o) => o.gateInType === type && inRange(o.gateInOkAt || o.fieldRecordedAt, r));
   const gateOut = (types: GateOutType[]) =>
     state.gateOutOrders.filter((o) => types.includes(o.gateOutType) && inRange(o.confirmedAt || o.createdAt, r));
+  const vesselRows = (mode: VesselMode): VesselReportRow[] =>
+    (state.vesselLists || []).filter((l) => l.mode === mode && inRange(l.plannedAt, r)).flatMap((list) => list.items.map((item) => ({ list, item })));
   return [
     gateInSheet('HẠ VỎ', gateIn('CUSTOMER_RETURN')),
     gateOutSheet('CẤP VỎ', state, gateOut(['EMPTY_RELEASE'])),
-    gateOutSheet('XUẤT VỎ', state, gateOut(['VESSEL_EXPORT', 'SPECIAL_RETURN'])),
-    gateInSheet('NHẬP VỎ', gateIn('VESSEL_IMPORT')),
+    // DEC-040 + DEC-069: XUẤT VỎ = XUẤT TÀU, NHẬP VỎ = NHẬP TÀU (theo thời gian nhập / xuất tàu của danh sách)
+    { ...vesselReportSheet('XUAT_TAU', vesselRows('XUAT_TAU')), name: 'XUẤT VỎ' },
+    { ...vesselReportSheet('NHAP_TAU', vesselRows('NHAP_TAU')), name: 'NHẬP VỎ' },
     // TỒN VỎ phản ánh thời điểm lập báo cáo, không theo khoảng thời gian
     stockSheet(state.containers.filter((c) => c.status !== 'GATED_OUT')),
   ];
