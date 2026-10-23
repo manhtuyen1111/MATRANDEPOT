@@ -2,22 +2,25 @@ import type { DepotState } from './depotStore';
 
 // ============================================================================
 // CẤP MÃ HỒ SƠ / PHIẾU (CR-07, DEC-032, DEC-037)
-//   Hồ sơ HẠ VỎ : IN-YYMMDD-NNN      (đánh số lại mỗi ngày)
-//   Hồ sơ CẤP VỎ: OUT-YYMMDD-NNN     (đánh số lại mỗi ngày)
-//   Phiếu thu   : PT-YYYY-NNNNNN     (đánh số liên tục theo năm)
-//   Phiếu thu mẹ: PTM-YYYY-NNN       (giữ quy ước sẵn có)
+// DEC-068: ký tự đầu mã = viết tắt tác nghiệp
+//   Hồ sơ HẠ VỎ    : HV-YYMMDD-NNN   (đánh số lại mỗi ngày)
+//   Hồ sơ CẤP VỎ   : CV-YYMMDD-NNN   (đánh số lại mỗi ngày)
+//   Phiếu thu      : PT-YYYY-NNNNNN  (đánh số liên tục theo năm)
+//   Phiếu thu trước: PTT-YYYY-NNN    (phiếu thu mẹ TTT)
+//   Chứng từ       : CT-YYMMDD-NNNN
+// Mã cũ (IN-/HS-, OUT-/GO-, PTM-) được đổi khi nạp dữ liệu: renameLegacyCodes
 // Chế độ Demo: bộ đếm nằm trong state và chỉ an toàn trong một phiên trình duyệt.
 // Chế độ Supabase: bắt buộc cấp trong database (bảng bộ đếm + khóa dòng trong cùng transaction).
 // ============================================================================
 
-export type CodeSeries = 'IN' | 'OUT' | 'PT' | 'PTM' | 'CT';
+export type CodeSeries = 'HV' | 'CV' | 'PT' | 'PTT' | 'CT';
 
 const SERIES_FORMAT: Record<CodeSeries, { period: 'day' | 'year'; digits: number }> = {
-  IN: { period: 'day', digits: 3 },
-  OUT: { period: 'day', digits: 3 },
+  HV: { period: 'day', digits: 3 },
+  CV: { period: 'day', digits: 3 },
   CT: { period: 'day', digits: 4 },
   PT: { period: 'year', digits: 6 },
-  PTM: { period: 'year', digits: 3 },
+  PTT: { period: 'year', digits: 3 },
 };
 
 function periodKey(series: CodeSeries, at: Date): string {
@@ -31,13 +34,13 @@ function periodKey(series: CodeSeries, at: Date): string {
 
 function existingCodes(state: DepotState, series: CodeSeries): string[] {
   switch (series) {
-    case 'IN':
+    case 'HV':
       return state.gateInOrders.map((o) => o.masterDossierCode);
-    case 'OUT':
+    case 'CV':
       return state.gateOutOrders.map((o) => o.gateOutCode);
     case 'PT':
       return (state.paymentReceipts || []).map((r) => r.receiptNo);
-    case 'PTM':
+    case 'PTT':
       return state.masterReceipts.map((r) => r.receiptCode);
     case 'CT':
       return state.vouchers.map((v) => v.voucherNo);
@@ -76,4 +79,21 @@ export function allocateCode(
     code,
     state: { ...state, codeCounters: { ...(state.codeCounters || {}), [counterKey]: seq } },
   };
+}
+
+// DEC-068: đổi mã cũ sang tiền tố mới trên toàn bộ dữ liệu (mã, QR, nội dung nhật ký, khóa bộ đếm)
+const LEGACY_CODE_RULES: [RegExp, string][] = [
+  [/\b(?:IN|HS)-(\d{6}-\d{3})\b/g, 'HV-$1'],
+  [/\b(?:OUT|GO)-(\d{6}-\d{3})\b/g, 'CV-$1'],
+  [/\bPTM-(\d{4}-\d{3})\b/g, 'PTT-$1'],
+  [/"IN-(\d{6})"/g, '"HV-$1"'],
+  [/"OUT-(\d{6})"/g, '"CV-$1"'],
+  [/"PTM-(\d{4})"/g, '"PTT-$1"'],
+];
+
+export function renameLegacyCodes<T>(data: T): T {
+  const json = JSON.stringify(data);
+  let out = json;
+  for (const [re, to] of LEGACY_CODE_RULES) out = out.replace(re, to);
+  return out === json ? data : (JSON.parse(out) as T);
 }

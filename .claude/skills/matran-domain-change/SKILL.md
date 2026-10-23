@@ -23,7 +23,7 @@ description: Thêm hoặc sửa một bước nghiệp vụ trong tầng src/ser
 2. Tìm bản ghi: container đang trong bãi dùng `findActiveContainer` / `findActiveContainerByCode`.
 3. Kiểm tra trạng thái trước; sai → `throw new Error('tiếng Việt, nêu điều kiện thất bại')`.
 4. Cập nhật bất biến: `updateContainerById`, không map theo số container.
-5. Mã mới: `allocateCode(state, 'IN' | 'OUT' | 'PT' | 'PTM' | 'CT')`.
+5. Mã mới: `allocateCode(state, 'HV' | 'CV' | 'NT' | 'XT' | 'PT' | 'PTT' | 'CT')`.
 6. Kết thúc bằng `appendAudit(...)`.
 7. Không gán dữ liệu mặc định giả (tiền, tên, biển số).
 

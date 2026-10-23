@@ -61,7 +61,7 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
       <UserRoleCatalog state={base} onUpdateState={noop} />,
       <ReportsWorkspace state={base} section="BC_HA_VO" onOpenDossier={noop} />,
       <ReportsWorkspace state={base} section="BC_SUA_CHUA" onOpenDossier={noop} />,
-      <MasterDossierModal masterDossierCode="HS-261019-001" state={base} onClose={noop} />,
+      <MasterDossierModal masterDossierCode="HV-261019-001" state={base} onClose={noop} />,
       <MasterDossierModal masterDossierCode="GO-261018-001" state={base} onClose={noop} />,
       ...(['VS_CHO_VE_SINH', 'XN_CHO_HA_VO', 'XN_CHO_CAP_VO', 'BG_CHO_BAO_GIA', 'SC_CHO_SUA_CHUA'] as FieldQueueMode[]).map((m) => (
         <FieldQueueWorkspaces key={m} mode={m} state={base} onUpdateState={noop} />

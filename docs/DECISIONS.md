@@ -476,6 +476,24 @@ Quy ước trạng thái:
   - "Ghi chú văn phòng" đổi tên hiển thị thành **GHI CHÚ**; ô có ghi chú **tô nền vàng**. Bỏ dấu ghim ở Mã hồ sơ. Dòng có ghi chú vẫn xếp lên đầu.
   - **Tìm hàng loạt**: dán danh sách số container → lọc đúng các cont đó, báo các số không có trong tồn vỏ. **Chọn nhiều** (ô chọn từng dòng / chọn tất cả theo bộ lọc) → **Khóa / Mở khóa / Ghi chú hàng loạt** (`bulkToggleContainerHold`, `bulkUpdateOfficeNote`): áp dụng từng cont qua đúng hàm đơn lẻ (quyền, nhật ký), cont đã ở trạng thái đích được bỏ qua và báo lại.
 
+### DEC-068 — Tiền tố mã hồ sơ = viết tắt tác nghiệp (thay DEC-037 phần tiền tố)
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Quyết định: Ký tự đầu của mọi mã = viết tắt tác nghiệp, một quy chuẩn duy nhất:
+
+  | Tác nghiệp | Mã | Đánh số |
+  |---|---|---|
+  | HẠ VỎ | `HV-YYMMDD-NNN` | lại từ 001 mỗi ngày |
+  | CẤP VỎ | `CV-YYMMDD-NNN` | lại từ 001 mỗi ngày |
+  | NHẬP TÀU (mỗi container) | `NT-YYMMDD-NNN` | lại từ 001 mỗi ngày |
+  | XUẤT TÀU (mỗi container) | `XT-YYMMDD-NNN` | lại từ 001 mỗi ngày |
+  | PHIẾU THU | `PT-YYYY-NNNNNN` | liên tục theo năm |
+  | PHIẾU THU TRƯỚC (phiếu thu mẹ TTT) | `PTT-YYYY-NNN` | liên tục theo năm |
+  | Chứng từ | `CT-…` | giữ nguyên |
+
+  - **Đổi cả mã cũ** (người dùng chọn): khi nạp dữ liệu, `IN-`/`HS-` → `HV-`, `OUT-`/`GO-` → `CV-`, `PTM-` → `PTT-` trên toàn bộ dữ liệu (mã, QR `QR-<mã>`, nội dung nhật ký, bộ đếm) — `renameLegacyCodes` trong `src/services/codes.ts`. Phần số giữ nguyên.
+  - Mã chỉ cấp qua `allocateCode` (`codes.ts`). Tác nghiệp mới phải thêm tiền tố vào bảng này trước.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -565,6 +583,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-067 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-068 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

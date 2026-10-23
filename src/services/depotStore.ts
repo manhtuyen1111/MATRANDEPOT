@@ -1,3 +1,4 @@
+import { renameLegacyCodes } from './codes';
 import {
   AppRole,
   AuditLogEntry,
@@ -48,7 +49,7 @@ export interface DepotState {
   auditLogs: AuditLogEntry[];
   repairTeams: RepairTeam[];
   companyProfile: CompanyProfile;
-  // Bộ đếm cấp mã hồ sơ / phiếu (IN-YYMMDD, OUT-YYMMDD, PT-YYYY...). Ở chế độ Supabase do database cấp.
+  // Bộ đếm cấp mã hồ sơ / phiếu (HV-YYMMDD, CV-YYMMDD, PT-YYYY...). Ở chế độ Supabase do database cấp.
   codeCounters: Record<string, number>;
 }
 
@@ -357,7 +358,7 @@ export function createInitialState(): DepotState {
     containers: [
       {
         id: 'cnt-1',
-        masterDossierCode: 'HS-261019-001',
+        masterDossierCode: 'HV-261019-001',
         containerNo: 'MSKU4089123',
         size: '40',
         type: 'HC',
@@ -384,7 +385,7 @@ export function createInitialState(): DepotState {
       },
       {
         id: 'cnt-2',
-        masterDossierCode: 'HS-261020-001',
+        masterDossierCode: 'HV-261020-001',
         containerNo: 'ONEU2291045',
         size: '20',
         type: 'DC',
@@ -414,7 +415,7 @@ export function createInitialState(): DepotState {
       },
       {
         id: 'cnt-3',
-        masterDossierCode: 'HS-261020-002',
+        masterDossierCode: 'HV-261020-002',
         containerNo: 'CSNU7712309',
         size: '40',
         type: 'HC',
@@ -441,7 +442,7 @@ export function createInitialState(): DepotState {
       },
       {
         id: 'cnt-4',
-        masterDossierCode: 'HS-261021-001',
+        masterDossierCode: 'HV-261021-001',
         containerNo: 'MSKU9102388',
         size: '40',
         type: 'HC',
@@ -470,7 +471,7 @@ export function createInitialState(): DepotState {
     locationHistory: [
       {
         id: 'loc-1',
-        masterDossierCode: 'HS-261019-001',
+        masterDossierCode: 'HV-261019-001',
         containerNo: 'MSKU4089123',
         fromLocation: 'GATE-IN',
         toLocation: 'BLOCK-A (Chưa xếp Bay/Row/Tier)',
@@ -481,7 +482,7 @@ export function createInitialState(): DepotState {
       },
       {
         id: 'loc-2',
-        masterDossierCode: 'HS-261019-001',
+        masterDossierCode: 'HV-261019-001',
         containerNo: 'MSKU4089123',
         fromLocation: 'BLOCK-A (Chưa xếp Bay/Row/Tier)',
         toLocation: 'BLOCK-A / Bay 04 / Row 02 / Tier 01',
@@ -494,7 +495,7 @@ export function createInitialState(): DepotState {
     masterReceipts: [
       {
         id: 'mpr-1',
-        receiptCode: 'PTM-2026-001',
+        receiptCode: 'PTT-2026-001',
         qrCode: 'QR-TTT-VIETLOG-001',
         customerName: 'Công ty Tiếp Vận Việt (VietLog)',
         lotDescription: 'Đóng trước lô 20 cont rỗng tháng 10/2026',
@@ -506,7 +507,7 @@ export function createInitialState(): DepotState {
       },
       {
         id: 'mpr-2',
-        receiptCode: 'PTM-2026-002',
+        receiptCode: 'PTT-2026-002',
         qrCode: 'QR-TTT-NAMHAI-002',
         customerName: 'Vận Tải Nam Hải',
         lotDescription: 'Phiếu thu mẹ trả trước lô 10 cont',
@@ -520,7 +521,7 @@ export function createInitialState(): DepotState {
     receiptDeductions: [
       {
         id: 'ded-1',
-        receiptCode: 'PTM-2026-001',
+        receiptCode: 'PTT-2026-001',
         qrCode: 'QR-TTT-VIETLOG-001',
         voucherNo: 'CT-GIN-261019-01',
         containerNo: 'MSKU4089123',
@@ -534,17 +535,17 @@ export function createInitialState(): DepotState {
     vouchers: [
       {
         id: 'vch-1',
-        masterDossierCode: 'HS-261019-001',
+        masterDossierCode: 'HV-261019-001',
         voucherNo: 'CT-GIN-261019-01',
         serviceType: 'GATE_IN',
-        referenceCode: 'HS-261019-001',
+        referenceCode: 'HV-261019-001',
         containerNo: 'MSKU4089123',
         shippingLineCode: 'MAERSK',
         payerName: 'Công ty Tiếp Vận Việt (VietLog)',
         amount: 1200000,
         paymentCategory: 'TTT',
         scannedQrCode: 'QR-TTT-VIETLOG-001',
-        masterReceiptCode: 'PTM-2026-001',
+        masterReceiptCode: 'PTT-2026-001',
         status: 'CONFIRMED',
         confirmedBy: 'Trần Thị Minh (Văn Phòng)',
         confirmedAt: '2026-10-19T08:28:00+07:00',
@@ -553,10 +554,10 @@ export function createInitialState(): DepotState {
       },
       {
         id: 'vch-2',
-        masterDossierCode: 'HS-261021-002',
+        masterDossierCode: 'HV-261021-002',
         voucherNo: 'CT-GIN-261021-02',
         serviceType: 'GATE_IN',
-        referenceCode: 'HS-261021-002',
+        referenceCode: 'HV-261021-002',
         containerNo: 'ONEU5581920',
         shippingLineCode: 'ONE',
         payerName: 'Công ty Tiếp Vận Việt (VietLog)',
@@ -571,8 +572,8 @@ export function createInitialState(): DepotState {
     gateInOrders: [
       {
         id: 'gin-1',
-        masterDossierCode: 'HS-261021-003',
-        orderCode: 'HS-261021-003',
+        masterDossierCode: 'HV-261021-003',
+        orderCode: 'HV-261021-003',
         gateInType: 'CUSTOMER_RETURN',
         doorPhotoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80',
         conditionClass: 'DAMAGE',
@@ -588,8 +589,8 @@ export function createInitialState(): DepotState {
       },
       {
         id: 'gin-2',
-        masterDossierCode: 'HS-261021-002',
-        orderCode: 'HS-261021-002',
+        masterDossierCode: 'HV-261021-002',
+        orderCode: 'HV-261021-002',
         gateInType: 'CUSTOMER_RETURN',
         doorPhotoUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&w=800&q=80',
         conditionClass: 'AV',
@@ -605,8 +606,8 @@ export function createInitialState(): DepotState {
       },
       {
         id: 'gin-3',
-        masterDossierCode: 'HS-261021-001',
-        orderCode: 'HS-261021-001',
+        masterDossierCode: 'HV-261021-001',
+        orderCode: 'HV-261021-001',
         gateInType: 'CUSTOMER_RETURN',
         doorPhotoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80',
         conditionClass: 'AV',
@@ -636,7 +637,7 @@ export function createInitialState(): DepotState {
     workOrders: [
       {
         id: 'wo-1',
-        masterDossierCode: 'HS-261020-002',
+        masterDossierCode: 'HV-261020-002',
         workOrderCode: 'INSP-261020-001',
         containerNo: 'CSNU7712309',
         category: 'INSPECTION',
@@ -651,7 +652,7 @@ export function createInitialState(): DepotState {
       },
       {
         id: 'wo-2',
-        masterDossierCode: 'HS-261020-002',
+        masterDossierCode: 'HV-261020-002',
         workOrderCode: 'MNR-261020-001',
         containerNo: 'CSNU7712309',
         category: 'REPAIR',
@@ -664,11 +665,11 @@ export function createInitialState(): DepotState {
       },
       {
         id: 'wo-3',
-        masterDossierCode: 'HS-261021-001',
+        masterDossierCode: 'HV-261021-001',
         workOrderCode: 'CLN-261021-001',
         containerNo: 'MSKU9102388',
         category: 'CLEANING',
-        sourceOrderCode: 'HS-261021-001',
+        sourceOrderCode: 'HV-261021-001',
         items: ['WW - RỬA NƯỚC'],
         estimateCost: 250000,
         approvalStatus: 'NOT_REQUIRED',
@@ -697,8 +698,8 @@ export function createInitialState(): DepotState {
     gateOutOrders: [
       {
         id: 'gout-1',
-        masterDossierCode: 'HS-261018-001',
-        gateOutCode: 'GO-261018-001',
+        masterDossierCode: 'HV-261018-001',
+        gateOutCode: 'CV-261018-001',
         gateOutType: 'EMPTY_RELEASE',
         bookingNo: 'BK-MSK-2026-109',
         containerNo: 'MSKU3190024',
@@ -720,7 +721,7 @@ export function createInitialState(): DepotState {
     k80Tickets: [
       {
         ticketCode: 'K80-261021-001',
-        masterDossierCode: 'HS-261021-001',
+        masterDossierCode: 'HV-261021-001',
         qrCode: 'QR-K80-MSKU9102388',
         operationMode: 'HA_VO',
         isPaid: true,
@@ -742,13 +743,13 @@ export function createInitialState(): DepotState {
     auditLogs: [
       {
         id: 'aud-1',
-        masterDossierCode: 'HS-261019-001',
+        masterDossierCode: 'HV-261019-001',
         actorName: 'Trần Thị Minh (Văn Phòng)',
         actorRole: 'OFFICE',
         actionCode: 'GATE_IN_OK_TTT',
         entityType: 'GATE_IN',
-        entityCode: 'HS-261019-001',
-        summary: '[Hồ sơ HS-261019-001] Xác nhận TTT quét mã QR-TTT-VIETLOG-001 trừ 1,200,000đ -> Cập nhật GATE IN OK & In phiếu K80 cho MSKU4089123',
+        entityCode: 'HV-261019-001',
+        summary: '[Hồ sơ HV-261019-001] Xác nhận TTT quét mã QR-TTT-VIETLOG-001 trừ 1,200,000đ -> Cập nhật GATE IN OK & In phiếu K80 cho MSKU4089123',
         createdAt: '2026-10-19T08:28:00+07:00',
       },
     ],
@@ -779,7 +780,9 @@ export function createInitialState(): DepotState {
 }
 
 // Bổ sung các trường mới cho dữ liệu demo đã lưu từ phiên bản trước, không xóa dữ liệu cũ
-export function normalizeDepotState(raw: Partial<DepotState>): DepotState {
+export function normalizeDepotState(input: Partial<DepotState>): DepotState {
+  // DEC-068: đổi mã cũ IN-/HS- → HV-, OUT-/GO- → CV-, PTM- → PTT-
+  const raw = renameLegacyCodes(input);
   const base = createInitialState();
   // DEC-047: nhân viên cổng / hiện trường → Giám định; Kế toán → Văn phòng
   // DEC-049: bỏ QC Sửa chữa → Sửa chữa

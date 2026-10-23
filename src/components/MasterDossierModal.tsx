@@ -8,7 +8,7 @@ import { isTicketClosed } from '../services/driverRoute';
 import { formatViTime } from './shared';
 
 interface Props {
-  masterDossierCode: string | null; // Mã hồ sơ HẠ VỎ (IN-...) hoặc CẤP VỎ (OUT-...)
+  masterDossierCode: string | null; // Mã hồ sơ HẠ VỎ (HV-...) hoặc CẤP VỎ (CV-...)
   state: DepotState;
   onClose: () => void;
   onOpenK80Ticket?: (ticket: K80InternalTicket) => void;

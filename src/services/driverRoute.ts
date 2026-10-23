@@ -73,7 +73,7 @@ export function findTicketByQr(state: DepotState, rawCode: string): K80InternalT
 
 export interface DocumentPack {
   ticket: K80InternalTicket;
-  dossierCode: string; // IN-... hoặc OUT-...
+  dossierCode: string; // HV-... hoặc CV-...
   receipts: PaymentReceipt[];
 }
 

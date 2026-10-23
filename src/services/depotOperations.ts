@@ -138,7 +138,7 @@ export function recordGateInFieldStep(
   const normalizedCleaning = normalizeCleaningItems(input.cleaningItems);
   const remarks = input.conditionClass === 'DAMAGE' ? input.damageRemarks || [] : [];
   // Mã hồ sơ do hệ thống cấp, không nhận mã sinh ở giao diện (CR-07)
-  const allocated = allocateCode(state, 'IN');
+  const allocated = allocateCode(state, 'HV');
   const code = allocated.code;
   const hint = input.initialContainerHint?.trim().toUpperCase();
 
@@ -907,7 +907,7 @@ export function createReleaseOrder(
     next = { ...next, bookings: [booking, ...next.bookings] };
   }
 
-  const outCode = allocateCode(next, 'OUT');
+  const outCode = allocateCode(next, 'CV');
   next = outCode.state;
   const voucherCode = allocateCode(next, 'CT');
   next = voucherCode.state;

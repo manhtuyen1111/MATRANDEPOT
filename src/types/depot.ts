@@ -187,8 +187,8 @@ export interface YardBlock {
 // Dữ liệu in Phiếu TÁC NGHIỆP NỘI BỘ khổ K80 (80mm) kèm Mã QR
 export interface K80InternalTicket {
   ticketCode: string;
-  masterDossierCode: string; // Mã hồ sơ HẠ VỎ (IN-...) của lượt lưu bãi
-  outDossierCode?: string;   // Mã hồ sơ CẤP VỎ (OUT-...) nếu là phiếu cấp vỏ
+  masterDossierCode: string; // Mã hồ sơ HẠ VỎ (HV-...) của lượt lưu bãi
+  outDossierCode?: string;   // Mã hồ sơ CẤP VỎ (CV-...) nếu là phiếu cấp vỏ
   qrCode: string; // Mã QR in trên phiếu K80 để các bộ phận quét xác nhận hoàn thành
   operationMode: 'HA_VO' | 'CAP_VO';
   isPaid: boolean; // TRẠNG THÁI THANH TOÁN: TÍCH (true) HOẶC X (false)
@@ -212,7 +212,7 @@ export interface K80InternalTicket {
 // Một bản ghi = một LƯỢT LƯU BÃI của container (từ HẠ VỎ đến khi OUT). Lượt đã OUT được giữ lại làm lịch sử.
 export interface ContainerRecord {
   id: string;
-  masterDossierCode: string; // Mã hồ sơ HẠ VỎ (IN-YYMMDD-NNN; dữ liệu cũ có thể là HS-...)
+  masterDossierCode: string; // Mã hồ sơ HẠ VỎ (HV-YYMMDD-NNN — DEC-068)
   containerNo: string;
   size: ContainerSize;
   type: ContainerType;
@@ -253,7 +253,7 @@ export interface ContainerRecord {
   allocatedTruckNo?: string;
   allocatedDriverPhone?: string;
   allocatedAt?: string;
-  outDossierCode?: string; // OUT-YYMMDD-NNN
+  outDossierCode?: string; // CV-YYMMDD-NNN
   // Ghi chú của Nhân viên Văn phòng trong danh sách TỒN VỎ
   officeNote?: string;
   officeNoteUpdatedBy?: string;
@@ -321,7 +321,7 @@ export interface PaymentVoucher {
   masterDossierCode: string;
   voucherNo: string;
   serviceType: 'GATE_IN' | 'GATE_OUT' | 'CLEANING' | 'REPAIR' | 'STORAGE';
-  referenceCode: string; // Mã hồ sơ nghiệp vụ (IN-... / OUT-...)
+  referenceCode: string; // Mã hồ sơ nghiệp vụ (HV-... / CV-...)
   containerNo: string;
   shippingLineCode: string;
   payerName: string;
@@ -408,7 +408,7 @@ export interface PaymentReceipt {
 
 export interface GateInOrder {
   id: string;
-  masterDossierCode: string; // Mã hồ sơ HẠ VỎ (IN-YYMMDD-NNN)
+  masterDossierCode: string; // Mã hồ sơ HẠ VỎ (HV-YYMMDD-NNN)
   orderCode: string;
   gateInType: GateInType;
   // Bước 1: Giám định Hạ vỏ chụp ảnh cửa cont & xác nhận tác nghiệp
@@ -501,7 +501,7 @@ export interface ReleaseBooking {
 export interface GateOutOrder {
   id: string;
   masterDossierCode: string; // Mã hồ sơ HẠ VỎ của lượt lưu bãi
-  gateOutCode: string;       // OUT-YYMMDD-NNN (dữ liệu cũ có thể là GO-...)
+  gateOutCode: string;       // CV-YYMMDD-NNN — DEC-068
   gateOutType: GateOutType;
   bookingNo: string;
   containerNo: string;

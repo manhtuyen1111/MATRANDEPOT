@@ -85,12 +85,12 @@ function placeInYard(state: DepotState, containerNo: string, slot = { blockCode:
 }
 
 describe('HẠ VỎ — Giám định → Văn phòng → Thanh toán → GATE IN OK', () => {
-  it('GIN-001/CR-07: mã hồ sơ IN-YYMMDD-NNN do hệ thống cấp, tăng dần, không nhận mã từ giao diện', () => {
+  it('GIN-001/CR-07: mã hồ sơ HV-YYMMDD-NNN do hệ thống cấp, tăng dần, không nhận mã từ giao diện', () => {
     let s = fieldStep(createInitialState(), { initialContainerHint: 'HS-999999-999' });
     s = fieldStep(s);
     const [second, first] = s.gateInOrders;
-    expect(first.masterDossierCode).toMatch(/^IN-\d{6}-001$/);
-    expect(second.masterDossierCode).toMatch(/^IN-\d{6}-002$/);
+    expect(first.masterDossierCode).toMatch(/^HV-\d{6}-001$/);
+    expect(second.masterDossierCode).toMatch(/^HV-\d{6}-002$/);
     expect(first.initialContainerHint).toBeUndefined();
   });
 
@@ -344,7 +344,7 @@ describe('CR-05 CẤP VỎ — booking tự đếm, thu phí tại Văn phòng n
   it('REL-001/GOUT-001: lập lệnh → TTS → K80 cấp vỏ → Xe nâng OUT; booking đếm số đã cấp', () => {
     let s = order(createInitialState(), 'MSKU4089123');
     const go = s.gateOutOrders[0];
-    expect(go.gateOutCode).toMatch(/^OUT-\d{6}-001$/);
+    expect(go.gateOutCode).toMatch(/^CV-\d{6}-001$/);
     expect(go.status).toBe('PAYMENT_PENDING');
     // Chưa thanh toán: Xe nâng không được xuất
     expect(() => executeGateOut(as(s, 'usr-forklift'), { containerNo: 'MSKU4089123' })).toThrow(/Điều kiện 4/);
@@ -430,7 +430,7 @@ describe('CR-04 PHIẾU THU — Văn phòng tạo phiếu thu TTT', () => {
     let s = createMasterPrepaidReceipt(as(s0, 'usr-office'), input);
     const master = s.masterReceipts[0];
     expect(master.status).toBe('PENDING_PAYMENT');
-    expect(master.receiptCode).toMatch(/^PTM-\d{4}-003$/);
+    expect(master.receiptCode).toMatch(/^PTT-\d{4}-003$/);
     expect(s.paymentReceipts).toHaveLength(0);
 
     // Dùng QR khi chưa thu tiền nạp → từ chối
@@ -654,7 +654,7 @@ describe('DEC-052: lộ trình phiếu K80 & Văn phòng trả chứng từ', ()
     expect(() => confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode })).toThrow(/XE NÂNG/);
     s = executeGateOut(as(s, 'usr-forklift'), { containerNo: 'MSKU4089123' });
     const res = confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode });
-    expect(res.pack.dossierCode).toMatch(/^OUT-/);
+    expect(res.pack.dossierCode).toMatch(/^CV-/);
     expect(res.pack.receipts).toHaveLength(0);
   });
 });
@@ -867,5 +867,22 @@ describe('DEC-067: Tồn vỏ — lưu bãi, khóa / ghi chú hàng loạt', () 
     const sheet = yardStockSheet(noted.state.containers.filter((c) => ids.includes(c.id)));
     expect(sheet.columns.indexOf('LƯU BÃI (NGÀY)')).toBe(sheet.columns.indexOf('TRẠNG THÁI') + 1);
     expect(sheet.columns).toContain('GHI CHÚ');
+  });
+});
+
+describe('DEC-068: tiền tố mã theo tác nghiệp; đổi mã cũ khi nạp dữ liệu', () => {
+  it('Đổi IN-/HS- → HV-, OUT-/GO- → CV-, PTM- → PTT- (cả QR, nhật ký, bộ đếm); không đụng GIN-/CT-', async () => {
+    const { renameLegacyCodes } = await import('../src/services/codes');
+    const old = {
+      a: 'IN-261023-001', b: 'QR-OUT-261023-002', c: 'PTM-2026-004', d: 'HS-261019-001', e: 'GO-261018-001',
+      f: 'CT-GIN-261019-01', g: '[Hồ sơ IN-261023-001] ...', counters: { 'IN-261023': 1, 'OUT-261023': 2, 'PTM-2026': 4, 'PT-2026': 9 },
+    };
+    const n = renameLegacyCodes(old);
+    expect(n).toEqual({
+      a: 'HV-261023-001', b: 'QR-CV-261023-002', c: 'PTT-2026-004', d: 'HV-261019-001', e: 'CV-261018-001',
+      f: 'CT-GIN-261019-01', g: '[Hồ sơ HV-261023-001] ...', counters: { 'HV-261023': 1, 'CV-261023': 2, 'PTT-2026': 4, 'PT-2026': 9 },
+    });
+    const s = normalizeDepotState({ ...createInitialState(), containers: [{ ...createInitialState().containers[0], masterDossierCode: 'IN-261023-009' }] });
+    expect(s.containers[0].masterDossierCode).toBe('HV-261023-009');
   });
 });

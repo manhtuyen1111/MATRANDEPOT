@@ -367,7 +367,7 @@ export function createMasterPrepaidReceipt(
     throw new Error('Chọn hình thức thanh toán: Chuyển khoản (API QR) hoặc Tiền mặt.');
   }
 
-  const allocated = allocateCode(state, 'PTM');
+  const allocated = allocateCode(state, 'PTT');
   const seq = allocated.code.split('-').pop();
   const qrCode = `QR-TTT-${partner.code.replace(/[^A-Z0-9]/g, '').slice(0, 8)}-${seq}`;
   const master: MasterPrepaidReceipt = {
