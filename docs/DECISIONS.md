@@ -602,6 +602,14 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-012, DEC-075
 - Quyết định: Mỗi dòng menu chia **3 cột cố định**: **tên mục** (giãn, quá dài thì "…") | **cột biểu tượng điện thoại** (rộng cố định; mục không phải mobile để trống) | **cột số đếm** (rộng cố định, canh phải). Nhờ vậy biểu tượng mobile của mọi mục **thẳng hàng** theo chiều dọc, số đếm cũng thẳng hàng.
 
+### DEC-079 — Phiếu thu: sắp lại cột; Phiếu thu mẹ (TTT) liên kết từng lần trừ tiền
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-077
+- Quyết định:
+  - Danh sách phiếu thu: **bỏ cột Xác nhận thu**; cột **Trạng thái** đặt **ngay bên trái cột Đã in**; "Trường hợp • Hình thức" đổi thành **PHƯƠNG THỨC TT** (chỉ **Tiền mặt / Chuyển khoản**); "Tạo lúc • bởi" tách thành **Thời gian** và **Nhân viên**. Thứ tự: Mã phiếu thu | Tác nghiệp | Số tiền | Phương thức TT | Bên thanh toán | Mã hồ sơ / Phiếu thu mẹ | Số cont | Chứng từ | Thời gian | Nhân viên | Trạng thái | Đã in.
+  - **Phiếu thu trước (TTT)**: dòng danh sách hiện mã Phiếu thu mẹ **PTT-** kèm **"Dùng N lượt • còn X đ"**. Chi tiết có khối **Sử dụng phiếu thu mẹ**: Tổng nạp, **Số lượt đã dùng**, Đã trừ, **Còn lại** + bảng **từng lần trừ tiền**: thời gian, tác nghiệp (Hạ vỏ / Cấp vỏ), **mã hồ sơ (bấm mở hồ sơ)**, số cont, **chứng từ**, số tiền trừ, số dư sau, nhân viên (`masterReceiptUsage` trong `payments.ts`).
+  - Excel Phiếu thu: cột **PHƯƠNG THỨC TT**, thêm **SỐ LƯỢT ĐÃ DÙNG (TTT)**, **CÒN LẠI (TTT)**.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -691,6 +699,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-078 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-079 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

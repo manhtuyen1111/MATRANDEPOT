@@ -101,6 +101,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-078)
 - Menu: biểu tượng tác nghiệp mobile và số đếm nằm trong cột cố định → thẳng hàng.
 
+### Changed (2026-10-24, DEC-079)
+- Phiếu thu: bỏ cột Xác nhận thu, Trạng thái sát cột Đã in, cột Phương thức TT (Tiền mặt / Chuyển khoản), tách Thời gian / Nhân viên; phiếu thu trước hiện số lượt đã dùng / còn lại và bảng từng lần trừ (chứng từ, hồ sơ); Excel thêm cột tương ứng. Kiểm thử: 81/81 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 
