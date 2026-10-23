@@ -296,12 +296,13 @@ export const App: React.FC = () => {
                         type="button"
                         onClick={() => selectMenu(item.id)}
                         aria-current={active ? 'page' : undefined}
-                        className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 ${
+                        className={`flex w-full items-center gap-1.5 rounded-md px-2.5 py-1.5 text-left ${
                           active ? 'bg-blue-600 font-semibold text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                         }`}
                       >
-                        <span className="flex items-center gap-1.5">
-                          {item.label}
+                        {/* DEC-078: 3 cột cố định — tên | biểu tượng mobile | số đếm — để biểu tượng mobile thẳng hàng */}
+                        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                        <span className="flex w-6 shrink-0 justify-center">
                           {item.mobile && (
                             <span
                               title="Tác nghiệp mobile"
@@ -312,17 +313,19 @@ export const App: React.FC = () => {
                             </span>
                           )}
                         </span>
-                        {badges[item.id] !== undefined && (badges[item.id]! > 0 || active) && (
-                          <span
-                            title={urgent(item.id) ? "Có việc đang chờ" : undefined}
-                            className={`inline-flex items-center gap-1 rounded px-1.5 font-mono text-[10px] font-bold ${
-                              urgent(item.id) ? "bg-amber-500 text-white" : active ? "bg-white/20" : "bg-slate-100 text-slate-700"
-                            }`}
-                          >
-                            {urgent(item.id) && !active && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" aria-label="Có việc đang chờ" />}
-                            {badges[item.id]}
-                          </span>
-                        )}
+                        <span className="flex w-9 shrink-0 justify-end">
+                          {badges[item.id] !== undefined && (badges[item.id]! > 0 || active) && (
+                            <span
+                              title={urgent(item.id) ? "Có việc đang chờ" : undefined}
+                              className={`inline-flex items-center gap-1 rounded px-1.5 font-mono text-[10px] font-bold ${
+                                urgent(item.id) ? "bg-amber-500 text-white" : active ? "bg-white/20" : "bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {urgent(item.id) && !active && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" aria-label="Có việc đang chờ" />}
+                              {badges[item.id]}
+                            </span>
+                          )}
+                        </span>
                       </button>
                     </li>
                   );

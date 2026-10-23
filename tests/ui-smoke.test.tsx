@@ -38,6 +38,8 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html.match(/aria-label="Tác nghiệp mobile"/g)?.length).toBe(10);
     // DEC-075: việc hiện trường đang chờ được tô cam + chấm nhấp nháy
     expect(html).toContain('Có việc đang chờ');
+    // DEC-078: biểu tượng mobile nằm trong cột cố định → thẳng hàng
+    expect(html.match(/flex w-6 shrink-0 justify-center"><span title="Tác nghiệp mobile"/g)?.length).toBe(10);
   });
 
   it('Tồn vỏ hiển thị biểu tượng khóa và dấu - cho container chưa có vị trí', () => {
