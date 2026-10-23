@@ -352,6 +352,14 @@ Quy ước trạng thái:
 - Ghi chú kỹ thuật: `npm audit` báo 2 cảnh báo mức trung bình từ `uuid` (phụ thuộc của `exceljs`); lỗi nằm ở hàm ghi vào buffer của `uuid`, ứng dụng không dùng. Theo dõi khi `exceljs` ra bản mới.
 - Còn chờ: **danh mục trạng thái chính thức** (OPEN-003) — người dùng sẽ gửi danh sách; chặn việc viết schema database (P4-01).
 
+### DEC-051 — Phiếu thu ghi rõ tác nghiệp; hồ sơ link về Phiếu thu
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định:
+  - Mỗi phiếu thu ghi rõ **TÁC NGHIỆP**: `HẠ VỎ`, `CẤP VỎ`, `THU TRƯỚC (TTT)` (nạp Phiếu thu mẹ). Hiển thị ở danh sách, ở chi tiết phiếu thu (dòng "TÁC NGHIỆP" nổi bật để in), và có bộ lọc "Tác nghiệp" khi tra cứu.
+  - Trong **hồ sơ container**, mỗi chứng từ (Hạ vỏ, Cấp vỏ) có khung **"Thu tiền — <tác nghiệp>"** nổi bật theo màu trạng thái: đã thu (TTTT → link phiếu thu; TTT → Phiếu thu mẹ + link phiếu thu gốc), công nợ TTS, đang chờ chuyển khoản (link yêu cầu), chưa thanh toán, đã hủy. Mục "Phiếu thu" cuối hồ sơ hiển thị nhãn tác nghiệp và link.
+  - Bấm link → đóng hồ sơ, mở **Văn phòng → Phiếu thu** và mở đúng phiếu đó. Chỉ hiện link với người được vào menu Phiếu thu (Văn phòng, Quản lý, Admin); vai trò khác chỉ thấy chữ.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -441,6 +449,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-050 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-051 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

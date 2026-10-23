@@ -7,10 +7,12 @@ import {
   PaymentReceipt,
   PaymentTransactionStatus,
   DirectPaymentMethod,
+  ReceiptOperation,
   ServiceWorkOrder,
 } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { formatLocation } from './core';
+import { receiptOperationOf } from './payments';
 
 // ============================================================================
 // BÁO CÁO & TRA CỨU (CR-08, CR-04 PHIẾU THU)
@@ -129,6 +131,8 @@ export interface ReceiptQueryFilter extends DateRange {
   keyword?: string; // Mã phiếu thu, số container, mã hồ sơ, mã tham chiếu
   method?: DirectPaymentMethod | 'ALL';
   status?: PaymentTransactionStatus | 'ALL';
+  operation?: ReceiptOperation | 'ALL';
+  receiptNo?: string; // Mở thẳng 1 phiếu thu từ hồ sơ (DEC-051)
 }
 
 export interface ReceiptRow {
@@ -139,7 +143,7 @@ export interface ReceiptRow {
 export function queryReceipts(state: DepotState, filter: ReceiptQueryFilter, page = 1): PagedResult<ReceiptRow> {
   const range = toRange(filter);
   const keyword = filter.keyword?.trim().toUpperCase();
-  if (!range && !keyword) {
+  if (!range && !keyword && !filter.receiptNo) {
     throw new Error('Chọn khoảng thời gian hoặc nhập từ khóa (mã phiếu thu / số container / mã hồ sơ) trước khi tra cứu.');
   }
   const receiptsByTx = new Map(state.paymentReceipts.map((r) => [r.transactionId, r]));
@@ -148,6 +152,11 @@ export function queryReceipts(state: DepotState, filter: ReceiptQueryFilter, pag
     .filter(({ transaction }) => inRange(transaction.confirmedAt || transaction.createdAt, range))
     .filter(({ transaction }) => !filter.method || filter.method === 'ALL' || transaction.method === filter.method)
     .filter(({ transaction }) => !filter.status || filter.status === 'ALL' || transaction.status === filter.status)
+    .filter(({ transaction, receipt }) => !filter.receiptNo || receipt?.receiptNo === filter.receiptNo || transaction.id === filter.receiptNo)
+    .filter(
+      ({ transaction, receipt }) =>
+        !filter.operation || filter.operation === 'ALL' || receiptOperationOf(state, { ...transaction, operation: receipt?.operation }) === filter.operation
+    )
     .filter(({ transaction, receipt }) => {
       if (!keyword) return true;
       return [receipt?.receiptNo, transaction.containerNo, transaction.dossierCode, transaction.paymentRef, transaction.payerName]

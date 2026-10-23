@@ -14,7 +14,7 @@ import { MasterDossierModal } from '../src/components/MasterDossierModal';
 import { InspectorHaVoMobile } from '../src/features/inspector/InspectorHaVoMobile';
 import { RepairTeamCatalog } from '../src/features/catalog/RepairTeamCatalog';
 import { UserRoleCatalog } from '../src/features/catalog/UserRoleCatalog';
-import { toggleContainerHold } from '../src/services/depotOperations';
+import { confirmGateInPaymentAndComplete, recordGateInFieldStep, toggleContainerHold, verifyGateInOfficeAndCreatePayment } from '../src/services/depotOperations';
 
 // Smoke test: mỗi màn hình render được với dữ liệu mẫu, không ném lỗi khi render
 const noop = () => {};
@@ -78,5 +78,30 @@ describe('Tác nghiệp mobile dùng khung max-w-lg', () => {
       <FieldQueueWorkspaces mode="XN_CHO_HA_VO" state={base} onUpdateState={noop} />,
     ];
     for (const el of screens) expect(renderToString(el)).toContain('max-w-lg');
+  });
+});
+
+describe('DEC-051: hồ sơ container link về Phiếu thu', () => {
+  it('Khung Thu tiền nổi bật, link phiếu thu khi được vào menu Phiếu thu; chỉ chữ khi không có quyền', () => {
+    const office = as(base, 'usr-office');
+    let s = recordGateInFieldStep(as(base, 'usr-inspector'), {
+      gateInType: 'CUSTOMER_RETURN', doorPhotoUrl: 'data:x', conditionClass: 'AV', stuffingClass: 'E',
+      cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
+    });
+    const gi = s.gateInOrders[0];
+    s = verifyGateInOfficeAndCreatePayment({ ...s, currentUser: office.currentUser }, {
+      gateInId: gi.id, containerNo: 'MSKU1234567', size: '40', type: 'HC', truckNo: '15C', driverPhone: '0912345678',
+      customerName: 'Công ty Tiếp Vận Việt (VietLog)', shippingLineCode: 'MAERSK', orderDocNo: '', feeCatalogIds: ['fee-rac-40'],
+    });
+    s = confirmGateInPaymentAndComplete(s, { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const ptNo = s.paymentReceipts[0].receiptNo;
+
+    const withLink = renderToString(<MasterDossierModal masterDossierCode={gi.masterDossierCode} state={s} onClose={noop} onOpenReceipt={noop} />);
+    expect(withLink).toContain('Thu tiền — HẠ VỎ');
+    expect(withLink).toContain("text-blue-700 underline");
+    expect(withLink).toContain(`Phiếu thu ${ptNo}`);
+    const noLink = renderToString(<MasterDossierModal masterDossierCode={gi.masterDossierCode} state={s} onClose={noop} />);
+    expect(noLink).toContain(ptNo);
+    expect(noLink).not.toContain("text-blue-700 underline");
   });
 });

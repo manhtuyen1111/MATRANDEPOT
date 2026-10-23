@@ -138,6 +138,7 @@ export const App: React.FC = () => {
   const [activeK80Ticket, setActiveK80Ticket] = useState<K80InternalTicket | null>(null);
   const [activeDossierCode, setActiveDossierCode] = useState<string | null>(null);
   const [simulatedQr, setSimulatedQr] = useState('');
+  const [receiptFocus, setReceiptFocus] = useState<{ key: string; nonce: number } | null>(null);
   const [prefs, setPrefs] = useState(readPrefs);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -392,7 +393,7 @@ export const App: React.FC = () => {
           {activeMenu === 'VP_CAP_VO' && (
             <OfficeCapVoWorkspace state={state} onUpdateState={handleUpdateState} onOpenK80Ticket={setActiveK80Ticket} onOpenDossier={setActiveDossierCode} />
           )}
-          {activeMenu === 'VP_PHIEU_THU' && <ReceiptsWorkspace state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
+          {activeMenu === 'VP_PHIEU_THU' && <ReceiptsWorkspace state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} focus={receiptFocus} />}
           {activeMenu === 'VP_NHAP_TAU' && <OfficeVesselBatchWorkspace mode="NHAP_TAU" />}
           {activeMenu === 'VP_XUAT_TAU' && <OfficeVesselBatchWorkspace mode="XUAT_TAU" />}
           {FIELD_QUEUE_MENUS.includes(activeMenu as FieldQueueMode) && (
@@ -419,6 +420,16 @@ export const App: React.FC = () => {
         state={state}
         onClose={() => setActiveDossierCode(null)}
         onOpenK80Ticket={setActiveK80Ticket}
+        // DEC-051: link thẳng tới Văn phòng → Phiếu thu (chỉ khi user được vào menu Phiếu thu)
+        onOpenReceipt={
+          canOpenMenu(state.currentUser, 'VP_PHIEU_THU')
+            ? (key) => {
+                setActiveDossierCode(null);
+                setReceiptFocus({ key, nonce: Date.now() });
+                setActiveMenu('VP_PHIEU_THU');
+              }
+            : undefined
+        }
       />
 
       <K80TicketModal

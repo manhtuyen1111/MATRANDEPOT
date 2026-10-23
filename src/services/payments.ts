@@ -5,6 +5,7 @@ import {
   PaymentReceipt,
   PaymentTransaction,
   PaymentVoucher,
+  ReceiptOperation,
 } from '../types/depot';
 import { allocateCode } from './codes';
 import { appendAudit, assertPermission, newId, nowIso, SYSTEM_ACTOR } from './core';
@@ -87,6 +88,7 @@ function issueReceipt(state: DepotState, transactionId: string, issuedBy: string
     receiptNo: allocated.code,
     transactionId: tx.id,
     purpose: tx.purpose,
+    operation: receiptOperationOf(allocated.state, { purpose: tx.purpose, voucherId: tx.voucherId }),
     amount: tx.amount,
     method: tx.method,
     paymentCategory: tx.paymentCategory,
@@ -437,4 +439,17 @@ export function confirmPrepaidCash(state: DepotState, input: { transactionId: st
 // Đi qua đúng applyBankCallback nên bấm nhiều lần không phát sinh phiếu thu trùng.
 export function demoBankProviderRef(transactionId: string): string {
   return `DEMO-${transactionId}`;
+}
+
+// DEC-051: xác định tác nghiệp của khoản thu (Hạ vỏ / Cấp vỏ / Thu trước) — dùng cho phiếu thu cũ chưa lưu operation
+export function receiptOperationOf(
+  state: DepotState,
+  input: { purpose: 'VOUCHER' | 'PREPAID_TOPUP'; voucherId?: string; operation?: ReceiptOperation }
+): ReceiptOperation {
+  if (input.operation) return input.operation;
+  if (input.purpose === 'PREPAID_TOPUP') return 'THU_TRUOC';
+  const v = state.vouchers.find((x) => x.id === input.voucherId);
+  if (v?.serviceType === 'GATE_IN') return 'HA_VO';
+  if (v?.serviceType === 'GATE_OUT') return 'CAP_VO';
+  return 'KHAC';
 }

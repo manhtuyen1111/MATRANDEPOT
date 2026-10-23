@@ -1,9 +1,10 @@
 import React from 'react';
-import { CheckCircle2, Clock, Printer, QrCode, X } from 'lucide-react';
+import { CheckCircle2, Clock, Printer, QrCode, ReceiptText, X } from 'lucide-react';
 import { ContainerStatus, FeeLineItem, GateOutOrder, K80InternalTicket, PaymentVoucher } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
 import { formatLocation } from '../services/core';
-import { paymentLabelOf } from '../services/payments';
+import { paymentLabelOf, receiptOperationOf } from '../services/payments';
+import { RECEIPT_OPERATION_LABELS } from '../types/depot';
 import { formatViTime } from './shared';
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
   state: DepotState;
   onClose: () => void;
   onOpenK80Ticket?: (ticket: K80InternalTicket) => void;
+  onOpenReceipt?: (key: string) => void; // DEC-051: mở Văn phòng → Phiếu thu
 }
 
 const CONTAINER_STATUS: Record<ContainerStatus, string> = {
@@ -61,7 +63,77 @@ const Dept: React.FC<{ title: string; confirm: React.ReactNode; children: React.
   </section>
 );
 
-const FeeTable: React.FC<{ lines?: FeeLineItem[]; voucher?: PaymentVoucher }> = ({ lines, voucher }) => {
+// Link tới Văn phòng → Phiếu thu; không có quyền vào menu Phiếu thu thì chỉ hiện chữ
+const ReceiptLink: React.FC<{ label: string; target: string; onOpenReceipt?: (key: string) => void }> = ({ label, target, onOpenReceipt }) =>
+  onOpenReceipt ? (
+    <button type="button" onClick={() => onOpenReceipt(target)} className="inline-flex items-center gap-1 font-mono font-bold text-blue-700 underline hover:text-blue-900">
+      <ReceiptText className="h-3.5 w-3.5" />
+      {label}
+    </button>
+  ) : (
+    <span className="font-mono font-bold">{label}</span>
+  );
+
+// DEC-051: khung THU TIỀN nổi bật của một chứng từ — ghi rõ tác nghiệp và link phiếu thu
+const PaymentBox: React.FC<{
+  state: DepotState;
+  voucher: PaymentVoucher;
+  operation: string;
+  onOpenReceipt?: (key: string) => void;
+}> = ({ state, voucher, operation, onOpenReceipt }) => {
+  const txs = state.paymentTransactions.filter((t) => t.voucherId === voucher.id);
+  const receiptOf = (txId?: string) => state.paymentReceipts.find((r) => r.transactionId === txId);
+  const paid = txs.find((t) => t.status === 'SUCCEEDED');
+  const pending = txs.find((t) => t.status === 'PENDING');
+  const master = voucher.masterReceiptCode ? state.masterReceipts.find((m) => m.receiptCode === voucher.masterReceiptCode) : undefined;
+  const masterTopup = master ? state.paymentTransactions.find((t) => t.masterReceiptId === master.id && t.status === 'SUCCEEDED') : undefined;
+
+  let body: React.ReactNode;
+  let tone = 'border-amber-300 bg-amber-50';
+  if (voucher.status === 'CONFIRMED' && voucher.paymentCategory === 'TTT') {
+    tone = 'border-emerald-300 bg-emerald-50';
+    const r = receiptOf(masterTopup?.id);
+    body = (
+      <>
+        Đã thu — TTT trừ Phiếu thu mẹ <span className="font-mono font-bold">{voucher.masterReceiptCode}</span>
+        {r && <> • phiếu thu gốc <ReceiptLink label={r.receiptNo} target={r.receiptNo} onOpenReceipt={onOpenReceipt} /></>}
+      </>
+    );
+  } else if (voucher.status === 'CONFIRMED' && paid) {
+    tone = 'border-emerald-300 bg-emerald-50';
+    const r = receiptOf(paid.id);
+    body = (
+      <>
+        Đã thu — TTTT {paid.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'} •{' '}
+        {r ? <ReceiptLink label={`Phiếu thu ${r.receiptNo}`} target={r.receiptNo} onOpenReceipt={onOpenReceipt} /> : 'chưa có phiếu thu'}
+      </>
+    );
+  } else if (voucher.status === 'DEFERRED') {
+    tone = 'border-violet-300 bg-violet-50';
+    body = <>Công nợ TTS — chưa thu tiền ({voucher.ttsNote})</>;
+  } else if (voucher.status === 'PENDING' && pending) {
+    body = <>Đang chờ chuyển khoản • <ReceiptLink label={`Yêu cầu ${pending.paymentRef}`} target={pending.id} onOpenReceipt={onOpenReceipt} /></>;
+  } else if (voucher.status === 'CANCELLED') {
+    tone = 'border-slate-300 bg-slate-50';
+    body = <>Chứng từ đã hủy</>;
+  } else {
+    body = <>Chưa thanh toán</>;
+  }
+  return (
+    <div className={`mt-2 rounded-md border-2 px-3 py-2 text-xs ${tone}`}>
+      <span className="block text-[10px] font-black uppercase tracking-wide text-slate-700">{`Thu tiền — ${operation}`}</span>
+      <span className="text-slate-900">{body}</span>
+    </div>
+  );
+};
+
+const FeeTable: React.FC<{
+  lines?: FeeLineItem[];
+  voucher?: PaymentVoucher;
+  state: DepotState;
+  operation: string;
+  onOpenReceipt?: (key: string) => void;
+}> = ({ lines, voucher, state, operation, onOpenReceipt }) => {
   if (!voucher && !lines?.length) return <p className="text-slate-500">Chưa lập chứng từ chi phí.</p>;
   return (
     <div className="space-y-1">
@@ -83,11 +155,12 @@ const FeeTable: React.FC<{ lines?: FeeLineItem[]; voucher?: PaymentVoucher }> = 
           {voucher.status === 'PENDING' ? 'Chờ thanh toán' : voucher.status === 'CANCELLED' ? 'Đã hủy' : paymentLabelOf(voucher)}
         </p>
       )}
+      {voucher && <PaymentBox state={state} voucher={voucher} operation={operation} onOpenReceipt={onOpenReceipt} />}
     </div>
   );
 };
 
-export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, onClose, onOpenK80Ticket }) => {
+export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, onClose, onOpenK80Ticket, onOpenReceipt }) => {
   if (!masterDossierCode) return null;
 
   const outMatch = state.gateOutOrders.find((o) => o.gateOutCode === masterDossierCode);
@@ -201,7 +274,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                 confirm={<Confirm done={gateIn.status === 'GATE_IN_OK'} by={gateIn.gateInOkBy} at={gateIn.gateInOkAt} pending={gateIn.status === 'PAYMENT_PENDING' ? 'Chờ thanh toán' : 'Chờ văn phòng'} />}
               >
                 {gateIn.orderDocNo && <p className="mb-1">Số lệnh / chứng từ: <span className="font-mono">{gateIn.orderDocNo}</span></p>}
-                <FeeTable lines={inVoucher?.feeLines || gateIn.feeLines} voucher={inVoucher} />
+                <FeeTable lines={inVoucher?.feeLines || gateIn.feeLines} voucher={inVoucher} state={state} operation="HẠ VỎ" onOpenReceipt={onOpenReceipt} />
               </Dept>
             )}
 
@@ -276,17 +349,23 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                     <Field label="Thông tin vận tải" value={o.truckNo} />
                     <Field label="SĐT vận tải" value={o.driverPhone} />
                   </dl>
-                  {o.status === 'CANCELLED' ? <p className="text-slate-500">Lý do hủy: {o.cancelReason}</p> : <FeeTable lines={o.feeLines} voucher={v} />}
+                  {o.status === 'CANCELLED' ? <p className="text-slate-500">Lý do hủy: {o.cancelReason}</p> : <FeeTable lines={o.feeLines} voucher={v} state={state} operation="CẤP VỎ" onOpenReceipt={onOpenReceipt} />}
                 </Dept>
               );
             })}
 
             {receipts.length > 0 && (
               <Dept title="Phiếu thu" confirm={<Confirm done by={receipts[0].issuedBy} at={receipts[0].issuedAt} />}>
-                <ul className="space-y-0.5">
+                <ul className="space-y-1.5">
                   {receipts.map((r) => (
-                    <li key={r.id} className="font-mono text-[11px]">
-                      {r.receiptNo} • {formatVnd(r.amount)} • {r.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'} • {r.dossierCode}
+                    <li key={r.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md border-2 border-emerald-300 bg-emerald-50 px-3 py-1.5 text-[11px]">
+                      <span className="rounded bg-slate-900 px-1.5 py-0.5 text-[10px] font-black text-white">
+                        {RECEIPT_OPERATION_LABELS[receiptOperationOf(state, r)]}
+                      </span>
+                      <ReceiptLink label={r.receiptNo} target={r.receiptNo} onOpenReceipt={onOpenReceipt} />
+                      <span className="font-mono font-bold">{formatVnd(r.amount)}</span>
+                      <span>{r.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}</span>
+                      <span className="font-mono text-slate-600">{r.dossierCode}</span>
                     </li>
                   ))}
                 </ul>

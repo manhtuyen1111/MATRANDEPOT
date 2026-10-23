@@ -11,6 +11,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Added
 - Test đọc lại file .xlsx (5 sheet, tiêu đề cột). Kiểm thử: 43/43 pass, build PASS.
 
+### Added (2026-10-23)
+- Phiếu thu ghi rõ tác nghiệp (HẠ VỎ / CẤP VỎ / THU TRƯỚC), lọc theo tác nghiệp; hồ sơ container có khung Thu tiền nổi bật và link thẳng về Văn phòng → Phiếu thu (DEC-051). Kiểm thử: 45/45 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

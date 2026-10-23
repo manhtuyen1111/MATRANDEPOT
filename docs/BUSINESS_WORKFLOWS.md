@@ -197,7 +197,8 @@ Chính sách thu trước, thu sau, công nợ và hoàn tiền phải được 
 - Phiếu thu chỉ phát hành khi có **giao dịch thu tiền thực tế thành công** (tiền mặt được xác nhận, hoặc chuyển khoản được ngân hàng xác nhận); mã `PT-YYYY-NNNNNN`; mỗi giao dịch một phiếu.
 - TTT khi Hạ vỏ / Cấp vỏ chỉ ghi lần trừ dần, liên kết về Phiếu thu mẹ; TTS không phát hành phiếu thu.
 - **Văn phòng tạo phiếu thu TTT** (nạp Phiếu thu mẹ — DEC-047) tại menu PHIẾU THU: chọn đối tác, số tiền, Tiền mặt hoặc Chuyển khoản API QR → Chờ thanh toán → khi thu thành công thì phát hành phiếu thu và Phiếu thu mẹ mới dùng được để trừ dần.
-- Tra cứu phiếu thu theo khoảng ngày, mã phiếu thu, số container, mã hồ sơ, hình thức, trạng thái; xem chi tiết và truy ngược hồ sơ.
+- Tra cứu phiếu thu theo khoảng ngày, mã phiếu thu, số container, mã hồ sơ, **tác nghiệp (HẠ VỎ / CẤP VỎ / THU TRƯỚC)**, hình thức, trạng thái; xem chi tiết và truy ngược hồ sơ.
+- Hồ sơ container: khung "Thu tiền" nổi bật ở từng chứng từ, link thẳng về Văn phòng → Phiếu thu (DEC-051).
 
 ## 11. Báo cáo và kiểm soát
 

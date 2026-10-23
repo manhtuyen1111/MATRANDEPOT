@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FilePlus2, Printer, ReceiptText, Search } from 'lucide-react';
 import {
   DirectPaymentMethod,
   PAYMENT_METHOD_LABELS,
   PAYMENT_TX_STATUS_LABELS,
   PaymentTransactionStatus,
+  RECEIPT_OPERATION_LABELS,
+  ReceiptOperation,
 } from '../../types/depot';
 import { DepotState, formatVnd } from '../../services/depotStore';
 import { simulateDemoBankTransfer } from '../../services/depotOperations';
-import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt } from '../../services/payments';
+import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, receiptOperationOf } from '../../services/payments';
 import { queryReceipts, ReceiptQueryFilter, ReceiptRow } from '../../services/reports';
 import { can } from '../../services/permissions';
 import {
@@ -36,8 +38,10 @@ export const ReceiptsWorkspace: React.FC<{
   state: DepotState;
   onUpdateState: (next: DepotState) => void;
   onOpenDossier?: (code: string) => void;
-}> = ({ state, onUpdateState, onOpenDossier }) => {
-  const [draft, setDraft] = useState<ReceiptQueryFilter>({ dateFrom: today(), dateTo: today(), keyword: '', method: 'ALL', status: 'ALL' });
+  // Mở thẳng 1 phiếu thu (mã PT- hoặc id giao dịch) khi bấm từ hồ sơ container (DEC-051); nonce để mở lại cùng phiếu
+  focus?: { key: string; nonce: number } | null;
+}> = ({ state, onUpdateState, onOpenDossier, focus }) => {
+  const [draft, setDraft] = useState<ReceiptQueryFilter>({ dateFrom: today(), dateTo: today(), keyword: '', method: 'ALL', status: 'ALL', operation: 'ALL' });
   const [applied, setApplied] = useState<ReceiptQueryFilter | null>(null);
   const [page, setPage] = useState(1);
   const [selectedTxId, setSelectedTxId] = useState('');
@@ -45,6 +49,21 @@ export const ReceiptsWorkspace: React.FC<{
   const [cancelReason, setCancelReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Bấm từ hồ sơ container → tra cứu đúng phiếu thu đó và mở chi tiết
+  useEffect(() => {
+    if (!focus?.key) return;
+    const tx =
+      state.paymentTransactions.find((t) => t.id === focus.key) ||
+      state.paymentTransactions.find((t) => state.paymentReceipts.some((r) => r.receiptNo === focus.key && r.transactionId === t.id));
+    setApplied({ receiptNo: focus.key });
+    setPage(1);
+    setSelectedTxId(tx?.id || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.nonce]);
+
+  const operationOf = (row: ReceiptRow): ReceiptOperation =>
+    receiptOperationOf(state, { ...row.transaction, operation: row.receipt?.operation });
 
   const canCreate = can(state.currentUser, 'PREPAID_RECEIPT_CREATE');
   let result: ReturnType<typeof queryReceipts> | null = null;
@@ -119,6 +138,15 @@ export const ReceiptsWorkspace: React.FC<{
             </select>
           </label>
           <label>
+            <span className={labelCls}>Tác nghiệp</span>
+            <select value={draft.operation} onChange={(e) => setDraft({ ...draft, operation: e.target.value as ReceiptQueryFilter['operation'] })} className={inputCls}>
+              <option value="ALL">Tất cả</option>
+              {(Object.keys(RECEIPT_OPERATION_LABELS) as ReceiptOperation[]).map((o) => (
+                <option key={o} value={o}>{RECEIPT_OPERATION_LABELS[o]}</option>
+              ))}
+            </select>
+          </label>
+          <label>
             <span className={labelCls}>Trạng thái</span>
             <select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as ReceiptQueryFilter['status'] })} className={inputCls}>
               <option value="ALL">Tất cả</option>
@@ -152,6 +180,7 @@ export const ReceiptsWorkspace: React.FC<{
                     <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                       <tr>
                         <th className="px-3 py-2">Mã phiếu thu</th>
+                        <th className="px-3 py-2">Tác nghiệp</th>
                         <th className="px-3 py-2">Thời gian</th>
                         <th className="px-3 py-2 text-right">Số tiền</th>
                         <th className="px-3 py-2">Hình thức</th>
@@ -160,16 +189,20 @@ export const ReceiptsWorkspace: React.FC<{
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {result.rows.map(({ transaction: t, receipt: r }) => (
+                      {result.rows.map((row) => {
+                        const { transaction: t, receipt: r } = row;
+                        return (
                         <tr key={t.id} onClick={() => setSelectedTxId(t.id)} className={`cursor-pointer ${selectedTxId === t.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
                           <td className="px-3 py-2 font-mono font-bold">{r?.receiptNo || '—'}</td>
+                          <td className="px-3 py-2 font-bold">{RECEIPT_OPERATION_LABELS[operationOf(row)]}</td>
                           <td className="px-3 py-2">{formatViTime(t.confirmedAt || t.createdAt)}</td>
                           <td className="px-3 py-2 text-right font-mono">{formatVnd(t.amount)}</td>
                           <td className="px-3 py-2">{t.paymentCategory === 'TTT' ? 'TTT (nạp trước)' : 'TTTT'} • {PAYMENT_METHOD_LABELS[t.method]}</td>
                           <td className="px-3 py-2"><span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[t.status]}`}>{PAYMENT_TX_STATUS_LABELS[t.status]}</span></td>
                           <td className="px-3 py-2 font-mono">{t.dossierCode || t.paymentRef}{t.containerNo ? ` • ${t.containerNo}` : ''}</td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                   <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} />
@@ -192,6 +225,9 @@ export const ReceiptsWorkspace: React.FC<{
                 )
               }
             >
+              <p className="mb-3 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-center text-sm font-black tracking-wide text-slate-900">
+                TÁC NGHIỆP: {RECEIPT_OPERATION_LABELS[operationOf(selected)]}
+              </p>
               <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
                 <dt className="text-slate-500">Trạng thái</dt>
                 <dd><span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[selected.transaction.status]}`}>{PAYMENT_TX_STATUS_LABELS[selected.transaction.status]}</span></dd>

@@ -593,3 +593,28 @@ describe('Q-034: xuất Excel .xlsx chuẩn', () => {
     expect(ton.rowCount).toBe(sheets[4].rows.length + 1);
   });
 });
+
+describe('DEC-051: phiếu thu ghi rõ tác nghiệp', () => {
+  it('Hạ vỏ tiền mặt → HA_VO; Cấp vỏ tiền mặt → CAP_VO; nạp TTT → THU_TRUOC; lọc theo tác nghiệp / mở theo mã phiếu', () => {
+    let s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    s = createReleaseOrder(as(s, 'usr-office'), {
+      bookingNo: 'BK-X', customerName: VIETLOG, containerNo: 'MSKU4089123', truckNo: '15H', driverPhone: '0912345678',
+      feeCatalogIds: [FEE_LOLO_40HC_MSK],
+    });
+    s = confirmReleasePayment(as(s, 'usr-office'), { gateOutOrderId: s.gateOutOrders[0].id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    s = createMasterPrepaidReceipt(as(s, 'usr-office'), { customerCode: 'VIETLOG', lotDescription: '', totalAmount: 1000000, method: 'CASH' });
+    s = confirmPrepaidCash(as(s, 'usr-office'), { transactionId: s.paymentTransactions[0].id });
+
+    const ops = s.paymentReceipts.map((r) => r.operation).sort();
+    expect(ops).toEqual(['CAP_VO', 'HA_VO', 'THU_TRUOC']);
+    const today = new Date().toISOString().slice(0, 10);
+    expect(queryReceipts(s, { dateFrom: today, dateTo: today, operation: 'CAP_VO' }).total).toBe(1);
+    const ha = s.paymentReceipts.find((r) => r.operation === 'HA_VO')!;
+    const found = queryReceipts(s, { receiptNo: ha.receiptNo });
+    expect(found.total).toBe(1);
+    expect(found.rows[0].receipt!.receiptNo).toBe(ha.receiptNo);
+  });
+});

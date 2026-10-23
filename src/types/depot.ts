@@ -372,11 +372,22 @@ export interface PaymentTransaction {
 }
 
 // PHIẾU THU: chỉ phát hành khi giao dịch thu tiền thực tế thành công; mỗi giao dịch tối đa 1 phiếu
+// Tác nghiệp phát sinh khoản thu, in trên phiếu thu (DEC-051)
+export type ReceiptOperation = 'HA_VO' | 'CAP_VO' | 'THU_TRUOC' | 'KHAC';
+
+export const RECEIPT_OPERATION_LABELS: Record<ReceiptOperation, string> = {
+  HA_VO: 'HẠ VỎ',
+  CAP_VO: 'CẤP VỎ',
+  THU_TRUOC: 'THU TRƯỚC (TTT)',
+  KHAC: 'KHÁC',
+};
+
 export interface PaymentReceipt {
   id: string;
   receiptNo: string; // PT-YYYY-NNNNNN
   transactionId: string;
   purpose: 'VOUCHER' | 'PREPAID_TOPUP';
+  operation?: ReceiptOperation; // Tác nghiệp phát sinh khoản thu (DEC-051)
   amount: number;
   method: DirectPaymentMethod;
   paymentCategory: 'TTT' | 'TTTT';
