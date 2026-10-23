@@ -62,6 +62,10 @@ Cập nhật lần cuối: 2026-10-22.
 - [x] Q-033: (Xác nhận — DEC-040) Sheet `XUẤT VỎ` / `NHẬP VỎ` của báo cáo Tổng hợp hiện được hiểu là XUẤT TÀU (+ trả theo lệnh riêng) / NHẬP TÀU. Đúng chưa?
 - [x] Q-034: Xuất Excel .xlsx chuẩn (DEC-050).
 - [x] Q-035: Không còn hiệu lực — đã bỏ bước QC (DEC-049).
+- [x] Q-036: Giới hạn lọc báo cáo, ngưỡng xuất Excel phía máy chủ, thời gian lưu dữ liệu (DEC-066).
+- [ ] Q-037: Ảnh giám định / sửa chữa — số ảnh mỗi lượt, giữ ảnh gốc bao lâu (ảnh hưởng dung lượng Storage).
+- [ ] Q-038: Số người dùng đồng thời giờ cao điểm (chọn gói Supabase).
+- [ ] Q-039: Chính sách sao lưu — khôi phục về bao lâu trước, có cần bản sao ngoài Supabase.
 
 ## 9. Quy tắc quản lý câu hỏi
 

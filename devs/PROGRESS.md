@@ -4,7 +4,9 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-23 — Claude Code
-Trạng thái chung: **GĐ 3 xong** (nhánh `feature/cr-2026-10-batch1` đã push). Hôm nay (nhánh `agent/claude/p4-prep-xlsx`): Excel .xlsx; phiếu thu ghi tác nghiệp; K80 có lộ trình + Trả chứng từ; thời gian dd/MM/yyyy HH:mm:ss; Xuất Excel mọi báo cáo. **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Trạng thái chung: **GĐ 3 xong; chuẩn bị GĐ 4 xong phần tài liệu** — nhánh `agent/claude/p4-prep-xlsx` **đã push đầy đủ lên GitHub** (DEC-050 → DEC-066), chưa merge vào `main`. Gồm: Excel .xlsx mọi báo cáo + Tồn vỏ; phiếu thu ghi tác nghiệp, mẫu in thống nhất, đếm số lần in; Danh mục Công ty; K80 lộ trình + Trả chứng từ (1 ô quét, 2 cột chờ Hạ vỏ / Cấp vỏ); thời gian dd/MM/yyyy HH:mm:ss; khóa = Remark Văn phòng; phương án dữ liệu lớn (DEC-066). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+
+**Điểm dừng 2026-10-23 (tạm nghỉ):** làm tiếp từ mục A (quyết định của bạn) và B (việc tiếp theo). Câu hỏi tư vấn còn mở cho P4-01: số ảnh / thời gian giữ ảnh, số người dùng cùng lúc, chính sách sao lưu.
 Kiểm thử mới nhất: `npm test` **60/60 pass** • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
@@ -123,3 +125,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-23 — Claude Code: Tồn vỏ — Thao tác chỉ Khóa / Mở khóa; bút sửa vị trí ở cột Vị trí. 60/60 • build PASS.
 - 2026-10-23 — Claude Code: chốt DEC-066 (dữ liệu lớn) — DECISIONS + DATABASE_CONTRACT mục 10.
 - 2026-10-23 — Claude Code: Tồn vỏ — Thao tác = 1 nút Khóa / Mở khóa. 60/60 • build PASS.
+- 2026-10-23 — Claude Code: điểm dừng — cập nhật tiến độ chung, ROADMAP GĐ 4, OPEN_QUESTIONS Q-036 → Q-039; push GitHub.
