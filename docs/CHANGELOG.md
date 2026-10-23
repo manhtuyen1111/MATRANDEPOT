@@ -56,6 +56,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-23)
 - Tồn vỏ: các thao tác (Sửa vị trí, Khóa / Mở khóa) gom vào 1 ô sổ xuống trên mỗi dòng.
 
+### Changed (2026-10-23)
+- Tồn vỏ: ô Thao tác chỉ còn Khóa / Mở khóa; Sửa vị trí bằng biểu tượng bút ở cột Vị trí (giống Ghi chú văn phòng).
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

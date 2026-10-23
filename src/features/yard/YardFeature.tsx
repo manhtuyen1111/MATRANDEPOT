@@ -171,7 +171,22 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                       <td className="px-3 py-2.5">{c.type}</td>
                       <td className="px-3 py-2.5">{c.shippingLineCode}</td>
                       <td className={`px-3 py-2.5 font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
-                      <td className="px-3 py-2.5 font-mono">{formatLocation(c)}</td>
+                      <td className="px-3 py-2.5 font-mono" onClick={(e) => canEditLocation && hasPosition && e.stopPropagation()}>
+                        <span className="inline-flex items-center gap-1.5">
+                          {formatLocation(c)}
+                          {canEditLocation && hasPosition && (
+                            <button
+                              type="button"
+                              aria-label={`Sửa vị trí ${c.containerNo}`}
+                              title="Sửa vị trí bãi"
+                              onClick={() => openPanel(c, panelOpen && panel!.kind === 'LOCATION' ? '' : 'LOCATION')}
+                              className="text-slate-500 hover:text-slate-800"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                          )}
+                        </span>
+                      </td>
                       <td className="px-3 py-2.5 text-[11px]">{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</td>
                       <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                         {editingNoteId === c.id ? (
@@ -208,16 +223,15 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-                        {((canEditLocation && hasPosition) || canLock) && (
+                        {canLock && (
                           <select
                             aria-label={`Thao tác ${c.containerNo}`}
-                            value={panelOpen ? panel!.kind : ''}
-                            onChange={(e) => openPanel(c, e.target.value as 'LOCATION' | 'LOCK' | '')}
+                            value={panelOpen && panel!.kind === 'LOCK' ? 'LOCK' : ''}
+                            onChange={(e) => openPanel(c, e.target.value as 'LOCK' | '')}
                             className={`${inputCls} w-32`}
                           >
                             <option value="">Thao tác…</option>
-                            {canEditLocation && hasPosition && <option value="LOCATION">Sửa vị trí</option>}
-                            {canLock && <option value="LOCK">{c.isOnHold ? 'Mở khóa' : 'Khóa'}</option>}
+                            <option value="LOCK">{c.isOnHold ? 'Mở khóa' : 'Khóa'}</option>
                           </select>
                         )}
                       </td>
