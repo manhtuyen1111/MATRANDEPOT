@@ -563,6 +563,14 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-069, DEC-070
 - Quyết định: Bộ chọn container từ tồn vỏ (Văn phòng → Xuất tàu: **Lập danh sách** và **Thêm cont**) có nút **Tìm hàng loạt** giống Tồn vỏ (DEC-067): dán danh sách số cont (mỗi dòng / dấu phẩy / khoảng trắng) → lọc đúng các cont đó, báo số tìm thấy / chọn được, nút **Chọn tất cả cont tìm được**, báo các số **không có trong tồn vỏ**. Cont không đưa vào xuất tàu được (khóa, đã lập lệnh cấp, đã trong danh sách khác) vẫn hiện lý do, không chọn được.
 
+### DEC-074 — Tồn vỏ: cột DATE IN, sắp lại độ rộng cột
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-067
+- Quyết định:
+  - Thêm cột **DATE IN** = thời gian container vào bãi (Hạ vỏ hoặc Nhập tàu — `gateInAt`), đặt **giữa HÃNG TÀU và TRẠNG THÁI**. Hiển thị 2 dòng: ngày `dd/MM/yyyy`, giờ `HH:mm:ss` chữ nhỏ.
+  - Excel Tồn vỏ: **DATE IN** ngay sau HÃNG TÀU (thay cột GATE IN cũ ở cuối) và thêm cột **VÀO BÃI BẰNG** (HẠ VỎ / NHẬP TÀU).
+  - Độ rộng cột: Mã hồ sơ, Số cont không xuống dòng; Size, Type, Trạng thái hẹp và căn giữa; Lưu bãi căn phải; Vị trí, Tiến độ vừa; **Ghi chú rộng nhất**; khoảng đệm ô gọn hơn.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -652,6 +660,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-073 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-074 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
