@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
-import { Download, FileSpreadsheet, Search } from 'lucide-react';
-import { GateInOrder, GateOutOrder } from '../../types/depot';
+import { FileSpreadsheet, Search } from 'lucide-react';
+import { GateInOrder, GateOutOrder, GateOutType } from '../../types/depot';
 import { DepotState, formatVnd } from '../../services/depotStore';
 import {
   buildSummaryReport,
+  collectAllPages,
+  gateInSheet,
+  gateOutSheet,
   OperationReportFilter,
   PagedResult,
   queryGateInReport,
   queryGateOutReport,
   SheetData,
-  toXlsxBuffer,
-  XLSX_MIME,
+
+
 } from '../../services/reports';
 import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
-import { Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard } from '../../components/shared';
+import { fileStamp } from '../../services/datetime';
+import { DateTimeField, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard } from '../../components/shared';
 
 export type ReportSection = 'BC_HA_VO' | 'BC_CAP_VO' | 'BC_NHAP_TAU' | 'BC_XUAT_TAU' | 'BC_SUA_CHUA' | 'BC_TONG_HOP';
 
@@ -33,18 +37,23 @@ const TITLES: Record<ReportSection, string> = {
   BC_TONG_HOP: 'Báo cáo Tổng hợp',
 };
 
-// Tải file .xlsx (Q-034) — dùng chung cho các báo cáo
-function downloadXlsx(sheets: SheetData[], fileName: string, onError: (msg: string) => void) {
-  toXlsxBuffer(sheets)
-    .then((buf) => {
-      const url = URL.createObjectURL(new Blob([buf], { type: XLSX_MIME }));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      URL.revokeObjectURL(url);
-    })
-    .catch(() => onError('Không tạo được file Excel. Vui lòng thử lại.'));
+const SECTION_FILE: Record<ReportSection, string> = {
+  BC_HA_VO: 'HA_VO',
+  BC_CAP_VO: 'CAP_VO',
+  BC_NHAP_TAU: 'NHAP_TAU',
+  BC_XUAT_TAU: 'XUAT_TAU',
+  BC_SUA_CHUA: 'SUA_CHUA',
+  BC_TONG_HOP: 'TONG_HOP',
+};
+
+// Toàn bộ kết quả theo bộ lọc của báo cáo tác nghiệp → 1 sheet Excel (DEC-055), cùng cột với báo cáo Tổng hợp
+function operationSheet(state: DepotState, section: ReportSection, f: OperationReportFilter): SheetData {
+  if (section === 'BC_HA_VO' || section === 'BC_NHAP_TAU') {
+    const type = section === 'BC_HA_VO' ? 'CUSTOMER_RETURN' : 'VESSEL_IMPORT';
+    return gateInSheet(section === 'BC_HA_VO' ? 'HẠ VỎ' : 'NHẬP TÀU', collectAllPages((p) => queryGateInReport(state, type, f, p)));
+  }
+  const types: GateOutType[] = section === 'BC_CAP_VO' ? ['EMPTY_RELEASE'] : ['VESSEL_EXPORT'];
+  return gateOutSheet(section === 'BC_CAP_VO' ? 'CẤP VỎ' : 'XUẤT TÀU', state, collectAllPages((p) => queryGateOutReport(state, types, f, p)));
 }
 
 const GATE_IN_STATUS: Record<GateInOrder['status'], string> = {
@@ -104,14 +113,8 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
             <span className={labelCls}>Số container</span>
             <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
           </label>
-          <label>
-            <span className={labelCls}>Từ ngày</span>
-            <input type="date" value={draft.dateFrom} onChange={(e) => setDraft({ ...draft, dateFrom: e.target.value })} className={inputCls} />
-          </label>
-          <label>
-            <span className={labelCls}>Đến ngày</span>
-            <input type="date" value={draft.dateTo} onChange={(e) => setDraft({ ...draft, dateTo: e.target.value })} className={inputCls} />
-          </label>
+          <DateTimeField label="Từ (dd/mm/yyyy hh:mm:ss)" value={draft.dateFrom || ''} onChange={(v) => setDraft({ ...draft, dateFrom: v })} />
+          <DateTimeField label="Đến (dd/mm/yyyy hh:mm:ss)" value={draft.dateTo || ''} onChange={(v) => setDraft({ ...draft, dateTo: v })} fallback="end" />
           <label>
             <span className={labelCls}>Hãng tàu</span>
             <select value={draft.shippingLineCode} onChange={(e) => setDraft({ ...draft, shippingLineCode: e.target.value })} className={inputCls}>
@@ -126,11 +129,17 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
               {state.containerSizes.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </label>
-          <div className="col-span-2 sm:col-span-6">
+          <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-6">
             <button type="submit" className={primaryBtn}>
               <Search className="h-4 w-4" />
               Tra cứu
             </button>
+            {applied && result && result.total > 0 && (
+              <ExportExcelButton
+                fileName={`MATRAN_${SECTION_FILE[section]}_${fileStamp(applied.dateFrom) || applied.containerNo || "tra-cuu"}.xlsx`}
+                getSheets={() => [operationSheet(state, section, { ...applied, shippingLineCode: applied.shippingLineCode || undefined, size: applied.size || undefined })]}
+              />
+            )}
           </div>
         </form>
       </SectionCard>
@@ -242,23 +251,12 @@ const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
     }
   };
 
-  const download = () => {
-    if (!sheets) return;
-    downloadXlsx(sheets, `MATRAN_TONG_HOP_${range.dateFrom}_${range.dateTo}.xlsx`, setError);
-  };
-
   return (
     <div className="space-y-4">
       <SectionCard title="Báo cáo Tổng hợp" icon={<FileSpreadsheet className="h-4 w-4 text-slate-500" />}>
         <form onSubmit={generate} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <label>
-            <span className={labelCls}>Từ ngày *</span>
-            <input type="date" value={range.dateFrom} onChange={(e) => setRange({ ...range, dateFrom: e.target.value })} className={inputCls} />
-          </label>
-          <label>
-            <span className={labelCls}>Đến ngày *</span>
-            <input type="date" value={range.dateTo} onChange={(e) => setRange({ ...range, dateTo: e.target.value })} className={inputCls} />
-          </label>
+          <DateTimeField label="Từ (dd/mm/yyyy hh:mm:ss) *" value={range.dateFrom || ''} onChange={(v) => setRange({ ...range, dateFrom: v })} />
+          <DateTimeField label="Đến (dd/mm/yyyy hh:mm:ss) *" value={range.dateTo || ''} onChange={(v) => setRange({ ...range, dateTo: v })} fallback="end" />
           <button type="submit" className={primaryBtn}>Tạo báo cáo</button>
         </form>
         <p className="mt-2 text-[11px] text-slate-500">
@@ -272,10 +270,7 @@ const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
         <SectionCard
           title={`Kết quả — lập lúc ${formatViTime(generatedAt)}`}
           right={
-            <button type="button" onClick={download} className={primaryBtn}>
-              <Download className="h-4 w-4" />
-              Tải Excel
-            </button>
+            <ExportExcelButton getSheets={() => sheets} fileName={`MATRAN_TONG_HOP_${fileStamp(range.dateFrom)}_${fileStamp(range.dateTo)}.xlsx`} />
           }
         >
           <ul className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
@@ -322,13 +317,6 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
     }
   }
 
-  const download = () => {
-    if (!applied || !result) return;
-    const f = clean(applied);
-    const rows = Array.from({ length: result.pageCount }, (_, i) => queryRepairReport(state, f, i + 1).rows).flat();
-    downloadXlsx([repairReportSheet(rows)], `MATRAN_SUA_CHUA_${applied.dateFrom || ''}_${applied.dateTo || ''}.xlsx`, () => {});
-  };
-
   return (
     <div className="space-y-4">
       <SectionCard title="Báo cáo Sửa chữa chi tiết" icon={<Search className="h-4 w-4 text-slate-500" />}>
@@ -337,14 +325,8 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
             <span className={labelCls}>Số container</span>
             <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
           </label>
-          <label>
-            <span className={labelCls}>Từ ngày</span>
-            <input type="date" value={draft.dateFrom} onChange={(e) => setDraft({ ...draft, dateFrom: e.target.value })} className={inputCls} />
-          </label>
-          <label>
-            <span className={labelCls}>Đến ngày</span>
-            <input type="date" value={draft.dateTo} onChange={(e) => setDraft({ ...draft, dateTo: e.target.value })} className={inputCls} />
-          </label>
+          <DateTimeField label="Từ (dd/mm/yyyy hh:mm:ss)" value={draft.dateFrom || ''} onChange={(v) => setDraft({ ...draft, dateFrom: v })} />
+          <DateTimeField label="Đến (dd/mm/yyyy hh:mm:ss)" value={draft.dateTo || ''} onChange={(v) => setDraft({ ...draft, dateTo: v })} fallback="end" />
           <label>
             <span className={labelCls}>Tổ sửa chữa</span>
             <select value={draft.teamCode} onChange={(e) => setDraft({ ...draft, teamCode: e.target.value })} className={inputCls}>
@@ -374,10 +356,10 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
               Tra cứu
             </button>
             {result && result.total > 0 && (
-              <button type="button" onClick={download} className={primaryBtn}>
-                <Download className="h-4 w-4" />
-                Tải Excel
-              </button>
+              <ExportExcelButton
+                getSheets={() => [repairReportSheet(collectAllPages((p) => queryRepairReport(state, clean(applied!), p)))]}
+                fileName={`MATRAN_SUA_CHUA_${fileStamp(applied!.dateFrom) || applied!.containerNo || "tra-cuu"}.xlsx`}
+              />
             )}
           </div>
         </form>

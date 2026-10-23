@@ -11,9 +11,12 @@ import {
 import { DepotState, formatVnd } from '../../services/depotStore';
 import { simulateDemoBankTransfer } from '../../services/depotOperations';
 import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, receiptOperationOf } from '../../services/payments';
-import { queryReceipts, ReceiptQueryFilter, ReceiptRow } from '../../services/reports';
+import { collectAllPages, queryReceipts, ReceiptQueryFilter, ReceiptRow, receiptsSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
+import { endOfDayText, fileStamp, startOfDayText } from '../../services/datetime';
 import {
+  DateTimeField,
+  ExportExcelButton,
   Feedback,
   formatViTime,
   inputCls,
@@ -25,7 +28,6 @@ import {
   SectionCard,
 } from '../../components/shared';
 
-const today = () => new Date().toISOString().slice(0, 10);
 
 const STATUS_STYLE: Record<PaymentTransactionStatus, string> = {
   PENDING: 'bg-amber-100 text-amber-800',
@@ -41,7 +43,7 @@ export const ReceiptsWorkspace: React.FC<{
   // Mở thẳng 1 phiếu thu (mã PT- hoặc id giao dịch) khi bấm từ hồ sơ container (DEC-051); nonce để mở lại cùng phiếu
   focus?: { key: string; nonce: number } | null;
 }> = ({ state, onUpdateState, onOpenDossier, focus }) => {
-  const [draft, setDraft] = useState<ReceiptQueryFilter>({ dateFrom: today(), dateTo: today(), keyword: '', method: 'ALL', status: 'ALL', operation: 'ALL' });
+  const [draft, setDraft] = useState<ReceiptQueryFilter>({ dateFrom: startOfDayText(), dateTo: endOfDayText(), keyword: '', method: 'ALL', status: 'ALL', operation: 'ALL' });
   const [applied, setApplied] = useState<ReceiptQueryFilter | null>(null);
   const [page, setPage] = useState(1);
   const [selectedTxId, setSelectedTxId] = useState('');
@@ -117,14 +119,8 @@ export const ReceiptsWorkspace: React.FC<{
           onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); setSelectedTxId(''); }}
           className="grid grid-cols-2 gap-2 sm:grid-cols-6"
         >
-          <label>
-            <span className={labelCls}>Từ ngày</span>
-            <input type="date" value={draft.dateFrom} onChange={(e) => setDraft({ ...draft, dateFrom: e.target.value })} className={inputCls} />
-          </label>
-          <label>
-            <span className={labelCls}>Đến ngày</span>
-            <input type="date" value={draft.dateTo} onChange={(e) => setDraft({ ...draft, dateTo: e.target.value })} className={inputCls} />
-          </label>
+          <DateTimeField label="Từ (dd/mm/yyyy hh:mm:ss)" value={draft.dateFrom || ''} onChange={(v) => setDraft({ ...draft, dateFrom: v })} />
+          <DateTimeField label="Đến (dd/mm/yyyy hh:mm:ss)" value={draft.dateTo || ''} onChange={(v) => setDraft({ ...draft, dateTo: v })} fallback="end" />
           <label className="col-span-2">
             <span className={labelCls}>Mã phiếu thu / Số cont / Mã hồ sơ</span>
             <input value={draft.keyword} onChange={(e) => setDraft({ ...draft, keyword: e.target.value })} className={`${inputCls} font-mono uppercase`} />
@@ -155,11 +151,17 @@ export const ReceiptsWorkspace: React.FC<{
               ))}
             </select>
           </label>
-          <div className="col-span-2 sm:col-span-6">
+          <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-6">
             <button type="submit" className={primaryBtn}>
               <Search className="h-4 w-4" />
               Tra cứu
             </button>
+            {applied && result && result.total > 0 && (
+              <ExportExcelButton
+                fileName={`MATRAN_PHIEU_THU_${fileStamp(applied.dateFrom) || applied.receiptNo || "tra-cuu"}.xlsx`}
+                getSheets={() => [receiptsSheet(state, collectAllPages((p) => queryReceipts(state, applied, p)))]}
+              />
+            )}
           </div>
         </form>
       </SectionCard>

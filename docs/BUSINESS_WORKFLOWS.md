@@ -213,6 +213,7 @@ Chính sách thu trước, thu sau, công nợ và hoàn tiền phải được 
 
 ### 11.1. Menu BÁO CÁO hiện hành (CR-08)
 - **Hạ vỏ** (DEC-046), **Cấp vỏ**, **Nhập tàu**, **Xuất tàu**: tìm theo số container hoặc lọc theo khoảng thời gian (+ hãng tàu, size). Không tự tải dữ liệu khi mở trang; giới hạn 50 dòng / trang. Cột chi phí chỉ hiện với Văn phòng / Quản lý.
+- Mọi báo cáo và Phiếu thu: bộ lọc thời gian dạng dd/mm/yyyy hh:mm:ss (DEC-054), có nút **Xuất Excel** theo bộ lọc (DEC-055).
 - **Tổng hợp**: bắt buộc chọn khoảng thời gian (tối đa 366 ngày) trước khi tạo; xuất Excel **.xlsx** (DEC-050) 5 sheet: HẠ VỎ, CẤP VỎ (theo khoảng thời gian), XUẤT VỎ, NHẬP VỎ (theo quy tắc từng loại hồ sơ — xem Q-033), TỒN VỎ (tại thời điểm lập). Chỉ Văn phòng / Quản lý.
 - Ba mục báo cáo cũ (TỒN VỎ / HẠ VỎ / CẤP VỎ) đã gỡ khỏi menu; dữ liệu và chức năng tác nghiệp không bị xóa.
 

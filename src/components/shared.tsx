@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   CheckCircle2,
+  FileSpreadsheet,
   Clock,
   CreditCard,
   FileText,
@@ -21,6 +22,8 @@ import {
 import { DepotState, formatVnd } from '../services/depotStore';
 import { can } from '../services/permissions';
 import { isSupabaseConfigured } from '../lib/env';
+import { DATETIME_PLACEHOLDER, formatDateTime, maskDateTimeInput, parseDateTime } from '../services/datetime';
+import { SheetData, toXlsxBuffer, XLSX_MIME } from '../services/reports';
 
 // ---------------------------------------------------------------------------
 // Thông báo lỗi / thành công thống nhất
@@ -482,13 +485,66 @@ export const Pager: React.FC<{ page: number; pageCount: number; total: number; o
   </div>
 );
 
+// DEC-054: mọi chỗ hiển thị thời gian dùng dd/MM/yyyy HH:mm:ss
 export function formatViTime(iso?: string): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString('vi-VN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+  return formatDateTime(iso);
 }
+
+// Ô nhập thời gian chuẩn dd/MM/yyyy HH:mm:ss (tự chèn dấu khi gõ số; viền đỏ nếu sai). Dùng cho mọi bộ lọc thời gian.
+export const DateTimeField: React.FC<{
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  fallback?: 'start' | 'end';
+}> = ({ label, value, onChange, fallback = 'start' }) => {
+  const invalid = Boolean(value.trim()) && !parseDateTime(value, fallback);
+  return (
+    <label className="block">
+      <span className={labelCls}>{label}</span>
+      <input
+        value={value}
+        inputMode="numeric"
+        placeholder={DATETIME_PLACEHOLDER}
+        onChange={(e) => onChange(maskDateTimeInput(e.target.value))}
+        aria-invalid={invalid}
+        className={`${inputCls} font-mono ${invalid ? 'border-red-500 focus:border-red-600 focus:ring-red-600' : ''}`}
+      />
+    </label>
+  );
+};
+
+// Tải file Excel .xlsx (DEC-050, DEC-055) — dùng chung cho Phiếu thu và mọi báo cáo
+export const ExportExcelButton: React.FC<{
+  getSheets: () => SheetData[];
+  fileName: string;
+  disabled?: boolean;
+}> = ({ getSheets, fileName, disabled }) => {
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+  const run = async () => {
+    setErr(null);
+    setBusy(true);
+    try {
+      const buf = await toXlsxBuffer(getSheets());
+      const url = URL.createObjectURL(new Blob([buf], { type: XLSX_MIME }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Không tạo được file Excel.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <span className="inline-flex items-center gap-2">
+      <button type="button" onClick={run} disabled={disabled || busy} className={secondaryBtn}>
+        <FileSpreadsheet className="h-4 w-4 text-emerald-700" />
+        {busy ? 'Đang tạo file...' : 'Xuất Excel'}
+      </button>
+      {err && <span className="text-[11px] text-red-700">{err}</span>}
+    </span>
+  );
+};

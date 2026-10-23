@@ -657,3 +657,50 @@ describe('DEC-052: lộ trình phiếu K80 & Văn phòng trả chứng từ', ()
     expect(res.pack.receipts).toHaveLength(0);
   });
 });
+
+describe('DEC-054: định dạng thời gian dd/MM/yyyy HH:mm:ss', () => {
+  it('Hiển thị & đọc chuẩn; từ chối ngày sai; lọc theo giờ phút giây', async () => {
+    const { formatDateTime, parseDateTime, maskDateTimeInput } = await import('../src/services/datetime');
+    expect(formatDateTime(new Date(2026, 9, 23, 7, 5, 9))).toBe('23/10/2026 07:05:09');
+    expect(parseDateTime('23/10/2026 07:05:09')!.getSeconds()).toBe(9);
+    expect(parseDateTime('23/10/2026', 'end')!.getHours()).toBe(23);
+    expect(parseDateTime('31/02/2026 00:00:00')).toBeNull();
+    expect(parseDateTime('23/10/2026 25:00:00')).toBeNull();
+    expect(maskDateTimeInput('23102026070509')).toBe('23/10/2026 07:05:09');
+
+    // Phiếu thu tạo "bây giờ": khoảng kết thúc 1 giây trước → không thấy; khoảng bao quanh → thấy
+    let s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const t = new Date(s.paymentTransactions[0].confirmedAt!);
+    const before = formatDateTime(new Date(t.getTime() - 60_000));
+    const justBefore = formatDateTime(new Date(t.getTime() - 1_000));
+    const after = formatDateTime(new Date(t.getTime() + 60_000));
+    expect(queryReceipts(s, { dateFrom: before, dateTo: after }).total).toBe(1);
+    expect(queryReceipts(s, { dateFrom: before, dateTo: justBefore }).total).toBe(0);
+    expect(() => queryReceipts(s, { dateFrom: '99/99/2026', dateTo: after })).toThrow(/dd\/mm\/yyyy/);
+  });
+});
+
+describe('DEC-055: xuất Excel theo bộ lọc — Phiếu thu & mọi báo cáo', () => {
+  it('Sheet PHIẾU THU đủ cột; file .xlsx có tiêu đề nền + bộ lọc cột; collectAllPages lấy hết các trang', async () => {
+    const { receiptsSheet, collectAllPages, gateInSheet } = await import('../src/services/reports');
+    let s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const sheet = receiptsSheet(s, collectAllPages((p) => queryReceipts(s, { keyword: 'MSKU1234567' }, p)));
+    expect(sheet.columns).toContain('TÁC NGHIỆP');
+    expect(sheet.rows[0][1]).toBe('HẠ VỎ');
+    const inSheet = gateInSheet('HẠ VỎ', collectAllPages((p) => queryGateInReport(s, 'CUSTOMER_RETURN', { containerNo: 'MSKU1234567' }, p)));
+    expect(inSheet.columns).toContain('SĐT LÁI XE');
+
+    const { default: ExcelJS } = await import('exceljs');
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await toXlsxBuffer([sheet]));
+    const ws = wb.getWorksheet('PHIẾU THU')!;
+    expect(ws.getRow(1).getCell(1).font?.bold).toBe(true);
+    expect(ws.autoFilter).toBeTruthy();
+  });
+});

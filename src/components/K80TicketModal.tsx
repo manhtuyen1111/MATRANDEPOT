@@ -3,6 +3,7 @@ import { Check, Copy, Printer, QrCode, X } from 'lucide-react';
 import { K80InternalTicket } from '../types/depot';
 import type { DepotState } from '../services/depotStore';
 import { getDriverRoute } from '../services/driverRoute';
+import { formatDateTime } from '../services/datetime';
 
 interface Props {
   ticket: K80InternalTicket | null;
@@ -87,7 +88,7 @@ export const K80TicketModal: React.FC<Props> = ({ ticket, state, onClose, onSimu
                   </span>
                   {state && s.done && s.doneAt && (
                     <span className="shrink-0 text-[9px] text-slate-600">
-                      {new Date(s.doneAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      {formatDateTime(s.doneAt).slice(11)}
                     </span>
                   )}
                 </li>
@@ -102,7 +103,7 @@ export const K80TicketModal: React.FC<Props> = ({ ticket, state, onClose, onSimu
               <span className="mt-1 text-[9px] font-black tracking-tighter">{ticket.qrCode}</span>
             </div>
             <p className="mt-1 text-[9px] text-slate-600">
-              In lúc {new Date(ticket.issuedAt).toLocaleString('vi-VN')} • {ticket.issuedBy}
+              In lúc {formatDateTime(ticket.issuedAt)} • {ticket.issuedBy}
             </p>
           </div>
         </div>

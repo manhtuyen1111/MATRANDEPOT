@@ -4,8 +4,8 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-23 — Claude Code
-Trạng thái chung: **GĐ 3 xong** (nhánh `feature/cr-2026-10-batch1` đã push). Hôm nay (nhánh `agent/claude/p4-prep-xlsx`): Excel .xlsx; phiếu thu ghi tác nghiệp; K80 có lộ trình + Trả chứng từ. **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
-Kiểm thử mới nhất: `npm test` **48/48 pass** • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+Trạng thái chung: **GĐ 3 xong** (nhánh `feature/cr-2026-10-batch1` đã push). Hôm nay (nhánh `agent/claude/p4-prep-xlsx`): Excel .xlsx; phiếu thu ghi tác nghiệp; K80 có lộ trình + Trả chứng từ; thời gian dd/MM/yyyy HH:mm:ss; Xuất Excel mọi báo cáo. **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Kiểm thử mới nhất: `npm test` **50/50 pass** • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
@@ -38,7 +38,8 @@ Kiểm thử mới nhất: `npm test` **48/48 pass** • `npm run build` **PASS*
 | Cấp vỏ | Nhập booking (tự đếm), chọn cont (AV mặc định, DAMAGE được), số xe + SĐT, chi phí, thanh toán tại Văn phòng → Xe nâng OUT (khung nổi số cont + vị trí) → **Văn phòng trả chứng từ** | 027, 033, 034, 052, 053 |
 | Vị trí / Khóa | Đảo chuyển (Xe nâng, có lịch sử); Sửa vị trí (Văn phòng, không lịch sử); Khóa bắt buộc ghi chú, không cấp được; Block do Admin cấu hình | 030, 036, 050 |
 | Mã hồ sơ | `IN-YYMMDD-NNN`, `OUT-YYMMDD-NNN` do hệ thống cấp | 037 |
-| Báo cáo | Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp 5 sheet — bắt buộc lọc, phân trang; Excel **.xlsx** | 044, 046, 050 |
+| Báo cáo | Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp 5 sheet — bắt buộc lọc, phân trang; **Xuất Excel .xlsx theo bộ lọc** ở mọi báo cáo + Phiếu thu | 044, 046, 050, 055 |
+| Thời gian | Toàn app **dd/MM/yyyy HH:mm:ss** (hiển thị, bộ lọc, in, Excel) | 054 |
 | Mobile | Giám định – Hạ vỏ, Vệ sinh, Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ / **Đảo chuyển**), Sửa chữa: khung mobile, biểu tượng điện thoại trên menu | 012, 049 |
 | Nhập / Xuất tàu | Để giai đoạn sau | 038 |
 
@@ -60,6 +61,7 @@ Kiểm thử mới nhất: `npm test` **48/48 pass** • `npm run build` **PASS*
 | P4-pre | Xuất Excel .xlsx chuẩn (exceljs, tải khi cần); chốt Block do Admin cấu hình | 2026-10-23 | DEC-050 | **43/43 • build PASS** | agent/claude/p4-prep-xlsx |
 | P4-pre2 | Phiếu thu ghi rõ tác nghiệp + lọc; hồ sơ container: khung Thu tiền nổi bật, link về Văn phòng → Phiếu thu | 2026-10-23 | DEC-051 | **45/45 • build PASS** | agent/claude/p4-prep-xlsx |
 | P4-pre3 | Phiếu K80 có LỘ TRÌNH; menu Văn phòng → Trả chứng từ (quét QR → in EEIR + phiếu thu); Xe nâng – Chờ cấp vỏ nổi số cont + vị trí | 2026-10-23 | DEC-052, 053 | **48/48 • build PASS** | agent/claude/p4-prep-xlsx |
+| P4-pre4 | Thời gian thống nhất dd/MM/yyyy HH:mm:ss (ô nhập chuẩn cho mọi bộ lọc); nút Xuất Excel theo bộ lọc ở Phiếu thu + mọi báo cáo | 2026-10-23 | DEC-054, 055 | **50/50 • build PASS** | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -85,7 +87,7 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 7. **Tồn vỏ**: Khóa (bắt buộc ghi chú), Sửa vị trí. **Xe nâng → Đảo chuyển** (mở trên điện thoại hoặc thu nhỏ trình duyệt): tìm cont, lọc Chờ sửa chữa, chọn thẻ → vị trí mới.
 8. **Văn phòng → Cấp vỏ**: booking, chọn cont, số xe + SĐT, chi phí, thanh toán → xem phiếu K80 (lộ trình) → **Xe nâng → Chờ cấp vỏ** (khung đậm số cont + vị trí, số xe, SĐT) → OUT → **Văn phòng → Trả chứng từ** quét mã → in EEIR (+ phiếu thu).
 9. **Văn phòng → Phiếu thu**: tạo phiếu thu TTT tiền mặt → xác nhận → mã `PT-...`, cột **Tác nghiệp**. Mở hồ sơ một container đã thu tiền → bấm link phiếu thu trong khung "Thu tiền" → nhảy thẳng tới phiếu đó.
-10. **Báo cáo**: Hạ vỏ, Cấp vỏ, Sửa chữa chi tiết (lọc theo tổ), Tổng hợp → Tải Excel (file **.xlsx**, mở bằng Excel không còn cảnh báo).
+10. **Báo cáo** + **Phiếu thu**: nhập thời gian dạng 23/10/2026 00:00:00 (gõ số liên tục cũng được) → Tra cứu → **Xuất Excel** (toàn bộ kết quả lọc).
 
 ## G. NHẬT KÝ CẬP NHẬT
 - 2026-10-22 — Claude Code: tạo file; ghi P0 → P3-e.
@@ -96,3 +98,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-23 — Claude Code: P4-pre (DEC-050) — Excel .xlsx; chờ danh mục trạng thái để làm P4-01.
 - 2026-10-23 — Claude Code: P4-pre2 (DEC-051) — tác nghiệp trên phiếu thu, link từ hồ sơ.
 - 2026-10-23 — Claude Code: P4-pre3 (DEC-052, 053) — K80 lộ trình, Trả chứng từ, nổi số cont ở Chờ cấp vỏ.
+- 2026-10-23 — Claude Code: P4-pre4 (DEC-054, 055) — định dạng thời gian thống nhất, Xuất Excel mọi báo cáo + Phiếu thu.

@@ -374,6 +374,20 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-23)
 - Quyết định: Khi quét phiếu ở **Xe nâng → Chờ cấp vỏ**, **SỐ CONTAINER** và **VỊ TRÍ HIỆN TẠI** hiển thị trong khung nền đậm, chữ lớn, ở trên cùng chi tiết công việc.
 
+### DEC-054 — Định dạng thời gian thống nhất: dd/MM/yyyy HH:mm:ss
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: **Mọi chỗ liên quan tới thời gian trong app** (hiển thị, bộ lọc báo cáo / phiếu thu, phiếu K80, EEIR, file Excel, thông báo lỗi) dùng **Ngày/Tháng/Năm Giờ:Phút:Giây**, 24 giờ, ví dụ `23/10/2026 07:05:09`.
+  - Bộ lọc thời gian là ô nhập `dd/mm/yyyy hh:mm:ss` (tự chèn dấu khi gõ số, viền đỏ khi sai, từ chối ngày không tồn tại). Nhập thiếu giờ thì TỪ = 00:00:00, ĐẾN = 23:59:59. Mặc định Phiếu thu: hôm nay 00:00:00 → 23:59:59.
+  - Kỹ thuật: chỉ dùng `src/services/datetime.ts` (`formatDateTime`, `parseDateTime`) và component `DateTimeField`; không dùng `toLocaleString` / `<input type="date">` trực tiếp.
+
+### DEC-055 — Xuất Excel theo bộ lọc ở Phiếu thu và mọi báo cáo
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: **Văn phòng → Phiếu thu** và **tất cả báo cáo** (Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp) có nút **Xuất Excel** — xuất **toàn bộ kết quả theo bộ lọc đang áp dụng** (mọi trang), file `.xlsx`.
+  - Kiểu file: basic, chuyên nghiệp — 1 dòng tiêu đề đậm nền xám, viền mỏng, cố định dòng tiêu đề, bộ lọc cột, số tiền có dấu phân cách, tự giãn cột; **đủ các cột** của hồ sơ (cùng bộ cột với sheet tương ứng của báo cáo Tổng hợp; Phiếu thu có thêm cột Tác nghiệp, chứng từ, phiếu thu mẹ, mã giao dịch ngân hàng, người/giờ xác nhận).
+  - Tên file: `MATRAN_<LOẠI>_<dd-MM-yyyy_HHmmss>.xlsx`.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -463,6 +477,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-053 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-055 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

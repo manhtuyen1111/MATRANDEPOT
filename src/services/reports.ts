@@ -13,6 +13,7 @@ import {
 import type { DepotState } from './depotStore';
 import { formatLocation } from './core';
 import { receiptOperationOf } from './payments';
+import { formatDateTime, parseDateTime } from './datetime';
 
 // ============================================================================
 // BÁO CÁO & TRA CỨU (CR-08, CR-04 PHIẾU THU)
@@ -25,8 +26,8 @@ export const RECEIPT_PAGE_SIZE = 20;
 export const MAX_RANGE_DAYS = 366;
 
 export interface DateRange {
-  dateFrom?: string; // YYYY-MM-DD
-  dateTo?: string;   // YYYY-MM-DD
+  dateFrom?: string; // dd/MM/yyyy HH:mm:ss (DEC-054); chấp nhận dd/MM/yyyy hoặc yyyy-MM-dd
+  dateTo?: string;   // dd/MM/yyyy HH:mm:ss
 }
 
 export interface PagedResult<T> {
@@ -38,11 +39,13 @@ export interface PagedResult<T> {
 
 function toRange(range: DateRange): { from: number; to: number } | null {
   if (!range.dateFrom && !range.dateTo) return null;
-  if (!range.dateFrom || !range.dateTo) throw new Error('Vui lòng chọn đủ TỪ NGÀY và ĐẾN NGÀY.');
-  const from = new Date(`${range.dateFrom}T00:00:00`).getTime();
-  const to = new Date(`${range.dateTo}T23:59:59.999`).getTime();
-  if (!Number.isFinite(from) || !Number.isFinite(to)) throw new Error('Khoảng thời gian không hợp lệ.');
-  if (from > to) throw new Error('TỪ NGÀY phải trước hoặc bằng ĐẾN NGÀY.');
+  if (!range.dateFrom || !range.dateTo) throw new Error('Vui lòng chọn đủ TỪ và ĐẾN (dd/mm/yyyy hh:mm:ss).');
+  const fromD = parseDateTime(range.dateFrom, 'start');
+  const toD = parseDateTime(range.dateTo, 'end');
+  if (!fromD || !toD) throw new Error('Thời gian không hợp lệ — nhập theo dạng dd/mm/yyyy hh:mm:ss.');
+  const from = fromD.getTime();
+  const to = toD.getTime();
+  if (from > to) throw new Error('Thời gian TỪ phải trước hoặc bằng ĐẾN.');
   if ((to - from) / 86_400_000 > MAX_RANGE_DAYS) {
     throw new Error(`Khoảng thời gian tối đa ${MAX_RANGE_DAYS} ngày cho mỗi lần truy vấn.`);
   }
@@ -176,9 +179,9 @@ export interface SheetData {
   rows: (string | number)[][];
 }
 
-const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString('vi-VN') : '');
+const fmt = (iso?: string) => (iso ? formatDateTime(iso) : '');
 
-function gateInSheet(name: string, orders: GateInOrder[]): SheetData {
+export function gateInSheet(name: string, orders: GateInOrder[]): SheetData {
   return {
     name,
     columns: [
@@ -197,7 +200,7 @@ function gateInSheet(name: string, orders: GateInOrder[]): SheetData {
   };
 }
 
-function gateOutSheet(name: string, state: DepotState, orders: GateOutOrder[]): SheetData {
+export function gateOutSheet(name: string, state: DepotState, orders: GateOutOrder[]): SheetData {
   return {
     name,
     columns: [
@@ -345,10 +348,25 @@ export async function toXlsxBuffer(sheets: SheetData[]): Promise<ArrayBuffer> {
   wb.created = new Date();
   for (const s of sheets) {
     const ws = wb.addWorksheet(s.name.slice(0, 31));
-    ws.addRow(s.columns);
-    ws.getRow(1).font = { bold: true };
+    // Kiểu basic, chuyên nghiệp: tiêu đề đậm nền xám, viền mỏng, cố định dòng tiêu đề, bộ lọc cột, số tiền có dấu phân cách
+    const thin = { style: 'thin' as const, color: { argb: 'FFBFBFBF' } };
+    const border = { top: thin, left: thin, bottom: thin, right: thin };
+    const header = ws.addRow(s.columns);
+    header.eachCell((c) => {
+      c.font = { bold: true };
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
+      c.alignment = { vertical: 'middle', wrapText: true };
+      c.border = border;
+    });
+    for (const row of s.rows) {
+      const r = ws.addRow(row);
+      r.eachCell({ includeEmpty: true }, (c) => {
+        c.border = border;
+        if (typeof c.value === 'number' && Math.abs(c.value) >= 1000) c.numFmt = '#,##0';
+      });
+    }
     ws.views = [{ state: 'frozen', ySplit: 1 }];
-    for (const row of s.rows) ws.addRow(row);
+    if (s.columns.length) ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: s.columns.length } };
     ws.columns.forEach((col, i) => {
       const longest = Math.max(s.columns[i]?.length || 0, ...s.rows.slice(0, 200).map((r) => String(r[i] ?? '').length));
       col.width = Math.min(Math.max(longest + 2, 8), 50);
@@ -358,3 +376,31 @@ export async function toXlsxBuffer(sheets: SheetData[]): Promise<ArrayBuffer> {
 }
 
 export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+// Lấy toàn bộ kết quả theo bộ lọc (mọi trang) để xuất Excel
+export function collectAllPages<T>(query: (page: number) => PagedResult<T>): T[] {
+  const first = query(1);
+  const rows = [...first.rows];
+  for (let p = 2; p <= first.pageCount; p++) rows.push(...query(p).rows);
+  return rows;
+}
+
+// Sheet PHIẾU THU (DEC-055) — đủ cột tra cứu / đối soát
+export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData {
+  const STATUS: Record<string, string> = { PENDING: 'Chờ thanh toán', SUCCEEDED: 'Thành công', FAILED: 'Thất bại', CANCELLED: 'Đã hủy' };
+  const OP: Record<string, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP VỎ', THU_TRUOC: 'THU TRƯỚC (TTT)', KHAC: 'KHÁC' };
+  return {
+    name: 'PHIẾU THU',
+    columns: [
+      'MÃ PHIẾU THU', 'TÁC NGHIỆP', 'TRẠNG THÁI', 'SỐ TIỀN', 'TRƯỜNG HỢP', 'HÌNH THỨC', 'BÊN THANH TOÁN', 'MÃ HỒ SƠ',
+      'SỐ CONTAINER', 'CHỨNG TỪ', 'PHIẾU THU MẸ', 'MÃ THAM CHIẾU', 'MÃ GD NGÂN HÀNG', 'TẠO LÚC', 'NGƯỜI TẠO',
+      'XÁC NHẬN THU LÚC', 'NGƯỜI XÁC NHẬN', 'LÝ DO HỦY',
+    ],
+    rows: rows.map(({ transaction: t, receipt: r }) => [
+      r?.receiptNo || '', OP[receiptOperationOf(state, { ...t, operation: r?.operation })], STATUS[t.status] || t.status, t.amount,
+      t.paymentCategory, t.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản', t.payerName, t.dossierCode || '', t.containerNo || '',
+      r?.voucherNo || '', r?.masterReceiptCode || (t.purpose === 'PREPAID_TOPUP' ? t.paymentRef : ''), t.paymentRef,
+      t.providerTxRef || '', fmt(t.createdAt), t.createdBy, fmt(t.confirmedAt), t.confirmedBy || '', t.cancelReason || '',
+    ]),
+  };
+}

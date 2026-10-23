@@ -19,6 +19,10 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Menu **Văn phòng → Trả chứng từ**: quét QR K80 khi lái xe quay về → in EEIR + phiếu thu (DEC-052).
 - Xe nâng – Chờ cấp vỏ: khung nổi bật số container + vị trí (DEC-053). Kiểm thử: 48/48 pass.
 
+### Changed (2026-10-23, tiếp)
+- Thời gian toàn app thống nhất dd/MM/yyyy HH:mm:ss; bộ lọc thời gian nhập theo định dạng này (DEC-054).
+- Nút Xuất Excel theo bộ lọc ở Phiếu thu và mọi báo cáo; file .xlsx có tiêu đề nền, viền, bộ lọc cột (DEC-055). Kiểm thử: 50/50 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

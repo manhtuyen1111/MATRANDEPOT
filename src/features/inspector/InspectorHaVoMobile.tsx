@@ -27,6 +27,7 @@ import {
   recordGateInFieldStep,
 } from '../../services/depotOperations';
 import { peekNextCode } from '../../services/codes';
+import { formatDateTime } from '../../services/datetime';
 
 interface Props {
   state: DepotState;
@@ -38,21 +39,6 @@ const QUICK_YEARS = [
   2001, 2002, 2005, 2008, 2010, 2012, 2015, 2017, 2018, 2019, 2020, 2022,
 ];
 
-function formatDateTimeVi(isoString: string): string {
-  try {
-    const dt = new Date(isoString);
-    return dt.toLocaleString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  } catch {
-    return isoString;
-  }
-}
 
 export const InspectorHaVoMobile: React.FC<Props> = ({
   state,
@@ -363,7 +349,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   <div className="col-span-5 flex items-center gap-1.5 text-slate-700">
                     <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                     <span className="font-mono">
-                      {formatDateTimeVi(item.fieldRecordedAt)}
+                      {formatDateTime(item.fieldRecordedAt)}
                     </span>
                   </div>
 
@@ -450,7 +436,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   Thời gian xác nhận giám định
                 </span>
                 <span className="font-mono font-semibold text-slate-900">
-                  {formatDateTimeVi(selectedOrder.fieldRecordedAt)}
+                  {formatDateTime(selectedOrder.fieldRecordedAt)}
                 </span>
               </div>
 

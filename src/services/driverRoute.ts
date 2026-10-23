@@ -1,6 +1,7 @@
 import { GateInOrder, GateOutOrder, K80InternalTicket, PaymentReceipt } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { appendAudit, assertPermission, nowIso } from './core';
+import { formatDateTime } from './datetime';
 
 // ============================================================================
 // LỘ TRÌNH LÁI XE TRÊN PHIẾU K80 & TRẢ CHỨNG TỪ (DEC-052)
@@ -97,7 +98,7 @@ export function confirmDocumentsReturn(
   if (!ticket) throw new Error('Không tìm thấy phiếu K80 khớp mã vừa quét.');
   const steps = getDriverRoute(state, ticket);
   const last = steps[steps.length - 1];
-  if (last.done) throw new Error(`Đã trả chứng từ cho phiếu này lúc ${new Date(last.doneAt!).toLocaleString('vi-VN')} (${last.doneBy}).`);
+  if (last.done) throw new Error(`Đã trả chứng từ cho phiếu này lúc ${formatDateTime(last.doneAt)} (${last.doneBy}).`);
   const pendingStep = steps.slice(0, -1).find((s) => !s.done);
   if (pendingStep) throw new Error(`Chưa hoàn tất bước ${pendingStep.dept} — ${pendingStep.action}. Lái xe cần đến bộ phận này trước.`);
 

@@ -84,3 +84,5 @@ Một việc chỉ "xong" khi:
 - **Luồng DAMAGE:** Báo giá (remark + giờ công) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → AV. Không có bước QC (DEC-049).
 - Tóm tắt toàn bộ logic đã chốt: `devs/PROGRESS.md` mục C.
 - **Phiếu K80 = tờ hướng dẫn lái xe** (DEC-052): thông tin chung ở đầu (số cont, số xe, SĐT, thanh toán) → LỘ TRÌNH các bước đánh số có ô ☐ → mã QR. Lộ trình tính trong `src/services/driverRoute.ts` — thêm bộ phận mới vào luồng thì cập nhật `getDriverRoute`. Bước cuối luôn là **Văn phòng → Trả chứng từ** (in EEIR + phiếu thu).
+- **Thời gian (DEC-054):** mọi chỗ hiển thị / nhập / lọc / in / Excel đều theo **`dd/MM/yyyy HH:mm:ss`** (24 giờ). Chỉ dùng `formatDateTime` / `parseDateTime` (`src/services/datetime.ts`) và `DateTimeField` (`shared.tsx`). **Cấm** `toLocaleString`, `toLocaleTimeString`, `<input type="date">` trực tiếp.
+- **Xuất Excel (DEC-055):** màn Phiếu thu và mọi báo cáo phải có nút `ExportExcelButton`, xuất **toàn bộ kết quả theo bộ lọc** (dùng `collectAllPages`), file `.xlsx` qua `toXlsxBuffer`. Báo cáo / danh sách tra cứu mới cũng phải có nút này và đủ cột dữ liệu.
