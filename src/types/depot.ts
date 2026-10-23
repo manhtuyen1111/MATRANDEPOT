@@ -130,7 +130,9 @@ export interface FeeLineItem {
   id: string;
   catalogCode: string;
   name: string;
-  amountInclVat: number;
+  amountInclVat: number; // Thành tiền dòng (= đơn giá × số lượng)
+  quantity?: number;          // DEC-077: số lượng (mặc định 1)
+  unitAmountInclVat?: number; // DEC-077: đơn giá biểu giá tại thời điểm lập
 }
 
 // 3 trường hợp thanh toán đã xác nhận (DEC-004, DEC-031)
@@ -301,6 +303,7 @@ export interface MasterPrepaidReceipt {
   remainingAmount: number;
   status: 'PENDING_PAYMENT' | 'ACTIVE' | 'EXHAUSTED' | 'CANCELLED';
   paymentMethod?: DirectPaymentMethod;
+  feeLines?: FeeLineItem[]; // DEC-077: chi phí theo biểu giá × số lượng (tổng = totalAmount)
   createdBy: string;
   createdAt: string;
   activatedAt?: string;

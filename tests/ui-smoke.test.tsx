@@ -21,6 +21,7 @@ import { DocumentReturnWorkspace } from '../src/features/office/DocumentReturnWo
 import { K80TicketModal } from '../src/components/K80TicketModal';
 import { CompanyCatalog } from '../src/features/catalog/CompanyCatalog';
 import { EeirPrintSheet, ReceiptPrintSheet } from '../src/components/ReceiptPrint';
+import { FeeLinesEditor } from '../src/components/shared';
 import { confirmGateInPaymentAndComplete, recordGateInFieldStep, toggleContainerHold, verifyGateInOfficeAndCreatePayment } from '../src/services/depotOperations';
 
 // Smoke test: mỗi màn hình render được với dữ liệu mẫu, không ném lỗi khi render
@@ -289,5 +290,25 @@ describe('DEC-076: Phiếu thu — nút Tạo phiếu thu TTT cùng hàng Tra c�
     const html = renderToString(<ReceiptsWorkspace state={as(base, 'usr-office')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
     expect(html).toMatch(/Tra cứu<\/button>.*Tạo phiếu thu TTT \(thanh toán trước\)<\/button>/s);
     expect(html).not.toContain('Tạo phiếu thu (chờ thanh toán)');
+  });
+});
+
+describe('DEC-077: phiếu thu trước — biểu giá × số lượng, bản in riêng', () => {
+  it('In PHIẾU THU TRƯỚC: tên khác, khung PTT-, cột SL / Đơn giá; khối Chi phí có số lượng', async () => {
+    const { createMasterPrepaidReceipt, confirmPrepaidCash } = await import('../src/services/payments');
+    const office = as(createInitialState(), 'usr-office');
+    const fee = office.feeCatalog[0];
+    let s = createMasterPrepaidReceipt(office, { customerCode: office.partners.find((p) => p.isCustomer)!.code, lotDescription: 'Lô tháng 11', method: 'CASH', feeItems: [{ catalogId: fee.id, quantity: 3 }] });
+    const master = s.masterReceipts[0];
+    s = confirmPrepaidCash(s, { transactionId: s.paymentTransactions[0].id });
+    const receipt = s.paymentReceipts.find((r) => r.masterReceiptId === master.id)!;
+    const html = renderToString(<ReceiptPrintSheet state={s} receipt={receipt} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('PHIẾU THU TRƯỚC (TTT)');
+    expect(html).toContain(master.receiptCode);
+    expect(html).toContain('SỐ TIỀN NẠP TRƯỚC');
+    expect(html).toContain('Lô tháng 11');
+    expect(html).toContain('>SL<');
+    const editor = renderToString(<FeeLinesEditor catalog={s.feeCatalog} selectedIds={[fee.id]} onChange={noop} quantities={[3]} onQuantitiesChange={noop} />);
+    expect(editor).toContain('Số lượng');
   });
 });

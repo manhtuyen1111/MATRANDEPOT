@@ -86,34 +86,54 @@ const PrintFooter: React.FC<{ note?: string }> = ({ note }) => (
 // PHIẾU THU — mẫu duy nhất (DEC-062, DEC-063): Văn phòng → Phiếu thu, Trả chứng từ, Hồ sơ container
 // ---------------------------------------------------------------------------
 export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentReceipt; printNo?: number }> = ({ state, receipt: r, printNo }) => {
-  const op = RECEIPT_OPERATION_LABELS[receiptOperationOf(state, r)];
+  const opKey = receiptOperationOf(state, r);
+  const op = RECEIPT_OPERATION_LABELS[opKey];
   const tx = state.paymentTransactions.find((t) => t.id === r.transactionId);
   const voucher = r.voucherId ? state.vouchers.find((v) => v.id === r.voucherId) : undefined;
+  // DEC-077: PHIẾU THU TRƯỚC — cùng khung, khác tên, có khung nổi bật Phiếu thu mẹ PTT-
+  const master = r.purpose === "PREPAID_TOPUP" ? state.masterReceipts.find((m) => m.id === r.masterReceiptId || m.receiptCode === r.masterReceiptCode) : undefined;
+  const isPrepaid = opKey === "THU_TRUOC" || Boolean(master);
+  const lines = master?.feeLines?.length ? master.feeLines : voucher?.feeLines || [];
+  const hasQty = lines.some((l) => (l.quantity || 1) > 1);
   return (
-    <PrintFrame state={state} title="PHIẾU THU" number={r.receiptNo} operation={op} reprintNo={printNo}>
+    <PrintFrame state={state} title={isPrepaid ? "PHIẾU THU TRƯỚC (TTT)" : "PHIẾU THU"} number={r.receiptNo} operation={op} reprintNo={printNo}>
+      {isPrepaid && master && (
+        <div className="mt-2 border-4 border-double border-slate-900 px-3 py-2 text-center">
+          <p className="text-[10px] font-bold uppercase tracking-wider">Phiếu thu mẹ — dùng trừ dần cho Hạ vỏ / Cấp vỏ</p>
+          <p className="font-mono text-lg font-black">{master.receiptCode}</p>
+          <p className="text-[11px]">Mã QR trừ dần: <span className="font-mono font-bold">{master.qrCode}</span>{master.lotDescription ? ` • ${master.lotDescription}` : ''}</p>
+          <p className="mt-1 text-sm font-black">SỐ TIỀN NẠP TRƯỚC: <span className="font-mono text-base">{formatVnd(r.amount)}</span></p>
+        </div>
+      )}
       <InfoGrid
         rows={[
-          ['Bên thanh toán', r.payerName],
-          ['Mã hồ sơ', r.dossierCode || r.masterReceiptCode, true],
-          ['Số container', r.containerNo, true],
-          ['Chứng từ', r.voucherNo, true],
+          ["Bên thanh toán", r.payerName],
+          ...(isPrepaid ? [] : ([["Mã hồ sơ", r.dossierCode || r.masterReceiptCode, true], ["Số container", r.containerNo, true], ["Chứng từ", r.voucherNo, true]] as [string, React.ReactNode, boolean][])),
           ['Hình thức', `${PAYMENT_METHOD_LABELS[r.method]}${r.providerTxRef ? ` • Mã GD ${r.providerTxRef}` : ''}`],
           ['Thời gian thu', formatDateTime(tx?.confirmedAt || r.issuedAt), true],
         ]}
       />
-      {voucher?.feeLines && voucher.feeLines.length > 0 && (
+      {lines.length > 0 && (
         <table className="mt-3 w-full border-collapse text-left">
           <thead>
-            <tr className="border-y border-slate-400"><th className="py-1">Nội dung (đã gồm VAT)</th><th className="py-1 text-right">Thành tiền</th></tr>
+            <tr className="border-y border-slate-400">
+              <th className="py-1">Nội dung (đã gồm VAT)</th>
+              {(isPrepaid || hasQty) && <><th className="py-1 text-right">SL</th><th className="py-1 text-right">Đơn giá</th></>}
+              <th className="py-1 text-right">Thành tiền</th>
+            </tr>
           </thead>
           <tbody>
-            {voucher.feeLines.map((l) => (
-              <tr key={l.id} className="border-b border-slate-200"><td className="py-1">{l.name}</td><td className="py-1 text-right font-mono">{formatVnd(l.amountInclVat)}</td></tr>
+            {lines.map((l) => (
+              <tr key={l.id} className="border-b border-slate-200">
+                <td className="py-1">{l.name}</td>
+                {(isPrepaid || hasQty) && <><td className="py-1 text-right font-mono">{l.quantity || 1}</td><td className="py-1 text-right font-mono">{formatVnd(l.unitAmountInclVat ?? l.amountInclVat)}</td></>}
+                <td className="py-1 text-right font-mono">{formatVnd(l.amountInclVat)}</td>
+              </tr>
             ))}
           </tbody>
         </table>
       )}
-      <p className="mt-2 text-right text-sm font-black">TỔNG THU: <span className="font-mono">{formatVnd(r.amount)}</span></p>
+      <p className="mt-2 text-right text-sm font-black">{isPrepaid ? "TỔNG THU TRƯỚC: " : "TỔNG THU: "}<span className="font-mono">{formatVnd(r.amount)}</span></p>
       <Signatures left="Người nộp tiền" right="Người thu tiền" rightName={r.issuedBy} />
       {state.companyProfile.bankAccount && <p className="mt-3 text-center text-[10px] text-slate-600">TK ngân hàng: {state.companyProfile.bankAccount}</p>}
       <PrintFooter note={printNo ? `lần in thứ ${printNo}` : undefined} />

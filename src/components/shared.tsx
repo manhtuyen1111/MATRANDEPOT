@@ -126,7 +126,12 @@ export const FeeLinesEditor: React.FC<{
   onChange: (ids: string[]) => void;
   suggestedId?: string;
   disabled?: boolean;
-}> = ({ catalog, selectedIds, onChange, suggestedId, disabled }) => {
+  // DEC-077: có truyền thì hiện cột SỐ LƯỢNG (VD phiếu thu trước theo lô); không truyền = mỗi dòng 1
+  quantities?: number[];
+  onQuantitiesChange?: (q: number[]) => void;
+}> = ({ catalog, selectedIds, onChange, suggestedId, disabled, quantities = [], onQuantitiesChange }) => {
+  const withQty = Boolean(onQuantitiesChange);
+  const qtyAt = (i: number) => (withQty ? quantities[i] ?? 1 : 1);
   const [pickId, setPickId] = React.useState<string>(suggestedId || '');
   React.useEffect(() => {
     if (suggestedId) setPickId(suggestedId);
@@ -140,7 +145,7 @@ export const FeeLinesEditor: React.FC<{
   const lines = selectedIds
     .map((id, index) => ({ index, item: catalog.find((c) => c.id === id) }))
     .filter((l): l is { index: number; item: DepotFeeCatalogItem } => Boolean(l.item));
-  const total = lines.reduce((s, l) => s + l.item.defaultAmountInclVat, 0);
+  const total = lines.reduce((s, l) => s + l.item.defaultAmountInclVat * (Number(qtyAt(l.index)) || 0), 0);
 
   return (
     <SectionCard
@@ -172,7 +177,11 @@ export const FeeLinesEditor: React.FC<{
         <button
           type="button"
           disabled={disabled || !pickId}
-          onClick={() => pickId && onChange([...selectedIds, pickId])}
+          onClick={() => {
+            if (!pickId) return;
+            onChange([...selectedIds, pickId]);
+            if (withQty) onQuantitiesChange!([...selectedIds.map((_, i) => qtyAt(i)), 1]);
+          }}
           className={`${primaryBtn} shrink-0`}
         >
           <Plus className="h-4 w-4" />
@@ -187,12 +196,33 @@ export const FeeLinesEditor: React.FC<{
               <tr key={`${item.id}-${index}`}>
                 <td className="py-1.5 pr-2 font-mono text-[11px] text-slate-500">{item.code}</td>
                 <td className="py-1.5 pr-2 text-slate-900">{item.name}</td>
-                <td className="py-1.5 pr-2 text-right font-mono font-semibold">{formatVnd(item.defaultAmountInclVat)}</td>
+                {withQty && (
+                  <>
+                    <td className="py-1.5 pr-2 text-right font-mono text-[11px] text-slate-500">{formatVnd(item.defaultAmountInclVat)} ×</td>
+                    <td className="w-20 py-1.5 pr-2">
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        inputMode="numeric"
+                        aria-label={`Số lượng ${item.name}`}
+                        value={qtyAt(index)}
+                        disabled={disabled}
+                        onChange={(e) => onQuantitiesChange!(selectedIds.map((_, i) => (i === index ? Number(e.target.value) : qtyAt(i))))}
+                        className={`${inputCls} py-1 text-right font-mono`}
+                      />
+                    </td>
+                  </>
+                )}
+                <td className="py-1.5 pr-2 text-right font-mono font-semibold">{formatVnd(item.defaultAmountInclVat * (Number(qtyAt(index)) || 0))}</td>
                 <td className="w-8 py-1.5 text-right">
                   {!disabled && (
                     <button
                       type="button"
-                      onClick={() => onChange(selectedIds.filter((_, i) => i !== index))}
+                      onClick={() => {
+                        onChange(selectedIds.filter((_, i) => i !== index));
+                        if (withQty) onQuantitiesChange!(selectedIds.map((_, i) => qtyAt(i)).filter((_, i) => i !== index));
+                      }}
                       className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                       aria-label={`Xóa ${item.name}`}
                     >

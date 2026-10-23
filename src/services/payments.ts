@@ -1,4 +1,5 @@
 import {
+  FeeLineItem,
   DirectPaymentMethod,
   MasterPrepaidReceipt,
   PaymentCategory,
@@ -354,14 +355,17 @@ export function createMasterPrepaidReceipt(
   input: {
     customerCode: string;
     lotDescription: string;
-    totalAmount: number;
+    totalAmount?: number;
     method: DirectPaymentMethod;
+    // DEC-077: chọn từ BIỂU GIÁ kèm SỐ LƯỢNG — tổng tiền do hệ thống tính (đơn giá × số lượng)
+    feeItems?: { catalogId: string; quantity: number }[];
   }
 ): DepotState {
   assertPermission(state, 'PREPAID_RECEIPT_CREATE', 'chỉ Văn phòng được tạo phiếu thu TTT (Thanh toán trước).');
   const partner = state.partners.find((p) => p.code === input.customerCode.trim().toUpperCase());
   if (!partner) throw new Error('Vui lòng chọn khách hàng / đối tác thanh toán từ Danh mục chung.');
-  const amount = Number(input.totalAmount);
+  const feeLines = input.feeItems?.length ? buildPrepaidFeeLines(state, input.feeItems) : undefined;
+  const amount = feeLines ? feeLines.reduce((s, l) => s + l.amountInclVat, 0) : Number(input.totalAmount);
   if (!Number.isFinite(amount) || amount <= 0) throw new Error('Số tiền nạp trước phải lớn hơn 0.');
   if (input.method !== 'CASH' && input.method !== 'BANK_TRANSFER_API') {
     throw new Error('Chọn hình thức thanh toán: Chuyển khoản (API QR) hoặc Tiền mặt.');
@@ -381,6 +385,7 @@ export function createMasterPrepaidReceipt(
     remainingAmount: 0,
     status: 'PENDING_PAYMENT',
     paymentMethod: input.method,
+    feeLines,
     createdBy: state.currentUser.fullName,
     createdAt: nowIso(),
   };
@@ -452,4 +457,16 @@ export function receiptOperationOf(
   if (v?.serviceType === 'GATE_IN') return 'HA_VO';
   if (v?.serviceType === 'GATE_OUT') return 'CAP_VO';
   return 'KHAC';
+}
+
+// DEC-077: dòng chi phí phiếu thu trước — chỉ lấy từ BIỂU GIÁ, số lượng nguyên dương; chụp đơn giá lúc lập
+function buildPrepaidFeeLines(state: DepotState, items: { catalogId: string; quantity: number }[]): FeeLineItem[] {
+  return items.map((it) => {
+    const cat = state.feeCatalog.find((f) => f.id === it.catalogId);
+    if (!cat) throw new Error('Biểu giá đã chọn không còn trong Danh mục chung. Vui lòng chọn lại.');
+    const qty = Number(it.quantity);
+    if (!Number.isInteger(qty) || qty < 1 || qty > 9999) throw new Error(`Số lượng của "${cat.name}" phải là số nguyên từ 1 đến 9999.`);
+    const unit = Number(cat.defaultAmountInclVat);
+    return { id: newId('fl'), catalogCode: cat.code, name: cat.name, quantity: qty, unitAmountInclVat: unit, amountInclVat: unit * qty };
+  });
 }

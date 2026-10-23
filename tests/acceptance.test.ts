@@ -888,3 +888,21 @@ describe('DEC-068: tiền tố mã theo tác nghiệp; đổi mã cũ khi nạp 
     expect(s.containers[0].masterDossierCode).toBe('HV-261023-009');
   });
 });
+
+describe('DEC-077: phiếu thu trước chọn biểu giá kèm số lượng', () => {
+  it('Tổng = đơn giá × số lượng do hệ thống tính; lưu dòng chi phí; chặn số lượng sai / biểu giá không có', () => {
+    const s0 = as(createInitialState(), 'usr-office');
+    const fee = s0.feeCatalog[0];
+    const customer = s0.partners.find((p) => p.isCustomer)!.code;
+    const s = createMasterPrepaidReceipt(s0, { customerCode: customer, lotDescription: 'Lô 20 cont', method: 'CASH', feeItems: [{ catalogId: fee.id, quantity: 20 }] });
+    const m = s.masterReceipts[0];
+    expect(m.receiptCode).toMatch(/^PTT-\d{4}-\d{3}$/);
+    expect(m.totalAmount).toBe(fee.defaultAmountInclVat * 20);
+    expect(m.feeLines![0]).toMatchObject({ quantity: 20, unitAmountInclVat: fee.defaultAmountInclVat, amountInclVat: fee.defaultAmountInclVat * 20 });
+    expect(s.paymentTransactions[0]).toMatchObject({ amount: fee.defaultAmountInclVat * 20, status: 'PENDING', purpose: 'PREPAID_TOPUP' });
+    expect(() => createMasterPrepaidReceipt(s0, { customerCode: customer, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: fee.id, quantity: 0 }] })).toThrow(/Số lượng/);
+    expect(() => createMasterPrepaidReceipt(s0, { customerCode: customer, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: fee.id, quantity: 1.5 }] })).toThrow(/Số lượng/);
+    expect(() => createMasterPrepaidReceipt(s0, { customerCode: customer, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: 'x', quantity: 1 }] })).toThrow(/Biểu giá/);
+    expect(() => createMasterPrepaidReceipt(as(s0, 'usr-inspector'), { customerCode: customer, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: fee.id, quantity: 1 }] })).toThrow(/Không đủ quyền/);
+  });
+});
