@@ -10,7 +10,8 @@ Kiểm thử mới nhất: `npm test` **60/60 pass** • `npm run build` **PASS*
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
 |---|---|---|
-| 1 | Nhánh `feature/cr-2026-10-batch1` **đã push lên GitHub** (4 commit, 2026-10-22). Tạo Pull Request và merge vào `main` khi bạn đã thử xong | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/feature/cr-2026-10-batch1 |
+| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push lên GitHub** (2026-10-23, gồm DEC-050 → DEC-065). Tạo Pull Request và merge vào `main` khi bạn đã thử xong | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
+| 5 | Tối ưu dữ liệu lớn (5–10 năm, ~10.000 hồ sơ/tháng): chốt **giới hạn 1 lần lọc báo cáo** (đề xuất 3 tháng), **ngưỡng xuất Excel phía máy chủ** (đề xuất 20.000 dòng), **thời gian lưu** (đề xuất 10 năm) | Ghi thành DEC-066 khi làm P4-01 |
 | 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |
 | 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
 | 4 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
@@ -19,7 +20,7 @@ Kiểm thử mới nhất: `npm test` **60/60 pass** • `npm run build` **PASS*
 | Mã | Việc | Giao cho | Ghi chú |
 |---|---|---|---|
 | P3-T | Bạn chạy `npm run dev`, thử các luồng ở mục F, báo lỗi | Bạn | Agent chưa thử được trên trình duyệt |
-| P4-01 | Viết lại schema Supabase (bảng, bộ đếm mã, RLS) | Claude Code | ⏸ Chờ danh mục trạng thái (A.2) |
+| P4-01 | Viết lại schema Supabase (bảng, bộ đếm mã, RLS, **index theo bộ lọc, phân trang con trỏ, partition nhật ký**) | Claude Code | ⏸ Chờ danh mục trạng thái (A.2) + A.5 |
 | P4-02 | RPC Hạ vỏ + thanh toán + pgTAP | Claude Code | Sau P4-01 |
 | UI-01 | Rà soát giao diện mobile các màn hiện trường | Antigravity | Không đụng `src/services/` |
 
@@ -37,7 +38,7 @@ Kiểm thử mới nhất: `npm test` **60/60 pass** • `npm run build` **PASS*
 | Tổ sửa chữa | Danh mục chung → Sửa chữa: thêm tổ; thêm **user Sửa chữa có sẵn** hoặc nhập tên; ngưng thay vì xóa | 042, 048 |
 | Danh mục Công ty | Admin cấu hình tên, MST, địa chỉ, ĐT, email, TK ngân hàng — in ở đầu phiếu thu / EEIR / K80 | 062 |
 | Cấp vỏ | Nhập booking (tự đếm), chọn cont (AV mặc định, DAMAGE được), số xe + SĐT, chi phí, thanh toán tại Văn phòng → Xe nâng OUT (khung nổi số cont, size/type, vị trí) → **Văn phòng trả chứng từ** | 027, 033, 034, 052, 061 |
-| Vị trí / Khóa | Đảo chuyển (Xe nâng, có lịch sử); Sửa vị trí (Văn phòng, không lịch sử); Khóa bắt buộc ghi chú, không cấp được; Block do Admin cấu hình | 030, 036, 050 |
+| Vị trí / Khóa | Đảo chuyển (Xe nâng, có lịch sử); Sửa vị trí (Văn phòng, không lịch sử); **Khóa bắt buộc ghi Remark Văn phòng**; cont khóa vẫn hiện ở Cấp vỏ (chỉ icon khóa, có cột Ghi chú văn phòng) nhưng phải mở khóa trước khi cấp; Tồn vỏ có Xuất Excel; Block do Admin cấu hình | 030, 036, 050, 065 |
 | Mã hồ sơ / QR | `IN-YYMMDD-NNN`, `OUT-YYMMDD-NNN` do hệ thống cấp; QR phiếu K80 = `QR-<mã hồ sơ>` (duy nhất), **đóng sau khi trả chứng từ** | 037, 057 |
 | Hồ sơ container | Đầu: thông tin container (số cont lớn) → các bộ phận theo thứ tự, xác nhận ✓ HOÀN THÀNH bên phải → **Thanh toán 1 mục riêng dưới Văn phòng**, link phiếu thu | 058 |
 | Báo cáo | Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp 5 sheet — bắt buộc lọc, phân trang; **Xuất Excel .xlsx theo bộ lọc** ở mọi báo cáo + Phiếu thu | 044, 046, 050, 055 |
@@ -116,3 +117,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-23 — Claude Code: P4-pre9 (DEC-062, 063, 064).
 - 2026-10-23 — Claude Code: P4-pre10 (DEC-065).
 - 2026-10-23 — Claude Code: Cấp vỏ — chỉ icon khóa, thêm cột Ghi chú văn phòng (DEC-065).
+- 2026-10-23 — Claude Code: cập nhật tiến độ chung; push nhánh agent/claude/p4-prep-xlsx lên GitHub.
