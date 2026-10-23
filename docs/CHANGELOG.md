@@ -95,6 +95,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-076)
 - Phiếu thu: nút Tạo phiếu thu TTT cùng hàng Tra cứu / Xuất Excel. In EEIR + phiếu thu: mỗi phiếu nửa tờ A4 (A5), 2 phiếu 1 tờ; EEIR bỏ bảng bộ phận, thêm tình trạng vỏ Giám định. Kiểm thử: 76/76 pass.
 
+### Changed (2026-10-24, DEC-077)
+- Phiếu thu: danh sách full chiều ngang, đủ cột; tạo phiếu thu trước theo bố cục Khách hàng → Chi phí (biểu giá × số lượng, tổng do hệ thống tính) → Hình thức thanh toán; bản in PHIẾU THU TRƯỚC (TTT) có khung nổi bật PTT-, SL / đơn giá. Kiểm thử: 78/78 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

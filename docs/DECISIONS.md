@@ -588,6 +588,15 @@ Quy ước trạng thái:
   - **EEIR không in các bộ phận / lộ trình**; thay bằng khối **TÌNH TRẠNG VỎ (GIÁM ĐỊNH)**: trạng thái DAMAGE / AV, đóng hàng, hư hỏng, vệ sinh, AGE, người giám định + giờ.
   - Nội dung quá dài so với nửa tờ (VD rất nhiều dòng chi phí) sẽ bị cắt — cần thử in thực tế để chỉnh nếu gặp.
 
+### DEC-077 — Phiếu thu: danh sách full màn hình; Phiếu thu trước theo bố cục thanh toán, biểu giá × số lượng, bản in riêng
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-032, DEC-076
+- Quyết định:
+  - **Danh sách phiếu thu chiếm toàn bộ chiều ngang** khi tra cứu, đủ cột: mã phiếu thu, tác nghiệp, trạng thái, số tiền, trường hợp • hình thức, bên thanh toán, mã hồ sơ, số cont, chứng từ, tạo lúc • bởi, xác nhận thu, đã in. Chi tiết phiếu hiện **bên dưới** danh sách.
+  - **Tạo phiếu thu TRƯỚC (TTT)** theo bố cục màn thanh toán Hạ vỏ / Cấp vỏ: **1. Khách hàng** (+ diễn giải lô) → **2. Chi phí** (chọn từ BIỂU GIÁ) → **3. Hình thức thanh toán** (Tiền mặt / Chuyển khoản API QR) → tổng thu trước → tạo (chờ thanh toán).
+  - **Chọn biểu giá có SỐ LƯỢNG** (số nguyên 1–9999). **Tổng tiền do hệ thống tính** = Σ đơn giá × số lượng; lưu dòng chi phí (đơn giá, số lượng, thành tiền) vào Phiếu thu mẹ. Hạ vỏ / Cấp vỏ giữ như cũ (mỗi dòng 1).
+  - **Bản in Phiếu thu trước**: cùng khung với phiếu thu Hạ vỏ / Cấp vỏ nhưng **tên "PHIẾU THU TRƯỚC (TTT)"** và **khung viền đôi nổi bật**: mã Phiếu thu mẹ PTT-, mã QR trừ dần, diễn giải lô, **SỐ TIỀN NẠP TRƯỚC**; bảng chi phí có **SL / Đơn giá / Thành tiền**; dòng tổng "TỔNG THU TRƯỚC".
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -677,6 +686,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-076 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-077 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
