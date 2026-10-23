@@ -579,6 +579,15 @@ Quy ước trạng thái:
   - Menu có **số đếm việc chờ** cho: Giám định → Nhập tàu (cont chờ giám định), Xe nâng → Nhập tàu (cont chờ hạ bãi, đã xong vệ sinh), Giám định / Xe nâng → Xuất tàu (cont chờ xuất) — cộng mọi tàu đang mở, cùng cách tính với tab "Chờ làm" (`vesselStepSummary`). Văn phòng → Nhập tàu / Xuất tàu: số danh sách đang thực hiện.
   - **Mọi mục tác nghiệp hiện trường (mục có biểu tượng điện thoại) đang có việc chờ**: ô đếm **màu cam + chấm nhấp nháy** ("Có việc đang chờ"); nhóm menu chứa mục đó cũng hiện số **màu cam** (cả khi thu gọn / thanh biểu tượng). Không có việc thì không hiện số.
 
+### DEC-076 — Phiếu thu: nút Tạo phiếu thu TTT; in EEIR + Phiếu thu trên 1 tờ A4 (mỗi phiếu A5)
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-062, DEC-072
+- Quyết định:
+  - Văn phòng → Phiếu thu: **"Tạo phiếu thu TTT (thanh toán trước)" là nút tác nghiệp cùng hàng với TRA CỨU – XUẤT EXCEL**; bấm nút mở form tạo phiếu (1 hàng ngang) ngay dưới khung tra cứu, tạo xong tự đóng. Bỏ khung tạo phiếu ở cột phải.
+  - **Khổ in**: mỗi phiếu (EEIR, Phiếu thu) chiếm **nửa tờ A4 = khổ A5 (210 × 148 mm)**; **EEIR + Phiếu thu = 1 tờ A4** (đường cắt giữa 2 nửa), 2 phiếu thì sang trang mới. Khổ giấy dùng tên riêng (`@page a4sheet`) — **không ảnh hưởng phiếu K80 in nhiệt 80mm**.
+  - **EEIR không in các bộ phận / lộ trình**; thay bằng khối **TÌNH TRẠNG VỎ (GIÁM ĐỊNH)**: trạng thái DAMAGE / AV, đóng hàng, hư hỏng, vệ sinh, AGE, người giám định + giờ.
+  - Nội dung quá dài so với nửa tờ (VD rất nhiều dòng chi phí) sẽ bị cắt — cần thử in thực tế để chỉnh nếu gặp.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -668,6 +677,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-075 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-076 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

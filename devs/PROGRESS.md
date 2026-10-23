@@ -4,10 +4,10 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-075), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069), hoàn thiện màn Văn phòng dạng danh sách → chi tiết, sửa / thêm / xóa khi chưa duyệt, sắp xếp + tìm kiếm (DEC-070), màn hiện trường có theo dõi đã làm / chờ làm (DEC-071); **sửa In hồ sơ trang trắng → In EEIR, EEIR đồng bộ khung với phiếu thu** (DEC-072). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-076), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069), hoàn thiện màn Văn phòng dạng danh sách → chi tiết, sửa / thêm / xóa khi chưa duyệt, sắp xếp + tìm kiếm (DEC-070), màn hiện trường có theo dõi đã làm / chờ làm (DEC-071); **sửa In hồ sơ trang trắng → In EEIR, EEIR đồng bộ khung với phiếu thu** (DEC-072). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
 
 **Điểm dừng 2026-10-24:** đã **push đầy đủ lên GitHub** (DEC-050 → DEC-069). Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
-Kiểm thử mới nhất: `npm test` **75/75 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+Kiểm thử mới nhất: `npm test` **76/76 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
@@ -36,7 +36,7 @@ Kiểm thử mới nhất: `npm test` **75/75 pass** (3 file test) • `npm run 
 | Hạ vỏ | Giám định (mobile; được xóa hồ sơ khi Văn phòng chưa thao tác) → Văn phòng (số cont trùng Tồn vỏ bị chặn ngay khi nhập; SĐT lái xe, khách hàng, chi phí từ biểu giá, TTT/TTS/TTTT) → GATE IN OK → (Vệ sinh nếu có) → Xe nâng hạ vỏ → **Văn phòng trả chứng từ** (in EEIR + phiếu thu) | 020–025, 052, 059, 060 |
 | Phiếu K80 | Thông tin chung ở đầu → LỘ TRÌNH các bước (ô ☐ tích tay) → QR; lái xe đi theo thứ tự, quét mã tại từng bộ phận; Văn phòng → Trả chứng từ: 1 ô quét chung, danh sách chờ chia **2 cột HẠ VỎ / CẤP VỎ** (có số lượt) | 052, 064 |
 | Thanh toán | TTT trừ dần Phiếu thu mẹ; TTS = công nợ; Tiền mặt / Chuyển khoản mới phát hành phiếu thu `PT-YYYY-NNNNNN` | 031, 032 |
-| Phiếu thu | Văn phòng tạo phiếu thu TTT và xác nhận tiền mặt; phiếu thu ghi rõ **tác nghiệp** (Hạ vỏ / Cấp vỏ / Thu trước); hồ sơ container link thẳng về Phiếu thu; **mẫu in thống nhất** (thông tin công ty + tác nghiệp); **đếm số lần in**, in lại phải xác nhận + nhãn BẢN IN LẠI ; **EEIR cùng khung với phiếu thu**, in từ hồ sơ (In EEIR / In EEIR + phiếu thu) | 032, 047, 051, 062, 063, 072 |
+| Phiếu thu | Văn phòng tạo phiếu thu TTT và xác nhận tiền mặt; phiếu thu ghi rõ **tác nghiệp** (Hạ vỏ / Cấp vỏ / Thu trước); hồ sơ container link thẳng về Phiếu thu; **mẫu in thống nhất** (thông tin công ty + tác nghiệp); **đếm số lần in**, in lại phải xác nhận + nhãn BẢN IN LẠI ; **EEIR cùng khung với phiếu thu**, in từ hồ sơ (In EEIR / In EEIR + phiếu thu) ; nút **Tạo phiếu thu TTT** cùng hàng Tra cứu; **in EEIR + phiếu thu = 1 tờ A4** (mỗi phiếu A5), EEIR ghi tình trạng vỏ Giám định | 032, 047, 051, 062, 063, 072, 076 |
 | DAMAGE | Báo giá (remark + giờ công) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → **AV** (không có QC) | 040–043, 049 |
 | Tổ sửa chữa | Danh mục chung → Sửa chữa: thêm tổ; thêm **user Sửa chữa có sẵn** hoặc nhập tên; ngưng thay vì xóa | 042, 048 |
 | Danh mục Công ty | Admin cấu hình tên, MST, địa chỉ, ĐT, email, TK ngân hàng — in ở đầu phiếu thu / EEIR / K80 | 062 |
@@ -87,6 +87,7 @@ Kiểm thử mới nhất: `npm test` **75/75 pass** (3 file test) • `npm run 
 | P7-05 | Lập danh sách Xuất tàu / Thêm cont: Tìm hàng loạt như Tồn vỏ | 2026-10-24 | DEC-073 | **75/75 • build PASS** | agent/claude/p4-prep-xlsx |
 | P4-pre13 | Tồn vỏ: cột Date in, Excel DATE IN + VÀO BÃI BẰNG, sắp lại độ rộng cột | 2026-10-24 | DEC-074 | **75/75 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-06 | Menu báo việc chờ: số đếm Nhập / Xuất tàu cho Giám định, Xe nâng; việc hiện trường đang chờ tô cam + nhấp nháy | 2026-10-24 | DEC-075 | **75/75 • build PASS** | agent/claude/p4-prep-xlsx |
+| P7-07 | Phiếu thu: nút Tạo phiếu thu TTT cùng hàng Tra cứu; in EEIR + phiếu thu khổ A5 trên 1 tờ A4, EEIR thêm tình trạng vỏ Giám định | 2026-10-24 | DEC-076 | **76/76 • build PASS**; **chưa thử in giấy thật** | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -162,3 +163,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-24 — Claude Code: P7-05 (DEC-073) Tìm hàng loạt ở Lập danh sách Xuất tàu. 75/75 • build PASS.
 - 2026-10-24 — Claude Code: P4-pre13 (DEC-074) Tồn vỏ cột Date in. 75/75 • build PASS.
 - 2026-10-24 — Claude Code: P7-06 (DEC-075) menu báo việc chờ hiện trường. 75/75 • build PASS.
+- 2026-10-24 — Claude Code: P7-07 (DEC-076) nút Tạo phiếu thu TTT; in EEIR + phiếu thu A5 trên 1 tờ A4. 76/76 • build PASS.
