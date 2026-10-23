@@ -4,7 +4,7 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-077), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069), hoàn thiện màn Văn phòng dạng danh sách → chi tiết, sửa / thêm / xóa khi chưa duyệt, sắp xếp + tìm kiếm (DEC-070), màn hiện trường có theo dõi đã làm / chờ làm (DEC-071); **sửa In hồ sơ trang trắng → In EEIR, EEIR đồng bộ khung với phiếu thu** (DEC-072). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-078), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069), hoàn thiện màn Văn phòng dạng danh sách → chi tiết, sửa / thêm / xóa khi chưa duyệt, sắp xếp + tìm kiếm (DEC-070), màn hiện trường có theo dõi đã làm / chờ làm (DEC-071); **sửa In hồ sơ trang trắng → In EEIR, EEIR đồng bộ khung với phiếu thu** (DEC-072). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
 
 **Điểm dừng 2026-10-24:** đã **push đầy đủ lên GitHub** (DEC-050 → DEC-069). Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
 Kiểm thử mới nhất: `npm test` **78/78 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
@@ -89,6 +89,7 @@ Kiểm thử mới nhất: `npm test` **78/78 pass** (3 file test) • `npm run 
 | P7-06 | Menu báo việc chờ: số đếm Nhập / Xuất tàu cho Giám định, Xe nâng; việc hiện trường đang chờ tô cam + nhấp nháy | 2026-10-24 | DEC-075 | **75/75 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-07 | Phiếu thu: nút Tạo phiếu thu TTT cùng hàng Tra cứu; in EEIR + phiếu thu khổ A5 trên 1 tờ A4, EEIR thêm tình trạng vỏ Giám định | 2026-10-24 | DEC-076 | **76/76 • build PASS**; **chưa thử in giấy thật** | agent/claude/p4-prep-xlsx |
 | P7-08 | Phiếu thu: danh sách full màn hình; phiếu thu trước theo bố cục thanh toán, biểu giá × số lượng, bản in PHIẾU THU TRƯỚC | 2026-10-24 | DEC-077 | **78/78 • build PASS**; chưa thử in giấy | agent/claude/p4-prep-xlsx |
+| P7-09 | Menu: biểu tượng mobile + số đếm thẳng hàng (3 cột cố định) | 2026-10-24 | DEC-078 | **78/78 • build PASS** | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -166,3 +167,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-24 — Claude Code: P7-06 (DEC-075) menu báo việc chờ hiện trường. 75/75 • build PASS.
 - 2026-10-24 — Claude Code: P7-07 (DEC-076) nút Tạo phiếu thu TTT; in EEIR + phiếu thu A5 trên 1 tờ A4. 76/76 • build PASS.
 - 2026-10-24 — Claude Code: P7-08 (DEC-077) Phiếu thu full màn hình, phiếu thu trước biểu giá × số lượng, bản in riêng. 78/78 • build PASS.
+- 2026-10-24 — Claude Code: P7-09 (DEC-078) menu mobile thẳng hàng. 78/78 • build PASS.

@@ -98,6 +98,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-077)
 - Phiếu thu: danh sách full chiều ngang, đủ cột; tạo phiếu thu trước theo bố cục Khách hàng → Chi phí (biểu giá × số lượng, tổng do hệ thống tính) → Hình thức thanh toán; bản in PHIẾU THU TRƯỚC (TTT) có khung nổi bật PTT-, SL / đơn giá. Kiểm thử: 78/78 pass.
 
+### Changed (2026-10-24, DEC-078)
+- Menu: biểu tượng tác nghiệp mobile và số đếm nằm trong cột cố định → thẳng hàng.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

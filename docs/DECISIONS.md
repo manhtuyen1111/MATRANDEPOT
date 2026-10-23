@@ -597,6 +597,11 @@ Quy ước trạng thái:
   - **Chọn biểu giá có SỐ LƯỢNG** (số nguyên 1–9999). **Tổng tiền do hệ thống tính** = Σ đơn giá × số lượng; lưu dòng chi phí (đơn giá, số lượng, thành tiền) vào Phiếu thu mẹ. Hạ vỏ / Cấp vỏ giữ như cũ (mỗi dòng 1).
   - **Bản in Phiếu thu trước**: cùng khung với phiếu thu Hạ vỏ / Cấp vỏ nhưng **tên "PHIẾU THU TRƯỚC (TTT)"** và **khung viền đôi nổi bật**: mã Phiếu thu mẹ PTT-, mã QR trừ dần, diễn giải lô, **SỐ TIỀN NẠP TRƯỚC**; bảng chi phí có **SL / Đơn giá / Thành tiền**; dòng tổng "TỔNG THU TRƯỚC".
 
+### DEC-078 — Menu: biểu tượng tác nghiệp mobile thẳng hàng
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-012, DEC-075
+- Quyết định: Mỗi dòng menu chia **3 cột cố định**: **tên mục** (giãn, quá dài thì "…") | **cột biểu tượng điện thoại** (rộng cố định; mục không phải mobile để trống) | **cột số đếm** (rộng cố định, canh phải). Nhờ vậy biểu tượng mobile của mọi mục **thẳng hàng** theo chiều dọc, số đếm cũng thẳng hàng.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -686,6 +691,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-077 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-078 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
