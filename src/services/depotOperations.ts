@@ -216,20 +216,8 @@ export function verifyGateInOfficeAndCreatePayment(
   if (!truckNo) throw new Error('Văn phòng bắt buộc nhập SỐ XE.');
   const driverPhone = normalizeDriverPhone(input.driverPhone);
 
-  const active = findActiveContainer(state, contNo);
-  if (active) {
-    throw new Error(`Container ${contNo} hiện đang ở trong bãi (${active.status}), không thể Hạ vỏ trùng.`);
-  }
-  const duplicateOrder = state.gateInOrders.find(
-    (o) =>
-      o.id !== order.id &&
-      o.containerNo === contNo &&
-      o.status !== 'GATE_IN_OK' &&
-      o.status !== 'CANCELLED'
-  );
-  if (duplicateOrder) {
-    throw new Error(`Container ${contNo} đang có hồ sơ Hạ vỏ khác chưa hoàn tất (${duplicateOrder.masterDossierCode}) (GIN-006).`);
-  }
+  const conflict = gateInContainerConflict(state, contNo, order.id);
+  if (conflict) throw new Error(conflict);
 
   const feeLines = buildFeeLines(state, input.feeCatalogIds);
   const amount = sumFees(feeLines);
@@ -1784,4 +1772,35 @@ export function updateStaffUser(
     target.staffCode,
     `[Admin] Cập nhật user ${target.staffCode} ${target.fullName}: vai trò ${updated.roles.join(', ')}, ${updated.isActive ? 'đang hoạt động' : 'đã khóa'}`
   );
+}
+
+// ============================================================================
+// 17. GIÁM ĐỊNH — XÓA HỒ SƠ HẠ VỎ khi Văn phòng chưa thao tác (DEC-059)
+// Xóa hẳn, không lưu lịch sử / không ghi nhật ký (người dùng xác nhận). Mã đã cấp không được dùng lại.
+// ============================================================================
+export function deleteGateInFieldRecord(state: DepotState, input: { gateInId: string }): DepotState {
+  assertPermission(state, 'GATE_IN_FIELD', 'chỉ Giám định / Quản lý được xóa hồ sơ hạ vỏ.');
+  const order = state.gateInOrders.find((o) => o.id === input.gateInId);
+  if (!order) throw new Error('Không tìm thấy hồ sơ hạ vỏ.');
+  const officeTouched =
+    order.status !== 'FIELD_RECORDED' || Boolean(order.officeVerifiedAt || order.voucherId || order.containerNo);
+  if (officeTouched) {
+    throw new Error(`Hồ sơ ${order.masterDossierCode} đã được Văn phòng xử lý — Giám định không được xóa.`);
+  }
+  return { ...state, gateInOrders: state.gateInOrders.filter((o) => o.id !== order.id) };
+}
+
+// DEC-060: kiểm tra số container khi Văn phòng Hạ vỏ — dùng cả lúc gõ (giao diện) và lúc xác nhận (nghiệp vụ)
+export function gateInContainerConflict(state: DepotState, rawContainerNo: string, gateInId?: string): string | null {
+  const contNo = rawContainerNo.trim().toUpperCase();
+  if (!/^[A-Z]{4}\d{7}$/.test(contNo)) return null;
+  const active = findActiveContainer(state, contNo);
+  if (active) {
+    return `Container ${contNo} đang có trong TỒN VỎ (hồ sơ ${active.masterDossierCode}, vị trí ${formatLocation(active)}) — không thể Hạ vỏ trùng.`;
+  }
+  const dup = state.gateInOrders.find(
+    (o) => o.id !== gateInId && o.containerNo === contNo && o.status !== 'GATE_IN_OK' && o.status !== 'CANCELLED'
+  );
+  if (dup) return `Container ${contNo} đang có hồ sơ Hạ vỏ khác chưa hoàn tất (${dup.masterDossierCode}) (GIN-006).`;
+  return null;
 }

@@ -12,6 +12,7 @@ import {
   confirmGateInPaymentAndComplete,
   confirmReleasePayment,
   createReleaseOrder,
+  gateInContainerConflict,
   getBookingSummary,
   releaseAllocatedContainer,
   releaseBlocker,
@@ -101,7 +102,9 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
 
   const voucher = order?.voucherId ? state.vouchers.find((v) => v.id === order.voucherId) : undefined;
   const pendingTx = voucher ? pendingTransactionOf(state, voucher.id) : undefined;
-  const section1Done = Boolean(
+  // DEC-060: kiểm tra Tồn vỏ ngay khi nhập số container — trùng thì chặn, không mở các bước tiếp
+  const contConflict = order ? gateInContainerConflict(state, form.contNo, order.id) : null;
+  const section1Done = !contConflict && Boolean(
     form.contNo.trim() && form.size && form.type && form.shippingLineCode && form.customerName && form.truckNo.trim() && form.driverPhone.trim()
   );
   const suggested = suggestLoloFee(state.feeCatalog, form.size, form.type, form.shippingLineCode)?.id;
@@ -242,7 +245,8 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <label>
                     <span className={labelCls}>Số container *</span>
-                    <input value={form.contNo} onChange={(e) => set({ contNo: e.target.value.toUpperCase() })} placeholder="MSKU6829104" className={`${inputCls} font-mono font-bold uppercase`} />
+                    <input value={form.contNo} onChange={(e) => set({ contNo: e.target.value.toUpperCase() })} placeholder="MSKU6829104" aria-invalid={Boolean(contConflict)} className={`${inputCls} font-mono font-bold uppercase ${contConflict ? "border-red-500 bg-red-50" : ""}`} />
+                    {contConflict && <span role="alert" className="mt-1 block text-[11px] font-semibold text-red-700">{contConflict}</span>}
                   </label>
                   <label>
                     <span className={labelCls}>Size *</span>

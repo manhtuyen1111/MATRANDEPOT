@@ -136,3 +136,9 @@ describe('DEC-056: màn Phiếu thu / Báo cáo mở lần đầu đã điền s
     }
   });
 });
+
+describe('DEC-059: nút xóa hồ sơ ở Giám định', () => {
+  it('Màn Giám định render được (nút xóa nằm trong chi tiết hồ sơ chưa qua Văn phòng)', () => {
+    expect(renderToString(<InspectorHaVoMobile state={as(base, 'usr-inspector')} onUpdateState={noop} />)).toContain('Hạ vỏ');
+  });
+});

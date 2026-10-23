@@ -24,6 +24,7 @@ import {
 import { DepotState } from '../../services/depotStore';
 import {
   normalizeCleaningItems,
+  deleteGateInFieldRecord,
   recordGateInFieldStep,
 } from '../../services/depotOperations';
 import { peekNextCode } from '../../services/codes';
@@ -58,6 +59,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
 
   // Xem chi tiết khi kích vào 1 dòng trong danh sách
   const [selectedOrder, setSelectedOrder] = useState<GateInOrder | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Luồng tạo tác nghiệp mới theo từng bước:
   // - Khi mới bấm (+): CHỈ hiển thị màn chụp ảnh cửa cont (chưa có doorPhotoDataUrl)
@@ -293,6 +295,9 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
         <span className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">{recentOrders.length}</span>
       </div>
 
+      {errorMsg && !activeKey && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">{errorMsg}</div>
+      )}
       {successMsg && (
         <div className="flex items-start justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
           <div className="flex items-center gap-2">
@@ -480,6 +485,44 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
               </div>
             </div>
           </div>
+
+          {/* DEC-059: Giám định xóa hồ sơ khi Văn phòng chưa thao tác — xác nhận 2 bước */}
+          {selectedOrder.status === 'FIELD_RECORDED' && !selectedOrder.officeVerifiedAt && !selectedOrder.voucherId && (
+            <div className="mt-3 border-t border-slate-100 pt-3">
+              {confirmDeleteId === selectedOrder.id ? (
+                <div className="flex flex-col gap-2 rounded-md border border-red-300 bg-red-50 p-3 text-xs text-red-800 sm:flex-row sm:items-center sm:justify-between">
+                  <span>Xóa hẳn hồ sơ <strong className="font-mono">{selectedOrder.masterDossierCode}</strong>? Không lưu lịch sử, không khôi phục được.</span>
+                  <span className="flex gap-2">
+                    <button type="button" onClick={() => setConfirmDeleteId(null)} className="rounded border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700">Hủy</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          onUpdateState(deleteGateInFieldRecord(state, { gateInId: selectedOrder.id }));
+                          setSuccessMsg(`Đã xóa hồ sơ ${selectedOrder.masterDossierCode}.`);
+                          setSelectedOrder(null);
+                        } catch (err) {
+                          setErrorMsg(err instanceof Error ? err.message : 'Không xóa được hồ sơ');
+                        }
+                        setConfirmDeleteId(null);
+                      }}
+                      className="rounded bg-red-600 px-3 py-2 font-bold text-white hover:bg-red-700"
+                    >
+                      Xác nhận xóa
+                    </button>
+                  </span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteId(selectedOrder.id)}
+                  className="w-full rounded-md border border-red-300 bg-white py-2.5 text-xs font-bold text-red-700 hover:bg-red-50"
+                >
+                  Xóa hồ sơ (Văn phòng chưa thao tác)
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

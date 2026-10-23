@@ -15,6 +15,7 @@ import {
   correctContainerLocation,
   createMasterPrepaidReceipt,
   createReleaseOrder,
+  deleteGateInFieldRecord,
   executeGateOut,
   getBookingSummary,
   processBankTransferCallback,
@@ -741,5 +742,36 @@ describe('DEC-057: mã QR phiếu K80 duy nhất & đóng sau khi trả chứng 
     const all = s.k80Tickets.map((t) => t.qrCode);
     expect(new Set(all).size).toBe(all.length);
     expect(t2.qrCode).not.toBe(t1.qrCode);
+  });
+});
+
+describe('DEC-059: Giám định xóa hồ sơ hạ vỏ khi Văn phòng chưa thao tác', () => {
+  it('Xóa được khi chưa thao tác, không ghi nhật ký; đã thao tác thì chặn; vai trò khác bị chặn; mã không cấp lại', () => {
+    let s = fieldStep(createInitialState());
+    const a = s.gateInOrders[0];
+    const logs = s.auditLogs.length;
+    expect(() => deleteGateInFieldRecord(as(s, 'usr-office'), { gateInId: a.id })).toThrow(/Không đủ quyền/);
+    s = deleteGateInFieldRecord(as(s, 'usr-inspector'), { gateInId: a.id });
+    expect(s.gateInOrders.find((o) => o.id === a.id)).toBeUndefined();
+    expect(s.auditLogs.length).toBe(logs);
+    s = fieldStep(s);
+    expect(s.gateInOrders[0].masterDossierCode).not.toBe(a.masterDossierCode);
+
+    const b = s.gateInOrders[0];
+    s = officeStep(s, b.id, 'MSKU1234567');
+    expect(() => deleteGateInFieldRecord(as(s, 'usr-inspector'), { gateInId: b.id })).toThrow(/Văn phòng xử lý/);
+  });
+});
+
+describe('DEC-060: Văn phòng Hạ vỏ kiểm tra Tồn vỏ ngay khi nhập số container', () => {
+  it('Cont đang tồn vỏ → báo ngay & chặn; cont đã OUT hoặc mới → cho phép', async () => {
+    const { gateInContainerConflict } = await import('../src/services/depotOperations');
+    const s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    expect(gateInContainerConflict(s, 'MSKU4089123', gi.id)).toMatch(/TỒN VỎ/);
+    expect(gateInContainerConflict(s, 'MSKU3190024', gi.id)).toBeNull(); // đã OUT trước đó
+    expect(gateInContainerConflict(s, 'MSKU1234567', gi.id)).toBeNull();
+    expect(gateInContainerConflict(s, 'MSKU40', gi.id)).toBeNull(); // chưa nhập đủ → chưa báo
+    expect(() => officeStep(s, gi.id, 'MSKU4089123')).toThrow(/TỒN VỎ/);
   });
 });

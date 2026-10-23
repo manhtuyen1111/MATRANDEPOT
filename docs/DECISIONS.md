@@ -410,6 +410,16 @@ Quy ước trạng thái:
   - **Xác nhận bên phải mỗi khối**: tích xanh **HOÀN THÀNH** + người xác nhận + thời gian; chưa xong thì hiện việc đang chờ.
   - **Thanh toán là mục riêng, ngay dưới Văn phòng, chỉ 1 lần mỗi tác nghiệp**: dòng chi phí, chứng từ, tổng, bên thanh toán, trạng thái rõ ràng (ĐÃ THANH TOÁN / TTS công nợ / CHỜ CHUYỂN KHOẢN / CHƯA THANH TOÁN), **link phiếu thu đầy đủ** (TTTT: phiếu thu; TTT: phiếu thu gốc của Phiếu thu mẹ; chờ chuyển khoản: link yêu cầu), xác nhận người + giờ.
 
+### DEC-059 — Giám định xóa hồ sơ hạ vỏ khi Văn phòng chưa thao tác
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: Giám định (và Quản lý, Admin) được **xóa hẳn** hồ sơ hạ vỏ khi hồ sơ còn ở trạng thái chờ Văn phòng (Văn phòng chưa bổ sung thông tin, chưa lập chứng từ). **Không lưu lịch sử, không ghi nhật ký** (người dùng xác nhận). Xác nhận 2 bước trên màn hình. Mã hồ sơ đã cấp **không được cấp lại** cho hồ sơ khác. Văn phòng đã thao tác thì không xóa được.
+
+### DEC-060 — Văn phòng Hạ vỏ: kiểm tra Tồn vỏ ngay khi nhập số container
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: Ngay khi nhập đủ **SỐ CONTAINER** (4 chữ + 7 số), hệ thống kiểm tra: container đang có trong **TỒN VỎ** (chưa OUT) hoặc đang có hồ sơ Hạ vỏ khác chưa hoàn tất → báo đỏ ngay dưới ô (kèm mã hồ sơ + vị trí) và **chặn** không mở các bước tiếp (chi phí, thanh toán). Cùng một hàm `gateInContainerConflict` dùng cho giao diện và kiểm tra khi xác nhận.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -499,6 +509,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-058 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-060 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

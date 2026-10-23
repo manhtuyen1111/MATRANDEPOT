@@ -35,8 +35,10 @@ Danh sách vai trò và quyền chi tiết sẽ được xác định trong tài
    - **Tình trạng vệ sinh** (chọn nhiều, `KHÔNG VỆ SINH` chọn riêng): `KHÔNG VỆ SINH`, `WP - QUÉT`, `WW - RỬA NƯỚC`, `CC - HÓA CHẤT` (= vệ sinh công nghiệp), `RM - NHỔ ĐINH`, `ML - BÓC TEM` (DEC-021).
    - **AGE**: năm sản xuất container.
    Hệ thống cấp mã hồ sơ `IN-YYMMDD-NNN` khi xác nhận (DEC-037) và chuyển sang Văn phòng.
+   Khi Văn phòng chưa thao tác, Giám định được xóa hồ sơ (không lưu lịch sử — DEC-059).
 2. **Văn phòng — Hạ vỏ** (DEC-022):
    - Mục 1: `SỐ CONTAINER`, `SIZE`, `TYPE`, `HÃNG TÀU`, `KHÁCH HÀNG`, số lệnh/chứng từ, `SỐ XE`, `SĐT LÁI XE`.
+   - Nhập xong số container: đang có trong Tồn vỏ / hồ sơ hạ vỏ khác đang mở → báo và chặn ngay (DEC-060).
    - Mục 2: `CHI PHÍ (ĐÃ BAO GỒM VAT)` — chỉ chọn từ Biểu giá.
    - Mục 3: Hình thức thanh toán (DEC-031):
      - **`TTT` — Thanh toán trước:** quét QR Phiếu thu mẹ đang hiệu lực, trừ dần → đã thanh toán (không phát hành phiếu thu mới).
