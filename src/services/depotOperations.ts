@@ -382,7 +382,8 @@ function completeGateIn(state: DepotState, gateInId: string, actor?: Actor): Dep
     });
   }
 
-  const k80QrCode = `QR-K80-${order.containerNo}`;
+  // DEC-057: QR duy nhất theo mã hồ sơ (không theo số container — container quay lại bãi sẽ có QR mới)
+  const k80QrCode = `QR-${order.masterDossierCode}`;
   const ticket: K80InternalTicket = {
     ticketCode: `K80-${order.masterDossierCode}`,
     masterDossierCode: order.masterDossierCode,
@@ -1014,7 +1015,7 @@ function completeReleasePayment(state: DepotState, gateOutOrderId: string, actor
   const container = findActiveContainer(state, order.containerNo);
   if (!container) throw new Error('Không tìm thấy container của hồ sơ CẤP VỎ.');
   const actorName = actor?.name || state.currentUser.fullName;
-  const qrCode = `QR-OUT-${order.containerNo}`;
+  const qrCode = `QR-${order.gateOutCode}`; // DEC-057: QR duy nhất theo hồ sơ CẤP VỎ
   const ticket: K80InternalTicket = {
     ticketCode: `K80-${order.gateOutCode}`,
     masterDossierCode: container.masterDossierCode,
@@ -1117,7 +1118,7 @@ export function releaseAllocatedContainer(
   };
   next = updateContainerById(next, container.id, {
     status: 'IN_YARD',
-    activeQrCode: `QR-K80-${container.containerNo}`,
+    activeQrCode: `QR-${container.masterDossierCode}`, // quay về QR phiếu Hạ vỏ của lượt lưu bãi
     allocatedBookingNo: undefined,
     allocatedTruckNo: undefined,
     allocatedDriverPhone: undefined,

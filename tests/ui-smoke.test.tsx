@@ -99,7 +99,12 @@ describe('DEC-051: hồ sơ container link về Phiếu thu', () => {
     const ptNo = s.paymentReceipts[0].receiptNo;
 
     const withLink = renderToString(<MasterDossierModal masterDossierCode={gi.masterDossierCode} state={s} onClose={noop} onOpenReceipt={noop} />);
-    expect(withLink).toContain('Thu tiền — HẠ VỎ');
+    // DEC-058: thứ tự bộ phận; thanh toán 1 mục riêng ngay dưới Văn phòng; xác nhận HOÀN THÀNH
+    const order = ['Giám định — Hạ vỏ', 'Văn phòng — Hạ vỏ', 'Thanh toán — Hạ vỏ', 'Xe nâng — Hạ vỏ', 'Văn phòng — Trả chứng từ Hạ vỏ'].map((x) => withLink.indexOf(x));
+    expect(order.every((i) => i > 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(withLink.match(/Thanh toán — Hạ vỏ/g)).toHaveLength(1);
+    expect(withLink).toContain('Hoàn thành');
     expect(withLink).toContain("text-blue-700 underline");
     expect(withLink).toContain(`Phiếu thu ${ptNo}`);
     const noLink = renderToString(<MasterDossierModal masterDossierCode={gi.masterDossierCode} state={s} onClose={noop} />);

@@ -26,6 +26,12 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-23, tiếp)
 - Bộ lọc thời gian Phiếu thu / báo cáo mặc định 1 ngày trước → hiện tại (DEC-056). Kiểm thử: 52/52 pass.
 
+### Fixed (2026-10-23)
+- Mã QR phiếu K80 bị trùng giữa các lượt lưu bãi / lệnh cấp lại (tạo theo số container) → tạo theo mã hồ sơ; mã đóng sau khi trả chứng từ (DEC-057).
+
+### Changed (2026-10-23, tiếp)
+- Hồ sơ container bố cục thống nhất: thông tin container ở đầu, bộ phận theo thứ tự, xác nhận ✓ HOÀN THÀNH bên phải, Thanh toán 1 mục riêng dưới Văn phòng có link phiếu thu (DEC-058). Kiểm thử: 53/53 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

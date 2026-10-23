@@ -136,3 +136,9 @@ export function ticketsAwaitingReturn(state: DepotState): K80InternalTicket[] {
     return !steps[steps.length - 1].done && steps.slice(0, -1).every((s) => s.done);
   });
 }
+
+// DEC-057: phiếu đã trả chứng từ (đi hết lộ trình) → đóng, không được in lại / quét lại
+export function isTicketClosed(state: DepotState, ticket: K80InternalTicket): boolean {
+  const steps = getDriverRoute(state, ticket);
+  return steps[steps.length - 1].done;
+}

@@ -712,3 +712,34 @@ describe('DEC-056: mặc định bộ lọc = 1 ngày trước → hiện tại'
     expect(r).toEqual({ dateFrom: '22/10/2026 10:10:10', dateTo: '23/10/2026 10:10:10' });
   });
 });
+
+describe('DEC-057: mã QR phiếu K80 duy nhất & đóng sau khi trả chứng từ', () => {
+  it('QR theo mã hồ sơ: cùng container 2 lượt / lập lệnh lại sau khi hủy đều có QR khác; phiếu đã trả chứng từ bị đóng', async () => {
+    const { confirmDocumentsReturn, isTicketClosed } = await import('../src/services/driverRoute');
+    // Lượt 1: hạ vỏ → hạ bãi → trả chứng từ → cấp vỏ → OUT
+    let { state: s } = gateInTts(createInitialState(), 'MSKU1234567');
+    const t1 = s.k80Tickets[0];
+    expect(t1.qrCode).toBe(`QR-${t1.masterDossierCode}`);
+    s = placeInYard(s, 'MSKU1234567');
+    s = confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: t1.qrCode }).state;
+    expect(isTicketClosed(s, t1)).toBe(true);
+    expect(() => confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: t1.qrCode })).toThrow(/Đã trả chứng từ/);
+
+    const order = (st: DepotState, b: string) =>
+      createReleaseOrder(as(st, 'usr-office'), { bookingNo: b, customerName: VIETLOG, containerNo: 'MSKU1234567', truckNo: '15H', driverPhone: '0912345678', feeCatalogIds: [FEE_LOLO_40HC_MSK] });
+    s = order(s, 'BK-A');
+    s = releaseAllocatedContainer(as(s, 'usr-office'), { containerNo: 'MSKU1234567', reason: 'đổi lịch' });
+    s = order(s, 'BK-B');
+    s = confirmReleasePayment(as(s, 'usr-office'), { gateOutOrderId: s.gateOutOrders[0].id, paymentCategory: 'TTS', ttsNote: 'x' });
+    const outTicket = s.k80Tickets[0];
+    expect(outTicket.qrCode).toBe(`QR-${s.gateOutOrders[0].gateOutCode}`);
+    s = executeGateOut(as(s, 'usr-forklift'), { scannedQrCode: outTicket.qrCode });
+
+    // Lượt 2: cùng container quay lại bãi → QR mới
+    s = gateInTts(s, 'MSKU1234567').state;
+    const t2 = s.k80Tickets[0];
+    const all = s.k80Tickets.map((t) => t.qrCode);
+    expect(new Set(all).size).toBe(all.length);
+    expect(t2.qrCode).not.toBe(t1.qrCode);
+  });
+});

@@ -393,6 +393,23 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-23)
 - Quyết định: Phiếu thu và mọi báo cáo, khi mở lần đầu, bộ lọc thời gian **mặc định = 1 ngày trước → thời điểm hiện tại** (ví dụ `22/10/2026 10:10:10` → `23/10/2026 10:10:10`). Người dùng sửa được; thay cho mặc định "hôm nay 00:00:00 → 23:59:59" của DEC-054. Kỹ thuật: `defaultLastDayRange()` trong `src/services/datetime.ts`.
 
+### DEC-057 — Mã QR phiếu K80 duy nhất; đóng mã sau khi trả chứng từ
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định:
+  - Mã QR tạo theo **mã hồ sơ**: `QR-IN-YYMMDD-NNN` (Hạ vỏ), `QR-OUT-YYMMDD-NNN` (Cấp vỏ) — không theo số container. Container quay lại bãi hoặc lập lệnh cấp lại sau khi hủy đều có mã mới, không trùng phiếu cũ. (Sửa lỗi: trước đây `QR-K80-<số cont>` bị trùng giữa các lượt.)
+  - Hủy lệnh cấp → container quay về mã QR của phiếu Hạ vỏ của lượt lưu bãi.
+  - Phiếu đã đi hết lộ trình và **trả chứng từ** → mã QR **đóng**: không in lại phiếu K80, không trả chứng từ lần 2, quét ở bộ phận khác báo "mã đã đóng".
+
+### DEC-058 — Cấu trúc hồ sơ container thống nhất (Hạ vỏ – Cấp vỏ)
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định:
+  - **Mở đầu: thông tin cơ bản container**, nền đậm, **số container chữ lớn**; kèm mã hồ sơ IN / OUT, trạng thái, khóa, size/type, hãng tàu, trạng thái / đóng hàng, AGE, vị trí, khách hàng, vệ sinh, giờ gate in.
+  - Sau đó **từng bộ phận – tác nghiệp theo thứ tự từ trên xuống**, đánh số: HẠ VỎ = Giám định → Văn phòng → **Thanh toán** → Vệ sinh (nếu có) → Xe nâng (hạ vỏ + đảo chuyển) → Báo giá → Sửa chữa (nếu DAMAGE) → Văn phòng trả chứng từ; CẤP VỎ = Văn phòng → **Thanh toán** → Xe nâng → Văn phòng trả chứng từ.
+  - **Xác nhận bên phải mỗi khối**: tích xanh **HOÀN THÀNH** + người xác nhận + thời gian; chưa xong thì hiện việc đang chờ.
+  - **Thanh toán là mục riêng, ngay dưới Văn phòng, chỉ 1 lần mỗi tác nghiệp**: dòng chi phí, chứng từ, tổng, bên thanh toán, trạng thái rõ ràng (ĐÃ THANH TOÁN / TTS công nợ / CHỜ CHUYỂN KHOẢN / CHƯA THANH TOÁN), **link phiếu thu đầy đủ** (TTTT: phiếu thu; TTT: phiếu thu gốc của Phiếu thu mẹ; chờ chuyển khoản: link yêu cầu), xác nhận người + giờ.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -482,6 +499,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-056 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-058 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

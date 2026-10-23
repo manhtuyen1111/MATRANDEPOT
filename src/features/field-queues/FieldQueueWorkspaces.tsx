@@ -10,6 +10,7 @@ import {
   updateContainerLocation,
 } from '../../services/depotOperations';
 import { formatLocation } from '../../services/core';
+import { findTicketByQr, isTicketClosed } from '../../services/driverRoute';
 import {
   ContainerNo,
   EMPTY_SLOT,
@@ -129,6 +130,8 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
     );
     if (!found) {
       setScanned(null);
+      const t = findTicketByQr(state, code);
+      if (t && isTicketClosed(state, t)) return setError(`Mã "${code}" thuộc phiếu đã hoàn tất & trả chứng từ — mã đã đóng, không dùng lại được.`);
       return setError(`Mã "${code}" không có trong danh sách ${title.name.toLowerCase()} của ${title.dept}.`);
     }
     setScannedQr(found.activeQrCode);
