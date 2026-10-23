@@ -35,6 +35,8 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('Đảo chuyển');
     expect(html).not.toContain('HẠ SỬA CHỮA');
     expect(html.match(/aria-label="Tác nghiệp mobile"/g)?.length).toBe(10);
+    // DEC-075: việc hiện trường đang chờ được tô cam + chấm nhấp nháy
+    expect(html).toContain('Có việc đang chờ');
   });
 
   it('Tồn vỏ hiển thị biểu tượng khóa và dấu - cho container chưa có vị trí', () => {
