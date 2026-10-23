@@ -6,13 +6,13 @@
 Cập nhật lần cuối: 2026-10-24 — Claude Code
 Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-069), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
 
-**Điểm dừng 2026-10-24:** commit trên máy, **chưa push** phần 2026-10-24 (7adcfd1 → mới nhất). Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
+**Điểm dừng 2026-10-24:** đã **push đầy đủ lên GitHub** (DEC-050 → DEC-069). Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
 Kiểm thử mới nhất: `npm test` **68/68 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
 |---|---|---|
-| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push lên GitHub** (DEC-050 → DEC-066 đã push; DEC-067 → DEC-069 chờ push). Tạo Pull Request và merge vào `main` khi bạn đã thử xong | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
+| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push lên GitHub** (DEC-050 → DEC-069, đã push 2026-10-24). Tạo Pull Request và merge vào `main` khi bạn đã thử xong | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
 | 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |
 | 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
 | 4 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
@@ -136,11 +136,12 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-23 — Claude Code: chốt DEC-066 (dữ liệu lớn) — DECISIONS + DATABASE_CONTRACT mục 10.
 - 2026-10-23 — Claude Code: Tồn vỏ — Thao tác = 1 nút Khóa / Mở khóa. 60/60 • build PASS.
 - 2026-10-23 — Claude Code: điểm dừng — cập nhật tiến độ chung, ROADMAP GĐ 4, OPEN_QUESTIONS Q-036 → Q-039; push GitHub.
-- 2026-10-24 — Claude Code: P4-pre11 (DEC-067 Tồn vỏ), P4-pre12 (DEC-068 mã hồ sơ), P7-01 (DEC-069 Nhập tàu / Xuất tàu). 68/68 • build PASS. Chưa push.
+- 2026-10-24 — Claude Code: P4-pre11 (DEC-067 Tồn vỏ), P4-pre12 (DEC-068 mã hồ sơ), P7-01 (DEC-069 Nhập tàu / Xuất tàu). 68/68 • build PASS. 
 
 ## H. BÀN GIAO AGENT (2026-10-24 — Claude Code)
-- **Nhánh:** `agent/claude/p4-prep-xlsx`. Commit hôm nay: `7adcfd1` Tồn vỏ → `de14560` mã hồ sơ → `1d3745e` nghiệp vụ tàu → `f83fbfa` giao diện tàu → commit tài liệu. Chưa push.
+- **Nhánh:** `agent/claude/p4-prep-xlsx`. Commit hôm nay: `7adcfd1` Tồn vỏ → `de14560` mã hồ sơ → `1d3745e` nghiệp vụ tàu → `f83fbfa` giao diện tàu → commit tài liệu. Đã push 2026-10-24.
 - **Đọc trước khi sửa:** `docs/DECISIONS.md` DEC-067 → DEC-069; `AGENTS.md` mục 8 (lưu ý Nhập tàu / Xuất tàu, mã hồ sơ, Tồn vỏ).
 - **File mới:** `src/services/vessel.ts` (toàn bộ nghiệp vụ tàu), `src/features/vessel/*` (Văn phòng, mobile, khối dùng chung), `src/features/reports/VesselReport.tsx`, `tests/vessel.test.ts`.
 - **Điểm nối vào luồng cũ (cẩn thận khi sửa):** `updateContainerLocation` gọi `markVesselImportPlaced`; `releaseBlocker` chặn cont có `vesselExportItemId`; `normalizeDepotState` gọi `renameLegacyCodes`; `FieldQueueWorkspaces` có prop `vesselOnly`; `MasterDossierModal` dùng `renderYardSteps` cho cả HV và NT.
 - **Chưa làm / chưa kiểm thử:** chưa thử trên trình duyệt và điện thoại; form Giám định Nhập tàu đang lặp lại khối của Hạ vỏ (việc UI-02); chưa có database cho tàu (P7-DB); chưa giới hạn 3 tháng cho bộ lọc báo cáo ở bản Demo (DEC-066 áp dụng khi có database).
+- 2026-10-24 — Claude Code: push nhánh agent/claude/p4-prep-xlsx lên GitHub (DEC-067 → DEC-069); cập nhật tiến độ, bàn giao.
