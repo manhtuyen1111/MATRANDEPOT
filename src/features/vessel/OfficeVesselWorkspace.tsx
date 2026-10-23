@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle2, ClipboardList, ListChecks, ListPlus, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { CheckCircle2, ClipboardList, ListChecks, ListPlus, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { FieldConditionClass, VesselList, VesselMode, VESSEL_MODE_LABELS } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import {
@@ -18,7 +18,7 @@ import {
 import { formatLocation, parseContainerList, storageDays } from '../../services/core';
 import { formatDateTime, parseDateTime } from '../../services/datetime';
 import { can } from '../../services/permissions';
-import { ContainerNo, DateTimeField, Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
+import { ContainerNo, DateTimeField, DetailDrawer, Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
 import { VesselListTitle, VesselProgressBar } from './VesselShared';
 
 interface Props {
@@ -98,30 +98,26 @@ export const OfficeVesselWorkspace: React.FC<Props> = ({ mode, state, onUpdateSt
     );
   }
 
-  if (view.kind === 'DETAIL' && detail) {
-    return (
-      <div className="space-y-4">
-        <button type="button" onClick={() => setView({ kind: 'LIST' })} className={secondaryBtn}>
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Danh sách {modeLabel}
-        </button>
-        {feedback}
-        <ListDetail
-          list={detail}
-          mode={mode}
-          state={state}
-          canManage={canManage && detail.status === 'OPEN'}
-          onOpenDossier={onOpenDossier}
-          run={run}
-          onDeleted={() => setView({ kind: 'LIST' })}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      {feedback}
+      {!detail && feedback}
+      {/* DEC-080: chi tiết danh sách mở trong cửa sổ trượt bên phải, danh sách vẫn ở phía sau */}
+      <DetailDrawer open={Boolean(detail)} wide title={detail ? <VesselListTitle list={detail} /> : ''} onClose={() => setView({ kind: 'LIST' })}>
+        {detail && (
+          <div className="space-y-3">
+            {feedback}
+            <ListDetail
+              list={detail}
+              mode={mode}
+              state={state}
+              canManage={canManage && detail.status === 'OPEN'}
+              onOpenDossier={onOpenDossier}
+              run={run}
+              onDeleted={() => setView({ kind: 'LIST' })}
+            />
+          </div>
+        )}
+      </DetailDrawer>
       <SectionCard
         title={
           <span className="flex items-center gap-2">
@@ -483,7 +479,7 @@ const ListDetail: React.FC<{
 
   return (
     <SectionCard
-      title={<VesselListTitle list={list} />}
+      title="Chi tiết danh sách"
       right={
         canManage && (
           <div className="flex flex-wrap gap-2">

@@ -22,6 +22,7 @@ import {
   isSlotComplete,
   labelCls,
   Pager,
+  usePageSize,
   primaryBtn,
   secondaryBtn,
   SlotPicker,
@@ -35,7 +36,6 @@ interface Props {
   onOpenK80Ticket?: (ticket: K80InternalTicket) => void;
 }
 
-const PAGE_SIZE = 50;
 type Panel = { id: string; kind: 'LOCATION' | 'LOCK' } | null;
 type BulkAction = 'LOCK' | 'UNLOCK' | 'NOTE';
 
@@ -49,6 +49,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
   const [type, setType] = useState('ALL');
   const [condition, setCondition] = useState<'ALL' | FieldConditionClass>('ALL');
   const [page, setPage] = useState(1);
+  const [PAGE_SIZE, setPageSize] = usePageSize("yard", 50); // DEC-080
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [panel, setPanel] = useState<Panel>(null);
@@ -409,7 +410,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
             )}
           </tbody>
         </table>
-        {filtered.length > PAGE_SIZE && <Pager page={safePage} pageCount={pageCount} total={filtered.length} onPage={setPage} />}
+        {filtered.length > 0 && <Pager page={safePage} pageCount={pageCount} total={filtered.length} onPage={setPage} pageSize={PAGE_SIZE} onPageSize={setPageSize} />}
       </div>
     </div>
   );

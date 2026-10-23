@@ -945,3 +945,17 @@ describe('DEC-079: Excel phiếu thu', () => {
     expect(sheet.rows[0][sheet.columns.indexOf('PHƯƠNG THỨC TT')]).toBe('Tiền mặt');
   });
 });
+
+describe('DEC-080: số dòng / trang do người dùng chọn', () => {
+  it('Nhận 20 / 50 / 100; giá trị khác về mặc định 50', async () => {
+    const { queryGateInReport } = await import('../src/services/reports');
+    let s = createInitialState();
+    for (let i = 0; i < 3; i++) s = fieldStep(s);
+    const f = { containerNo: '', dateFrom: '', dateTo: '' };
+    const all = { ...f, ...{ dateFrom: '01/01/2026 00:00:00', dateTo: '31/12/2026 23:59:59' } };
+    expect(queryGateInReport(s, 'CUSTOMER_RETURN', all, 1, 20).rows.length).toBeLessThanOrEqual(20);
+    const total = queryGateInReport(s, 'CUSTOMER_RETURN', all, 1, 100).total;
+    expect(queryGateInReport(s, 'CUSTOMER_RETURN', all, 1, 100).pageCount).toBe(Math.max(1, Math.ceil(total / 100)));
+    expect(queryGateInReport(s, 'CUSTOMER_RETURN', all, 1, 7).pageCount).toBe(Math.max(1, Math.ceil(total / 50)));
+  });
+});

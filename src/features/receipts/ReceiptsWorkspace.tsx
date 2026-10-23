@@ -13,10 +13,11 @@ import { simulateDemoBankTransfer } from '../../services/depotOperations';
 import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, masterReceiptUsage, receiptOperationOf } from '../../services/payments';
 import { collectAllPages, queryReceipts, ReceiptQueryFilter, ReceiptRow, receiptsSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
-import { PrintReceiptButton, ReceiptPrintSheet } from '../../components/ReceiptPrint';
+import { PrintPortal, PrintReceiptButton, ReceiptPrintSheet } from '../../components/ReceiptPrint';
 import { defaultLastDayRange, fileStamp } from '../../services/datetime';
 import {
   DateTimeField,
+  DetailDrawer,
   ExportExcelButton,
   FeeLinesEditor,
   Feedback,
@@ -24,6 +25,7 @@ import {
   inputCls,
   labelCls,
   Pager,
+  usePageSize,
   PendingTransferPanel,
   primaryBtn,
   secondaryBtn,
@@ -48,6 +50,7 @@ export const ReceiptsWorkspace: React.FC<{
   const [draft, setDraft] = useState<ReceiptQueryFilter>(() => ({ ...defaultLastDayRange(), keyword: '', method: 'ALL', status: 'ALL', operation: 'ALL' }));
   const [applied, setApplied] = useState<ReceiptQueryFilter | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = usePageSize("receipts", 20); // DEC-080
   const [selectedTxId, setSelectedTxId] = useState('');
   const [create, setCreate] = useState({ customerCode: '', lotDescription: '', method: 'CASH' as DirectPaymentMethod });
   const [feeIds, setFeeIds] = useState<string[]>([]);
@@ -79,7 +82,7 @@ export const ReceiptsWorkspace: React.FC<{
   let queryError: string | null = null;
   if (applied) {
     try {
-      result = queryReceipts(state, applied, page);
+      result = queryReceipts(state, applied, page, pageSize);
     } catch (err) {
       queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
     }
@@ -301,7 +304,7 @@ export const ReceiptsWorkspace: React.FC<{
                       })}
                     </tbody>
                   </table>
-                  <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} />
+                  <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} pageSize={pageSize} onPageSize={setPageSize} />
                 </>
               )
             )}
@@ -310,9 +313,11 @@ export const ReceiptsWorkspace: React.FC<{
 
         <div className="space-y-4">
           {selected && (
-            <SectionCard
+            <DetailDrawer
+              open
+              onClose={() => setSelectedTxId("")}
               title={selected.receipt ? `Phiếu thu ${selected.receipt.receiptNo}` : 'Yêu cầu thanh toán (chưa phát hành phiếu thu)'}
-              right={
+              actions={
                 selected.receipt && (
                   <PrintReceiptButton state={state} receipt={selected.receipt} onUpdateState={onUpdateState} onError={setError} />
                 )
@@ -320,9 +325,9 @@ export const ReceiptsWorkspace: React.FC<{
             >
               {/* Mẫu in thống nhất (DEC-062) — chỉ hiện khi in */}
               {selected.receipt && (
-                <div className="print-area hidden print:block">
+                <PrintPortal>
                   <ReceiptPrintSheet state={state} receipt={selected.receipt} printNo={selected.receipt.printLog?.length || 1} />
-                </div>
+                </PrintPortal>
               )}
               {selected.receipt && (selected.receipt.printLog?.length || 0) > 0 && (
                 <div className="mb-3 rounded-md border border-slate-200 px-3 py-2 text-[11px]">
@@ -439,7 +444,7 @@ export const ReceiptsWorkspace: React.FC<{
                   )}
                 </div>
               )}
-            </SectionCard>
+            </DetailDrawer>
           )}
 
         </div>

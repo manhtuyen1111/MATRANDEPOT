@@ -181,6 +181,13 @@ const PaymentBody: React.FC<{ state: DepotState; voucher?: PaymentVoucher; onOpe
 // HỒ SƠ CONTAINER (DEC-058): thông tin container ở đầu → các bộ phận theo thứ tự tác nghiệp
 // ---------------------------------------------------------------------------
 export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, onClose, onOpenK80Ticket, onOpenReceipt, onUpdateState }) => {
+  // Esc để đóng hồ sơ (DEC-080)
+  React.useEffect(() => {
+    if (!masterDossierCode) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [masterDossierCode, onClose]);
   if (!masterDossierCode) return null;
 
   // DEC-069: mã XT- → lượt lưu bãi của container đã xuất tàu; mã NT- là hồ sơ lượt lưu bãi
@@ -317,10 +324,11 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-2 sm:p-4" role="dialog" aria-modal="true" aria-label="Hồ sơ container">
-      <div className="my-4 w-full max-w-4xl rounded-lg border border-slate-300 bg-white shadow-xl">
+    // DEC-080: hồ sơ mở dạng cửa sổ trượt bên phải (giống chi tiết các danh sách); bấm ra ngoài / Esc để đóng
+    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/30" role="dialog" aria-modal="true" aria-label="Hồ sơ container" onClick={onClose}>
+      <div className="h-full w-full overflow-y-auto bg-white shadow-2xl sm:w-[min(960px,80vw)]" onClick={(e) => e.stopPropagation()}>
         {/* THÔNG TIN CƠ BẢN CONTAINER — focus số cont */}
-        <header className="rounded-t-lg bg-slate-900 px-5 py-4 text-white">
+        <header className="bg-slate-900 px-5 py-4 text-white">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-300">Hồ sơ container</p>

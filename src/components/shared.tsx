@@ -23,7 +23,7 @@ import { DepotState, formatVnd } from '../services/depotStore';
 import { can } from '../services/permissions';
 import { isSupabaseConfigured } from '../lib/env';
 import { DATETIME_PLACEHOLDER, formatDateTime, maskDateTimeInput, parseDateTime } from '../services/datetime';
-import { SheetData, toXlsxBuffer, XLSX_MIME } from '../services/reports';
+import { PAGE_SIZE_OPTIONS, SheetData, toXlsxBuffer, XLSX_MIME } from '../services/reports';
 
 // ---------------------------------------------------------------------------
 // Thông báo lỗi / thành công thống nhất
@@ -493,14 +493,24 @@ export const SlotPicker: React.FC<{
 };
 
 // Phân trang gọn cho báo cáo / phiếu thu
-export const Pager: React.FC<{ page: number; pageCount: number; total: number; onPage: (p: number) => void }> = ({
-  page,
-  pageCount,
-  total,
-  onPage,
-}) => (
-  <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-3 py-2 text-[11px] text-slate-600">
-    <span>{total} bản ghi</span>
+export const Pager: React.FC<{
+  page: number;
+  pageCount: number;
+  total: number;
+  onPage: (p: number) => void;
+  // DEC-080: người dùng chọn số dòng / trang
+  pageSize?: number;
+  onPageSize?: (n: number) => void;
+}> = ({ page, pageCount, total, onPage, pageSize, onPageSize }) => (
+  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-3 py-2 text-[11px] text-slate-600">
+    <span className="flex items-center gap-2">
+      {total} bản ghi
+      {onPageSize && (
+        <select value={pageSize} onChange={(e) => { onPageSize(Number(e.target.value)); onPage(1); }} aria-label="Số dòng mỗi trang" className="rounded border border-slate-300 bg-white px-1.5 py-1 text-[11px]">
+          {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n} dòng / trang</option>)}
+        </select>
+      )}
+    </span>
     <div className="flex items-center gap-1">
       <button type="button" disabled={page <= 1} onClick={() => onPage(page - 1)} className={secondaryBtn}>
         Trước
@@ -576,5 +586,64 @@ export const ExportExcelButton: React.FC<{
       </button>
       {err && <span className="text-[11px] text-red-700">{err}</span>}
     </span>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// DEC-080: TRANG NHIỀU DỮ LIỆU — số dòng / trang do người dùng chọn (nhớ theo từng màn, trên trình duyệt này)
+// ---------------------------------------------------------------------------
+export function usePageSize(screenKey: string, fallback = 50): [number, (n: number) => void] {
+  const storageKey = `matran.pageSize.${screenKey}`;
+  const [size, setSize] = React.useState<number>(() => {
+    try {
+      const saved = Number(window.localStorage.getItem(storageKey));
+      return (PAGE_SIZE_OPTIONS as readonly number[]).includes(saved) ? saved : fallback;
+    } catch {
+      return fallback;
+    }
+  });
+  const update = (n: number) => {
+    setSize(n);
+    try {
+      window.localStorage.setItem(storageKey, String(n));
+    } catch {
+      /* trình duyệt chặn lưu — vẫn dùng được trong phiên */
+    }
+  };
+  return [size, update];
+}
+
+// DEC-080: CHI TIẾT 1 DÒNG — cửa sổ trượt bên phải; danh sách vẫn thấy phía sau; đóng bằng X / Esc / bấm ra ngoài
+export const DetailDrawer: React.FC<{
+  open: boolean;
+  title: React.ReactNode;
+  onClose: () => void;
+  actions?: React.ReactNode;
+  wide?: boolean;
+  children: React.ReactNode;
+}> = ({ open, title, onClose, actions, wide, children }) => {
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-label="Chi tiết">
+      <button type="button" aria-label="Đóng chi tiết" onClick={onClose} className="absolute inset-0 cursor-default bg-slate-900/30" />
+      <aside className={`relative flex h-full w-full flex-col bg-white shadow-2xl ${wide ? 'sm:w-[min(960px,75vw)]' : 'sm:w-[min(760px,60vw)]'}`}>
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
+          <h3 className="min-w-0 flex-1 text-sm font-black text-slate-900">{title}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            {actions}
+            <button type="button" onClick={onClose} aria-label="Đóng" className={secondaryBtn}>
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </header>
+        <div className="flex-1 overflow-y-auto p-4 text-xs">{children}</div>
+      </aside>
+    </div>
   );
 };

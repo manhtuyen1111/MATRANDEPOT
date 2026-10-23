@@ -21,7 +21,7 @@ import { DocumentReturnWorkspace } from '../src/features/office/DocumentReturnWo
 import { K80TicketModal } from '../src/components/K80TicketModal';
 import { CompanyCatalog } from '../src/features/catalog/CompanyCatalog';
 import { EeirPrintSheet, ReceiptPrintSheet } from '../src/components/ReceiptPrint';
-import { FeeLinesEditor } from '../src/components/shared';
+import { DetailDrawer, FeeLinesEditor, Pager } from '../src/components/shared';
 import { confirmGateInPaymentAndComplete, recordGateInFieldStep, toggleContainerHold, verifyGateInOfficeAndCreatePayment } from '../src/services/depotOperations';
 
 // Smoke test: mỗi màn hình render được với dữ liệu mẫu, không ném lỗi khi render
@@ -323,5 +323,18 @@ describe('DEC-079: khối Sử dụng phiếu thu mẹ', () => {
     expect(html).toContain('HV-261019-001');
     expect(html).toContain('CT-GIN-261019-01');
     expect(html).toContain('Còn lại');
+  });
+});
+
+describe('DEC-080: trang nhiều dữ liệu — chi tiết mở cửa sổ trượt phải, chọn số dòng', () => {
+  it('DetailDrawer có tiêu đề + nút đóng; Pager có ô chọn 20 / 50 / 100', () => {
+    const drawer = renderToString(<DetailDrawer open title="Chi tiết thử" onClose={noop}><p>Nội dung</p></DetailDrawer>);
+    expect(drawer).toContain('Chi tiết thử');
+    expect(drawer).toContain('aria-label="Đóng"');
+    expect(drawer).toContain('justify-end');
+    expect(renderToString(<DetailDrawer open={false} title="x" onClose={noop}>y</DetailDrawer>)).toBe('');
+    const pager = renderToString(<Pager page={1} pageCount={3} total={120} onPage={noop} pageSize={50} onPageSize={noop} />).replace(/<!-- -->/g, '');
+    expect(pager).toContain('Số dòng mỗi trang');
+    expect(pager).toContain('100 dòng / trang');
   });
 });

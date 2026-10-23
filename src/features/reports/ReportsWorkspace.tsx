@@ -19,7 +19,7 @@ import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportShe
 import { can } from '../../services/permissions';
 import { defaultLastDayRange, fileStamp } from '../../services/datetime';
 import { VesselReport } from './VesselReport';
-import { DateTimeField, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard } from '../../components/shared';
+import { DateTimeField, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
 
 export type ReportSection = 'BC_HA_VO' | 'BC_CAP_VO' | 'BC_NHAP_TAU' | 'BC_XUAT_TAU' | 'BC_SUA_CHUA' | 'BC_TONG_HOP';
 
@@ -89,6 +89,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
   const [draft, setDraft] = useState<OperationReportFilter>(() => ({ containerNo: '', ...defaultLastDayRange(), shippingLineCode: '', size: '' }));
   const [applied, setApplied] = useState<OperationReportFilter | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = usePageSize(`report-${section}`, 50); // DEC-080
   const showMoney = can(state.currentUser, 'REPORT_FINANCE');
 
   let outRows: PagedResult<GateOutOrder> | null = null;
@@ -97,9 +98,9 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
   if (applied) {
     const f = { ...applied, shippingLineCode: applied.shippingLineCode || undefined, size: applied.size || undefined };
     try {
-      if (section === 'BC_HA_VO') inRows = queryGateInReport(state, 'CUSTOMER_RETURN', f, page);
-      else if (section === 'BC_NHAP_TAU') inRows = queryGateInReport(state, 'VESSEL_IMPORT', f, page);
-      else outRows = queryGateOutReport(state, section === 'BC_CAP_VO' ? ['EMPTY_RELEASE'] : ['VESSEL_EXPORT'], f, page);
+      if (section === 'BC_HA_VO') inRows = queryGateInReport(state, 'CUSTOMER_RETURN', f, page, pageSize);
+      else if (section === 'BC_NHAP_TAU') inRows = queryGateInReport(state, 'VESSEL_IMPORT', f, page, pageSize);
+      else outRows = queryGateOutReport(state, section === 'BC_CAP_VO' ? ['EMPTY_RELEASE'] : ['VESSEL_EXPORT'], f, page, pageSize);
     } catch (err) {
       queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
     }
@@ -226,7 +227,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
                 </tbody>
               </table>
             )}
-            <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} />
+            <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} pageSize={pageSize} onPageSize={setPageSize} />
           </>
         )}
       </div>
@@ -302,6 +303,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
   const [draft, setDraft] = useState<RepairReportFilter>(() => ({ containerNo: '', ...defaultLastDayRange(), teamCode: '', shippingLineCode: '', status: 'ALL' }));
   const [applied, setApplied] = useState<RepairReportFilter | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = usePageSize('report-BC_SUA_CHUA', 50); // DEC-080
 
   const clean = (f: RepairReportFilter): RepairReportFilter => ({
     ...f,
@@ -312,7 +314,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
   let queryError: string | null = null;
   if (applied) {
     try {
-      result = queryRepairReport(state, clean(applied), page);
+      result = queryRepairReport(state, clean(applied), page, pageSize);
     } catch (err) {
       queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
     }
@@ -416,7 +418,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
                 </tr>
               </tfoot>
             </table>
-            <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} />
+            <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} pageSize={pageSize} onPageSize={setPageSize} />
           </>
         )}
       </div>

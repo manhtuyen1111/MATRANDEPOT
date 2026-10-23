@@ -4,7 +4,7 @@ import { VesselMode, VESSEL_MODE_LABELS } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import { collectAllPages, queryVesselReport, VesselReportFilter, vesselReportSheet } from '../../services/reports';
 import { defaultLastDayRange, fileStamp, formatDateTime } from '../../services/datetime';
-import { ContainerNo, DateTimeField, ExportExcelButton, inputCls, labelCls, Pager, primaryBtn, SectionCard } from '../../components/shared';
+import { ContainerNo, DateTimeField, ExportExcelButton, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
 
 const STATUS: Record<VesselMode, Record<string, string>> = {
   NHAP_TAU: { PENDING: 'Chờ xe về', INSPECTED: 'Đã giám định — chờ hạ', DONE: 'Đã hạ bãi' },
@@ -18,12 +18,13 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
   const [draft, setDraft] = useState<VesselReportFilter>(() => ({ containerNo: '', vesselName: '', ...defaultLastDayRange() }));
   const [applied, setApplied] = useState<VesselReportFilter | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = usePageSize(`report-${mode}`, 50); // DEC-080
 
   let result: ReturnType<typeof queryVesselReport> | null = null;
   let queryError: string | null = null;
   if (applied) {
     try {
-      result = queryVesselReport(state, mode, applied, page);
+      result = queryVesselReport(state, mode, applied, page, pageSize);
     } catch (err) {
       queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
     }
@@ -105,7 +106,7 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
                 ))}
               </tbody>
             </table>
-            {result.pageCount > 1 && <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} />}
+            <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} pageSize={pageSize} onPageSize={setPageSize} />
           </>
         )}
       </div>
