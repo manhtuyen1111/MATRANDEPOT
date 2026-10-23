@@ -343,6 +343,15 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-22)
 - Quyết định: Danh mục chung → Sửa chữa cho **chọn user đang hoạt động có vai trò Sửa chữa** để thêm vào tổ (liên kết tài khoản, gắn nhãn "user"); vẫn cho nhập họ tên nhân viên không có tài khoản. Không thêm trùng một user vào cùng tổ; user bị khóa không thêm được.
 
+### DEC-050 — Excel .xlsx; Block do Admin cấu hình (giải quyết Q-034, Q-006)
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định:
+  - Báo cáo Tổng hợp và Sửa chữa chi tiết xuất **Excel `.xlsx` chuẩn** (thư viện `exceljs`, chỉ tải khi bấm "Tải Excel"; dòng tiêu đề đậm, cố định, tự giãn cột).
+  - **Block bãi không gán cứng trong database**: Admin tự cấu hình ở Danh mục chung → Vị trí bãi. Block mẫu (BLOCK-A/B/CLEAN/DAMAGE) chỉ dùng cho dữ liệu chạy thử.
+- Ghi chú kỹ thuật: `npm audit` báo 2 cảnh báo mức trung bình từ `uuid` (phụ thuộc của `exceljs`); lỗi nằm ở hàm ghi vào buffer của `uuid`, ứng dụng không dùng. Theo dõi khi `exceljs` ra bản mới.
+- Còn chờ: **danh mục trạng thái chính thức** (OPEN-003) — người dùng sẽ gửi danh sách; chặn việc viết schema database (P4-01).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -432,6 +441,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-049 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-050 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

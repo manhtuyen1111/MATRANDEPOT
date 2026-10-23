@@ -26,7 +26,7 @@ import {
   updateContainerLocation,
   verifyGateInOfficeAndCreatePayment,
 } from '../src/services/depotOperations';
-import { buildSummaryReport, queryGateInReport, queryGateOutReport, queryReceipts, queryRepairReport, toSpreadsheetXml } from '../src/services/reports';
+import { buildSummaryReport, queryGateInReport, queryGateOutReport, queryReceipts, queryRepairReport, toSpreadsheetXml, toXlsxBuffer } from '../src/services/reports';
 import { allocateCode } from '../src/services/codes';
 import { canOpenMenu } from '../src/services/permissions';
 
@@ -577,5 +577,19 @@ describe('DEC-049: bỏ QC Sửa chữa', () => {
     expect(s.staffUsers[0].roles).toEqual(['REPAIR_STAFF']);
     expect(s.containers[0].conditionClass).toBe('AV');
     expect('needsQcInspection' in s.containers[0]).toBe(false);
+  });
+});
+
+describe('Q-034: xuất Excel .xlsx chuẩn', () => {
+  it('Báo cáo Tổng hợp → file .xlsx đọc lại được, đủ 5 sheet, có dòng tiêu đề', async () => {
+    const sheets = buildSummaryReport(createInitialState(), { dateFrom: '2026-10-01', dateTo: '2026-10-31' });
+    const buf = await toXlsxBuffer(sheets);
+    const { default: ExcelJS } = await import('exceljs');
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buf);
+    expect(wb.worksheets.map((w) => w.name)).toEqual(['HẠ VỎ', 'CẤP VỎ', 'XUẤT VỎ', 'NHẬP VỎ', 'TỒN VỎ']);
+    const ton = wb.getWorksheet('TỒN VỎ')!;
+    expect(ton.getRow(1).getCell(2).value).toBe('SỐ CONTAINER');
+    expect(ton.rowCount).toBe(sheets[4].rows.length + 1);
   });
 });

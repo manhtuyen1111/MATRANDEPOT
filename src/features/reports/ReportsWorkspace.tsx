@@ -9,7 +9,8 @@ import {
   queryGateInReport,
   queryGateOutReport,
   SheetData,
-  toSpreadsheetXml,
+  toXlsxBuffer,
+  XLSX_MIME,
 } from '../../services/reports';
 import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
@@ -31,6 +32,20 @@ const TITLES: Record<ReportSection, string> = {
   BC_SUA_CHUA: 'Báo cáo Sửa chữa chi tiết',
   BC_TONG_HOP: 'Báo cáo Tổng hợp',
 };
+
+// Tải file .xlsx (Q-034) — dùng chung cho các báo cáo
+function downloadXlsx(sheets: SheetData[], fileName: string, onError: (msg: string) => void) {
+  toXlsxBuffer(sheets)
+    .then((buf) => {
+      const url = URL.createObjectURL(new Blob([buf], { type: XLSX_MIME }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(() => onError('Không tạo được file Excel. Vui lòng thử lại.'));
+}
 
 const GATE_IN_STATUS: Record<GateInOrder['status'], string> = {
   FIELD_RECORDED: 'Chờ văn phòng',
@@ -229,13 +244,7 @@ const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
 
   const download = () => {
     if (!sheets) return;
-    const blob = new Blob([toSpreadsheetXml(sheets)], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `MATRAN_TONG_HOP_${range.dateFrom}_${range.dateTo}.xls`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadXlsx(sheets, `MATRAN_TONG_HOP_${range.dateFrom}_${range.dateTo}.xlsx`, setError);
   };
 
   return (
@@ -317,13 +326,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
     if (!applied || !result) return;
     const f = clean(applied);
     const rows = Array.from({ length: result.pageCount }, (_, i) => queryRepairReport(state, f, i + 1).rows).flat();
-    const blob = new Blob([toSpreadsheetXml([repairReportSheet(rows)])], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `MATRAN_SUA_CHUA_${applied.dateFrom || ''}_${applied.dateTo || ''}.xls`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadXlsx([repairReportSheet(rows)], `MATRAN_SUA_CHUA_${applied.dateFrom || ''}_${applied.dateTo || ''}.xlsx`, () => {});
   };
 
   return (

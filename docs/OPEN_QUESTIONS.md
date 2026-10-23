@@ -15,7 +15,7 @@ Cập nhật lần cuối: 2026-10-22.
 
 ## 2. Vị trí và tồn bãi
 
-- [ ] Q-006: Danh mục `Block`, quy ước `Bay/Row/Tier` và sức chứa thực tế (hiện cấu hình mẫu trong Danh mục chung).
+- [x] Q-006: Block do Admin tự cấu hình ở Danh mục chung, không gán cứng trong database (DEC-050).
 - [x] Q-007: Từ `GATE IN OK` đến khi Xe nâng hạ vỏ, container ở trạng thái Chờ hạ vỏ, vị trí hiển thị `-` (DEC-036).
 - [x] Q-008: Xe nâng / Hiện trường / Văn phòng / Quản lý được ĐẢO CHUYỂN; Văn phòng / Quản lý được SỬA VỊ TRÍ hành chính (DEC-035, DEC-036).
 - [ ] Q-009: Quy trình khi vị trí hệ thống và thực tế không khớp (ngoài SỬA VỊ TRÍ) — có cần kiểm kê định kỳ không?
@@ -60,7 +60,7 @@ Cập nhật lần cuối: 2026-10-22.
 ## 8. Báo cáo
 
 - [x] Q-033: (Xác nhận — DEC-040) Sheet `XUẤT VỎ` / `NHẬP VỎ` của báo cáo Tổng hợp hiện được hiểu là XUẤT TÀU (+ trả theo lệnh riêng) / NHẬP TÀU. Đúng chưa?
-- [ ] Q-034 (CHỜ BẠN): Định dạng file báo cáo Tổng hợp: hiện xuất Excel dạng XML (.xls, mở được bằng Excel). Có cần `.xlsx` chuẩn không (cần thêm thư viện)?
+- [x] Q-034: Xuất Excel .xlsx chuẩn (DEC-050).
 - [x] Q-035: Không còn hiệu lực — đã bỏ bước QC (DEC-049).
 
 ## 9. Quy tắc quản lý câu hỏi

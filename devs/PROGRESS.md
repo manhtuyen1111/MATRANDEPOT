@@ -3,24 +3,23 @@
 > Agent cập nhật file này sau mỗi việc (skill `matran-docs-sync`). Bạn chỉ cần đọc mục A, B và F.
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
-Cập nhật lần cuối: 2026-10-22 — Claude Code
-Trạng thái chung: **GĐ 3 xong code, đã push nhánh `feature/cr-2026-10-batch1`** — chờ bạn thử trên trình duyệt, tạo PR và merge `main`. Phiên tiếp theo: bắt đầu từ mục A / B.
-Kiểm thử mới nhất: `npm test` **42/42 pass** • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+Cập nhật lần cuối: 2026-10-23 — Claude Code
+Trạng thái chung: **GĐ 3 xong** (nhánh `feature/cr-2026-10-batch1` đã push). Hôm nay: xuất Excel .xlsx (nhánh `agent/claude/p4-prep-xlsx`). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Kiểm thử mới nhất: `npm test` **43/43 pass** • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
 |---|---|---|
 | 1 | Nhánh `feature/cr-2026-10-batch1` **đã push lên GitHub** (4 commit, 2026-10-22). Tạo Pull Request và merge vào `main` khi bạn đã thử xong | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/feature/cr-2026-10-batch1 |
-| 2 | Q-034: Excel `.xls` (XML, đang dùng) hay `.xlsx` chuẩn (phải cài thư viện)? | Báo cáo Tổng hợp, Sửa chữa |
 | 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
-| 4 | OPEN-003, Q-006: danh mục trạng thái chính thức, danh sách Block thật | Chặn GĐ 4 database |
-| 5 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
+| 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |
+| 4 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
 
 ## B. VIỆC TIẾP THEO (đề xuất theo thứ tự)
 | Mã | Việc | Giao cho | Ghi chú |
 |---|---|---|---|
 | P3-T | Bạn chạy `npm run dev`, thử các luồng ở mục F, báo lỗi | Bạn | Agent chưa thử được trên trình duyệt |
-| P4-01 | Viết lại schema Supabase (bảng, bộ đếm mã, RLS) | Claude Code | Cần trả lời A.4 trước |
+| P4-01 | Viết lại schema Supabase (bảng, bộ đếm mã, RLS) | Claude Code | ⏸ Chờ danh mục trạng thái (A.2) |
 | P4-02 | RPC Hạ vỏ + thanh toán + pgTAP | Claude Code | Sau P4-01 |
 | UI-01 | Rà soát giao diện mobile các màn hiện trường | Antigravity | Không đụng `src/services/` |
 
@@ -36,9 +35,9 @@ Kiểm thử mới nhất: `npm test` **42/42 pass** • `npm run build` **PASS*
 | DAMAGE | Báo giá (remark + giờ công) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → **AV** (không có QC) | 040–043, 049 |
 | Tổ sửa chữa | Danh mục chung → Sửa chữa: thêm tổ; thêm **user Sửa chữa có sẵn** hoặc nhập tên; ngưng thay vì xóa | 042, 048 |
 | Cấp vỏ | Nhập booking (tự đếm), chọn cont (AV mặc định, DAMAGE được), số xe + SĐT, chi phí, thanh toán tại Văn phòng → Xe nâng OUT | 027, 033, 034 |
-| Vị trí / Khóa | Đảo chuyển (Xe nâng, có lịch sử); Sửa vị trí (Văn phòng, không lịch sử); Khóa bắt buộc ghi chú, không cấp được | 030, 036 |
+| Vị trí / Khóa | Đảo chuyển (Xe nâng, có lịch sử); Sửa vị trí (Văn phòng, không lịch sử); Khóa bắt buộc ghi chú, không cấp được; Block do Admin cấu hình | 030, 036, 050 |
 | Mã hồ sơ | `IN-YYMMDD-NNN`, `OUT-YYMMDD-NNN` do hệ thống cấp | 037 |
-| Báo cáo | Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp 5 sheet — bắt buộc lọc, phân trang | 044, 046 |
+| Báo cáo | Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp 5 sheet — bắt buộc lọc, phân trang; Excel **.xlsx** | 044, 046, 050 |
 | Mobile | Giám định – Hạ vỏ, Vệ sinh, Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ / **Đảo chuyển**), Sửa chữa: khung mobile, biểu tượng điện thoại trên menu | 012, 049 |
 | Nhập / Xuất tàu | Để giai đoạn sau | 038 |
 
@@ -57,6 +56,7 @@ Kiểm thử mới nhất: `npm test` **42/42 pass** • `npm run build` **PASS*
 | P3-f | Bỏ Kế toán (Văn phòng thay), gộp Cổng/Hiện trường vào Giám định, **QC nghiệm thu** (menu Chờ nghiệm thu), **thêm user có sẵn vào tổ sửa chữa** | 2026-10-22 | DEC-047, 048 | **41/41 • build PASS** | feature/cr-2026-10-batch1 |
 | P3-g | **Bỏ vai trò + menu QC Sửa chữa** (Sửa chữa xong → AV); **Đảo chuyển tối ưu mobile** (thẻ, chọn ở trên cùng, Xem thêm, lịch sử thu gọn); thêm Lưu ý chung vào AGENTS.md | 2026-10-22 | DEC-049 | **42/42 • build PASS** | feature/cr-2026-10-batch1 |
 | P3-h | Tiêu đề Giám định – Hạ vỏ đồng bộ đơn giản như các màn mobile khác (Bộ phận • tên màn • số đang chờ) | 2026-10-22 | — | 42/42 • build PASS | feature/cr-2026-10-batch1 |
+| P4-pre | Xuất Excel .xlsx chuẩn (exceljs, tải khi cần); chốt Block do Admin cấu hình | 2026-10-23 | DEC-050 | **43/43 • build PASS** | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -82,7 +82,7 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 7. **Tồn vỏ**: Khóa (bắt buộc ghi chú), Sửa vị trí. **Xe nâng → Đảo chuyển** (mở trên điện thoại hoặc thu nhỏ trình duyệt): tìm cont, lọc Chờ sửa chữa, chọn thẻ → vị trí mới.
 8. **Văn phòng → Cấp vỏ**: booking, chọn cont, số xe + SĐT, chi phí, thanh toán → **Xe nâng → Chờ cấp vỏ** (thấy số xe, SĐT) → OUT.
 9. **Văn phòng → Phiếu thu**: tạo phiếu thu TTT tiền mặt → xác nhận → mã `PT-...`.
-10. **Báo cáo**: Hạ vỏ, Cấp vỏ, Sửa chữa chi tiết (lọc theo tổ), Tổng hợp → Tải Excel.
+10. **Báo cáo**: Hạ vỏ, Cấp vỏ, Sửa chữa chi tiết (lọc theo tổ), Tổng hợp → Tải Excel (file **.xlsx**, mở bằng Excel không còn cảnh báo).
 
 ## G. NHẬT KÝ CẬP NHẬT
 - 2026-10-22 — Claude Code: tạo file; ghi P0 → P3-e.
@@ -90,3 +90,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-22 — Claude Code: P3-g (DEC-049) — bỏ QC, Đảo chuyển mobile, thêm "Lưu ý chung" (AGENTS.md mục 8).
 - 2026-10-22 — Claude Code: P3-h (tiêu đề Giám định – Hạ vỏ); đồng bộ ROADMAP, ACCEPTANCE_TESTS, CHANGELOG, README với kết quả 42/42.
 - 2026-10-22 — Claude Code: commit 4 nhóm (services / ui / docs / harness) và push nhánh lên GitHub. Chưa merge `main`.
+- 2026-10-23 — Claude Code: P4-pre (DEC-050) — Excel .xlsx; chờ danh mục trạng thái để làm P4-01.

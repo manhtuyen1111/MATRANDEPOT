@@ -2,6 +2,18 @@
 
 Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, database và chức năng dự án.
 
+## [0.4.1] — 2026-10-23 (nhánh `agent/claude/p4-prep-xlsx`)
+
+### Changed
+- Xuất Excel Báo cáo Tổng hợp / Sửa chữa chi tiết sang **.xlsx chuẩn** (`exceljs`, tải khi cần) — DEC-050.
+- Block bãi do Admin cấu hình, không gán cứng trong database — DEC-050.
+
+### Added
+- Test đọc lại file .xlsx (5 sheet, tiêu đề cột). Kiểm thử: 43/43 pass, build PASS.
+
+### Pending
+- P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
+
 ## [0.4.0] — 2026-10-22 (Change Request đợt 1 — nhánh `feature/cr-2026-10-batch1`)
 
 Phạm vi: frontend + tầng nghiệp vụ chế độ Demo (localStorage). **Chưa thay đổi database / Supabase.**

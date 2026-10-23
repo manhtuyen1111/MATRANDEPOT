@@ -327,3 +327,25 @@ export function repairReportSheet(rows: RepairReportRow[]): SheetData {
     ]),
   };
 }
+
+// Xuất Excel .xlsx chuẩn (Q-034). exceljs chỉ được tải khi người dùng bấm "Tải Excel" (dynamic import).
+export async function toXlsxBuffer(sheets: SheetData[]): Promise<ArrayBuffer> {
+  const { default: ExcelJS } = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'MATRAN DEPOT';
+  wb.created = new Date();
+  for (const s of sheets) {
+    const ws = wb.addWorksheet(s.name.slice(0, 31));
+    ws.addRow(s.columns);
+    ws.getRow(1).font = { bold: true };
+    ws.views = [{ state: 'frozen', ySplit: 1 }];
+    for (const row of s.rows) ws.addRow(row);
+    ws.columns.forEach((col, i) => {
+      const longest = Math.max(s.columns[i]?.length || 0, ...s.rows.slice(0, 200).map((r) => String(r[i] ?? '').length));
+      col.width = Math.min(Math.max(longest + 2, 8), 50);
+    });
+  }
+  return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
+}
+
+export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
