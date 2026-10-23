@@ -74,7 +74,6 @@ const MENU: MenuGroup[] = [
   },
   { key: 'VS', label: 'Vệ sinh', icon: SprayCan, items: [
     { id: 'VS_CHO_VE_SINH', label: 'Chờ vệ sinh', mobile: true },
-    { id: 'VS_NHAP_TAU', label: 'Nhập tàu', mobile: true },
   ] },
   {
     key: 'XN',
@@ -417,9 +416,6 @@ export const App: React.FC = () => {
           {activeMenu === 'VP_XUAT_TAU' && <OfficeVesselWorkspace mode="XUAT_TAU" state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
           {VESSEL_FIELD_MENUS.includes(activeMenu as VesselFieldMode) && (
             <VesselFieldMobile key={activeMenu} kind={activeMenu as VesselFieldMode} state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />
-          )}
-          {activeMenu === 'VS_NHAP_TAU' && (
-            <FieldQueueWorkspaces key={activeMenu} mode="VS_CHO_VE_SINH" vesselOnly state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />
           )}
           {activeMenu === 'XN_NHAP_TAU' && (
             <FieldQueueWorkspaces key={activeMenu} mode="XN_CHO_HA_VO" vesselOnly state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />

@@ -10,7 +10,7 @@ import {
   VesselMode,
 } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
-import { executeVesselExport, inspectVesselImportItem, openVesselLists } from '../../services/vessel';
+import { executeVesselExport, inspectVesselImportItem, openVesselLists, sortVesselItems } from '../../services/vessel';
 import { Feedback, inputCls, labelCls, primaryBtn } from '../../components/shared';
 import { ChoiceButtons, VesselProgressPanel } from './VesselShared';
 
@@ -36,10 +36,13 @@ export const VesselFieldMobile: React.FC<{
   const lists = openVesselLists(state, title.mode);
   const [listId, setListId] = useState('');
   const list = lists.find((l) => l.id === listId) || lists[0];
-  const pending = list ? list.items.filter((i) => i.status === 'PENDING') : [];
+  const pending = list ? sortVesselItems(list.items.filter((i) => i.status === 'PENDING')) : [];
   const [code, setCode] = useState('');
   const [itemId, setItemId] = useState('');
   const item = pending.find((i) => i.id === itemId);
+  // Tìm như Tồn vỏ: lọc ngay khi gõ (chứa chuỗi)
+  const q = code.trim().toUpperCase();
+  const shownList = q && !item ? pending.filter((i) => i.containerNo.includes(q)) : pending;
   const [shown, setShown] = useState(PAGE);
   const [truckNo, setTruckNo] = useState('');
   const [condition, setCondition] = useState<FieldConditionClass | ''>('');
@@ -76,7 +79,9 @@ export const VesselFieldMobile: React.FC<{
     setError(null);
     setSuccess(null);
     const no = code.trim().toUpperCase();
-    const found = pending.find((i) => i.containerNo === no || i.dossierCode === no);
+    const matches = pending.filter((i) => i.containerNo.includes(no) || i.dossierCode === no);
+    const found = matches.length === 1 ? matches[0] : pending.find((i) => i.containerNo === no);
+    if (!found && matches.length > 1) return setError(`Có ${matches.length} container khớp "${no}" — chọn trong danh sách bên dưới.`);
     if (!found) {
       setItemId('');
       return setError(`Container "${no}" không có trong danh sách ${title.name.toLowerCase()} đang chờ${list ? ` của tàu ${list.vesselName}` : ''}.`);
@@ -241,12 +246,12 @@ export const VesselFieldMobile: React.FC<{
           )}
 
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-            <p className="border-b border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700">Đang chờ ({pending.length})</p>
+            <p className="border-b border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700">Đang chờ ({shownList.length}{q ? ` / ${pending.length}` : ''}) — xếp theo size 20 → 40, số cont A→Z</p>
             {pending.length === 0 ? (
               <p className="p-6 text-center text-xs text-slate-500">Đã xong hết danh sách — chờ Văn phòng duyệt.</p>
             ) : (
               <ul className="divide-y divide-slate-100">
-                {pending.slice(0, shown).map((i) => (
+                {shownList.slice(0, shown).map((i) => (
                   <li key={i.id}>
                     <button type="button" onClick={() => pick(i)} className={`flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-xs ${i.id === itemId ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
                       <span className="font-mono text-sm font-bold text-slate-900">{i.containerNo}</span>
@@ -257,9 +262,9 @@ export const VesselFieldMobile: React.FC<{
                 ))}
               </ul>
             )}
-            {pending.length > shown && (
+            {shownList.length > shown && (
               <button type="button" onClick={() => setShown(shown + PAGE)} className="w-full border-t border-slate-200 py-2.5 text-xs font-semibold text-blue-700">
-                Xem thêm ({pending.length - shown})
+                Xem thêm ({shownList.length - shown})
               </button>
             )}
           </div>

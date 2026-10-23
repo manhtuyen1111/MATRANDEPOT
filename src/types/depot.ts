@@ -36,7 +36,6 @@ export type WorkspaceMenuId =
   | 'VP_XUAT_TAU'
   | 'GD_NHAP_TAU'
   | 'GD_XUAT_TAU'
-  | 'VS_NHAP_TAU'
   | 'XN_NHAP_TAU'
   | 'XN_XUAT_TAU'
   | 'VS_CHO_VE_SINH'

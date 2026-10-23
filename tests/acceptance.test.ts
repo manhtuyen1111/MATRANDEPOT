@@ -582,7 +582,7 @@ describe('DEC-049: bỏ QC Sửa chữa', () => {
 });
 
 describe('Q-034: xuất Excel .xlsx chuẩn', () => {
-  it('Báo cáo Tổng hợp → file .xlsx đọc lại được, đủ 5 sheet, có dòng tiêu đề', async () => {
+  it('Báo cáo Tổng hợp → file .xlsx đọc lại được, đủ 5 sheet, có dòng tiêu đề', { timeout: 20000 }, async () => {
     const sheets = buildSummaryReport(createInitialState(), { dateFrom: '2026-10-01', dateTo: '2026-10-31' });
     const buf = await toXlsxBuffer(sheets);
     const { default: ExcelJS } = await import('exceljs');

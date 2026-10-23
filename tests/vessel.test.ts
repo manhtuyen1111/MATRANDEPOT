@@ -144,3 +144,60 @@ describe('DEC-069: đọc danh sách dán từ Excel', () => {
     expect(parseTruckList('15c-111.11\n15C-222.22, 15c-111.11')).toEqual(['15C-111.11', '15C-222.22']);
   });
 });
+
+describe('DEC-070: Văn phòng sửa / thêm cont / xóa danh sách khi chưa duyệt', () => {
+  it('Nhập tàu: sửa thông tin, thêm cont (chặn trùng), đổi hãng tàu bị chặn khi đã giám định, xóa bị chặn khi đã tác nghiệp', async () => {
+    const v = await import('../src/services/vessel');
+    const office = as(createInitialState(), 'usr-office');
+    let { state: s, listId } = v.createVesselList(office, {
+      mode: 'NHAP_TAU', vesselName: 'Tàu A', plannedAt: PLANNED, truckNos: ['15C-1'], shippingLineCode: 'MAERSK',
+      importItems: [{ containerNo: 'TCLU1234567', size: '40', type: 'HC' }],
+    });
+    expect(() => v.updateVesselList(as(s, 'usr-forklift'), { listId, mode: 'NHAP_TAU', vesselName: 'X', plannedAt: PLANNED, truckNos: ['1'], shippingLineCode: 'MAERSK' })).toThrow(/Không đủ quyền/);
+    expect(() => v.updateVesselList(s, { listId, mode: 'NHAP_TAU', vesselName: ' ', plannedAt: PLANNED, truckNos: ['1'], shippingLineCode: 'MAERSK' })).toThrow(/TÊN TÀU/);
+    s = v.updateVesselList(s, { listId, mode: 'NHAP_TAU', vesselName: 'Tàu B', plannedAt: PLANNED, truckNos: ['15C-1', '15c-2'], shippingLineCode: 'ONE' });
+    expect(s.vesselLists[0]).toMatchObject({ vesselName: 'TÀU B', truckNos: ['15C-1', '15C-2'], shippingLineCode: 'ONE' });
+
+    expect(() => v.addVesselListItems(s, { listId, mode: 'NHAP_TAU', importItems: [{ containerNo: 'TCLU1234567', size: '40', type: 'HC' }] })).toThrow(/trùng/);
+    s = v.addVesselListItems(s, { listId, mode: 'NHAP_TAU', importItems: [{ containerNo: 'TCLU7654321', size: '20', type: 'DC' }] });
+    expect(s.vesselLists[0].items).toHaveLength(2);
+
+    const it0 = s.vesselLists[0].items[0];
+    s = v.inspectVesselImportItem(as(s, 'usr-inspector'), {
+      listId, itemId: it0.id, actualContainerNo: it0.containerNo, truckNo: '15C-2', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2015,
+    });
+    s = as(s, 'usr-office');
+    expect(() => v.updateVesselList(s, { listId, mode: 'NHAP_TAU', vesselName: 'Tàu B', plannedAt: PLANNED, truckNos: ['15C-1'], shippingLineCode: 'MAERSK' })).toThrow(/HÃNG TÀU/);
+    expect(() => v.deleteVesselList(s, { listId, mode: 'NHAP_TAU' })).toThrow(/không xóa/);
+  });
+
+  it('Xuất tàu: thêm cont từ tồn vỏ (XT- mới), xóa danh sách chưa tác nghiệp → cont mở lại cho cấp vỏ; danh sách đã duyệt thì không sửa', async () => {
+    const v = await import('../src/services/vessel');
+    const office = as(createInitialState(), 'usr-office');
+    const yard = office.containers.filter((c) => c.status === 'IN_YARD').slice(0, 2);
+    let { state: s, listId } = v.createVesselList(office, { mode: 'XUAT_TAU', vesselName: 'Tàu X', plannedAt: PLANNED, truckNos: ['15C-9'], exportContainerIds: [yard[0].id] });
+    s = v.addVesselListItems(s, { listId, mode: 'XUAT_TAU', exportContainerIds: [yard[1].id] });
+    expect(s.vesselLists[0].items.map((i) => i.dossierCode)).toEqual([expect.stringMatching(/-001$/), expect.stringMatching(/-002$/)]);
+    expect(() => v.addVesselListItems(s, { listId, mode: 'XUAT_TAU', exportContainerIds: [yard[1].id] })).toThrow(/Xuất tàu khác/);
+    expect(() => v.deleteVesselList(as(s, 'usr-inspector'), { listId, mode: 'XUAT_TAU' })).toThrow(/Không đủ quyền/);
+    const deleted = v.deleteVesselList(s, { listId, mode: 'XUAT_TAU' });
+    expect(deleted.vesselLists).toHaveLength(0);
+    expect(deleted.containers.filter((c) => yard.some((y) => y.id === c.id)).every((c) => !c.vesselExportItemId && !/XUẤT TÀU/.test(releaseBlocker(c) || ""))).toBe(true);
+
+    for (const i of s.vesselLists[0].items) s = executeVesselExport(as(s, 'usr-forklift'), { listId, itemId: i.id, truckNo: '15C-9' });
+    s = approveVesselList(as(s, 'usr-office'), { listId, mode: 'XUAT_TAU' });
+    expect(() => v.updateVesselList(s, { listId, mode: 'XUAT_TAU', vesselName: 'Y', plannedAt: PLANNED, truckNos: ['1'] })).toThrow(/đã được duyệt/);
+    expect(() => v.deleteVesselList(s, { listId, mode: 'XUAT_TAU' })).toThrow(/đã được duyệt/);
+  });
+});
+
+describe('DEC-070: sắp xếp danh sách tàu', () => {
+  it('Size 20 → 40 → 45, cùng size thì số cont A→Z', async () => {
+    const { sortVesselItems } = await import('../src/services/vessel');
+    const rows = [
+      { containerNo: 'ZZZU0000001', size: '20' }, { containerNo: 'AAAU0000001', size: '40' },
+      { containerNo: 'BBBU0000001', size: '20' }, { containerNo: 'CCCU0000001', size: '45' }, { containerNo: 'AAAU0000002', size: '20' },
+    ];
+    expect(sortVesselItems(rows).map((r) => r.containerNo)).toEqual(['AAAU0000002', 'BBBU0000001', 'ZZZU0000001', 'AAAU0000001', 'CCCU0000001']);
+  });
+});

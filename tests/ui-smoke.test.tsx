@@ -8,7 +8,7 @@ import { OfficeCapVoWorkspace, OfficeHaVoWorkspace } from '../src/features/offic
 import { OfficeVesselWorkspace } from '../src/features/vessel/OfficeVesselWorkspace';
 import { VesselFieldMobile } from '../src/features/vessel/VesselFieldMobile';
 import { createVesselList, inspectVesselImportItem } from '../src/services/vessel';
-import { FieldQueueWorkspaces, FieldQueueMode } from '../src/features/field-queues/FieldQueueWorkspaces';
+import { FieldQueueWorkspaces, FieldQueueMode, getFieldQueue } from '../src/features/field-queues/FieldQueueWorkspaces';
 import { YardShiftWorkspace } from '../src/features/forklift/YardShiftWorkspace';
 import { ReceiptsWorkspace } from '../src/features/receipts/ReceiptsWorkspace';
 import { ReportsWorkspace } from '../src/features/reports/ReportsWorkspace';
@@ -34,7 +34,7 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('MATRAN DEPOT');
     expect(html).toContain('Đảo chuyển');
     expect(html).not.toContain('HẠ SỬA CHỮA');
-    expect(html.match(/aria-label="Tác nghiệp mobile"/g)?.length).toBe(11);
+    expect(html.match(/aria-label="Tác nghiệp mobile"/g)?.length).toBe(10);
   });
 
   it('Tồn vỏ hiển thị biểu tượng khóa và dấu - cho container chưa có vị trí', () => {
@@ -194,11 +194,11 @@ describe('DEC-069: màn Nhập tàu / Xuất tàu', () => {
 
     const vpNt = strip(renderToString(<OfficeVesselWorkspace mode="NHAP_TAU" state={both} onUpdateState={noop} />));
     expect(vpNt).toContain('EVER GENTLE');
-    expect(vpNt).toContain('Duyệt NHẬP TÀU thành công');
-    expect(vpNt).toContain('Chờ xe về');
+    expect(vpNt).toContain('Lập danh sách NHẬP TÀU');
+    expect(vpNt).toContain('Xong 0/1');
     const vpXt = strip(renderToString(<OfficeVesselWorkspace mode="XUAT_TAU" state={both} onUpdateState={noop} />));
-    expect(vpXt).toContain('Chọn container từ tồn vỏ');
-    expect(vpXt).toMatch(/XT-\d{6}-001/);
+    expect(vpXt).toContain('WAN HAI');
+    expect(vpXt).toContain('Lập danh sách XUẤT TÀU');
 
     const gd = strip(renderToString(<VesselFieldMobile kind="GD_NHAP_TAU" state={as(both, 'usr-inspector')} onUpdateState={noop} />));
     expect(gd).toContain('max-w-lg');
@@ -207,9 +207,6 @@ describe('DEC-069: màn Nhập tàu / Xuất tàu', () => {
     const xn = strip(renderToString(<VesselFieldMobile kind="XN_XUAT_TAU" state={as(both, 'usr-forklift')} onUpdateState={noop} />));
     expect(xn).toContain('max-w-lg');
     expect(xn).toContain('Bộ phận Xe nâng');
-    const vs = strip(renderToString(<FieldQueueWorkspaces mode="VS_CHO_VE_SINH" vesselOnly state={both} onUpdateState={noop} />));
-    expect(vs).toContain('Nhập tàu — Chờ vệ sinh');
-    expect(vs).toContain('max-w-lg');
 
     const xtCode = both.vesselLists[0].items[0].dossierCode!;
     expect(strip(renderToString(<MasterDossierModal masterDossierCode={xtCode} state={both} onClose={noop} />))).toContain('Tác nghiệp XUẤT TÀU');
@@ -225,5 +222,23 @@ describe('DEC-069: màn Nhập tàu / Xuất tàu', () => {
     expect(ntHtml).toContain('Giám định — Nhập tàu');
     expect(ntHtml).toContain('Vệ sinh');
     expect(ntHtml).toContain('Văn phòng — Duyệt nhập tàu');
+  });
+});
+
+describe('DEC-070: menu Vệ sinh không còn Nhập tàu; cont nhập tàu có vệ sinh vào Chờ vệ sinh chung', () => {
+  it('Cont NT- chờ vệ sinh hiện trong Vệ sinh → Chờ vệ sinh', () => {
+    const office = as(createInitialState(), 'usr-office');
+    const { state: s, listId } = createVesselList(office, {
+      mode: 'NHAP_TAU', vesselName: 'Tàu VS', plannedAt: new Date().toISOString(), truckNos: ['15C-1'], shippingLineCode: 'MAERSK',
+      importItems: [{ containerNo: 'TCLU5555555', size: '20', type: 'DC' }],
+    });
+    const done = inspectVesselImportItem(as(s, 'usr-inspector'), {
+      listId, itemId: s.vesselLists[0].items[0].id, actualContainerNo: 'TCLU5555555', truckNo: '15C-1',
+      conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['WW'], manufactureYear: 2018,
+    });
+    expect(getFieldQueue(done, 'VS_CHO_VE_SINH').some((c) => c.containerNo === 'TCLU5555555' && c.masterDossierCode.startsWith('NT-'))).toBe(true);
+    const html = renderToString(<FieldQueueWorkspaces mode="VS_CHO_VE_SINH" state={as(done, 'usr-cleaning')} onUpdateState={noop} />);
+    expect(html).toContain('Chờ vệ sinh');
+    expect(renderToString(<App />)).not.toContain('VS_NHAP_TAU');
   });
 });
