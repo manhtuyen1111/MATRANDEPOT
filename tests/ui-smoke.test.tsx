@@ -43,6 +43,8 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('Container đang bị khóa');
     expect(html).toContain('>-<');
     expect(html).toContain('Lưu bãi');
+    // DEC-074: cột Date in nằm giữa Hãng tàu và Trạng thái
+    expect(html).toMatch(/Hãng tàu<\/th><th[^>]*>Date in<\/th><th[^>]*>Trạng thái/);
     expect(html).toContain('Tìm hàng loạt');
     expect(html).toContain('Container không khóa');
     expect(html).not.toContain('>Thao tác<');

@@ -866,6 +866,8 @@ describe('DEC-067: Tồn vỏ — lưu bãi, khóa / ghi chú hàng loạt', () 
     expect(() => bulkUpdateOfficeNote(as(s0, 'usr-forklift'), { containerIds: ids, officeNote: 'x' })).toThrow(/Không đủ quyền/);
     const sheet = yardStockSheet(noted.state.containers.filter((c) => ids.includes(c.id)));
     expect(sheet.columns.indexOf('LƯU BÃI (NGÀY)')).toBe(sheet.columns.indexOf('TRẠNG THÁI') + 1);
+    expect(sheet.columns.slice(4, 7)).toEqual(['HÃNG TÀU', 'DATE IN', 'VÀO BÃI BẰNG']);
+    expect(sheet.rows[0][6]).toBe('HẠ VỎ');
     expect(sheet.columns).toContain('GHI CHÚ');
   });
 });

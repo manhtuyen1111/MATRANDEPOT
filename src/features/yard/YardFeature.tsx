@@ -144,7 +144,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
     }
   };
 
-  const colCount = canBulk ? 11 : 10;
+  const colCount = canBulk ? 12 : 11;
 
   return (
     <div className="w-full space-y-3">
@@ -236,11 +236,11 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
       )}
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="w-full min-w-[920px] text-left text-xs">
+        <table className="w-full min-w-[1120px] text-left text-xs">
           <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
             <tr>
               {canBulk && (
-                <th className="w-8 px-3 py-2.5">
+                <th className="w-8 px-2 py-2.5">
                   <input
                     type="checkbox"
                     aria-label="Chọn tất cả theo bộ lọc"
@@ -249,16 +249,17 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                   />
                 </th>
               )}
-              <th className="px-3 py-2.5">Mã hồ sơ</th>
-              <th className="px-3 py-2.5">Số container</th>
-              <th className="px-3 py-2.5">Size</th>
-              <th className="px-3 py-2.5">Type</th>
-              <th className="px-3 py-2.5">Hãng tàu</th>
-              <th className="px-3 py-2.5">Trạng thái</th>
-              <th className="px-3 py-2.5 text-right">Lưu bãi</th>
-              <th className="w-44 px-3 py-2.5">Vị trí</th>
-              <th className="px-3 py-2.5">Tiến độ</th>
-              <th className="w-64 px-3 py-2.5">Ghi chú</th>
+              <th className="w-32 whitespace-nowrap px-2 py-2.5">Mã hồ sơ</th>
+              <th className="w-36 whitespace-nowrap px-2 py-2.5">Số container</th>
+              <th className="w-12 px-2 py-2.5 text-center">Size</th>
+              <th className="w-12 px-2 py-2.5 text-center">Type</th>
+              <th className="w-20 whitespace-nowrap px-2 py-2.5">Hãng tàu</th>
+              <th className="w-24 whitespace-nowrap px-2 py-2.5">Date in</th>
+              <th className="w-20 whitespace-nowrap px-2 py-2.5 text-center">Trạng thái</th>
+              <th className="w-16 whitespace-nowrap px-2 py-2.5 text-right">Lưu bãi</th>
+              <th className="w-40 px-2 py-2.5">Vị trí</th>
+              <th className="w-40 px-2 py-2.5">Tiến độ</th>
+              <th className="min-w-[14rem] px-2 py-2.5">Ghi chú</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -273,12 +274,12 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                   <React.Fragment key={c.id}>
                     <tr onClick={() => onOpenDossier?.(c.masterDossierCode)} className={`cursor-pointer hover:bg-slate-50 ${selected.has(c.id) ? 'bg-blue-50/60' : ''}`}>
                       {canBulk && (
-                        <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-2 py-2.5" onClick={(e) => e.stopPropagation()}>
                           <input type="checkbox" aria-label={`Chọn ${c.containerNo}`} checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
                         </td>
                       )}
-                      <td className="px-3 py-2.5 font-mono text-blue-700">{c.masterDossierCode}</td>
-                      <td className="px-3 py-2.5">
+                      <td className="whitespace-nowrap px-2 py-2.5 font-mono text-blue-700">{c.masterDossierCode}</td>
+                      <td className="whitespace-nowrap px-2 py-2.5">
                         <span className="inline-flex items-center gap-1.5 font-mono text-sm font-bold text-slate-900">
                           {c.containerNo}
                           <button
@@ -296,12 +297,16 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                           </button>
                         </span>
                       </td>
-                      <td className="px-3 py-2.5">{c.size}</td>
-                      <td className="px-3 py-2.5">{c.type}</td>
-                      <td className="px-3 py-2.5">{c.shippingLineCode}</td>
-                      <td className={`px-3 py-2.5 font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
-                      <td className="px-3 py-2.5 text-right font-mono font-bold">{storageDays(c.gateInAt, now)}</td>
-                      <td className="px-3 py-2.5 font-mono" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-2.5 text-center">{c.size}</td>
+                      <td className="px-2 py-2.5 text-center">{c.type}</td>
+                      <td className="whitespace-nowrap px-2 py-2.5">{c.shippingLineCode}</td>
+                      <td className="whitespace-nowrap px-2 py-2.5 font-mono leading-tight" title="Thời gian vào bãi (Hạ vỏ / Nhập tàu)">
+                        <span className="block">{formatDateTime(c.gateInAt).slice(0, 10)}</span>
+                        <span className="block text-[10px] text-slate-500">{formatDateTime(c.gateInAt).slice(11)}</span>
+                      </td>
+                      <td className={`px-2 py-2.5 text-center font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
+                      <td className="px-2 py-2.5 text-right font-mono font-bold">{storageDays(c.gateInAt, now)}</td>
+                      <td className="px-2 py-2.5 font-mono" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-start justify-between gap-2">
                           <span>{formatLocation(c)}</span>
                           {canEditLocation && hasPosition && (
@@ -317,8 +322,8 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                           )}
                         </div>
                       </td>
-                      <td className="px-3 py-2.5 text-[11px]">{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</td>
-                      <td className={`px-3 py-2.5 ${hasNote && editingNoteId !== c.id ? 'bg-yellow-200' : ''}`} onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-2.5 text-[11px]">{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</td>
+                      <td className={`px-2 py-2.5 ${hasNote && editingNoteId !== c.id ? 'bg-yellow-200' : ''}`} onClick={(e) => e.stopPropagation()}>
                         {editingNoteId === c.id ? (
                           <div className="flex items-center gap-1">
                             <input value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} autoFocus className={inputCls} />
