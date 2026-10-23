@@ -15,6 +15,7 @@ import {
   correctContainerLocation,
   createMasterPrepaidReceipt,
   createReleaseOrder,
+  deleteGateInFieldRecord,
   executeGateOut,
   getBookingSummary,
   processBankTransferCallback,
@@ -26,7 +27,7 @@ import {
   updateContainerLocation,
   verifyGateInOfficeAndCreatePayment,
 } from '../src/services/depotOperations';
-import { buildSummaryReport, queryGateInReport, queryGateOutReport, queryReceipts, queryRepairReport, toSpreadsheetXml } from '../src/services/reports';
+import { buildSummaryReport, queryGateInReport, queryGateOutReport, queryReceipts, queryRepairReport, toSpreadsheetXml, toXlsxBuffer } from '../src/services/reports';
 import { allocateCode } from '../src/services/codes';
 import { canOpenMenu } from '../src/services/permissions';
 
@@ -317,7 +318,7 @@ describe('CR-01/CR-02: ĐẢO CHUYỂN, SỬA VỊ TRÍ, KHÓA CONTAINER', () =>
 
   it('KHÓA: bắt buộc ghi chú; bị khóa thì không CẤP VỎ, vẫn ĐẢO CHUYỂN & SỬA VỊ TRÍ được', () => {
     let s = as(createInitialState(), 'usr-office');
-    expect(() => toggleContainerHold(s, { containerNo: 'MSKU4089123', hold: true, reason: '  ' })).toThrow(/GHI CHÚ/);
+    expect(() => toggleContainerHold(s, { containerNo: 'MSKU4089123', hold: true, reason: '  ' })).toThrow(/REMARK VĂN PHÒNG/);
     s = toggleContainerHold(s, { containerNo: 'MSKU4089123', hold: true, reason: 'Hãng tàu yêu cầu giữ' });
     const c = s.containers.find((x) => x.containerNo === 'MSKU4089123')!;
     expect(c.isOnHold).toBe(true);
@@ -577,5 +578,261 @@ describe('DEC-049: bỏ QC Sửa chữa', () => {
     expect(s.staffUsers[0].roles).toEqual(['REPAIR_STAFF']);
     expect(s.containers[0].conditionClass).toBe('AV');
     expect('needsQcInspection' in s.containers[0]).toBe(false);
+  });
+});
+
+describe('Q-034: xuất Excel .xlsx chuẩn', () => {
+  it('Báo cáo Tổng hợp → file .xlsx đọc lại được, đủ 5 sheet, có dòng tiêu đề', async () => {
+    const sheets = buildSummaryReport(createInitialState(), { dateFrom: '2026-10-01', dateTo: '2026-10-31' });
+    const buf = await toXlsxBuffer(sheets);
+    const { default: ExcelJS } = await import('exceljs');
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buf);
+    expect(wb.worksheets.map((w) => w.name)).toEqual(['HẠ VỎ', 'CẤP VỎ', 'XUẤT VỎ', 'NHẬP VỎ', 'TỒN VỎ']);
+    const ton = wb.getWorksheet('TỒN VỎ')!;
+    expect(ton.getRow(1).getCell(2).value).toBe('SỐ CONTAINER');
+    expect(ton.rowCount).toBe(sheets[4].rows.length + 1);
+  });
+});
+
+describe('DEC-051: phiếu thu ghi rõ tác nghiệp', () => {
+  it('Hạ vỏ tiền mặt → HA_VO; Cấp vỏ tiền mặt → CAP_VO; nạp TTT → THU_TRUOC; lọc theo tác nghiệp / mở theo mã phiếu', () => {
+    let s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    s = createReleaseOrder(as(s, 'usr-office'), {
+      bookingNo: 'BK-X', customerName: VIETLOG, containerNo: 'MSKU4089123', truckNo: '15H', driverPhone: '0912345678',
+      feeCatalogIds: [FEE_LOLO_40HC_MSK],
+    });
+    s = confirmReleasePayment(as(s, 'usr-office'), { gateOutOrderId: s.gateOutOrders[0].id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    s = createMasterPrepaidReceipt(as(s, 'usr-office'), { customerCode: 'VIETLOG', lotDescription: '', totalAmount: 1000000, method: 'CASH' });
+    s = confirmPrepaidCash(as(s, 'usr-office'), { transactionId: s.paymentTransactions[0].id });
+
+    const ops = s.paymentReceipts.map((r) => r.operation).sort();
+    expect(ops).toEqual(['CAP_VO', 'HA_VO', 'THU_TRUOC']);
+    const today = new Date().toISOString().slice(0, 10);
+    expect(queryReceipts(s, { dateFrom: today, dateTo: today, operation: 'CAP_VO' }).total).toBe(1);
+    const ha = s.paymentReceipts.find((r) => r.operation === 'HA_VO')!;
+    const found = queryReceipts(s, { receiptNo: ha.receiptNo });
+    expect(found.total).toBe(1);
+    expect(found.rows[0].receipt!.receiptNo).toBe(ha.receiptNo);
+  });
+});
+
+describe('DEC-052: lộ trình phiếu K80 & Văn phòng trả chứng từ', () => {
+  it('Hạ vỏ có vệ sinh: 4 bước; chưa qua Vệ sinh / Xe nâng thì không trả được; xong thì trả 1 lần, kèm phiếu thu', async () => {
+    const { confirmDocumentsReturn, getDriverRoute, ticketsAwaitingReturn } = await import('../src/services/driverRoute');
+    let s = fieldStep(createInitialState(), { cleaningItems: ['WW - RỬA NƯỚC'] });
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const ticket = s.k80Tickets[0];
+    expect(getDriverRoute(s, ticket).map((x) => x.dept)).toEqual(['VĂN PHÒNG', 'VỆ SINH', 'XE NÂNG', 'VĂN PHÒNG']);
+
+    expect(() => confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode })).toThrow(/VỆ SINH/);
+    s = completeCleaningTask(as(s, 'usr-cleaning'), { containerNo: 'MSKU1234567' });
+    expect(() => confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode })).toThrow(/XE NÂNG/);
+    s = placeInYard(s, 'MSKU1234567');
+    expect(ticketsAwaitingReturn(s).map((t) => t.containerNo)).toContain('MSKU1234567');
+    expect(() => confirmDocumentsReturn(as(s, 'usr-forklift'), { scannedQrCode: ticket.qrCode })).toThrow(/Không đủ quyền/);
+
+    const res = confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode });
+    expect(res.pack.receipts).toHaveLength(1);
+    expect(getDriverRoute(res.state, ticket).every((x) => x.done)).toBe(true);
+    expect(() => confirmDocumentsReturn(res.state, { scannedQrCode: ticket.qrCode })).toThrow(/Đã trả chứng từ/);
+  });
+
+  it('Cấp vỏ: Văn phòng → Xe nâng → Văn phòng; TTS không có phiếu thu', async () => {
+    const { confirmDocumentsReturn, getDriverRoute } = await import('../src/services/driverRoute');
+    let s = createReleaseOrder(as(createInitialState(), 'usr-office'), {
+      bookingNo: 'BK-R', customerName: VIETLOG, containerNo: 'MSKU4089123', truckNo: '15H', driverPhone: '0912345678', feeCatalogIds: [FEE_LOLO_40HC_MSK],
+    });
+    s = confirmReleasePayment(as(s, 'usr-office'), { gateOutOrderId: s.gateOutOrders[0].id, paymentCategory: 'TTS', ttsNote: 'x' });
+    const ticket = s.k80Tickets[0];
+    expect(getDriverRoute(s, ticket).map((x) => x.dept)).toEqual(['VĂN PHÒNG', 'XE NÂNG', 'VĂN PHÒNG']);
+    expect(() => confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode })).toThrow(/XE NÂNG/);
+    s = executeGateOut(as(s, 'usr-forklift'), { containerNo: 'MSKU4089123' });
+    const res = confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode });
+    expect(res.pack.dossierCode).toMatch(/^OUT-/);
+    expect(res.pack.receipts).toHaveLength(0);
+  });
+});
+
+describe('DEC-054: định dạng thời gian dd/MM/yyyy HH:mm:ss', () => {
+  it('Hiển thị & đọc chuẩn; từ chối ngày sai; lọc theo giờ phút giây', async () => {
+    const { formatDateTime, parseDateTime, maskDateTimeInput } = await import('../src/services/datetime');
+    expect(formatDateTime(new Date(2026, 9, 23, 7, 5, 9))).toBe('23/10/2026 07:05:09');
+    expect(parseDateTime('23/10/2026 07:05:09')!.getSeconds()).toBe(9);
+    expect(parseDateTime('23/10/2026', 'end')!.getHours()).toBe(23);
+    expect(parseDateTime('31/02/2026 00:00:00')).toBeNull();
+    expect(parseDateTime('23/10/2026 25:00:00')).toBeNull();
+    expect(maskDateTimeInput('23102026070509')).toBe('23/10/2026 07:05:09');
+
+    // Phiếu thu tạo "bây giờ": khoảng kết thúc 1 giây trước → không thấy; khoảng bao quanh → thấy
+    let s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const t = new Date(s.paymentTransactions[0].confirmedAt!);
+    const before = formatDateTime(new Date(t.getTime() - 60_000));
+    const justBefore = formatDateTime(new Date(t.getTime() - 1_000));
+    const after = formatDateTime(new Date(t.getTime() + 60_000));
+    expect(queryReceipts(s, { dateFrom: before, dateTo: after }).total).toBe(1);
+    expect(queryReceipts(s, { dateFrom: before, dateTo: justBefore }).total).toBe(0);
+    expect(() => queryReceipts(s, { dateFrom: '99/99/2026', dateTo: after })).toThrow(/dd\/mm\/yyyy/);
+  });
+});
+
+describe('DEC-055: xuất Excel theo bộ lọc — Phiếu thu & mọi báo cáo', () => {
+  it('Sheet PHIẾU THU đủ cột; file .xlsx có tiêu đề nền + bộ lọc cột; collectAllPages lấy hết các trang', async () => {
+    const { receiptsSheet, collectAllPages, gateInSheet } = await import('../src/services/reports');
+    let s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const sheet = receiptsSheet(s, collectAllPages((p) => queryReceipts(s, { keyword: 'MSKU1234567' }, p)));
+    expect(sheet.columns).toContain('TÁC NGHIỆP');
+    expect(sheet.rows[0][1]).toBe('HẠ VỎ');
+    const inSheet = gateInSheet('HẠ VỎ', collectAllPages((p) => queryGateInReport(s, 'CUSTOMER_RETURN', { containerNo: 'MSKU1234567' }, p)));
+    expect(inSheet.columns).toContain('SĐT LÁI XE');
+
+    const { default: ExcelJS } = await import('exceljs');
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await toXlsxBuffer([sheet]));
+    const ws = wb.getWorksheet('PHIẾU THU')!;
+    expect(ws.getRow(1).getCell(1).font?.bold).toBe(true);
+    expect(ws.autoFilter).toBeTruthy();
+  });
+});
+
+describe('DEC-056: mặc định bộ lọc = 1 ngày trước → hiện tại', () => {
+  it('defaultLastDayRange trả đúng 24 giờ theo định dạng chuẩn', async () => {
+    const { defaultLastDayRange } = await import('../src/services/datetime');
+    const r = defaultLastDayRange(new Date(2026, 9, 23, 10, 10, 10));
+    expect(r).toEqual({ dateFrom: '22/10/2026 10:10:10', dateTo: '23/10/2026 10:10:10' });
+  });
+});
+
+describe('DEC-057: mã QR phiếu K80 duy nhất & đóng sau khi trả chứng từ', () => {
+  it('QR theo mã hồ sơ: cùng container 2 lượt / lập lệnh lại sau khi hủy đều có QR khác; phiếu đã trả chứng từ bị đóng', async () => {
+    const { confirmDocumentsReturn, isTicketClosed } = await import('../src/services/driverRoute');
+    // Lượt 1: hạ vỏ → hạ bãi → trả chứng từ → cấp vỏ → OUT
+    let { state: s } = gateInTts(createInitialState(), 'MSKU1234567');
+    const t1 = s.k80Tickets[0];
+    expect(t1.qrCode).toBe(`QR-${t1.masterDossierCode}`);
+    s = placeInYard(s, 'MSKU1234567');
+    s = confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: t1.qrCode }).state;
+    expect(isTicketClosed(s, t1)).toBe(true);
+    expect(() => confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: t1.qrCode })).toThrow(/Đã trả chứng từ/);
+
+    const order = (st: DepotState, b: string) =>
+      createReleaseOrder(as(st, 'usr-office'), { bookingNo: b, customerName: VIETLOG, containerNo: 'MSKU1234567', truckNo: '15H', driverPhone: '0912345678', feeCatalogIds: [FEE_LOLO_40HC_MSK] });
+    s = order(s, 'BK-A');
+    s = releaseAllocatedContainer(as(s, 'usr-office'), { containerNo: 'MSKU1234567', reason: 'đổi lịch' });
+    s = order(s, 'BK-B');
+    s = confirmReleasePayment(as(s, 'usr-office'), { gateOutOrderId: s.gateOutOrders[0].id, paymentCategory: 'TTS', ttsNote: 'x' });
+    const outTicket = s.k80Tickets[0];
+    expect(outTicket.qrCode).toBe(`QR-${s.gateOutOrders[0].gateOutCode}`);
+    s = executeGateOut(as(s, 'usr-forklift'), { scannedQrCode: outTicket.qrCode });
+
+    // Lượt 2: cùng container quay lại bãi → QR mới
+    s = gateInTts(s, 'MSKU1234567').state;
+    const t2 = s.k80Tickets[0];
+    const all = s.k80Tickets.map((t) => t.qrCode);
+    expect(new Set(all).size).toBe(all.length);
+    expect(t2.qrCode).not.toBe(t1.qrCode);
+  });
+});
+
+describe('DEC-059: Giám định xóa hồ sơ hạ vỏ khi Văn phòng chưa thao tác', () => {
+  it('Xóa được khi chưa thao tác, không ghi nhật ký; đã thao tác thì chặn; vai trò khác bị chặn; mã không cấp lại', () => {
+    let s = fieldStep(createInitialState());
+    const a = s.gateInOrders[0];
+    const logs = s.auditLogs.length;
+    expect(() => deleteGateInFieldRecord(as(s, 'usr-office'), { gateInId: a.id })).toThrow(/Không đủ quyền/);
+    s = deleteGateInFieldRecord(as(s, 'usr-inspector'), { gateInId: a.id });
+    expect(s.gateInOrders.find((o) => o.id === a.id)).toBeUndefined();
+    expect(s.auditLogs.length).toBe(logs);
+    s = fieldStep(s);
+    expect(s.gateInOrders[0].masterDossierCode).not.toBe(a.masterDossierCode);
+
+    const b = s.gateInOrders[0];
+    s = officeStep(s, b.id, 'MSKU1234567');
+    expect(() => deleteGateInFieldRecord(as(s, 'usr-inspector'), { gateInId: b.id })).toThrow(/Văn phòng xử lý/);
+  });
+});
+
+describe('DEC-060: Văn phòng Hạ vỏ kiểm tra Tồn vỏ ngay khi nhập số container', () => {
+  it('Cont đang tồn vỏ → báo ngay & chặn; cont đã OUT hoặc mới → cho phép', async () => {
+    const { gateInContainerConflict } = await import('../src/services/depotOperations');
+    const s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    expect(gateInContainerConflict(s, 'MSKU4089123', gi.id)).toMatch(/TỒN VỎ/);
+    expect(gateInContainerConflict(s, 'MSKU3190024', gi.id)).toBeNull(); // đã OUT trước đó
+    expect(gateInContainerConflict(s, 'MSKU1234567', gi.id)).toBeNull();
+    expect(gateInContainerConflict(s, 'MSKU40', gi.id)).toBeNull(); // chưa nhập đủ → chưa báo
+    expect(() => officeStep(s, gi.id, 'MSKU4089123')).toThrow(/TỒN VỎ/);
+  });
+});
+
+describe('DEC-062 / DEC-063: thông tin công ty; theo dõi số lần in phiếu thu', () => {
+  it('Chỉ Admin sửa thông tin công ty; mỗi lần in phiếu thu được ghi nhận (lần 2 = in lại, có nhật ký)', async () => {
+    const { updateCompanyProfile, recordReceiptPrint } = await import('../src/services/depotOperations');
+    const s0 = createInitialState();
+    const profile = { ...s0.companyProfile, name: 'CÔNG TY CP MATRAN', address: 'Hải Phòng', phone: '0225 123 4567' };
+    expect(() => updateCompanyProfile(as(s0, 'usr-office'), profile)).toThrow(/ADMIN/);
+    expect(() => updateCompanyProfile(as(s0, 'usr-admin'), { ...profile, name: ' ' })).toThrow(/TÊN CÔNG TY/);
+    let s = updateCompanyProfile(as(s0, 'usr-admin'), profile);
+    expect(s.companyProfile.address).toBe('Hải Phòng');
+
+    s = fieldStep(s);
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const no = s.paymentReceipts[0].receiptNo;
+    expect(() => recordReceiptPrint(as(s, 'usr-forklift'), { receiptNo: no })).toThrow(/Không đủ quyền/);
+    s = recordReceiptPrint(as(s, 'usr-office'), { receiptNo: no });
+    s = recordReceiptPrint(as(s, 'usr-office'), { receiptNo: no });
+    expect(s.paymentReceipts[0].printLog).toHaveLength(2);
+    expect(s.auditLogs[0].actionCode).toBe('RECEIPT_REPRINT');
+  });
+
+  it('Trả chứng từ tự in → tính 1 lần in cho phiếu thu kèm theo', async () => {
+    const { confirmDocumentsReturn } = await import('../src/services/driverRoute');
+    const { recordReceiptPrint } = await import('../src/services/depotOperations');
+    let s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    s = placeInYard(s, 'MSKU1234567');
+    const res = confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: s.k80Tickets[0].qrCode });
+    let n = res.state;
+    for (const r of res.pack.receipts) n = recordReceiptPrint(n, { receiptNo: r.receiptNo });
+    expect(n.paymentReceipts[0].printLog).toHaveLength(1);
+  });
+});
+
+describe('DEC-065: khóa = Remark Văn phòng; cont khóa vẫn hiện ở Cấp vỏ; Excel Tồn vỏ', () => {
+  it('Khóa ghi vào Remark Văn phòng; cont chỉ vướng khóa vẫn hiện nhưng phải mở khóa mới cấp được', async () => {
+    const { blockedOnlyByHold, releaseBlocker } = await import('../src/services/depotOperations');
+    const { yardStockSheet } = await import('../src/services/reports');
+    let s = toggleContainerHold(as(createInitialState(), 'usr-office'), { containerNo: 'MSKU4089123', hold: true, reason: 'Giữ theo yêu cầu hãng tàu' });
+    let c = s.containers.find((x) => x.containerNo === 'MSKU4089123')!;
+    expect(c.officeNote).toBe('Giữ theo yêu cầu hãng tàu');
+    expect(blockedOnlyByHold(c)).toBe(true);
+    expect(releaseBlocker(c)).toMatch(/KHÓA/);
+    const sheet = yardStockSheet([c]);
+    expect(sheet.rows[0]).toContain('ĐANG KHÓA');
+    expect(sheet.rows[0]).toContain('Giữ theo yêu cầu hãng tàu');
+    s = toggleContainerHold(s, { containerNo: 'MSKU4089123', hold: false, reason: 'Hãng tàu cho cấp' });
+    c = s.containers.find((x) => x.containerNo === 'MSKU4089123')!;
+    expect(blockedOnlyByHold(c)).toBe(false);
+    expect(releaseBlocker(c)).toBeNull();
+    s = createReleaseOrder(s, {
+      bookingNo: 'BK-NEW-2', customerName: VIETLOG, containerNo: 'MSKU4089123', truckNo: '15H-2', driverPhone: '0912345678',
+      feeCatalogIds: [FEE_LOLO_40HC_MSK],
+    });
+    expect(s.gateOutOrders[0].containerNo).toBe('MSKU4089123');
   });
 });

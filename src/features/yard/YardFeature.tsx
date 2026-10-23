@@ -1,13 +1,16 @@
 import React, { useMemo, useState } from 'react';
-import { Check, Lock, LockOpen, MapPinned, MessageSquarePlus, Pencil, Pin, Search, X } from 'lucide-react';
+import { Check, Lock, LockOpen, MessageSquarePlus, Pencil, Pin, Search, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
 import { correctContainerLocation, toggleContainerHold, updateContainerOfficeNote } from '../../services/depotOperations';
 import { formatLocation, getContainerProgress, PROGRESS_LABELS } from '../../services/core';
 import { can } from '../../services/permissions';
+import { yardStockSheet } from '../../services/reports';
+import { fileStamp, formatDateTime } from '../../services/datetime';
 import { ContainerRecord, FieldConditionClass, K80InternalTicket } from '../../types/depot';
 import {
   ContainerNo,
   EMPTY_SLOT,
+  ExportExcelButton,
   Feedback,
   inputCls,
   isSlotComplete,
@@ -82,11 +85,10 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
     }
   };
 
-  const openPanel = (e: React.MouseEvent, c: ContainerRecord, kind: 'LOCATION' | 'LOCK') => {
-    e.stopPropagation();
-    setPanel(panel?.id === c.id && panel.kind === kind ? null : { id: c.id, kind });
+  const openPanel = (c: ContainerRecord, kind: 'LOCATION' | 'LOCK' | '') => {
+    setPanel(kind ? { id: c.id, kind } : null);
     setSlot(EMPTY_SLOT);
-    setLockNote('');
+    setLockNote(kind === 'LOCK' && !c.isOnHold ? c.officeNote || '' : '');
   };
 
   return (
@@ -126,6 +128,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
               <option value="DAMAGE">DAMAGE</option>
             </select>
           </label>
+          <ExportExcelButton fileName={`MATRAN_TON_VO_${fileStamp(formatDateTime(new Date()))}.xlsx`} disabled={filtered.length === 0} getSheets={() => [yardStockSheet(filtered)]} />
         </div>
       </div>
 
@@ -169,7 +172,22 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                       <td className="px-3 py-2.5">{c.type}</td>
                       <td className="px-3 py-2.5">{c.shippingLineCode}</td>
                       <td className={`px-3 py-2.5 font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
-                      <td className="px-3 py-2.5 font-mono">{formatLocation(c)}</td>
+                      <td className="px-3 py-2.5 font-mono" onClick={(e) => canEditLocation && hasPosition && e.stopPropagation()}>
+                        <span className="inline-flex items-center gap-1.5">
+                          {formatLocation(c)}
+                          {canEditLocation && hasPosition && (
+                            <button
+                              type="button"
+                              aria-label={`Sửa vị trí ${c.containerNo}`}
+                              title="Sửa vị trí bãi"
+                              onClick={() => openPanel(c, panelOpen && panel!.kind === 'LOCATION' ? '' : 'LOCATION')}
+                              className="text-slate-500 hover:text-slate-800"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                          )}
+                        </span>
+                      </td>
                       <td className="px-3 py-2.5 text-[11px]">{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</td>
                       <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                         {editingNoteId === c.id ? (
@@ -206,20 +224,17 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="inline-flex gap-1">
-                          {canEditLocation && hasPosition && (
-                            <button type="button" onClick={(e) => openPanel(e, c, 'LOCATION')} className={secondaryBtn} title="Sửa vị trí bãi">
-                              <MapPinned className="h-3.5 w-3.5" />
-                              Sửa vị trí
-                            </button>
-                          )}
-                          {canLock && (
-                            <button type="button" onClick={(e) => openPanel(e, c, 'LOCK')} className={secondaryBtn} title={c.isOnHold ? 'Mở khóa container' : 'Khóa container'}>
-                              {c.isOnHold ? <LockOpen className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                              {c.isOnHold ? 'Mở khóa' : 'Khóa'}
-                            </button>
-                          )}
-                        </div>
+                        {canLock && (
+                          <button
+                            type="button"
+                            onClick={() => openPanel(c, panelOpen && panel!.kind === 'LOCK' ? '' : 'LOCK')}
+                            className={secondaryBtn}
+                            title={c.isOnHold ? 'Mở khóa container' : 'Khóa container'}
+                          >
+                            {c.isOnHold ? <LockOpen className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                            {c.isOnHold ? 'Mở khóa' : 'Khóa'}
+                          </button>
+                        )}
                       </td>
                     </tr>
                     {panelOpen && (
@@ -245,8 +260,8 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                           ) : (
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                               <label className="flex-1">
-                                <span className={labelCls}>{c.isOnHold ? 'Ghi chú mở khóa *' : 'Ghi chú khóa *'}</span>
-                                <input value={lockNote} onChange={(e) => setLockNote(e.target.value)} placeholder={c.isOnHold ? `Đang khóa: ${c.holdReason}` : 'Lý do khóa container...'} className={inputCls} />
+                                <span className={labelCls}>{c.isOnHold ? 'Ghi chú mở khóa *' : 'Remark Văn phòng (lý do khóa) *'}</span>
+                                <input value={lockNote} onChange={(e) => setLockNote(e.target.value)} placeholder={c.isOnHold ? `Đang khóa: ${c.holdReason}` : 'Remark Văn phòng — ghi vào cột Ghi chú văn phòng'} className={inputCls} />
                               </label>
                               <button
                                 type="button"

@@ -16,6 +16,7 @@ import {
   PaymentTransaction,
   PaymentVoucher,
   RepairTeam,
+  CompanyProfile,
   ReleaseBooking,
   ServiceWorkOrder,
   StaffUser,
@@ -46,6 +47,7 @@ export interface DepotState {
   k80Tickets: K80InternalTicket[];
   auditLogs: AuditLogEntry[];
   repairTeams: RepairTeam[];
+  companyProfile: CompanyProfile;
   // Bộ đếm cấp mã hồ sơ / phiếu (IN-YYMMDD, OUT-YYMMDD, PT-YYYY...). Ở chế độ Supabase do database cấp.
   codeCounters: Record<string, number>;
 }
@@ -762,6 +764,16 @@ export function createInitialState(): DepotState {
         ],
       },
     ],
+    // Dữ liệu mẫu — Admin sửa tại Danh mục chung → Công ty
+    companyProfile: {
+      name: 'CÔNG TY MATRAN DEPOT',
+      shortName: 'MATRAN DEPOT',
+      address: '',
+      phone: '',
+      email: '',
+      taxCode: '',
+      bankAccount: '',
+    },
     codeCounters: {},
   };
 }
@@ -808,6 +820,7 @@ export function normalizeDepotState(raw: Partial<DepotState>): DepotState {
     paymentTransactions: raw.paymentTransactions || [],
     paymentReceipts: raw.paymentReceipts || [],
     repairTeams: raw.repairTeams || base.repairTeams,
+    companyProfile: { ...base.companyProfile, ...(raw.companyProfile || {}) },
     codeCounters: raw.codeCounters || {},
   } as DepotState;
 }

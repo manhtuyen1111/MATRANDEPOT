@@ -12,8 +12,10 @@ import {
   confirmGateInPaymentAndComplete,
   confirmReleasePayment,
   createReleaseOrder,
+  gateInContainerConflict,
   getBookingSummary,
   releaseAllocatedContainer,
+  blockedOnlyByHold,
   releaseBlocker,
   simulateDemoBankTransfer,
   verifyGateInOfficeAndCreatePayment,
@@ -101,7 +103,9 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
 
   const voucher = order?.voucherId ? state.vouchers.find((v) => v.id === order.voucherId) : undefined;
   const pendingTx = voucher ? pendingTransactionOf(state, voucher.id) : undefined;
-  const section1Done = Boolean(
+  // DEC-060: kiểm tra Tồn vỏ ngay khi nhập số container — trùng thì chặn, không mở các bước tiếp
+  const contConflict = order ? gateInContainerConflict(state, form.contNo, order.id) : null;
+  const section1Done = !contConflict && Boolean(
     form.contNo.trim() && form.size && form.type && form.shippingLineCode && form.customerName && form.truckNo.trim() && form.driverPhone.trim()
   );
   const suggested = suggestLoloFee(state.feeCatalog, form.size, form.type, form.shippingLineCode)?.id;
@@ -242,7 +246,8 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <label>
                     <span className={labelCls}>Số container *</span>
-                    <input value={form.contNo} onChange={(e) => set({ contNo: e.target.value.toUpperCase() })} placeholder="MSKU6829104" className={`${inputCls} font-mono font-bold uppercase`} />
+                    <input value={form.contNo} onChange={(e) => set({ contNo: e.target.value.toUpperCase() })} placeholder="MSKU6829104" aria-invalid={Boolean(contConflict)} className={`${inputCls} font-mono font-bold uppercase ${contConflict ? "border-red-500 bg-red-50" : ""}`} />
+                    {contConflict && <span role="alert" className="mt-1 block text-[11px] font-semibold text-red-700">{contConflict}</span>}
                   </label>
                   <label>
                     <span className={labelCls}>Size *</span>
@@ -337,7 +342,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
   const ready = useMemo(
     () =>
       state.containers
-        .filter((c) => releaseBlocker(c) === null)
+        .filter((c) => releaseBlocker(c) === null || blockedOnlyByHold(c))
         .filter((c) => !filters.search.trim() || c.containerNo.includes(filters.search.trim().toUpperCase()))
         .filter((c) => filters.line === 'ALL' || c.shippingLineCode === filters.line)
         .filter((c) => filters.size === 'ALL' || c.size === filters.size)
@@ -554,27 +559,32 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                   <th className="py-2 pr-2">Hãng tàu</th>
                   <th className="py-2 pr-2">Trạng thái</th>
                   <th className="py-2 pr-2">Đóng hàng</th>
-                  <th className="py-2">Vị trí</th>
+                  <th className="py-2 pr-2">Vị trí</th>
+                  <th className="py-2">Ghi chú văn phòng</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {ready.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-6 text-center text-slate-500">Không có container phù hợp bộ lọc.</td>
+                    <td colSpan={7} className="py-6 text-center text-slate-500">Không có container phù hợp bộ lọc.</td>
                   </tr>
                 ) : (
                   ready.map((c) => (
                     <tr
                       key={c.id}
-                      onClick={() => { setSelectedContainerId(c.id); setFeeIds([]); }}
-                      className={`cursor-pointer ${selectedContainerId === c.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                      onClick={() => {
+                        if (c.isOnHold) { setError(`Container ${c.containerNo} đang KHÓA (${c.officeNote || c.holdReason || ""}) — mở khóa ở Tồn vỏ trước khi cấp.`); return; }
+                        setError(null); setSelectedContainerId(c.id); setFeeIds([]);
+                      }}
+                      className={`${c.isOnHold ? "cursor-not-allowed bg-rose-50/60 text-slate-500" : "cursor-pointer"} ${selectedContainerId === c.id ? "bg-blue-50" : c.isOnHold ? "" : "hover:bg-slate-50"}`}
                     >
-                      <td className="py-2 pr-2"><ContainerNo no={c.containerNo} /></td>
+                      <td className="py-2 pr-2"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.officeNote || c.holdReason} /></td>
                       <td className="py-2 pr-2">{c.size}/{c.type}</td>
                       <td className="py-2 pr-2">{c.shippingLineCode}</td>
                       <td className={`py-2 pr-2 font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
                       <td className="py-2 pr-2">{c.stuffingClass}</td>
-                      <td className="py-2 font-mono">{formatLocation(c)}</td>
+                      <td className="py-2 pr-2 font-mono">{formatLocation(c)}</td>
+                      <td className="py-2 text-[11px] font-semibold text-amber-900">{c.officeNote || "-"}</td>
                     </tr>
                   ))
                 )}

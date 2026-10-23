@@ -31,6 +31,7 @@ export type WorkspaceMenuId =
   | 'VP_HA_VO'
   | 'VP_CAP_VO'
   | 'VP_PHIEU_THU'
+  | 'VP_TRA_CHUNG_TU'
   | 'VP_NHAP_TAU'
   | 'VP_XUAT_TAU'
   | 'VS_CHO_VE_SINH'
@@ -49,6 +50,7 @@ export type WorkspaceMenuId =
   | 'DM_CONTAINER'
   | 'DM_BIEU_GIA'
   | 'DM_SUA_CHUA'
+  | 'DM_CONG_TY'
   | 'DM_USER'
   | 'BC_HA_VO'
   | 'BC_SUA_CHUA';
@@ -372,11 +374,22 @@ export interface PaymentTransaction {
 }
 
 // PHIẾU THU: chỉ phát hành khi giao dịch thu tiền thực tế thành công; mỗi giao dịch tối đa 1 phiếu
+// Tác nghiệp phát sinh khoản thu, in trên phiếu thu (DEC-051)
+export type ReceiptOperation = 'HA_VO' | 'CAP_VO' | 'THU_TRUOC' | 'KHAC';
+
+export const RECEIPT_OPERATION_LABELS: Record<ReceiptOperation, string> = {
+  HA_VO: 'HẠ VỎ',
+  CAP_VO: 'CẤP VỎ',
+  THU_TRUOC: 'THU TRƯỚC (TTT)',
+  KHAC: 'KHÁC',
+};
+
 export interface PaymentReceipt {
   id: string;
   receiptNo: string; // PT-YYYY-NNNNNN
   transactionId: string;
   purpose: 'VOUCHER' | 'PREPAID_TOPUP';
+  operation?: ReceiptOperation; // Tác nghiệp phát sinh khoản thu (DEC-051)
   amount: number;
   method: DirectPaymentMethod;
   paymentCategory: 'TTT' | 'TTTT';
@@ -390,6 +403,7 @@ export interface PaymentReceipt {
   providerTxRef?: string;
   issuedAt: string;
   issuedBy: string;
+  printLog?: { at: string; by: string }[]; // DEC-063: mỗi lần in phiếu thu
 }
 
 export interface GateInOrder {
@@ -428,6 +442,8 @@ export interface GateInOrder {
   gateInOkAt?: string;
   gateInOkBy?: string;
   nextDepartments: string[];
+  documentsReturnedAt?: string; // Văn phòng quét QR trả chứng từ cho lái xe (DEC-052)
+  documentsReturnedBy?: string;
   cancelReason?: string;
 }
 
@@ -508,6 +524,8 @@ export interface GateOutOrder {
   confirmedAt?: string;
   cancelReason?: string;
   cancelledAt?: string;
+  documentsReturnedAt?: string; // DEC-052
+  documentsReturnedBy?: string;
   createdAt: string;
 }
 
@@ -537,4 +555,15 @@ export interface RepairTeam {
   name: string;
   members: RepairTeamMember[];
   isActive: boolean;
+}
+
+// DEC-062: thông tin CÔNG TY in trên giấy tờ (phiếu thu, EEIR, K80)
+export interface CompanyProfile {
+  name: string;
+  shortName: string;
+  address: string;
+  phone: string;
+  email: string;
+  taxCode: string;
+  bankAccount: string;
 }

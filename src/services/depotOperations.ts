@@ -1,5 +1,6 @@
 import {
   AppRole,
+  CompanyProfile,
   StaffUser,
   ContainerRecord,
   ContainerSize,
@@ -216,20 +217,8 @@ export function verifyGateInOfficeAndCreatePayment(
   if (!truckNo) throw new Error('Văn phòng bắt buộc nhập SỐ XE.');
   const driverPhone = normalizeDriverPhone(input.driverPhone);
 
-  const active = findActiveContainer(state, contNo);
-  if (active) {
-    throw new Error(`Container ${contNo} hiện đang ở trong bãi (${active.status}), không thể Hạ vỏ trùng.`);
-  }
-  const duplicateOrder = state.gateInOrders.find(
-    (o) =>
-      o.id !== order.id &&
-      o.containerNo === contNo &&
-      o.status !== 'GATE_IN_OK' &&
-      o.status !== 'CANCELLED'
-  );
-  if (duplicateOrder) {
-    throw new Error(`Container ${contNo} đang có hồ sơ Hạ vỏ khác chưa hoàn tất (${duplicateOrder.masterDossierCode}) (GIN-006).`);
-  }
+  const conflict = gateInContainerConflict(state, contNo, order.id);
+  if (conflict) throw new Error(conflict);
 
   const feeLines = buildFeeLines(state, input.feeCatalogIds);
   const amount = sumFees(feeLines);
@@ -382,7 +371,8 @@ function completeGateIn(state: DepotState, gateInId: string, actor?: Actor): Dep
     });
   }
 
-  const k80QrCode = `QR-K80-${order.containerNo}`;
+  // DEC-057: QR duy nhất theo mã hồ sơ (không theo số container — container quay lại bãi sẽ có QR mới)
+  const k80QrCode = `QR-${order.masterDossierCode}`;
   const ticket: K80InternalTicket = {
     ticketCode: `K80-${order.masterDossierCode}`,
     masterDossierCode: order.masterDossierCode,
@@ -791,7 +781,7 @@ export function toggleContainerHold(
   assertPermission(state, 'CONTAINER_LOCK', 'chỉ Văn phòng / Quản lý được khóa / mở khóa container.');
   const reason = input.reason.trim();
   if (!reason) {
-    throw new Error(input.hold ? 'Bắt buộc nhập GHI CHÚ khi khóa container.' : 'Bắt buộc nhập ghi chú khi mở khóa container.');
+    throw new Error(input.hold ? 'Bắt buộc nhập REMARK VĂN PHÒNG khi khóa container.' : 'Bắt buộc nhập ghi chú khi mở khóa container.');
   }
   const container = findActiveContainer(state, input.containerNo);
   if (!container) throw new Error('Không tìm thấy container đang tồn bãi.');
@@ -803,6 +793,8 @@ export function toggleContainerHold(
     holdReason: input.hold ? reason : undefined,
     holdBy: input.hold ? state.currentUser.fullName : undefined,
     holdAt: input.hold ? nowIso() : undefined,
+    // DEC-065: nội dung khóa chính là Remark Văn phòng (ghi chú tồn vỏ)
+    ...(input.hold ? { officeNote: reason, officeNoteUpdatedBy: state.currentUser.fullName, officeNoteUpdatedAt: nowIso() } : {}),
   });
   return appendAudit(
     next,
@@ -827,6 +819,11 @@ export function releaseBlocker(c: ContainerRecord): string | null {
   if (c.needsCleaning) return 'Chưa xác nhận vệ sinh';
   if (c.conditionClass === 'AV' && (c.needsQuotation || c.needsRepair)) return 'Chưa hoàn tất báo giá / sửa chữa';
   return null;
+}
+
+// DEC-065: container chỉ vướng KHÓA — vẫn hiện ở Cấp vỏ nhưng phải mở khóa trước khi cấp
+export function blockedOnlyByHold(c: ContainerRecord): boolean {
+  return Boolean(c.isOnHold) && releaseBlocker({ ...c, isOnHold: false }) === null;
 }
 
 export interface BookingSummary {
@@ -1014,7 +1011,7 @@ function completeReleasePayment(state: DepotState, gateOutOrderId: string, actor
   const container = findActiveContainer(state, order.containerNo);
   if (!container) throw new Error('Không tìm thấy container của hồ sơ CẤP VỎ.');
   const actorName = actor?.name || state.currentUser.fullName;
-  const qrCode = `QR-OUT-${order.containerNo}`;
+  const qrCode = `QR-${order.gateOutCode}`; // DEC-057: QR duy nhất theo hồ sơ CẤP VỎ
   const ticket: K80InternalTicket = {
     ticketCode: `K80-${order.gateOutCode}`,
     masterDossierCode: container.masterDossierCode,
@@ -1117,7 +1114,7 @@ export function releaseAllocatedContainer(
   };
   next = updateContainerById(next, container.id, {
     status: 'IN_YARD',
-    activeQrCode: `QR-K80-${container.containerNo}`,
+    activeQrCode: `QR-${container.masterDossierCode}`, // quay về QR phiếu Hạ vỏ của lượt lưu bãi
     allocatedBookingNo: undefined,
     allocatedTruckNo: undefined,
     allocatedDriverPhone: undefined,
@@ -1782,5 +1779,79 @@ export function updateStaffUser(
     'USER',
     target.staffCode,
     `[Admin] Cập nhật user ${target.staffCode} ${target.fullName}: vai trò ${updated.roles.join(', ')}, ${updated.isActive ? 'đang hoạt động' : 'đã khóa'}`
+  );
+}
+
+// ============================================================================
+// 17. GIÁM ĐỊNH — XÓA HỒ SƠ HẠ VỎ khi Văn phòng chưa thao tác (DEC-059)
+// Xóa hẳn, không lưu lịch sử / không ghi nhật ký (người dùng xác nhận). Mã đã cấp không được dùng lại.
+// ============================================================================
+export function deleteGateInFieldRecord(state: DepotState, input: { gateInId: string }): DepotState {
+  assertPermission(state, 'GATE_IN_FIELD', 'chỉ Giám định / Quản lý được xóa hồ sơ hạ vỏ.');
+  const order = state.gateInOrders.find((o) => o.id === input.gateInId);
+  if (!order) throw new Error('Không tìm thấy hồ sơ hạ vỏ.');
+  const officeTouched =
+    order.status !== 'FIELD_RECORDED' || Boolean(order.officeVerifiedAt || order.voucherId || order.containerNo);
+  if (officeTouched) {
+    throw new Error(`Hồ sơ ${order.masterDossierCode} đã được Văn phòng xử lý — Giám định không được xóa.`);
+  }
+  return { ...state, gateInOrders: state.gateInOrders.filter((o) => o.id !== order.id) };
+}
+
+// DEC-060: kiểm tra số container khi Văn phòng Hạ vỏ — dùng cả lúc gõ (giao diện) và lúc xác nhận (nghiệp vụ)
+export function gateInContainerConflict(state: DepotState, rawContainerNo: string, gateInId?: string): string | null {
+  const contNo = rawContainerNo.trim().toUpperCase();
+  if (!/^[A-Z]{4}\d{7}$/.test(contNo)) return null;
+  const active = findActiveContainer(state, contNo);
+  if (active) {
+    return `Container ${contNo} đang có trong TỒN VỎ (hồ sơ ${active.masterDossierCode}, vị trí ${formatLocation(active)}) — không thể Hạ vỏ trùng.`;
+  }
+  const dup = state.gateInOrders.find(
+    (o) => o.id !== gateInId && o.containerNo === contNo && o.status !== 'GATE_IN_OK' && o.status !== 'CANCELLED'
+  );
+  if (dup) return `Container ${contNo} đang có hồ sơ Hạ vỏ khác chưa hoàn tất (${dup.masterDossierCode}) (GIN-006).`;
+  return null;
+}
+
+// ============================================================================
+// 18. DANH MỤC CHUNG — CÔNG TY (DEC-062, chỉ ADMIN): thông tin in trên giấy tờ
+// ============================================================================
+export function updateCompanyProfile(state: DepotState, input: CompanyProfile): DepotState {
+  assertAdmin(state);
+  const name = input.name.trim();
+  if (!name) throw new Error('Vui lòng nhập TÊN CÔNG TY.');
+  const profile: CompanyProfile = {
+    name,
+    shortName: input.shortName.trim() || name,
+    address: input.address.trim(),
+    phone: input.phone.trim(),
+    email: input.email.trim(),
+    taxCode: input.taxCode.trim(),
+    bankAccount: input.bankAccount.trim(),
+  };
+  return appendAudit({ ...state, companyProfile: profile }, 'ADMIN_UPDATE_COMPANY', 'CATALOG', 'COMPANY', `[Admin Danh mục chung] Cập nhật thông tin công ty: ${name}`);
+}
+
+// ============================================================================
+// 19. IN PHIẾU THU — theo dõi số lần in (DEC-063): mỗi lần in đều ghi nhận người + giờ
+// ============================================================================
+export function recordReceiptPrint(state: DepotState, input: { receiptNo: string }): DepotState {
+  if (!hasRolePermission(state.currentUser, ['OFFICE', 'MANAGER'])) {
+    throw new Error('Không đủ quyền: chỉ Văn phòng / Quản lý được in phiếu thu.');
+  }
+  const r = state.paymentReceipts.find((x) => x.receiptNo === input.receiptNo);
+  if (!r) throw new Error(`Không tìm thấy phiếu thu ${input.receiptNo}.`);
+  const entry = { at: nowIso(), by: state.currentUser.fullName };
+  const count = (r.printLog?.length || 0) + 1;
+  return appendAudit(
+    {
+      ...state,
+      paymentReceipts: state.paymentReceipts.map((x) => (x.id === r.id ? { ...x, printLog: [...(x.printLog || []), entry] } : x)),
+    },
+    count === 1 ? 'RECEIPT_PRINT' : 'RECEIPT_REPRINT',
+    'FINANCE',
+    r.receiptNo,
+    `In phiếu thu ${r.receiptNo} lần ${count}${count > 1 ? ' (IN LẠI)' : ''}`,
+    r.dossierCode
   );
 }

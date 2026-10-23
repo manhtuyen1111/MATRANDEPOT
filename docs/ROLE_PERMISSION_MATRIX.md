@@ -30,6 +30,7 @@ Nguồn duy nhất trong code: `src/services/permissions.ts` (`PERMISSIONS`, `ME
 | Thao tác | Vai trò được phép | Căn cứ |
 |---|---|---|
 | Giám định Hạ vỏ | INSPECTOR, MANAGER | DEC-020 |
+| Xóa hồ sơ hạ vỏ (Văn phòng chưa thao tác) | INSPECTOR, MANAGER | DEC-059 |
 | Văn phòng Hạ vỏ (bổ sung hồ sơ, lập chi phí) | OFFICE, MANAGER | DEC-022 |
 | Xác nhận thanh toán Hạ vỏ / Cấp vỏ | OFFICE, MANAGER | DEC-004, DEC-047 |
 | Hoàn tất vệ sinh | CLEANING, OFFICE | DEC-035 |
@@ -46,7 +47,8 @@ Nguồn duy nhất trong code: `src/services/permissions.ts` (`PERMISSIONS`, `ME
 | Tạo phiếu thu TTT, xác nhận tiền mặt TTT | OFFICE | DEC-047 |
 | Báo cáo Tổng hợp, cột chi phí trong báo cáo | OFFICE, MANAGER | Mục 5 (dữ liệu tài chính) |
 | Giả lập ngân hàng (chỉ Demo) | OFFICE, MANAGER | DEC-039 |
-| Cấu hình Danh mục chung (kể cả tổ sửa chữa) | ADMIN | DEC-028, DEC-042 |
+| Cấu hình Danh mục chung (kể cả tổ sửa chữa, công ty) | ADMIN | DEC-028, DEC-042, DEC-062 |
+| In / in lại phiếu thu (đếm số lần in) | OFFICE, MANAGER | DEC-063 |
 | Quản lý User - Phân quyền | ADMIN | DEC-045 |
 | Hiển thị menu | Theo `MENU_ACCESS`: mỗi vai trò chỉ thấy màn của mình | DEC-045 |
 

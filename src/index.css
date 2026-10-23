@@ -1,1 +1,21 @@
 @import "tailwindcss";
+
+/* In giấy tờ: chỉ in vùng .print-area (phiếu thu, EEIR, K80) — không in menu / màn hình phía sau */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

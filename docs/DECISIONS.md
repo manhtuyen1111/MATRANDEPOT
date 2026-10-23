@@ -343,6 +343,129 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-22)
 - Quyết định: Danh mục chung → Sửa chữa cho **chọn user đang hoạt động có vai trò Sửa chữa** để thêm vào tổ (liên kết tài khoản, gắn nhãn "user"); vẫn cho nhập họ tên nhân viên không có tài khoản. Không thêm trùng một user vào cùng tổ; user bị khóa không thêm được.
 
+### DEC-050 — Excel .xlsx; Block do Admin cấu hình (giải quyết Q-034, Q-006)
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định:
+  - Báo cáo Tổng hợp và Sửa chữa chi tiết xuất **Excel `.xlsx` chuẩn** (thư viện `exceljs`, chỉ tải khi bấm "Tải Excel"; dòng tiêu đề đậm, cố định, tự giãn cột).
+  - **Block bãi không gán cứng trong database**: Admin tự cấu hình ở Danh mục chung → Vị trí bãi. Block mẫu (BLOCK-A/B/CLEAN/DAMAGE) chỉ dùng cho dữ liệu chạy thử.
+- Ghi chú kỹ thuật: `npm audit` báo 2 cảnh báo mức trung bình từ `uuid` (phụ thuộc của `exceljs`); lỗi nằm ở hàm ghi vào buffer của `uuid`, ứng dụng không dùng. Theo dõi khi `exceljs` ra bản mới.
+- Còn chờ: **danh mục trạng thái chính thức** (OPEN-003) — người dùng sẽ gửi danh sách; chặn việc viết schema database (P4-01).
+
+### DEC-051 — Phiếu thu ghi rõ tác nghiệp; hồ sơ link về Phiếu thu
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định:
+  - Mỗi phiếu thu ghi rõ **TÁC NGHIỆP**: `HẠ VỎ`, `CẤP VỎ`, `THU TRƯỚC (TTT)` (nạp Phiếu thu mẹ). Hiển thị ở danh sách, ở chi tiết phiếu thu (dòng "TÁC NGHIỆP" nổi bật để in), và có bộ lọc "Tác nghiệp" khi tra cứu.
+  - Trong **hồ sơ container**, mỗi chứng từ (Hạ vỏ, Cấp vỏ) có khung **"Thu tiền — <tác nghiệp>"** nổi bật theo màu trạng thái: đã thu (TTTT → link phiếu thu; TTT → Phiếu thu mẹ + link phiếu thu gốc), công nợ TTS, đang chờ chuyển khoản (link yêu cầu), chưa thanh toán, đã hủy. Mục "Phiếu thu" cuối hồ sơ hiển thị nhãn tác nghiệp và link.
+  - Bấm link → đóng hồ sơ, mở **Văn phòng → Phiếu thu** và mở đúng phiếu đó. Chỉ hiện link với người được vào menu Phiếu thu (Văn phòng, Quản lý, Admin); vai trò khác chỉ thấy chữ.
+
+### DEC-052 — Phiếu K80 có LỘ TRÌNH; Văn phòng quét mã trả chứng từ
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định:
+  - **Phiếu K80** bố cục: (1) **thông tin chung ở đầu** — loại tác nghiệp HẠ VỎ / CẤP VỎ, mã hồ sơ, số cont, size/type/AGE, **số xe**, **SĐT lái xe**, trạng thái, vệ sinh, thanh toán; (2) **LỘ TRÌNH** các bước đánh số, mỗi bước ghi bộ phận + việc phải làm, có **ô ☐ để tích bằng bút**; (3) mã QR. Xem trên app thì bước đã xong hiện ✓ + giờ, bước kế tiếp được tô nổi.
+  - Lộ trình: **HẠ VỎ** = Văn phòng thu phí → Vệ sinh (nếu có) → Xe nâng hạ vỏ → **Văn phòng trả chứng từ**. **CẤP VỎ** = Văn phòng thu phí → Xe nâng cấp vỏ → **Văn phòng trả chứng từ**.
+  - **Bước cuối mới — Văn phòng → Trả chứng từ:** lái xe quay về Văn phòng, quét QR phiếu K80 → hệ thống ghi nhận trả chứng từ và **tự mở lệnh in EEIR + phiếu thu (nếu có)**. Chỉ trả được khi đã qua đủ các bộ phận trước; mỗi phiếu trả 1 lần. Quyền: Văn phòng / Quản lý.
+  - EEIR in kèm bảng các bước đã xác nhận (người, giờ) và chỗ ký lái xe / đại diện bãi. TTT / TTS không có phiếu thu (ghi chú trên bộ chứng từ).
+
+### DEC-053 — Xe nâng – Chờ cấp vỏ: làm nổi số container + vị trí (THAY BỞI DEC-061)
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: Khi quét phiếu ở **Xe nâng → Chờ cấp vỏ**, **SỐ CONTAINER** và **VỊ TRÍ HIỆN TẠI** hiển thị trong khung nền đậm, chữ lớn, ở trên cùng chi tiết công việc.
+
+### DEC-054 — Định dạng thời gian thống nhất: dd/MM/yyyy HH:mm:ss
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: **Mọi chỗ liên quan tới thời gian trong app** (hiển thị, bộ lọc báo cáo / phiếu thu, phiếu K80, EEIR, file Excel, thông báo lỗi) dùng **Ngày/Tháng/Năm Giờ:Phút:Giây**, 24 giờ, ví dụ `23/10/2026 07:05:09`.
+  - Bộ lọc thời gian là ô nhập `dd/mm/yyyy hh:mm:ss` (tự chèn dấu khi gõ số, viền đỏ khi sai, từ chối ngày không tồn tại). Nhập thiếu giờ thì TỪ = 00:00:00, ĐẾN = 23:59:59. Mặc định: 1 ngày trước → hiện tại (DEC-056).
+  - Kỹ thuật: chỉ dùng `src/services/datetime.ts` (`formatDateTime`, `parseDateTime`) và component `DateTimeField`; không dùng `toLocaleString` / `<input type="date">` trực tiếp.
+
+### DEC-055 — Xuất Excel theo bộ lọc ở Phiếu thu và mọi báo cáo
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: **Văn phòng → Phiếu thu** và **tất cả báo cáo** (Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp) có nút **Xuất Excel** — xuất **toàn bộ kết quả theo bộ lọc đang áp dụng** (mọi trang), file `.xlsx`.
+  - Kiểu file: basic, chuyên nghiệp — 1 dòng tiêu đề đậm nền xám, viền mỏng, cố định dòng tiêu đề, bộ lọc cột, số tiền có dấu phân cách, tự giãn cột; **đủ các cột** của hồ sơ (cùng bộ cột với sheet tương ứng của báo cáo Tổng hợp; Phiếu thu có thêm cột Tác nghiệp, chứng từ, phiếu thu mẹ, mã giao dịch ngân hàng, người/giờ xác nhận).
+  - Tên file: `MATRAN_<LOẠI>_<dd-MM-yyyy_HHmmss>.xlsx`.
+
+### DEC-056 — Mặc định khoảng thời gian bộ lọc
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: Phiếu thu và mọi báo cáo, khi mở lần đầu, bộ lọc thời gian **mặc định = 1 ngày trước → thời điểm hiện tại** (ví dụ `22/10/2026 10:10:10` → `23/10/2026 10:10:10`). Người dùng sửa được; thay cho mặc định "hôm nay 00:00:00 → 23:59:59" của DEC-054. Kỹ thuật: `defaultLastDayRange()` trong `src/services/datetime.ts`.
+
+### DEC-057 — Mã QR phiếu K80 duy nhất; đóng mã sau khi trả chứng từ
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định:
+  - Mã QR tạo theo **mã hồ sơ**: `QR-IN-YYMMDD-NNN` (Hạ vỏ), `QR-OUT-YYMMDD-NNN` (Cấp vỏ) — không theo số container. Container quay lại bãi hoặc lập lệnh cấp lại sau khi hủy đều có mã mới, không trùng phiếu cũ. (Sửa lỗi: trước đây `QR-K80-<số cont>` bị trùng giữa các lượt.)
+  - Hủy lệnh cấp → container quay về mã QR của phiếu Hạ vỏ của lượt lưu bãi.
+  - Phiếu đã đi hết lộ trình và **trả chứng từ** → mã QR **đóng**: không in lại phiếu K80, không trả chứng từ lần 2, quét ở bộ phận khác báo "mã đã đóng".
+
+### DEC-058 — Cấu trúc hồ sơ container thống nhất (Hạ vỏ – Cấp vỏ)
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định:
+  - **Mở đầu: thông tin cơ bản container**, nền đậm, **số container chữ lớn**; kèm mã hồ sơ IN / OUT, trạng thái, khóa, size/type, hãng tàu, trạng thái / đóng hàng, AGE, vị trí, khách hàng, vệ sinh, giờ gate in.
+  - Sau đó **từng bộ phận – tác nghiệp theo thứ tự từ trên xuống**, đánh số: HẠ VỎ = Giám định → Văn phòng → **Thanh toán** → Vệ sinh (nếu có) → Xe nâng (hạ vỏ + đảo chuyển) → Báo giá → Sửa chữa (nếu DAMAGE) → Văn phòng trả chứng từ; CẤP VỎ = Văn phòng → **Thanh toán** → Xe nâng → Văn phòng trả chứng từ.
+  - **Xác nhận bên phải mỗi khối**: tích xanh **HOÀN THÀNH** + người xác nhận + thời gian; chưa xong thì hiện việc đang chờ.
+  - **Thanh toán là mục riêng, ngay dưới Văn phòng, chỉ 1 lần mỗi tác nghiệp**: dòng chi phí, chứng từ, tổng, bên thanh toán, trạng thái rõ ràng (ĐÃ THANH TOÁN / TTS công nợ / CHỜ CHUYỂN KHOẢN / CHƯA THANH TOÁN), **link phiếu thu đầy đủ** (TTTT: phiếu thu; TTT: phiếu thu gốc của Phiếu thu mẹ; chờ chuyển khoản: link yêu cầu), xác nhận người + giờ.
+
+### DEC-059 — Giám định xóa hồ sơ hạ vỏ khi Văn phòng chưa thao tác
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: Giám định (và Quản lý, Admin) được **xóa hẳn** hồ sơ hạ vỏ khi hồ sơ còn ở trạng thái chờ Văn phòng (Văn phòng chưa bổ sung thông tin, chưa lập chứng từ). **Không lưu lịch sử, không ghi nhật ký** (người dùng xác nhận). Xác nhận 2 bước trên màn hình. Mã hồ sơ đã cấp **không được cấp lại** cho hồ sơ khác. Văn phòng đã thao tác thì không xóa được.
+
+### DEC-060 — Văn phòng Hạ vỏ: kiểm tra Tồn vỏ ngay khi nhập số container
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: Ngay khi nhập đủ **SỐ CONTAINER** (4 chữ + 7 số), hệ thống kiểm tra: container đang có trong **TỒN VỎ** (chưa OUT) hoặc đang có hồ sơ Hạ vỏ khác chưa hoàn tất → báo đỏ ngay dưới ô (kèm mã hồ sơ + vị trí) và **chặn** không mở các bước tiếp (chi phí, thanh toán). Cùng một hàm `gateInContainerConflict` dùng cho giao diện và kiểm tra khi xác nhận.
+
+### DEC-061 — Khung nổi bật thống nhất ở Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ)
+
+- Trạng thái: CONFIRMED (2026-10-23) — thay DEC-053
+- Quyết định: Sau khi quét mã ở **Xe nâng → Chờ hạ vỏ** và **Xe nâng → Chờ cấp vỏ**, thông tin chính nằm trong **một khung nền đậm giống nhau**, chữ lớn, tối ưu đọc trên điện thoại:
+  - Dòng 1: **SỐ CONTAINER** (rất lớn; có nhãn ĐANG KHÓA nếu bị khóa).
+  - Dòng 2: **SIZE / TYPE** + (Chờ hạ vỏ: **TRẠNG THÁI / ĐÓNG HÀNG**; Chờ cấp vỏ: **VỊ TRÍ HIỆN TẠI**).
+  - Các dòng chi tiết bên dưới bỏ phần trùng với khung (chỉ còn AGE, vệ sinh, số xe / SĐT, hồ sơ...).
+
+### DEC-062 — Danh mục CÔNG TY; mẫu in phiếu thu thống nhất
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định:
+  - Danh mục chung có mục **Công ty** (chỉ Admin sửa): tên công ty, tên viết tắt, mã số thuế, địa chỉ, điện thoại, email, tài khoản ngân hàng. Thông tin này in ở đầu **phiếu thu, EEIR, phiếu K80**.
+  - **Một mẫu in phiếu thu duy nhất** dùng ở Văn phòng → Phiếu thu và Văn phòng → Trả chứng từ: thông tin công ty, PHIẾU THU + số phiếu, **TÁC NGHIỆP (HẠ VỎ / CẤP VỎ / THU TRƯỚC)**, bên thanh toán, mã hồ sơ, số cont, chứng từ, hình thức, thời gian thu, các dòng chi phí, tổng thu, chỗ ký người nộp / người thu.
+  - Khi in chỉ in phần giấy tờ (không in menu / màn hình).
+
+### DEC-063 — Theo dõi số lần in phiếu thu
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: Mỗi lần in phiếu thu được ghi nhận (người + giờ) và ghi nhật ký kiểm toán. Danh sách Phiếu thu có cột **Đã in**; chi tiết có **Lịch sử in**; Excel có cột SỐ LẦN IN / IN GẦN NHẤT. Từ lần in thứ 2 phải **xác nhận "In lại"** (hiện số lần đã in, lần gần nhất), bản in ghi **"BẢN IN LẠI — LẦN N"**. In tự động khi Trả chứng từ cũng tính là 1 lần in. Quyền in: Văn phòng / Quản lý.
+
+### DEC-064 — Trả chứng từ chia 2 phần HẠ VỎ / CẤP VỎ
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định (sửa 2026-10-23): Văn phòng → Trả chứng từ chỉ có **1 ô quét mã chung** (nhận cả phiếu Hạ vỏ và Cấp vỏ). Danh sách **Đang chờ trả chứng từ chia 2 cột HẠ VỎ / CẤP VỎ**, mỗi cột có số lượt đang chờ.
+
+### DEC-065 — Khóa = Remark Văn phòng; cont khóa vẫn hiện ở Cấp vỏ; Excel Tồn vỏ
+
+- Trạng thái: CONFIRMED (2026-10-23) — bổ sung DEC-030
+- Quyết định:
+  - Khi KHÓA container, nội dung bắt buộc là **REMARK VĂN PHÒNG** (ghi thẳng vào cột Ghi chú văn phòng ở Tồn vỏ), không phải một ghi chú riêng.
+  - Văn phòng → Cấp vỏ: container **đang khóa vẫn hiển thị** trong danh sách (chỉ hiện biểu tượng khóa), danh sách có cột **Ghi chú văn phòng**, nhưng **không chọn để cấp được** — phải mở khóa ở Tồn vỏ trước.
+  - Tồn vỏ có nút **Xuất Excel** (theo bộ lọc đang chọn; gồm cột khóa, người khóa, Remark Văn phòng).
+
+### DEC-066 — Dữ liệu lớn: hiệu năng báo cáo, xuất Excel, thời gian lưu
+
+- Trạng thái: CONFIRMED (2026-10-23) — áp dụng khi làm P4-01 Database
+- Bối cảnh: ~5.000 Hạ vỏ + ~5.000 Cấp vỏ mỗi tháng, chạy 5–10 năm (~1,2 triệu hồ sơ; nhật ký kiểm toán ~12 triệu dòng). Báo cáo 1 tháng có thể 3.000–5.000 dòng.
+- Quyết định:
+  - **Giới hạn 1 lần lọc báo cáo / Phiếu thu: tối đa 3 tháng.** Số liệu dài hơn xem ở Báo cáo Tổng hợp (số liệu tính sẵn theo ngày).
+  - **Xuất Excel:** ≤ 20.000 dòng xuất trực tiếp trên trình duyệt (lấy dữ liệu từ database theo lô 1.000 dòng); > 20.000 dòng xuất **phía máy chủ** (Edge Function tạo file, báo "đang chuẩn bị file").
+  - **Thời gian lưu: giữ đủ 10 năm, không xóa.** Chỉ chuyển nhật ký kiểm toán cũ sang kho lưu trữ khi thật cần; vẫn tra cứu được.
+  - Lọc, phân trang, đếm, tổng hợp chạy **trên database** (RPC), không tải toàn bộ về trình duyệt. Phân trang con trỏ (keyset), không dùng OFFSET.
+  - Ảnh giám định / sửa chữa lưu ở Storage; database chỉ lưu đường dẫn.
+- Chi tiết kỹ thuật: `docs/DATABASE_CONTRACT.md` mục 10.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -432,6 +555,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-049 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-066 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

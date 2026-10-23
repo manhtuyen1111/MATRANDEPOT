@@ -76,6 +76,7 @@ Một việc chỉ "xong" khi:
 - **Mỗi vai trò chỉ thấy màn của mình** — cấu hình duy nhất ở `MENU_ACCESS` (`src/services/permissions.ts`). Văn phòng / Quản lý là khối văn phòng; Admin thấy tất cả (DEC-045).
 - **Tác nghiệp mobile** (hiện trường dùng điện thoại): Giám định – Hạ vỏ, Vệ sinh, Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ / **Đảo chuyển**), Sửa chữa.
   - Tiêu đề thống nhất: dòng nhỏ "Bộ phận ..." + tên màn + ô số lượng đang chờ (không thêm mô tả dài).
+  - Màn quét mã của Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ) dùng chung **một khung nền đậm**: số container chữ rất lớn → Size / Type + (Trạng thái / Đóng hàng hoặc Vị trí hiện tại). Không lặp lại các thông tin này ở bên dưới (DEC-061).
   - Khung `mx-auto w-full max-w-lg`, một cột, nút lớn, danh sách dạng thẻ (không dùng bảng rộng), "Xem thêm" thay phân trang, phần đang thao tác đặt trên cùng.
   - Đánh dấu `mobile: true` ở mục menu trong `src/app/App.tsx` (hiện biểu tượng điện thoại).
   - Smoke test `tests/ui-smoke.test.tsx` kiểm tra số biểu tượng mobile và `max-w-lg` — thêm màn mobile mới thì cập nhật test này.
@@ -83,3 +84,11 @@ Một việc chỉ "xong" khi:
 - **Văn phòng làm phần tài chính** (phiếu thu TTT, xác nhận tiền mặt) — không còn Kế toán (DEC-047).
 - **Luồng DAMAGE:** Báo giá (remark + giờ công) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → AV. Không có bước QC (DEC-049).
 - Tóm tắt toàn bộ logic đã chốt: `devs/PROGRESS.md` mục C.
+- **Phiếu K80 = tờ hướng dẫn lái xe** (DEC-052): thông tin chung ở đầu (số cont, số xe, SĐT, thanh toán) → LỘ TRÌNH các bước đánh số có ô ☐ → mã QR. Lộ trình tính trong `src/services/driverRoute.ts` — thêm bộ phận mới vào luồng thì cập nhật `getDriverRoute`. Bước cuối luôn là **Văn phòng → Trả chứng từ** (in EEIR + phiếu thu).
+- **Thời gian (DEC-054):** mọi chỗ hiển thị / nhập / lọc / in / Excel đều theo **`dd/MM/yyyy HH:mm:ss`** (24 giờ). Chỉ dùng `formatDateTime` / `parseDateTime` (`src/services/datetime.ts`) và `DateTimeField` (`shared.tsx`). **Cấm** `toLocaleString`, `toLocaleTimeString`, `<input type="date">` trực tiếp.
+  - Bộ lọc thời gian ở Phiếu thu / mọi báo cáo **mặc định 1 ngày trước → hiện tại** khi mở lần đầu (`defaultLastDayRange`, DEC-056).
+- **Xuất Excel (DEC-055):** màn Phiếu thu và mọi báo cáo phải có nút `ExportExcelButton`, xuất **toàn bộ kết quả theo bộ lọc** (dùng `collectAllPages`), file `.xlsx` qua `toXlsxBuffer`. Báo cáo / danh sách tra cứu mới cũng phải có nút này và đủ cột dữ liệu.
+- **Mã QR (DEC-057):** QR phiếu K80 = `QR-<mã hồ sơ>` (IN-/OUT-), **không bao giờ** tạo theo số container. Phiếu đã trả chứng từ là **đã đóng** (`isTicketClosed`): không in lại, không dùng lại.
+- **Hồ sơ container (DEC-058):** đầu trang là thông tin container (số cont chữ lớn); các bộ phận xếp theo thứ tự tác nghiệp, mỗi khối có xác nhận bên phải (✓ HOÀN THÀNH + người + giờ); **Thanh toán** là mục riêng ngay dưới Văn phòng, chỉ 1 lần, có link phiếu thu. Thêm bộ phận mới vào luồng → thêm khối `Step` đúng thứ tự trong `MasterDossierModal.tsx` và cập nhật `getDriverRoute`.
+- **Giấy tờ in (DEC-062, DEC-063):** đầu mọi giấy tờ in dùng `CompanyHeader` (thông tin Danh mục → Công ty). Phiếu thu **chỉ** in bằng `ReceiptPrintSheet` + `PrintReceiptButton` (`src/components/ReceiptPrint.tsx`) — mỗi lần in phải gọi `recordReceiptPrint` để đếm số lần in; không tự viết mẫu phiếu thu khác. Vùng in đặt class `print-area` (chỉ vùng này được in).
+- **Khóa container (DEC-030, DEC-065):** nội dung khóa = Remark Văn phòng (`officeNote`). Cấp vỏ hiển thị cả cont khóa (`blockedOnlyByHold`) nhưng không cho chọn — phải mở khóa trước.

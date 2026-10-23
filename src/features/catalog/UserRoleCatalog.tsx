@@ -12,6 +12,7 @@ const MENU_LABELS: Partial<Record<WorkspaceMenuId, string>> = {
   VP_HA_VO: 'VP – Hạ vỏ',
   VP_CAP_VO: 'VP – Cấp vỏ',
   VP_PHIEU_THU: 'VP – Phiếu thu',
+  VP_TRA_CHUNG_TU: 'VP – Trả chứng từ',
   VS_CHO_VE_SINH: 'Vệ sinh',
   XN_CHO_HA_VO: 'XN – Chờ hạ vỏ',
   XN_CHO_CAP_VO: 'XN – Chờ cấp vỏ',

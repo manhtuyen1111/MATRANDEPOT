@@ -35,8 +35,10 @@ Danh sách vai trò và quyền chi tiết sẽ được xác định trong tài
    - **Tình trạng vệ sinh** (chọn nhiều, `KHÔNG VỆ SINH` chọn riêng): `KHÔNG VỆ SINH`, `WP - QUÉT`, `WW - RỬA NƯỚC`, `CC - HÓA CHẤT` (= vệ sinh công nghiệp), `RM - NHỔ ĐINH`, `ML - BÓC TEM` (DEC-021).
    - **AGE**: năm sản xuất container.
    Hệ thống cấp mã hồ sơ `IN-YYMMDD-NNN` khi xác nhận (DEC-037) và chuyển sang Văn phòng.
+   Khi Văn phòng chưa thao tác, Giám định được xóa hồ sơ (không lưu lịch sử — DEC-059).
 2. **Văn phòng — Hạ vỏ** (DEC-022):
    - Mục 1: `SỐ CONTAINER`, `SIZE`, `TYPE`, `HÃNG TÀU`, `KHÁCH HÀNG`, số lệnh/chứng từ, `SỐ XE`, `SĐT LÁI XE`.
+   - Nhập xong số container: đang có trong Tồn vỏ / hồ sơ hạ vỏ khác đang mở → báo và chặn ngay (DEC-060).
    - Mục 2: `CHI PHÍ (ĐÃ BAO GỒM VAT)` — chỉ chọn từ Biểu giá.
    - Mục 3: Hình thức thanh toán (DEC-031):
      - **`TTT` — Thanh toán trước:** quét QR Phiếu thu mẹ đang hiệu lực, trừ dần → đã thanh toán (không phát hành phiếu thu mới).
@@ -48,6 +50,7 @@ Danh sách vai trò và quyền chi tiết sẽ được xác định trong tài
    - Không yêu cầu vệ sinh → **Xe nâng — Chờ hạ vỏ**.
    - `DAMAGE` → thêm **Báo giá — Chờ báo giá**.
 5. **Xe nâng** quét QR K80, chọn vị trí (Block bắt buộc; Bay/Row/Tier đủ cả 3 hoặc bỏ trống) → vị trí chính thức đầu tiên, lưu lịch sử (DEC-025).
+6. **Lái xe quay về Văn phòng → Trả chứng từ**: quét QR K80 → in EEIR + phiếu thu (nếu có). Phiếu K80 có LỘ TRÌNH các bước để lái xe biết đi đâu, tích ☐ từng bước (DEC-052).
 
 Các trường hợp từ chối, hủy Hạ vỏ đã thanh toán và sửa sai số container sau GATE IN OK còn mở (Q-003, Q-005, OPEN-008).
 
@@ -141,7 +144,8 @@ Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 3. Nhập `SỐ XE`, `SĐT LÁI XE`.
 4. `CHI PHÍ (ĐÃ BAO GỒM VAT)` từ biểu giá → Hình thức thanh toán (TTT / TTS / TTTT như Hạ vỏ).
 5. Hệ thống cấp mã hồ sơ `OUT-YYMMDD-NNN`, khóa phân bổ container. Đã thanh toán / TTS hợp lệ → in phiếu K80 cấp vỏ, chuyển **Xe nâng — Chờ cấp vỏ**. Chuyển khoản đang chờ → hồ sơ nằm ở "Hồ sơ cấp vỏ chờ thanh toán".
-6. Xe nâng quét QR → hệ thống kiểm tra đủ 5 điều kiện (DEC-015) → OUT.
+6. Xe nâng quét QR → hệ thống kiểm tra đủ 5 điều kiện (DEC-015) → OUT. Màn quét làm nổi số container + vị trí hiện tại (DEC-053).
+7. Lái xe quay về **Văn phòng → Trả chứng từ**: quét QR → in EEIR + phiếu thu (nếu có) (DEC-052).
 
 ## 9. Quy trình Gate Out — Xuất bãi
 
@@ -197,7 +201,8 @@ Chính sách thu trước, thu sau, công nợ và hoàn tiền phải được 
 - Phiếu thu chỉ phát hành khi có **giao dịch thu tiền thực tế thành công** (tiền mặt được xác nhận, hoặc chuyển khoản được ngân hàng xác nhận); mã `PT-YYYY-NNNNNN`; mỗi giao dịch một phiếu.
 - TTT khi Hạ vỏ / Cấp vỏ chỉ ghi lần trừ dần, liên kết về Phiếu thu mẹ; TTS không phát hành phiếu thu.
 - **Văn phòng tạo phiếu thu TTT** (nạp Phiếu thu mẹ — DEC-047) tại menu PHIẾU THU: chọn đối tác, số tiền, Tiền mặt hoặc Chuyển khoản API QR → Chờ thanh toán → khi thu thành công thì phát hành phiếu thu và Phiếu thu mẹ mới dùng được để trừ dần.
-- Tra cứu phiếu thu theo khoảng ngày, mã phiếu thu, số container, mã hồ sơ, hình thức, trạng thái; xem chi tiết và truy ngược hồ sơ.
+- Tra cứu phiếu thu theo khoảng ngày, mã phiếu thu, số container, mã hồ sơ, **tác nghiệp (HẠ VỎ / CẤP VỎ / THU TRƯỚC)**, hình thức, trạng thái; xem chi tiết và truy ngược hồ sơ.
+- Hồ sơ container: khung "Thu tiền" nổi bật ở từng chứng từ, link thẳng về Văn phòng → Phiếu thu (DEC-051).
 
 ## 11. Báo cáo và kiểm soát
 
@@ -210,7 +215,8 @@ Chính sách thu trước, thu sau, công nợ và hoàn tiền phải được 
 
 ### 11.1. Menu BÁO CÁO hiện hành (CR-08)
 - **Hạ vỏ** (DEC-046), **Cấp vỏ**, **Nhập tàu**, **Xuất tàu**: tìm theo số container hoặc lọc theo khoảng thời gian (+ hãng tàu, size). Không tự tải dữ liệu khi mở trang; giới hạn 50 dòng / trang. Cột chi phí chỉ hiện với Văn phòng / Quản lý.
-- **Tổng hợp**: bắt buộc chọn khoảng thời gian (tối đa 366 ngày) trước khi tạo; xuất Excel 5 sheet: HẠ VỎ, CẤP VỎ (theo khoảng thời gian), XUẤT VỎ, NHẬP VỎ (theo quy tắc từng loại hồ sơ — xem Q-033), TỒN VỎ (tại thời điểm lập). Chỉ Văn phòng / Quản lý.
+- Mọi báo cáo và Phiếu thu: bộ lọc thời gian dạng dd/mm/yyyy hh:mm:ss (DEC-054), có nút **Xuất Excel** theo bộ lọc (DEC-055).
+- **Tổng hợp**: bắt buộc chọn khoảng thời gian (tối đa 366 ngày) trước khi tạo; xuất Excel **.xlsx** (DEC-050) 5 sheet: HẠ VỎ, CẤP VỎ (theo khoảng thời gian), XUẤT VỎ, NHẬP VỎ (theo quy tắc từng loại hồ sơ — xem Q-033), TỒN VỎ (tại thời điểm lập). Chỉ Văn phòng / Quản lý.
 - Ba mục báo cáo cũ (TỒN VỎ / HẠ VỎ / CẤP VỎ) đã gỡ khỏi menu; dữ liệu và chức năng tác nghiệp không bị xóa.
 
 ## 12. Nguyên tắc dữ liệu

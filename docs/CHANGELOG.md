@@ -2,6 +2,72 @@
 
 Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, database và chức năng dự án.
 
+## [0.4.1] — 2026-10-23 (nhánh `agent/claude/p4-prep-xlsx`)
+
+### Changed
+- Xuất Excel Báo cáo Tổng hợp / Sửa chữa chi tiết sang **.xlsx chuẩn** (`exceljs`, tải khi cần) — DEC-050.
+- Block bãi do Admin cấu hình, không gán cứng trong database — DEC-050.
+
+### Added
+- Test đọc lại file .xlsx (5 sheet, tiêu đề cột). Kiểm thử: 43/43 pass, build PASS.
+
+### Added (2026-10-23)
+- Phiếu thu ghi rõ tác nghiệp (HẠ VỎ / CẤP VỎ / THU TRƯỚC), lọc theo tác nghiệp; hồ sơ container có khung Thu tiền nổi bật và link thẳng về Văn phòng → Phiếu thu (DEC-051). Kiểm thử: 45/45 pass.
+
+### Added (2026-10-23, tiếp)
+- Phiếu K80 bố cục mới: thông tin chung + LỘ TRÌNH các bước (ô ☐ tích tay, ✓ khi xem trên app) + QR (DEC-052).
+- Menu **Văn phòng → Trả chứng từ**: quét QR K80 khi lái xe quay về → in EEIR + phiếu thu (DEC-052).
+- Xe nâng – Chờ cấp vỏ: khung nổi bật số container + vị trí (DEC-053). Kiểm thử: 48/48 pass.
+
+### Changed (2026-10-23, tiếp)
+- Thời gian toàn app thống nhất dd/MM/yyyy HH:mm:ss; bộ lọc thời gian nhập theo định dạng này (DEC-054).
+- Nút Xuất Excel theo bộ lọc ở Phiếu thu và mọi báo cáo; file .xlsx có tiêu đề nền, viền, bộ lọc cột (DEC-055). Kiểm thử: 50/50 pass.
+
+### Changed (2026-10-23, tiếp)
+- Bộ lọc thời gian Phiếu thu / báo cáo mặc định 1 ngày trước → hiện tại (DEC-056). Kiểm thử: 52/52 pass.
+
+### Fixed (2026-10-23)
+- Mã QR phiếu K80 bị trùng giữa các lượt lưu bãi / lệnh cấp lại (tạo theo số container) → tạo theo mã hồ sơ; mã đóng sau khi trả chứng từ (DEC-057).
+
+### Changed (2026-10-23, tiếp)
+- Hồ sơ container bố cục thống nhất: thông tin container ở đầu, bộ phận theo thứ tự, xác nhận ✓ HOÀN THÀNH bên phải, Thanh toán 1 mục riêng dưới Văn phòng có link phiếu thu (DEC-058). Kiểm thử: 53/53 pass.
+
+### Added (2026-10-23, tiếp)
+- Giám định xóa hồ sơ hạ vỏ khi Văn phòng chưa thao tác (DEC-059).
+- Văn phòng Hạ vỏ: báo trùng Tồn vỏ ngay khi nhập số container và chặn các bước tiếp (DEC-060). Kiểm thử: 56/56 pass.
+
+### Changed (2026-10-23, tiếp)
+- Xe nâng Chờ hạ vỏ / Chờ cấp vỏ: khung nổi bật thống nhất (số cont, size/type, trạng thái/đóng hàng hoặc vị trí), bỏ dòng trùng, tối ưu mobile (DEC-061). Kiểm thử: 56/56 pass.
+
+### Added (2026-10-23, tiếp)
+- Danh mục chung → Công ty; mẫu in phiếu thu thống nhất có thông tin công ty + tác nghiệp (DEC-062).
+- Theo dõi số lần in phiếu thu: cột Đã in, lịch sử in, xác nhận In lại, nhãn BẢN IN LẠI (DEC-063).
+- Trả chứng từ chia 2 phần HẠ VỎ / CẤP VỎ (DEC-064). Kiểm thử: 59/59 pass.
+
+### Changed (2026-10-23, DEC-065)
+- Khóa container: nội dung bắt buộc là Remark Văn phòng. Cấp vỏ hiển thị cả cont đang khóa, phải mở khóa trước khi cấp. Tồn vỏ có Xuất Excel. Kiểm thử: 60/60 pass.
+
+### Changed (2026-10-23, DEC-065 bổ sung)
+- Cấp vỏ: cont khóa chỉ hiện biểu tượng khóa; thêm cột Ghi chú văn phòng.
+
+### Changed (2026-10-23, DEC-064 sửa)
+- Trả chứng từ: 1 ô quét chung; danh sách đang chờ chia 2 cột Hạ vỏ / Cấp vỏ kèm số lượt.
+
+### Changed (2026-10-23)
+- Tồn vỏ: các thao tác (Sửa vị trí, Khóa / Mở khóa) gom vào 1 ô sổ xuống trên mỗi dòng.
+
+### Changed (2026-10-23)
+- Tồn vỏ: ô Thao tác chỉ còn Khóa / Mở khóa; Sửa vị trí bằng biểu tượng bút ở cột Vị trí (giống Ghi chú văn phòng).
+
+### Decided (2026-10-23)
+- DEC-066: lọc báo cáo tối đa 3 tháng; Excel > 20.000 dòng xuất phía máy chủ; giữ dữ liệu 10 năm; thiết kế index / phân trang — DATABASE_CONTRACT mục 10.
+
+### Changed (2026-10-23)
+- Tồn vỏ: cột Thao tác trở lại 1 nút Khóa / Mở khóa (bỏ sổ xuống).
+
+### Pending
+- P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
+
 ## [0.4.0] — 2026-10-22 (Change Request đợt 1 — nhánh `feature/cr-2026-10-batch1`)
 
 Phạm vi: frontend + tầng nghiệp vụ chế độ Demo (localStorage). **Chưa thay đổi database / Supabase.**
