@@ -454,6 +454,18 @@ Quy ước trạng thái:
   - Văn phòng → Cấp vỏ: container **đang khóa vẫn hiển thị** trong danh sách (chỉ hiện biểu tượng khóa), danh sách có cột **Ghi chú văn phòng**, nhưng **không chọn để cấp được** — phải mở khóa ở Tồn vỏ trước.
   - Tồn vỏ có nút **Xuất Excel** (theo bộ lọc đang chọn; gồm cột khóa, người khóa, Remark Văn phòng).
 
+### DEC-066 — Dữ liệu lớn: hiệu năng báo cáo, xuất Excel, thời gian lưu
+
+- Trạng thái: CONFIRMED (2026-10-23) — áp dụng khi làm P4-01 Database
+- Bối cảnh: ~5.000 Hạ vỏ + ~5.000 Cấp vỏ mỗi tháng, chạy 5–10 năm (~1,2 triệu hồ sơ; nhật ký kiểm toán ~12 triệu dòng). Báo cáo 1 tháng có thể 3.000–5.000 dòng.
+- Quyết định:
+  - **Giới hạn 1 lần lọc báo cáo / Phiếu thu: tối đa 3 tháng.** Số liệu dài hơn xem ở Báo cáo Tổng hợp (số liệu tính sẵn theo ngày).
+  - **Xuất Excel:** ≤ 20.000 dòng xuất trực tiếp trên trình duyệt (lấy dữ liệu từ database theo lô 1.000 dòng); > 20.000 dòng xuất **phía máy chủ** (Edge Function tạo file, báo "đang chuẩn bị file").
+  - **Thời gian lưu: giữ đủ 10 năm, không xóa.** Chỉ chuyển nhật ký kiểm toán cũ sang kho lưu trữ khi thật cần; vẫn tra cứu được.
+  - Lọc, phân trang, đếm, tổng hợp chạy **trên database** (RPC), không tải toàn bộ về trình duyệt. Phân trang con trỏ (keyset), không dùng OFFSET.
+  - Ảnh giám định / sửa chữa lưu ở Storage; database chỉ lưu đường dẫn.
+- Chi tiết kỹ thuật: `docs/DATABASE_CONTRACT.md` mục 10.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -543,6 +555,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-065 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-066 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

@@ -226,3 +226,41 @@ Các quan hệ một-nhiều, nhiều-nhiều và điều kiện bắt buộc ph
 - Quan hệ dữ liệu: đã hiện thực ở tầng nghiệp vụ chế độ Demo (`src/services/`), chưa có ở database.
 - SQL và migration: có bản nháp `supabase/migrations/20261021000001_init_matran_depot_schema.sql` — **chưa áp dụng lên Supabase nào** (người dùng xác nhận 2026-10-22), **không khớp** với mục 8 và có lỗ hổng bảo mật (RPC `SECURITY DEFINER` không kiểm tra quyền, RLS thiếu policy). Không được apply; sẽ viết lại toàn bộ ở giai đoạn database.
 - Chính sách RLS: chưa triển khai.
+
+## 10. Hiệu năng & lưu trữ dữ liệu lớn (DEC-066 — bắt buộc khi viết schema P4-01)
+
+### 10.1. Quy mô thiết kế
+| Bảng | Mỗi tháng | 10 năm |
+|---|---|---|
+| Hồ sơ Hạ vỏ + Cấp vỏ | ~10.000 | ~1,2 triệu |
+| Container (mỗi lượt lưu bãi 1 dòng) | ~5.000 | ~600.000 |
+| Chứng từ / giao dịch / phiếu thu | ~10–20.000 | ~2 triệu |
+| K80, bước lộ trình, vệ sinh, sửa chữa | ~30–50.000 | ~5 triệu |
+| Nhật ký kiểm toán | ~100.000 | ~12 triệu |
+
+Dung lượng dữ liệu (không ảnh) ước 5–15 GB / 10 năm.
+
+### 10.2. Index bắt buộc
+- Ghép theo bộ lọc báo cáo: `gate_in_orders (gate_in_at, status)`, `gate_out_orders (gate_out_at, status)`, `payment_receipts (issued_at)`, `payment_transactions (created_at, status)`, `audit_logs (created_at)`.
+- Tra cứu: số container, mã hồ sơ (IN-/OUT-), booking, hãng tàu, khách hàng, mã phiếu thu.
+- Index một phần cho Tồn vỏ: `containers (...) WHERE status <> 'GATED_OUT'`.
+- Ràng buộc duy nhất: một container chỉ một lượt đang trong bãi (`UNIQUE (container_no) WHERE status <> 'GATED_OUT'`); mã hồ sơ / phiếu duy nhất.
+
+### 10.3. Truy vấn & phân trang
+- Lọc, đếm, tổng hợp chạy trong RPC trên database; client không tải toàn bộ.
+- **Bắt buộc bộ lọc thời gian; tối đa 3 tháng / lần lọc** (RPC từ chối nếu vượt). Mặc định 1 ngày (DEC-056).
+- Phân trang **con trỏ (keyset)** theo `(thời gian, id)`, 50 dòng/trang; không dùng `OFFSET`.
+- Đếm tổng chỉ chạy khi đổi bộ lọc.
+- Danh sách chỉ trả cột cần hiển thị; chi tiết (dòng chi phí, lịch sử, ảnh) tải khi mở hồ sơ.
+- Báo cáo Tổng hợp nhiều tháng / năm: bảng tổng hợp theo ngày hoặc materialized view, làm mới hằng đêm.
+
+### 10.4. Xuất Excel
+- ≤ 20.000 dòng: xuất trên trình duyệt (exceljs), lấy dữ liệu từ RPC theo lô 1.000 dòng.
+- > 20.000 dòng: Edge Function tạo file `.xlsx` phía máy chủ, lưu tạm ở Storage, trả link tải; giao diện báo "đang chuẩn bị file".
+- Thay `collectAllPages` (Demo) bằng hàm lấy theo lô từ RPC; giữ nguyên cột của các hàm `*Sheet` trong `src/services/reports.ts`.
+
+### 10.5. Lưu trữ
+- Giữ **đủ 10 năm, không xóa** hồ sơ, chứng từ, phiếu thu.
+- `audit_logs` **chia partition theo năm**; partition cũ có thể chuyển kho lưu trữ khi cần, vẫn tra cứu được. Bảng khác không cần partition.
+- Ảnh lưu ở Supabase Storage; database chỉ lưu đường dẫn.
+- Chế độ Demo (localStorage ~5 MB) chỉ để chạy thử — không dùng cho dữ liệu thật.

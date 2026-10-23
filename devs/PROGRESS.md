@@ -11,7 +11,6 @@ Kiểm thử mới nhất: `npm test` **60/60 pass** • `npm run build` **PASS*
 | # | Nội dung | Ảnh hưởng |
 |---|---|---|
 | 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push lên GitHub** (2026-10-23, gồm DEC-050 → DEC-065). Tạo Pull Request và merge vào `main` khi bạn đã thử xong | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
-| 5 | Tối ưu dữ liệu lớn (5–10 năm, ~10.000 hồ sơ/tháng): chốt **giới hạn 1 lần lọc báo cáo** (đề xuất 3 tháng), **ngưỡng xuất Excel phía máy chủ** (đề xuất 20.000 dòng), **thời gian lưu** (đề xuất 10 năm) | Ghi thành DEC-066 khi làm P4-01 |
 | 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |
 | 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
 | 4 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
@@ -20,7 +19,7 @@ Kiểm thử mới nhất: `npm test` **60/60 pass** • `npm run build` **PASS*
 | Mã | Việc | Giao cho | Ghi chú |
 |---|---|---|---|
 | P3-T | Bạn chạy `npm run dev`, thử các luồng ở mục F, báo lỗi | Bạn | Agent chưa thử được trên trình duyệt |
-| P4-01 | Viết lại schema Supabase (bảng, bộ đếm mã, RLS, **index theo bộ lọc, phân trang con trỏ, partition nhật ký**) | Claude Code | ⏸ Chờ danh mục trạng thái (A.2) + A.5 |
+| P4-01 | Viết lại schema Supabase (bảng, bộ đếm mã, RLS, **index theo bộ lọc, phân trang con trỏ, partition nhật ký**) | Claude Code | ⏸ Chờ danh mục trạng thái (A.2); làm theo DEC-066 (DATABASE_CONTRACT mục 10) |
 | P4-02 | RPC Hạ vỏ + thanh toán + pgTAP | Claude Code | Sau P4-01 |
 | UI-01 | Rà soát giao diện mobile các màn hiện trường | Antigravity | Không đụng `src/services/` |
 
@@ -44,6 +43,7 @@ Kiểm thử mới nhất: `npm test` **60/60 pass** • `npm run build` **PASS*
 | Báo cáo | Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp 5 sheet — bắt buộc lọc, phân trang; **Xuất Excel .xlsx theo bộ lọc** ở mọi báo cáo + Phiếu thu | 044, 046, 050, 055 |
 | Thời gian | Toàn app **dd/MM/yyyy HH:mm:ss** (hiển thị, bộ lọc, in, Excel); bộ lọc mặc định **1 ngày trước → hiện tại** | 054, 056 |
 | Mobile | Giám định – Hạ vỏ, Vệ sinh, Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ / **Đảo chuyển**), Sửa chữa: khung mobile, biểu tượng điện thoại trên menu; Xe nâng quét mã: khung nền đậm thống nhất (số cont, size/type, trạng thái/đóng hàng hoặc vị trí) | 012, 049, 061 |
+| Dữ liệu lớn | Lọc báo cáo tối đa **3 tháng**; Excel > **20.000 dòng** xuất phía máy chủ; giữ dữ liệu **10 năm**, không xóa; lọc / phân trang trên database | 066 |
 | Nhập / Xuất tàu | Để giai đoạn sau | 038 |
 
 ## D. ĐÃ HOÀN THÀNH
@@ -121,3 +121,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-23 — Claude Code: Trả chứng từ 1 ô quét, danh sách chờ 2 cột Hạ vỏ / Cấp vỏ (DEC-064 sửa). 60/60 • build PASS.
 - 2026-10-23 — Claude Code: Tồn vỏ — thao tác dạng sổ xuống (UI). 60/60 • build PASS.
 - 2026-10-23 — Claude Code: Tồn vỏ — Thao tác chỉ Khóa / Mở khóa; bút sửa vị trí ở cột Vị trí. 60/60 • build PASS.
+- 2026-10-23 — Claude Code: chốt DEC-066 (dữ liệu lớn) — DECISIONS + DATABASE_CONTRACT mục 10.
