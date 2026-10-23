@@ -1855,3 +1855,51 @@ export function recordReceiptPrint(state: DepotState, input: { receiptNo: string
     r.dossierCode
   );
 }
+
+// ============================================================================
+// TỒN VỎ — KHÓA / MỞ KHÓA & GHI CHÚ HÀNG LOẠT (DEC-067)
+//   Áp dụng từng container qua đúng hàm đơn lẻ (cùng quyền, kiểm tra, nhật ký).
+//   Container đã ở trạng thái đích được bỏ qua (không lỗi cả lô).
+// ============================================================================
+export interface BulkResult {
+  state: DepotState;
+  done: string[];
+  skipped: { containerNo: string; reason: string }[];
+}
+
+export function bulkToggleContainerHold(
+  state: DepotState,
+  input: { containerIds: string[]; hold: boolean; reason: string }
+): BulkResult {
+  assertPermission(state, 'CONTAINER_LOCK', 'chỉ Văn phòng / Quản lý được khóa / mở khóa container.');
+  if (input.containerIds.length === 0) throw new Error('Chưa chọn container nào.');
+  if (!input.reason.trim()) {
+    throw new Error(input.hold ? 'Bắt buộc nhập REMARK VĂN PHÒNG khi khóa container.' : 'Bắt buộc nhập ghi chú khi mở khóa container.');
+  }
+  let next = state;
+  const done: string[] = [];
+  const skipped: BulkResult['skipped'] = [];
+  for (const id of input.containerIds) {
+    const c = next.containers.find((x) => x.id === id);
+    if (!c || c.status === 'GATED_OUT') { skipped.push({ containerNo: c?.containerNo || id, reason: 'Không còn tồn bãi' }); continue; }
+    if (Boolean(c.isOnHold) === input.hold) { skipped.push({ containerNo: c.containerNo, reason: input.hold ? 'Đã khóa' : 'Không bị khóa' }); continue; }
+    next = toggleContainerHold(next, { containerNo: c.containerNo, hold: input.hold, reason: input.reason });
+    done.push(c.containerNo);
+  }
+  return { state: next, done, skipped };
+}
+
+export function bulkUpdateOfficeNote(state: DepotState, input: { containerIds: string[]; officeNote: string }): BulkResult {
+  assertPermission(state, 'OFFICE_NOTE', 'chỉ Văn phòng / Quản lý được ghi chú tồn vỏ.');
+  if (input.containerIds.length === 0) throw new Error('Chưa chọn container nào.');
+  let next = state;
+  const done: string[] = [];
+  const skipped: BulkResult['skipped'] = [];
+  for (const id of input.containerIds) {
+    const c = next.containers.find((x) => x.id === id);
+    if (!c || c.status === 'GATED_OUT') { skipped.push({ containerNo: c?.containerNo || id, reason: 'Không còn tồn bãi' }); continue; }
+    next = updateContainerOfficeNote(next, { containerId: id, officeNote: input.officeNote });
+    done.push(c.containerNo);
+  }
+  return { state: next, done, skipped };
+}

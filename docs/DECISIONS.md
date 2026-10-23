@@ -466,6 +466,16 @@ Quy ước trạng thái:
   - Ảnh giám định / sửa chữa lưu ở Storage; database chỉ lưu đường dẫn.
 - Chi tiết kỹ thuật: `docs/DATABASE_CONTRACT.md` mục 10.
 
+### DEC-067 — Tồn vỏ: cột LƯU BÃI, khóa tại icon, ghi chú, thao tác hàng loạt
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Quyết định:
+  - Cột **LƯU BÃI** ngay bên phải cột Trạng thái = **số ngày lịch** từ ngày gate in đến hôm nay, số nguyên; **ngày hạ vỏ = 0** (`storageDays`). Excel Tồn vỏ có cột này và đủ thông tin (AGE, tiến độ, khách hàng, số xe, khóa, ghi chú + người / giờ ghi chú).
+  - **Bỏ cột Thao tác.** Khóa / mở khóa bằng **icon khóa cạnh số container**: đang khóa = icon khóa **đỏ**; không khóa (mặc định khi gate in) = icon khóa mở **xám mờ**. Bấm icon (người có quyền) để khóa / mở khóa — vẫn bắt buộc ghi chú (DEC-065).
+  - Cột **Vị trí**: icon bút Sửa vị trí canh thẳng cột bên phải ô (giống cột Ghi chú).
+  - "Ghi chú văn phòng" đổi tên hiển thị thành **GHI CHÚ**; ô có ghi chú **tô nền vàng**. Bỏ dấu ghim ở Mã hồ sơ. Dòng có ghi chú vẫn xếp lên đầu.
+  - **Tìm hàng loạt**: dán danh sách số container → lọc đúng các cont đó, báo các số không có trong tồn vỏ. **Chọn nhiều** (ô chọn từng dòng / chọn tất cả theo bộ lọc) → **Khóa / Mở khóa / Ghi chú hàng loạt** (`bulkToggleContainerHold`, `bulkUpdateOfficeNote`): áp dụng từng cont qua đúng hàm đơn lẻ (quyền, nhật ký), cont đã ở trạng thái đích được bỏ qua và báo lại.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -555,6 +565,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-066 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-067 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

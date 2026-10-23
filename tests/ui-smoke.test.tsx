@@ -39,6 +39,10 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     const html = renderToString(<YardFeature state={locked} onUpdateState={noop} />);
     expect(html).toContain('Container đang bị khóa');
     expect(html).toContain('>-<');
+    expect(html).toContain('Lưu bãi');
+    expect(html).toContain('Tìm hàng loạt');
+    expect(html).toContain('Container không khóa');
+    expect(html).not.toContain('>Thao tác<');
   });
 
   it('Văn phòng / Xe nâng / Vệ sinh / Báo giá / Sửa chữa / Phiếu thu / Báo cáo / Danh mục / Hồ sơ', () => {

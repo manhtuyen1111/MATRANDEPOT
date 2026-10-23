@@ -200,3 +200,17 @@ export function normalizeDriverPhone(raw: string): string {
   }
   return digits;
 }
+
+// LƯU BÃI (DEC-067): số ngày lịch từ ngày gate in đến hôm nay (ngày hạ vỏ = 0), số nguyên
+export function storageDays(gateInAt: string, now: Date = new Date()): number {
+  const d = new Date(gateInAt);
+  if (Number.isNaN(d.getTime())) return 0;
+  const start = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  const end = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.max(0, Math.round((end - start) / 86_400_000));
+}
+
+// Tách danh sách số container dán hàng loạt (xuống dòng, dấu phẩy, chấm phẩy, khoảng trắng)
+export function parseContainerList(text: string): string[] {
+  return Array.from(new Set(text.toUpperCase().split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean)));
+}

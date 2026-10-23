@@ -836,3 +836,36 @@ describe('DEC-065: khóa = Remark Văn phòng; cont khóa vẫn hiện ở Cấp
     expect(s.gateOutOrders[0].containerNo).toBe('MSKU4089123');
   });
 });
+
+describe('DEC-067: Tồn vỏ — lưu bãi, khóa / ghi chú hàng loạt', () => {
+  it('LƯU BÃI = số ngày lịch từ gate in (ngày hạ = 0)', async () => {
+    const { storageDays, parseContainerList } = await import('../src/services/core');
+    expect(storageDays('2026-10-23T23:50:00', new Date('2026-10-23T23:59:00'))).toBe(0);
+    expect(storageDays('2026-10-23T23:50:00', new Date('2026-10-24T00:10:00'))).toBe(1);
+    expect(storageDays('2026-10-01T08:00:00', new Date('2026-10-31T07:00:00'))).toBe(30);
+    expect(parseContainerList('msku4089123, TGHU2211457\nmsku4089123 ;')).toEqual(['MSKU4089123', 'TGHU2211457']);
+  });
+
+  it('Khóa / ghi chú hàng loạt: đúng quyền, bắt buộc ghi chú khi khóa, bỏ qua cont đã khóa', async () => {
+    const { bulkToggleContainerHold, bulkUpdateOfficeNote } = await import('../src/services/depotOperations');
+    const { yardStockSheet } = await import('../src/services/reports');
+    const s0 = createInitialState();
+    const ids = s0.containers.filter((c) => c.status === 'IN_YARD').slice(0, 2).map((c) => c.id);
+    expect(ids.length).toBe(2);
+    expect(() => bulkToggleContainerHold(as(s0, 'usr-forklift'), { containerIds: ids, hold: true, reason: 'x' })).toThrow(/Không đủ quyền/);
+    expect(() => bulkToggleContainerHold(as(s0, 'usr-office'), { containerIds: ids, hold: true, reason: ' ' })).toThrow(/REMARK/);
+    expect(() => bulkToggleContainerHold(as(s0, 'usr-office'), { containerIds: [], hold: true, reason: 'x' })).toThrow(/Chưa chọn/);
+    const first = s0.containers.find((c) => c.id === ids[0])!;
+    const pre = toggleContainerHold(as(s0, 'usr-office'), { containerNo: first.containerNo, hold: true, reason: 'Giữ trước' });
+    const res = bulkToggleContainerHold(pre, { containerIds: ids, hold: true, reason: 'Hãng tàu giữ' });
+    expect(res.done).toHaveLength(1);
+    expect(res.skipped[0].reason).toBe('Đã khóa');
+    expect(res.state.containers.filter((c) => ids.includes(c.id)).every((c) => c.isOnHold)).toBe(true);
+    const noted = bulkUpdateOfficeNote(res.state, { containerIds: ids, officeNote: 'Kiểm tra lại' });
+    expect(noted.state.containers.filter((c) => ids.includes(c.id)).every((c) => c.officeNote === 'Kiểm tra lại')).toBe(true);
+    expect(() => bulkUpdateOfficeNote(as(s0, 'usr-forklift'), { containerIds: ids, officeNote: 'x' })).toThrow(/Không đủ quyền/);
+    const sheet = yardStockSheet(noted.state.containers.filter((c) => ids.includes(c.id)));
+    expect(sheet.columns.indexOf('LƯU BÃI (NGÀY)')).toBe(sheet.columns.indexOf('TRẠNG THÁI') + 1);
+    expect(sheet.columns).toContain('GHI CHÚ');
+  });
+});

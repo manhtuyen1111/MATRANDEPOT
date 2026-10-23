@@ -560,7 +560,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                   <th className="py-2 pr-2">Trạng thái</th>
                   <th className="py-2 pr-2">Đóng hàng</th>
                   <th className="py-2 pr-2">Vị trí</th>
-                  <th className="py-2">Ghi chú văn phòng</th>
+                  <th className="py-2">Ghi chú</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
