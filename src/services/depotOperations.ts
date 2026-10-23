@@ -18,6 +18,7 @@ import {
 } from '../types/depot';
 import { DepotState, hasRolePermission } from './depotStore';
 import { allocateCode } from './codes';
+import { markVesselImportPlaced } from './vessel';
 import { ASSIGNABLE_ROLES } from './permissions';
 import {
   appendAudit,
@@ -138,7 +139,7 @@ export function recordGateInFieldStep(
   const normalizedCleaning = normalizeCleaningItems(input.cleaningItems);
   const remarks = input.conditionClass === 'DAMAGE' ? input.damageRemarks || [] : [];
   // Mã hồ sơ do hệ thống cấp, không nhận mã sinh ở giao diện (CR-07)
-  const allocated = allocateCode(state, 'IN');
+  const allocated = allocateCode(state, 'HV');
   const code = allocated.code;
   const hint = input.initialContainerHint?.trim().toUpperCase();
 
@@ -491,7 +492,8 @@ export function updateContainerLocation(
     currentRow: slot.row,
     currentTier: slot.tier,
   });
-  return appendAudit(
+  // DEC-069: cont NHẬP TÀU được xe nâng hạ → hoàn thành trong danh sách tàu
+  return markVesselImportPlaced(appendAudit(
     {
       ...next,
       locationHistory: [
@@ -514,7 +516,7 @@ export function updateContainerLocation(
     container.masterDossierCode,
     `[Hồ sơ ${container.masterDossierCode}] Xe nâng hạ vỏ ${container.containerNo} vào ${toLabel}`,
     container.masterDossierCode
-  );
+  ), container.id);
 }
 
 // ============================================================================
@@ -815,6 +817,7 @@ export function releaseBlocker(c: ContainerRecord): string | null {
   if (c.status !== 'IN_YARD') {
     return c.status === 'ALLOCATED' ? 'Đã lập lệnh cấp' : 'Chưa tồn bãi (chờ hạ vỏ)';
   }
+  if (c.vesselExportItemId) return 'Đang trong danh sách XUẤT TÀU';
   if (c.isOnHold) return 'Container đang bị KHÓA';
   if (c.needsCleaning) return 'Chưa xác nhận vệ sinh';
   if (c.conditionClass === 'AV' && (c.needsQuotation || c.needsRepair)) return 'Chưa hoàn tất báo giá / sửa chữa';
@@ -907,7 +910,7 @@ export function createReleaseOrder(
     next = { ...next, bookings: [booking, ...next.bookings] };
   }
 
-  const outCode = allocateCode(next, 'OUT');
+  const outCode = allocateCode(next, 'CV');
   next = outCode.state;
   const voucherCode = allocateCode(next, 'CT');
   next = voucherCode.state;
@@ -1854,4 +1857,52 @@ export function recordReceiptPrint(state: DepotState, input: { receiptNo: string
     `In phiếu thu ${r.receiptNo} lần ${count}${count > 1 ? ' (IN LẠI)' : ''}`,
     r.dossierCode
   );
+}
+
+// ============================================================================
+// TỒN VỎ — KHÓA / MỞ KHÓA & GHI CHÚ HÀNG LOẠT (DEC-067)
+//   Áp dụng từng container qua đúng hàm đơn lẻ (cùng quyền, kiểm tra, nhật ký).
+//   Container đã ở trạng thái đích được bỏ qua (không lỗi cả lô).
+// ============================================================================
+export interface BulkResult {
+  state: DepotState;
+  done: string[];
+  skipped: { containerNo: string; reason: string }[];
+}
+
+export function bulkToggleContainerHold(
+  state: DepotState,
+  input: { containerIds: string[]; hold: boolean; reason: string }
+): BulkResult {
+  assertPermission(state, 'CONTAINER_LOCK', 'chỉ Văn phòng / Quản lý được khóa / mở khóa container.');
+  if (input.containerIds.length === 0) throw new Error('Chưa chọn container nào.');
+  if (!input.reason.trim()) {
+    throw new Error(input.hold ? 'Bắt buộc nhập REMARK VĂN PHÒNG khi khóa container.' : 'Bắt buộc nhập ghi chú khi mở khóa container.');
+  }
+  let next = state;
+  const done: string[] = [];
+  const skipped: BulkResult['skipped'] = [];
+  for (const id of input.containerIds) {
+    const c = next.containers.find((x) => x.id === id);
+    if (!c || c.status === 'GATED_OUT') { skipped.push({ containerNo: c?.containerNo || id, reason: 'Không còn tồn bãi' }); continue; }
+    if (Boolean(c.isOnHold) === input.hold) { skipped.push({ containerNo: c.containerNo, reason: input.hold ? 'Đã khóa' : 'Không bị khóa' }); continue; }
+    next = toggleContainerHold(next, { containerNo: c.containerNo, hold: input.hold, reason: input.reason });
+    done.push(c.containerNo);
+  }
+  return { state: next, done, skipped };
+}
+
+export function bulkUpdateOfficeNote(state: DepotState, input: { containerIds: string[]; officeNote: string }): BulkResult {
+  assertPermission(state, 'OFFICE_NOTE', 'chỉ Văn phòng / Quản lý được ghi chú tồn vỏ.');
+  if (input.containerIds.length === 0) throw new Error('Chưa chọn container nào.');
+  let next = state;
+  const done: string[] = [];
+  const skipped: BulkResult['skipped'] = [];
+  for (const id of input.containerIds) {
+    const c = next.containers.find((x) => x.id === id);
+    if (!c || c.status === 'GATED_OUT') { skipped.push({ containerNo: c?.containerNo || id, reason: 'Không còn tồn bãi' }); continue; }
+    next = updateContainerOfficeNote(next, { containerId: id, officeNote: input.officeNote });
+    done.push(c.containerNo);
+  }
+  return { state: next, done, skipped };
 }

@@ -24,7 +24,9 @@ import { isSupabaseConfigured } from '../lib/env';
 import { K80TicketModal } from '../components/K80TicketModal';
 import { MasterDossierModal } from '../components/MasterDossierModal';
 import { InspectorHaVoMobile } from '../features/inspector/InspectorHaVoMobile';
-import { OfficeCapVoWorkspace, OfficeHaVoWorkspace, OfficeVesselBatchWorkspace } from '../features/office/OfficeWorkspaces';
+import { OfficeCapVoWorkspace, OfficeHaVoWorkspace } from '../features/office/OfficeWorkspaces';
+import { OfficeVesselWorkspace } from '../features/vessel/OfficeVesselWorkspace';
+import { VesselFieldMobile, VesselFieldMode } from '../features/vessel/VesselFieldMobile';
 import { FieldQueueMode, FieldQueueWorkspaces, getFieldQueue } from '../features/field-queues/FieldQueueWorkspaces';
 import { YardShiftWorkspace } from '../features/forklift/YardShiftWorkspace';
 import { YardFeature } from '../features/yard/YardFeature';
@@ -52,7 +54,11 @@ interface MenuGroup {
 // Cấu trúc menu theo nghiệp vụ (CR-09). Tên mục giữ nguyên tên nghiệp vụ đã dùng.
 const MENU: MenuGroup[] = [
   { key: 'TON_VO', label: 'Tồn vỏ', icon: Boxes, items: [{ id: 'TON_VO', label: 'Danh sách tồn vỏ' }] },
-  { key: 'GD', label: 'Giám định', icon: ClipboardCheck, items: [{ id: 'GD_HA_VO', label: 'Hạ vỏ', mobile: true }] },
+  { key: 'GD', label: 'Giám định', icon: ClipboardCheck, items: [
+    { id: 'GD_HA_VO', label: 'Hạ vỏ', mobile: true },
+    { id: 'GD_NHAP_TAU', label: 'Nhập tàu', mobile: true },
+    { id: 'GD_XUAT_TAU', label: 'Xuất tàu', mobile: true },
+  ] },
   {
     key: 'VP',
     label: 'Văn phòng',
@@ -66,7 +72,10 @@ const MENU: MenuGroup[] = [
       { id: 'VP_XUAT_TAU', label: 'Xuất tàu' },
     ],
   },
-  { key: 'VS', label: 'Vệ sinh', icon: SprayCan, items: [{ id: 'VS_CHO_VE_SINH', label: 'Chờ vệ sinh', mobile: true }] },
+  { key: 'VS', label: 'Vệ sinh', icon: SprayCan, items: [
+    { id: 'VS_CHO_VE_SINH', label: 'Chờ vệ sinh', mobile: true },
+    { id: 'VS_NHAP_TAU', label: 'Nhập tàu', mobile: true },
+  ] },
   {
     key: 'XN',
     label: 'Xe nâng',
@@ -75,6 +84,8 @@ const MENU: MenuGroup[] = [
       { id: 'XN_CHO_HA_VO', label: 'Chờ hạ vỏ', mobile: true },
       { id: 'XN_CHO_CAP_VO', label: 'Chờ cấp vỏ', mobile: true },
       { id: 'XN_DAO_CHUYEN', label: 'Đảo chuyển', mobile: true },
+      { id: 'XN_NHAP_TAU', label: 'Nhập tàu', mobile: true },
+      { id: 'XN_XUAT_TAU', label: 'Xuất tàu', mobile: true },
     ],
   },
   { key: 'BG', label: 'Báo giá', icon: Calculator, items: [{ id: 'BG_CHO_BAO_GIA', label: 'Chờ báo giá' }] },
@@ -110,6 +121,7 @@ const MENU: MenuGroup[] = [
 ];
 
 const FIELD_QUEUE_MENUS: FieldQueueMode[] = ['VS_CHO_VE_SINH', 'XN_CHO_HA_VO', 'XN_CHO_CAP_VO', 'BG_CHO_BAO_GIA', 'SC_CHO_SUA_CHUA'];
+const VESSEL_FIELD_MENUS: VesselFieldMode[] = ['GD_NHAP_TAU', 'GD_XUAT_TAU', 'XN_XUAT_TAU'];
 const CATALOG_TABS: Partial<Record<WorkspaceMenuId, CatalogTab>> = {
   DM_KHACH_HANG: 'KHACH_HANG',
   DM_HANG_TAU: 'HANG_TAU',
@@ -401,8 +413,17 @@ export const App: React.FC = () => {
           )}
           {activeMenu === 'VP_TRA_CHUNG_TU' && <DocumentReturnWorkspace state={state} onUpdateState={handleUpdateState} />}
           {activeMenu === 'VP_PHIEU_THU' && <ReceiptsWorkspace state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} focus={receiptFocus} />}
-          {activeMenu === 'VP_NHAP_TAU' && <OfficeVesselBatchWorkspace mode="NHAP_TAU" />}
-          {activeMenu === 'VP_XUAT_TAU' && <OfficeVesselBatchWorkspace mode="XUAT_TAU" />}
+          {activeMenu === 'VP_NHAP_TAU' && <OfficeVesselWorkspace mode="NHAP_TAU" state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
+          {activeMenu === 'VP_XUAT_TAU' && <OfficeVesselWorkspace mode="XUAT_TAU" state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
+          {VESSEL_FIELD_MENUS.includes(activeMenu as VesselFieldMode) && (
+            <VesselFieldMobile key={activeMenu} kind={activeMenu as VesselFieldMode} state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />
+          )}
+          {activeMenu === 'VS_NHAP_TAU' && (
+            <FieldQueueWorkspaces key={activeMenu} mode="VS_CHO_VE_SINH" vesselOnly state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />
+          )}
+          {activeMenu === 'XN_NHAP_TAU' && (
+            <FieldQueueWorkspaces key={activeMenu} mode="XN_CHO_HA_VO" vesselOnly state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />
+          )}
           {FIELD_QUEUE_MENUS.includes(activeMenu as FieldQueueMode) && (
             <FieldQueueWorkspaces
               mode={activeMenu as FieldQueueMode}

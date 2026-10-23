@@ -34,6 +34,11 @@ export type WorkspaceMenuId =
   | 'VP_TRA_CHUNG_TU'
   | 'VP_NHAP_TAU'
   | 'VP_XUAT_TAU'
+  | 'GD_NHAP_TAU'
+  | 'GD_XUAT_TAU'
+  | 'VS_NHAP_TAU'
+  | 'XN_NHAP_TAU'
+  | 'XN_XUAT_TAU'
   | 'VS_CHO_VE_SINH'
   | 'XN_CHO_HA_VO'
   | 'XN_CHO_CAP_VO'
@@ -187,8 +192,8 @@ export interface YardBlock {
 // Dữ liệu in Phiếu TÁC NGHIỆP NỘI BỘ khổ K80 (80mm) kèm Mã QR
 export interface K80InternalTicket {
   ticketCode: string;
-  masterDossierCode: string; // Mã hồ sơ HẠ VỎ (IN-...) của lượt lưu bãi
-  outDossierCode?: string;   // Mã hồ sơ CẤP VỎ (OUT-...) nếu là phiếu cấp vỏ
+  masterDossierCode: string; // Mã hồ sơ HẠ VỎ (HV-...) của lượt lưu bãi
+  outDossierCode?: string;   // Mã hồ sơ CẤP VỎ (CV-...) nếu là phiếu cấp vỏ
   qrCode: string; // Mã QR in trên phiếu K80 để các bộ phận quét xác nhận hoàn thành
   operationMode: 'HA_VO' | 'CAP_VO';
   isPaid: boolean; // TRẠNG THÁI THANH TOÁN: TÍCH (true) HOẶC X (false)
@@ -212,7 +217,7 @@ export interface K80InternalTicket {
 // Một bản ghi = một LƯỢT LƯU BÃI của container (từ HẠ VỎ đến khi OUT). Lượt đã OUT được giữ lại làm lịch sử.
 export interface ContainerRecord {
   id: string;
-  masterDossierCode: string; // Mã hồ sơ HẠ VỎ (IN-YYMMDD-NNN; dữ liệu cũ có thể là HS-...)
+  masterDossierCode: string; // Mã hồ sơ HẠ VỎ (HV-YYMMDD-NNN — DEC-068)
   containerNo: string;
   size: ContainerSize;
   type: ContainerType;
@@ -253,11 +258,12 @@ export interface ContainerRecord {
   allocatedTruckNo?: string;
   allocatedDriverPhone?: string;
   allocatedAt?: string;
-  outDossierCode?: string; // OUT-YYMMDD-NNN
+  outDossierCode?: string; // CV-YYMMDD-NNN
   // Ghi chú của Nhân viên Văn phòng trong danh sách TỒN VỎ
   officeNote?: string;
   officeNoteUpdatedBy?: string;
   officeNoteUpdatedAt?: string;
+  vesselExportItemId?: string; // Đang nằm trong danh sách XUẤT TÀU (DEC-069)
   gateInAt: string;
   gateOutAt?: string;
 }
@@ -321,7 +327,7 @@ export interface PaymentVoucher {
   masterDossierCode: string;
   voucherNo: string;
   serviceType: 'GATE_IN' | 'GATE_OUT' | 'CLEANING' | 'REPAIR' | 'STORAGE';
-  referenceCode: string; // Mã hồ sơ nghiệp vụ (IN-... / OUT-...)
+  referenceCode: string; // Mã hồ sơ nghiệp vụ (HV-... / CV-...)
   containerNo: string;
   shippingLineCode: string;
   payerName: string;
@@ -408,7 +414,7 @@ export interface PaymentReceipt {
 
 export interface GateInOrder {
   id: string;
-  masterDossierCode: string; // Mã hồ sơ HẠ VỎ (IN-YYMMDD-NNN)
+  masterDossierCode: string; // Mã hồ sơ HẠ VỎ (HV-YYMMDD-NNN)
   orderCode: string;
   gateInType: GateInType;
   // Bước 1: Giám định Hạ vỏ chụp ảnh cửa cont & xác nhận tác nghiệp
@@ -501,7 +507,7 @@ export interface ReleaseBooking {
 export interface GateOutOrder {
   id: string;
   masterDossierCode: string; // Mã hồ sơ HẠ VỎ của lượt lưu bãi
-  gateOutCode: string;       // OUT-YYMMDD-NNN (dữ liệu cũ có thể là GO-...)
+  gateOutCode: string;       // CV-YYMMDD-NNN — DEC-068
   gateOutType: GateOutType;
   bookingNo: string;
   containerNo: string;
@@ -566,4 +572,55 @@ export interface CompanyProfile {
   email: string;
   taxCode: string;
   bankAccount: string;
+}
+
+// ============================================================================
+// NHẬP TÀU / XUẤT TÀU (DEC-069) — danh sách theo tàu, mỗi container 1 hồ sơ NT- / XT-
+// Không thu phí, không phiếu K80, không trả chứng từ.
+// ============================================================================
+export type VesselMode = 'NHAP_TAU' | 'XUAT_TAU';
+export const VESSEL_MODE_LABELS: Record<VesselMode, string> = { NHAP_TAU: 'NHẬP TÀU', XUAT_TAU: 'XUẤT TÀU' };
+
+export type VesselListStatus = 'OPEN' | 'APPROVED';
+// NT: PENDING (chờ xe về) → INSPECTED (Giám định xác nhận, cont vào hàng chờ Vệ sinh / Xe nâng) → DONE (Xe nâng hạ, cont tồn bãi)
+// XT: PENDING (chờ xuất) → DONE (Giám định / Xe nâng gán xe, cont OUT khỏi bãi)
+export type VesselItemStatus = 'PENDING' | 'INSPECTED' | 'DONE';
+
+export interface VesselListItem {
+  id: string;
+  containerNo: string;
+  size: ContainerSize;
+  type: ContainerType;
+  status: VesselItemStatus;
+  dossierCode?: string;          // NT-YYMMDD-NNN (cấp khi Giám định xác nhận) / XT-YYMMDD-NNN (cấp khi lập danh sách)
+  containerId?: string;          // Lượt lưu bãi tương ứng (NT: lượt mới tạo; XT: lượt đang tồn bãi)
+  truckNo?: string;
+  // XT: ảnh chụp thông tin lúc lập danh sách
+  conditionClass?: FieldConditionClass;
+  stuffingClass?: FieldStuffingClass;
+  locationAtList?: string;
+  // NT: kết quả Giám định
+  manufactureYear?: number;
+  cleaningItems?: FieldCleaningItem[];
+  damageRemarks?: string[];
+  doorPhotoUrl?: string;
+  inspectedBy?: string;
+  inspectedAt?: string;
+  doneBy?: string;
+  doneAt?: string;
+}
+
+export interface VesselList {
+  id: string;
+  mode: VesselMode;
+  vesselName: string;
+  shippingLineCode?: string;     // NT: bắt buộc, 1 hãng cho cả danh sách
+  plannedAt: string;             // Thời gian nhập / xuất tàu
+  truckNos: string[];            // Danh sách số xe
+  items: VesselListItem[];
+  status: VesselListStatus;
+  createdBy: string;
+  createdAt: string;
+  approvedBy?: string;
+  approvedAt?: string;
 }

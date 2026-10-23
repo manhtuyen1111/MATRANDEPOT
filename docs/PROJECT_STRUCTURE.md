@@ -108,7 +108,7 @@ src/
 ├── app/App.tsx                Khung ứng dụng, menu theo quyền, điều hướng
 ├── components/
 │   ├── shared.tsx             Thành phần dùng chung: Chi phí, Thanh toán, Chọn vị trí, Phân trang, Thông báo
-│   ├── MasterDossierModal.tsx Hồ sơ container (IN-/OUT-)
+│   ├── MasterDossierModal.tsx Hồ sơ container (HV-/CV-/NT-/XT-)
 │   └── K80TicketModal.tsx     Phiếu K80
 ├── features/
 │   ├── inspector/             Giám định — Hạ vỏ (mobile)
@@ -124,7 +124,7 @@ src/
 │   ├── payments.ts            Chứng từ → giao dịch thu tiền → phiếu thu
 │   ├── reports.ts             Truy vấn báo cáo / phiếu thu có lọc, phân trang, xuất Excel
 │   ├── permissions.ts         Ma trận quyền (nguồn duy nhất cho nghiệp vụ và menu)
-│   ├── codes.ts               Cấp mã IN- / OUT- / PT- / PTM- / CT-
+│   ├── codes.ts               Cấp mã HV- / CV- / NT- / XT- / PT- / PTT- / CT-
 │   ├── core.ts                Audit, kiểm tra vị trí, tiến độ, chuẩn hóa dữ liệu
 │   └── depotStore.ts          State Demo, dữ liệu mẫu, chuẩn hóa dữ liệu localStorage cũ
 ├── lib/env.ts, lib/supabase.ts  Cấu hình môi trường / client Supabase (chưa dùng)

@@ -34,7 +34,7 @@ Danh sách vai trò và quyền chi tiết sẽ được xác định trong tài
    - **Phân loại đóng hàng**: `M`, `K`, `E`.
    - **Tình trạng vệ sinh** (chọn nhiều, `KHÔNG VỆ SINH` chọn riêng): `KHÔNG VỆ SINH`, `WP - QUÉT`, `WW - RỬA NƯỚC`, `CC - HÓA CHẤT` (= vệ sinh công nghiệp), `RM - NHỔ ĐINH`, `ML - BÓC TEM` (DEC-021).
    - **AGE**: năm sản xuất container.
-   Hệ thống cấp mã hồ sơ `IN-YYMMDD-NNN` khi xác nhận (DEC-037) và chuyển sang Văn phòng.
+   Hệ thống cấp mã hồ sơ `HV-YYMMDD-NNN` khi xác nhận (DEC-037) và chuyển sang Văn phòng.
    Khi Văn phòng chưa thao tác, Giám định được xóa hồ sơ (không lưu lịch sử — DEC-059).
 2. **Văn phòng — Hạ vỏ** (DEC-022):
    - Mục 1: `SỐ CONTAINER`, `SIZE`, `TYPE`, `HÃNG TÀU`, `KHÁCH HÀNG`, số lệnh/chứng từ, `SỐ XE`, `SĐT LÁI XE`.
@@ -143,7 +143,7 @@ Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 2. Chọn container từ danh sách sẵn sàng cấp vỏ (lọc Hãng tàu – Size – Type – Trạng thái `ALL`/`DAMAGE`/`AV`, mặc định `AV`; hiển thị Phân loại đóng hàng). Container bị khóa hoặc còn chờ vệ sinh không xuất hiện.
 3. Nhập `SỐ XE`, `SĐT LÁI XE`.
 4. `CHI PHÍ (ĐÃ BAO GỒM VAT)` từ biểu giá → Hình thức thanh toán (TTT / TTS / TTTT như Hạ vỏ).
-5. Hệ thống cấp mã hồ sơ `OUT-YYMMDD-NNN`, khóa phân bổ container. Đã thanh toán / TTS hợp lệ → in phiếu K80 cấp vỏ, chuyển **Xe nâng — Chờ cấp vỏ**. Chuyển khoản đang chờ → hồ sơ nằm ở "Hồ sơ cấp vỏ chờ thanh toán".
+5. Hệ thống cấp mã hồ sơ `CV-YYMMDD-NNN`, khóa phân bổ container. Đã thanh toán / TTS hợp lệ → in phiếu K80 cấp vỏ, chuyển **Xe nâng — Chờ cấp vỏ**. Chuyển khoản đang chờ → hồ sơ nằm ở "Hồ sơ cấp vỏ chờ thanh toán".
 6. Xe nâng quét QR → hệ thống kiểm tra đủ 5 điều kiện (DEC-015) → OUT. Màn quét làm nổi số container + vị trí hiện tại (DEC-053).
 7. Lái xe quay về **Văn phòng → Trả chứng từ**: quét QR → in EEIR + phiếu thu (nếu có) (DEC-052).
 
@@ -170,6 +170,23 @@ Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 6. Ghi nhận thời điểm xuất, người thực hiện và bằng chứng liên quan.
 7. Cập nhật tồn bãi và lịch sử.
 8. Chặn xuất trùng hoặc xuất khi chưa đủ điều kiện.
+
+## 9A. NHẬP TÀU / XUẤT TÀU (DEC-069)
+
+Không thu phí, không phiếu thu, không phiếu K80, không Trả chứng từ. Mỗi container 1 hồ sơ `NT-` / `XT-`. Mọi bộ phận theo dõi tiến độ danh sách; hết danh sách → Văn phòng / Quản lý **Duyệt thành công**.
+
+### 9A.1. NHẬP TÀU
+1. **Văn phòng → Nhập tàu**: lập danh sách — tên tàu, thời gian nhập tàu, hãng tàu (bắt buộc), danh sách số xe, container (số cont – size – type, dán từ Excel được).
+2. **Giám định → Nhập tàu** (mobile): xe chở cont vào bãi → nhập số cont thực tế (phải khớp danh sách) → chọn số xe → Trạng thái DAMAGE / AV → Đóng hàng M / K / E → Vệ sinh (1 hoặc nhiều) → AGE → xác nhận. Hệ thống cấp `NT-YYMMDD-NNN`, tạo lượt lưu bãi.
+3. **Vệ sinh → Nhập tàu** (nếu có yêu cầu vệ sinh): vệ sinh và xác nhận.
+4. **Xe nâng → Nhập tàu**: hạ cont, cập nhật vị trí → cont **có trong Tồn vỏ ngay**, Văn phòng cấp vỏ được.
+5. DAMAGE: đồng thời vào Báo giá → Sửa chữa → AV (như Hạ vỏ).
+6. Hết danh sách → **Văn phòng → Nhập tàu: Duyệt nhập tàu thành công**.
+
+### 9A.2. XUẤT TÀU
+1. **Văn phòng → Xuất tàu**: lập danh sách chọn từ Tồn vỏ (số cont, size, type, trạng thái, phân loại, vị trí hiện tại...) — tên tàu, thời gian xuất tàu, danh sách số xe. Cont khóa / đã lập lệnh cấp / đã trong danh sách khác không chọn được. Hệ thống cấp `XT-YYMMDD-NNN` cho từng cont; cont trong danh sách không cấp vỏ được.
+2. **Giám định / Xe nâng → Xuất tàu** (mobile): chọn cont → gán số xe → xác nhận → cont OUT khỏi bãi.
+3. Hết danh sách → **Văn phòng → Xuất tàu: Duyệt xuất tàu thành công**. Cont còn chờ có thể được Văn phòng bỏ khỏi danh sách.
 
 ## 10. Quy trình tài chính và thanh toán
 

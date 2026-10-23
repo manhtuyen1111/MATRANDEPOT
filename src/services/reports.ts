@@ -9,9 +9,12 @@ import {
   DirectPaymentMethod,
   ReceiptOperation,
   ServiceWorkOrder,
+  VesselList,
+  VesselListItem,
+  VesselMode,
 } from '../types/depot';
 import type { DepotState } from './depotStore';
-import { formatLocation } from './core';
+import { formatLocation, getContainerProgress, PROGRESS_LABELS, storageDays } from './core';
 import { receiptOperationOf } from './payments';
 import { formatDateTime, parseDateTime } from './datetime';
 
@@ -249,11 +252,14 @@ export function buildSummaryReport(state: DepotState, range: DateRange): SheetDa
     state.gateInOrders.filter((o) => o.gateInType === type && inRange(o.gateInOkAt || o.fieldRecordedAt, r));
   const gateOut = (types: GateOutType[]) =>
     state.gateOutOrders.filter((o) => types.includes(o.gateOutType) && inRange(o.confirmedAt || o.createdAt, r));
+  const vesselRows = (mode: VesselMode): VesselReportRow[] =>
+    (state.vesselLists || []).filter((l) => l.mode === mode && inRange(l.plannedAt, r)).flatMap((list) => list.items.map((item) => ({ list, item })));
   return [
     gateInSheet('HẠ VỎ', gateIn('CUSTOMER_RETURN')),
     gateOutSheet('CẤP VỎ', state, gateOut(['EMPTY_RELEASE'])),
-    gateOutSheet('XUẤT VỎ', state, gateOut(['VESSEL_EXPORT', 'SPECIAL_RETURN'])),
-    gateInSheet('NHẬP VỎ', gateIn('VESSEL_IMPORT')),
+    // DEC-040 + DEC-069: XUẤT VỎ = XUẤT TÀU, NHẬP VỎ = NHẬP TÀU (theo thời gian nhập / xuất tàu của danh sách)
+    { ...vesselReportSheet('XUAT_TAU', vesselRows('XUAT_TAU')), name: 'XUẤT VỎ' },
+    { ...vesselReportSheet('NHAP_TAU', vesselRows('NHAP_TAU')), name: 'NHẬP VỎ' },
     // TỒN VỎ phản ánh thời điểm lập báo cáo, không theo khoảng thời gian
     stockSheet(state.containers.filter((c) => c.status !== 'GATED_OUT')),
   ];
@@ -410,10 +416,67 @@ export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData 
 export function yardStockSheet(rows: ContainerRecord[]): SheetData {
   return {
     name: 'TỒN VỎ',
-    columns: ['MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'TRẠNG THÁI', 'ĐÓNG HÀNG', 'VỊ TRÍ', 'GATE IN', 'KHÓA', 'NGƯỜI KHÓA', 'KHÓA LÚC', 'REMARK VĂN PHÒNG'],
+    columns: [
+      'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'TRẠNG THÁI', 'LƯU BÃI (NGÀY)', 'ĐÓNG HÀNG', 'AGE', 'VỊ TRÍ', 'TIẾN ĐỘ',
+      'GATE IN', 'KHÁCH HÀNG', 'SỐ XE HẠ', 'KHÓA', 'NGƯỜI KHÓA', 'KHÓA LÚC', 'GHI CHÚ', 'GHI CHÚ BỞI', 'GHI CHÚ LÚC',
+    ],
     rows: rows.map((c) => [
-      c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, c.conditionClass, c.stuffingClass, formatLocation(c),
-      fmt(c.gateInAt), c.isOnHold ? 'ĐANG KHÓA' : '', c.holdBy || '', fmt(c.holdAt), c.officeNote || '',
+      c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, c.conditionClass, storageDays(c.gateInAt), c.stuffingClass,
+      c.manufactureYear || '', formatLocation(c), getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', '),
+      fmt(c.gateInAt), c.customerRep || '', c.truckNo || '', c.isOnHold ? 'ĐANG KHÓA' : '', c.holdBy || '', fmt(c.holdAt),
+      c.officeNote || '', c.officeNoteUpdatedBy || '', fmt(c.officeNoteUpdatedAt),
+    ]),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// BÁO CÁO NHẬP TÀU / XUẤT TÀU (DEC-069) — mỗi dòng = 1 container trong danh sách tàu
+// Bắt buộc lọc: khoảng thời gian (theo thời gian nhập / xuất tàu) hoặc số cont / tên tàu.
+// ---------------------------------------------------------------------------
+export interface VesselReportFilter extends DateRange {
+  containerNo?: string;
+  vesselName?: string;
+}
+export interface VesselReportRow {
+  list: VesselList;
+  item: VesselListItem;
+}
+
+export function queryVesselReport(state: DepotState, mode: VesselMode, filter: VesselReportFilter, page = 1): PagedResult<VesselReportRow> {
+  const range = toRange(filter);
+  const no = filter.containerNo?.trim().toUpperCase();
+  const vessel = filter.vesselName?.trim().toUpperCase();
+  if (!range && !no && !vessel) throw new Error('Nhập số container / tên tàu hoặc chọn khoảng thời gian trước khi tra cứu.');
+  const rows = (state.vesselLists || [])
+    .filter((l) => l.mode === mode)
+    .filter((l) => !vessel || l.vesselName.includes(vessel))
+    .filter((l) => inRange(l.plannedAt, range))
+    .flatMap((list) => list.items.filter((i) => !no || i.containerNo.includes(no)).map((item) => ({ list, item })))
+    .sort((a, b) => b.list.plannedAt.localeCompare(a.list.plannedAt) || a.item.containerNo.localeCompare(b.item.containerNo));
+  return paginate(rows, page, REPORT_PAGE_SIZE);
+}
+
+const VESSEL_ITEM_STATUS: Record<string, Record<string, string>> = {
+  NHAP_TAU: { PENDING: 'Chờ xe về', INSPECTED: 'Đã giám định — chờ hạ', DONE: 'Đã hạ bãi' },
+  XUAT_TAU: { PENDING: 'Chờ xuất', INSPECTED: '-', DONE: 'Đã xuất tàu' },
+};
+
+export function vesselReportSheet(mode: VesselMode, rows: VesselReportRow[]): SheetData {
+  const isImport = mode === 'NHAP_TAU';
+  return {
+    name: isImport ? 'NHẬP TÀU' : 'XUẤT TÀU',
+    columns: [
+      'TÊN TÀU', isImport ? 'THỜI GIAN NHẬP TÀU' : 'THỜI GIAN XUẤT TÀU', 'HÃNG TÀU', 'DUYỆT DANH SÁCH', 'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE',
+      'TIẾN ĐỘ', 'SỐ XE', 'TRẠNG THÁI', 'ĐÓNG HÀNG', ...(isImport ? ['VỆ SINH', 'AGE', 'GHI CHÚ HƯ HỎNG', 'GIÁM ĐỊNH', 'GIÁM ĐỊNH LÚC'] : ['VỊ TRÍ LÚC LẬP']),
+      isImport ? 'HẠ BÃI BỞI' : 'XUẤT BỞI', isImport ? 'HẠ BÃI LÚC' : 'XUẤT LÚC', 'LẬP DANH SÁCH', 'LẬP LÚC',
+    ],
+    rows: rows.map(({ list: l, item: i }) => [
+      l.vesselName, fmt(l.plannedAt), l.shippingLineCode || '', l.status === 'APPROVED' ? `ĐÃ DUYỆT • ${l.approvedBy || ''} • ${fmt(l.approvedAt)}` : 'Chưa duyệt',
+      i.dossierCode || '', i.containerNo, i.size, i.type, VESSEL_ITEM_STATUS[mode][i.status], i.truckNo || '', i.conditionClass || '', i.stuffingClass || '',
+      ...(isImport
+        ? [(i.cleaningItems || []).join(', '), i.manufactureYear || '', (i.damageRemarks || []).join(', '), i.inspectedBy || '', fmt(i.inspectedAt)]
+        : [i.locationAtList || '']),
+      i.doneBy || '', fmt(i.doneAt), l.createdBy, fmt(l.createdAt),
     ]),
   };
 }

@@ -209,8 +209,8 @@ Các quan hệ một-nhiều, nhiều-nhiều và điều kiện bắt buộc ph
 
 ## 8. Bổ sung từ Change Request 2026-10-22 (phải có trong schema chính thức)
 
-- **Lượt lưu bãi**: mỗi lần container vào bãi là một bản ghi riêng (mã hồ sơ `IN-...`); tối đa 1 lượt đang mở cho mỗi số container (unique index có điều kiện); lượt đã OUT giữ làm lịch sử (DEC-019).
-- **Bộ đếm mã**: `IN-YYMMDD-NNN`, `OUT-YYMMDD-NNN`, `PT-YYYY-NNNNNN` cấp trong database bằng bảng bộ đếm + khóa dòng trong cùng transaction; ràng buộc `UNIQUE` trên từng mã (DEC-032, DEC-037).
+- **Lượt lưu bãi**: mỗi lần container vào bãi là một bản ghi riêng (mã hồ sơ `HV-...` / `NT-...`); tối đa 1 lượt đang mở cho mỗi số container (unique index có điều kiện); lượt đã OUT giữ làm lịch sử (DEC-019).
+- **Bộ đếm mã**: `HV-YYMMDD-NNN`, `CV-YYMMDD-NNN`, `PT-YYYY-NNNNNN` cấp trong database bằng bảng bộ đếm + khóa dòng trong cùng transaction; ràng buộc `UNIQUE` trên từng mã (DEC-032, DEC-037).
 - **Chứng từ phải thu** (`payment_vouchers`): trạng thái `PENDING` / `CONFIRMED` (đã thanh toán) / `DEFERRED` (TTS — công nợ) / `CANCELLED`; lưu dòng chi phí chụp từ biểu giá.
 - **Giao dịch thu tiền** (`payment_transactions`, mới): phương thức (tiền mặt / chuyển khoản), mục đích (chứng từ / nạp Phiếu thu mẹ), trạng thái `PENDING` / `SUCCEEDED` / `FAILED` / `CANCELLED`, mã giao dịch ngân hàng `UNIQUE` (chống xử lý lặp).
 - **Phiếu thu** (`payment_receipts`, mới): `UNIQUE(transaction_id)` — mỗi giao dịch tối đa 1 phiếu; liên kết chứng từ / Phiếu thu mẹ / hồ sơ.
@@ -219,6 +219,8 @@ Các quan hệ một-nhiều, nhiều-nhiều và điều kiện bắt buộc ph
 - **Booking**: `requested_qty` có thể rỗng; số đã cấp đếm từ hồ sơ cấp vỏ.
 - **Vai trò** thêm `QUOTATION`. **Gate In** thêm `driver_phone`.
 - **Lịch sử vị trí**: thêm loại `YARD_SHIFT` (ĐẢO CHUYỂN). SỬA VỊ TRÍ hành chính không ghi lịch sử vị trí, chỉ ghi `audit_logs`.
+- **Nhập tàu / Xuất tàu (DEC-069)**: bảng `vessel_lists` (mode `NHAP_TAU`/`XUAT_TAU`, tên tàu, `planned_at`, hãng tàu — bắt buộc với NHAP_TAU, danh sách số xe, `status` OPEN/APPROVED, người / giờ lập, duyệt) và `vessel_list_items` (số cont, size, type, `status` PENDING/INSPECTED/DONE, `dossier_code` `NT-`/`XT-` UNIQUE, `container_id`, số xe, kết quả giám định, ảnh chụp trạng thái / vị trí lúc lập, người / giờ thực hiện). Ràng buộc: 1 cont chỉ ở 1 danh sách XUẤT TÀU đang mở; cont NHẬP TÀU không trùng lượt đang tồn bãi. Duyệt chỉ khi mọi dòng DONE. Không có chứng từ / phiếu thu.
+- **Mã hồ sơ (DEC-068)**: tiền tố `HV-`, `CV-`, `NT-`, `XT-` (theo ngày), `PT-`, `PTT-` (theo năm). Migration dữ liệu cũ: `IN-`/`HS-` → `HV-`, `OUT-`/`GO-` → `CV-`, `PTM-` → `PTT-`.
 
 ## 9. Trạng thái
 
@@ -242,7 +244,7 @@ Dung lượng dữ liệu (không ảnh) ước 5–15 GB / 10 năm.
 
 ### 10.2. Index bắt buộc
 - Ghép theo bộ lọc báo cáo: `gate_in_orders (gate_in_at, status)`, `gate_out_orders (gate_out_at, status)`, `payment_receipts (issued_at)`, `payment_transactions (created_at, status)`, `audit_logs (created_at)`.
-- Tra cứu: số container, mã hồ sơ (IN-/OUT-), booking, hãng tàu, khách hàng, mã phiếu thu.
+- Tra cứu: số container, mã hồ sơ (HV-/CV-/NT-/XT-), booking, hãng tàu, khách hàng, mã phiếu thu.
 - Index một phần cho Tồn vỏ: `containers (...) WHERE status <> 'GATED_OUT'`.
 - Ràng buộc duy nhất: một container chỉ một lượt đang trong bãi (`UNIQUE (container_no) WHERE status <> 'GATED_OUT'`); mã hồ sơ / phiếu duy nhất.
 

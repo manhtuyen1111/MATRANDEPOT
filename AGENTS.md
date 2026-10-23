@@ -32,7 +32,7 @@ Code mâu thuẫn với DECISIONS → báo lại, không tự chọn bên nào.
 
 - **Mọi quy tắc nghiệp vụ và kiểm tra quyền nằm trong `src/services/`.** Giao diện chỉ gọi hàm service và hiển thị lỗi; không tự kiểm tra điều kiện thay service.
 - **Quyền:** chỉ khai báo trong `src/services/permissions.ts` (`PERMISSIONS`, `MENU_ACCESS`). Đổi quyền → cập nhật `docs/ROLE_PERMISSION_MATRIX.md` mục 2A.
-- **Mã hồ sơ / phiếu:** chỉ cấp qua `src/services/codes.ts` (`IN-`, `OUT-`, `PT-`, `PTM-`, `CT-`). Không sinh mã ở giao diện.
+- **Mã hồ sơ / phiếu:** chỉ cấp qua `src/services/codes.ts` (`HV-`, `CV-`, `NT-`, `XT-`, `PT-`, `PTT-`, `CT-` — DEC-068). Không sinh mã ở giao diện.
 - **Thanh toán:** đi qua `src/services/payments.ts` (chứng từ → giao dịch → phiếu thu).
 - Mỗi lượt lưu bãi là một bản ghi container riêng; tìm container đang trong bãi bằng `findActiveContainer`, cập nhật bằng `updateContainerById` (không cập nhật theo số container).
 - Thành phần giao diện dùng chung ở `src/components/shared.tsx` (Chi phí, Thanh toán, Chọn vị trí, Phân trang, Thông báo) — tái sử dụng, không chép khối code.
@@ -74,7 +74,7 @@ Một việc chỉ "xong" khi:
 
 - **Vai trò (8):** Giám định, Văn phòng, Xe nâng, Vệ sinh, Báo giá, Quản lý, Admin, Sửa chữa. **Không** thêm lại Kế toán, Nhân viên cổng, Nhân viên hiện trường, QC Sửa chữa (DEC-047, DEC-049). Vai trò mới phải được người dùng xác nhận.
 - **Mỗi vai trò chỉ thấy màn của mình** — cấu hình duy nhất ở `MENU_ACCESS` (`src/services/permissions.ts`). Văn phòng / Quản lý là khối văn phòng; Admin thấy tất cả (DEC-045).
-- **Tác nghiệp mobile** (hiện trường dùng điện thoại): Giám định – Hạ vỏ, Vệ sinh, Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ / **Đảo chuyển**), Sửa chữa.
+- **Tác nghiệp mobile** (hiện trường dùng điện thoại): Giám định – Hạ vỏ / **Nhập tàu** / **Xuất tàu**, Vệ sinh – Chờ vệ sinh / **Nhập tàu**, Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ / **Đảo chuyển** / **Nhập tàu** / **Xuất tàu**), Sửa chữa — tổng **11** biểu tượng mobile.
   - Tiêu đề thống nhất: dòng nhỏ "Bộ phận ..." + tên màn + ô số lượng đang chờ (không thêm mô tả dài).
   - Màn quét mã của Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ) dùng chung **một khung nền đậm**: số container chữ rất lớn → Size / Type + (Trạng thái / Đóng hàng hoặc Vị trí hiện tại). Không lặp lại các thông tin này ở bên dưới (DEC-061).
   - Khung `mx-auto w-full max-w-lg`, một cột, nút lớn, danh sách dạng thẻ (không dùng bảng rộng), "Xem thêm" thay phân trang, phần đang thao tác đặt trên cùng.
@@ -88,7 +88,10 @@ Một việc chỉ "xong" khi:
 - **Thời gian (DEC-054):** mọi chỗ hiển thị / nhập / lọc / in / Excel đều theo **`dd/MM/yyyy HH:mm:ss`** (24 giờ). Chỉ dùng `formatDateTime` / `parseDateTime` (`src/services/datetime.ts`) và `DateTimeField` (`shared.tsx`). **Cấm** `toLocaleString`, `toLocaleTimeString`, `<input type="date">` trực tiếp.
   - Bộ lọc thời gian ở Phiếu thu / mọi báo cáo **mặc định 1 ngày trước → hiện tại** khi mở lần đầu (`defaultLastDayRange`, DEC-056).
 - **Xuất Excel (DEC-055):** màn Phiếu thu và mọi báo cáo phải có nút `ExportExcelButton`, xuất **toàn bộ kết quả theo bộ lọc** (dùng `collectAllPages`), file `.xlsx` qua `toXlsxBuffer`. Báo cáo / danh sách tra cứu mới cũng phải có nút này và đủ cột dữ liệu.
-- **Mã QR (DEC-057):** QR phiếu K80 = `QR-<mã hồ sơ>` (IN-/OUT-), **không bao giờ** tạo theo số container. Phiếu đã trả chứng từ là **đã đóng** (`isTicketClosed`): không in lại, không dùng lại.
+- **Mã QR (DEC-057):** QR phiếu K80 = `QR-<mã hồ sơ>` (HV-/CV-/NT-/XT-), **không bao giờ** tạo theo số container. Phiếu đã trả chứng từ là **đã đóng** (`isTicketClosed`): không in lại, không dùng lại.
 - **Hồ sơ container (DEC-058):** đầu trang là thông tin container (số cont chữ lớn); các bộ phận xếp theo thứ tự tác nghiệp, mỗi khối có xác nhận bên phải (✓ HOÀN THÀNH + người + giờ); **Thanh toán** là mục riêng ngay dưới Văn phòng, chỉ 1 lần, có link phiếu thu. Thêm bộ phận mới vào luồng → thêm khối `Step` đúng thứ tự trong `MasterDossierModal.tsx` và cập nhật `getDriverRoute`.
 - **Giấy tờ in (DEC-062, DEC-063):** đầu mọi giấy tờ in dùng `CompanyHeader` (thông tin Danh mục → Công ty). Phiếu thu **chỉ** in bằng `ReceiptPrintSheet` + `PrintReceiptButton` (`src/components/ReceiptPrint.tsx`) — mỗi lần in phải gọi `recordReceiptPrint` để đếm số lần in; không tự viết mẫu phiếu thu khác. Vùng in đặt class `print-area` (chỉ vùng này được in).
 - **Khóa container (DEC-030, DEC-065):** nội dung khóa = Remark Văn phòng (`officeNote`). Cấp vỏ hiển thị cả cont khóa (`blockedOnlyByHold`) nhưng không cho chọn — phải mở khóa trước.
+- **Tồn vỏ (DEC-067):** không có cột Thao tác — khóa tại icon cạnh số cont (đỏ / xám mờ); sửa vị trí, ghi chú bằng bút canh phải trong ô; LƯU BÃI = `storageDays` (ngày hạ = 0). Thao tác hàng loạt phải đi qua hàm `bulk…` trong service (gọi lại hàm đơn lẻ), không tự lặp ở giao diện.
+- **Mã hồ sơ (DEC-068):** `HV-` Hạ vỏ, `CV-` Cấp vỏ, `NT-` Nhập tàu, `XT-` Xuất tàu, `PT-` Phiếu thu, `PTT-` Phiếu thu trước. Mã cũ được đổi tự động khi nạp dữ liệu (`renameLegacyCodes`). Không viết cứng tiền tố ở giao diện.
+- **Nhập tàu / Xuất tàu (DEC-069):** nghiệp vụ chỉ ở `src/services/vessel.ts`. Không thu phí, không K80, không Trả chứng từ. Cont NHẬP TÀU sau Giám định đi **chung hàng chờ Vệ sinh / Xe nâng của Hạ vỏ** (không viết luồng riêng); menu Nhập tàu của Vệ sinh / Xe nâng = `FieldQueueWorkspaces` với `vesselOnly`. Bước hạ cont gọi `markVesselImportPlaced` trong `updateContainerLocation`. Cont trong danh sách XUẤT TÀU bị `releaseBlocker` chặn cấp vỏ. Hồ sơ NT- / XT- hiển thị trong `MasterDossierModal` (bước sau khi vào bãi dùng chung `renderYardSteps`).

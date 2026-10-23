@@ -5,10 +5,11 @@ import { DepotState, formatVnd } from '../services/depotStore';
 import { formatLocation } from '../services/core';
 import { paymentLabelOf, receiptOperationOf } from '../services/payments';
 import { isTicketClosed } from '../services/driverRoute';
+import { findVesselItemByCode } from '../services/vessel';
 import { formatViTime } from './shared';
 
 interface Props {
-  masterDossierCode: string | null; // Mã hồ sơ HẠ VỎ (IN-...) hoặc CẤP VỎ (OUT-...)
+  masterDossierCode: string | null; // Mã hồ sơ HẠ VỎ (HV-...) hoặc CẤP VỎ (CV-...)
   state: DepotState;
   onClose: () => void;
   onOpenK80Ticket?: (ticket: K80InternalTicket) => void;
@@ -178,16 +179,23 @@ const PaymentBody: React.FC<{ state: DepotState; voucher?: PaymentVoucher; onOpe
 export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, onClose, onOpenK80Ticket, onOpenReceipt }) => {
   if (!masterDossierCode) return null;
 
+  // DEC-069: mã XT- → lượt lưu bãi của container đã xuất tàu; mã NT- là hồ sơ lượt lưu bãi
+  const vesselHit = findVesselItemByCode(state, masterDossierCode);
+  const xtContainer = vesselHit?.list.mode === 'XUAT_TAU' ? state.containers.find((c) => c.id === vesselHit.item.containerId) : undefined;
   const outMatch = state.gateOutOrders.find((o) => o.gateOutCode === masterDossierCode);
-  const visitCode = outMatch?.masterDossierCode || masterDossierCode;
+  const visitCode = outMatch?.masterDossierCode || xtContainer?.masterDossierCode || masterDossierCode;
+  const importHit = visitCode.startsWith('NT-') ? findVesselItemByCode(state, visitCode) : undefined;
   const gateIn = state.gateInOrders.find((o) => o.masterDossierCode === visitCode || o.orderCode === visitCode);
   const container = state.containers.find((c) => c.masterDossierCode === visitCode);
   const outOrders = state.gateOutOrders.filter((o) => o.masterDossierCode === visitCode);
   const workOrders = state.workOrders.filter((w) => w.masterDossierCode === visitCode);
   const locations = state.locationHistory.filter((l) => l.masterDossierCode === visitCode);
   const tickets = state.k80Tickets.filter((t) => t.masterDossierCode === visitCode);
+  const exportHits = (state.vesselLists || [])
+    .filter((l) => l.mode === 'XUAT_TAU')
+    .flatMap((list) => list.items.filter((i) => container && i.containerId === container.id).map((item) => ({ list, item })));
 
-  if (!gateIn && !container && outOrders.length === 0) {
+  if (!gateIn && !container && outOrders.length === 0 && !importHit) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
         <div className="w-full max-w-sm rounded-lg bg-white p-5 text-center text-xs">
@@ -217,6 +225,93 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
   let n = 0;
   const next = () => ++n;
 
+  // Các bước sau khi cont vào bãi — dùng chung HẠ VỎ và NHẬP TÀU (DEC-069)
+  const renderYardSteps = () => (
+    <>
+      {requiresCleaning && (
+        <Step
+          no={next()}
+          title="Vệ sinh"
+          confirm={{
+            done: cleaningWo?.workStatus === 'COMPLETED',
+            by: cleaningWo?.completedBy,
+            at: cleaningWo?.completedAt,
+            pending: 'Chờ vệ sinh',
+          }}
+        >
+          Hạng mục: <strong>{cleaningItems.join(' + ')}</strong>
+          {cleaningWo?.resultNotes && <p className="text-slate-500">{cleaningWo.resultNotes}</p>}
+        </Step>
+      )}
+      
+      <Step
+        no={next()}
+        title="Xe nâng — Hạ vỏ"
+        confirm={{ done: Boolean(placement), by: placement?.performedBy, at: placement?.performedAt, pending: 'Chờ hạ vỏ' }}
+      >
+        {placement ? (
+          <p>Hạ vỏ vào <strong className="font-mono">{placement.toLocation}</strong></p>
+        ) : (
+          <p className="text-slate-500">Chưa hạ vỏ.</p>
+        )}
+        {moves.length > 0 && (
+          <ul className="mt-1.5 space-y-0.5 border-t border-slate-200 pt-1.5 text-[11px]">
+            {moves.map((l) => (
+              <li key={l.id} className="flex flex-wrap justify-between gap-2">
+                <span>
+                  <strong>{l.actionType === 'YARD_SHIFT' ? 'ĐẢO CHUYỂN' : l.actionType}</strong>{' '}
+                  <span className="font-mono">{l.fromLocation} → {l.toLocation}</span>
+                </span>
+                <span className="text-slate-500">{l.performedBy} • {formatViTime(l.performedAt)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Step>
+      
+      {isDamageFlow && (
+        <Step
+          no={next()}
+          title="Báo giá"
+          confirm={{
+            done: Boolean(repairWo),
+            by: repairWo?.approvedBy,
+            at: repairWo?.createdAt,
+            pending: inspectionWo?.workStatus === 'CANCELLED' ? 'Đóng khi cấp vỏ DAMAGE' : 'Chờ báo giá',
+          }}
+        >
+          {repairWo ? (
+            <p>
+              Remark sửa chữa: <strong>{repairWo.items.join(', ')}</strong> • Giờ công: <strong>{repairWo.laborHours ?? '-'}</strong>
+              {repairWo.estimateCost > 0 && <> • <strong className="font-mono">{formatVnd(repairWo.estimateCost)}</strong></>}
+            </p>
+          ) : (
+            <p>Hư hỏng ghi nhận: <strong>{(inspectionWo?.items || (gateIn?.damageRemarks || container?.damageRemarks || [])).join(', ') || '-'}</strong></p>
+          )}
+        </Step>
+      )}
+      
+      {repairWo && (
+        <Step
+          no={next()}
+          title="Sửa chữa"
+          confirm={{
+            done: repairWo.workStatus === 'COMPLETED',
+            by: repairWo.completedBy,
+            at: repairWo.completedAt,
+            pending: repairWo.workStatus === 'CANCELLED' ? 'Đóng khi cấp vỏ DAMAGE' : 'Chờ sửa chữa',
+          }}
+        >
+          {repairWo.repairTeamName ? (
+            <p>Tổ: <strong>{repairWo.repairTeamName}</strong> — {(repairWo.repairMembers || []).join(', ')}</p>
+          ) : (
+            <p className="text-slate-500">Chưa sửa.</p>
+          )}
+        </Step>
+      )}
+    </>
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-2 sm:p-4" role="dialog" aria-modal="true" aria-label="Hồ sơ container">
       <div className="my-4 w-full max-w-4xl rounded-lg border border-slate-300 bg-white shadow-xl">
@@ -227,8 +322,9 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-300">Hồ sơ container</p>
               <p className="font-mono text-3xl font-black tracking-wider">{containerNo || 'CHƯA CÓ SỐ CONT'}</p>
               <p className="mt-1 flex flex-wrap gap-1.5 font-mono text-[11px]">
-                <span className="rounded bg-white/15 px-1.5 py-0.5">HẠ VỎ {visitCode}</span>
+                <span className="rounded bg-white/15 px-1.5 py-0.5">{importHit ? 'NHẬP TÀU' : 'HẠ VỎ'} {visitCode}</span>
                 {activeOut && <span className="rounded bg-white/15 px-1.5 py-0.5">CẤP VỎ {activeOut.gateOutCode}</span>}
+                {exportHits.map(({ item }) => <span key={item.id} className="rounded bg-white/15 px-1.5 py-0.5">XUẤT TÀU {item.dossierCode}</span>)}
                 {container && <span className="rounded bg-amber-400 px-1.5 py-0.5 font-sans font-bold text-slate-900">{CONTAINER_STATUS[container.status]}</span>}
                 {container?.isOnHold && <span className="rounded bg-rose-500 px-1.5 py-0.5 font-sans font-bold">ĐANG KHÓA: {container.holdReason}</span>}
               </p>
@@ -243,7 +339,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
             <Field label="Trạng thái • Đóng hàng" value={`${container?.conditionClass || gateIn?.conditionClass || '-'} • ${container?.stuffingClass || gateIn?.stuffingClass || '-'}`} />
             <Field label="AGE" value={container?.manufactureYear || gateIn?.manufactureYear} />
             <Field label="Vị trí hiện tại" value={container ? formatLocation(container) : '-'} mono />
-            <Field label="Khách hàng" value={gateIn?.customerRep || container?.customerRep} />
+            <Field label={importHit ? "Tàu" : "Khách hàng"} value={importHit ? importHit.list.vesselName : gateIn?.customerRep || container?.customerRep} />
             <Field label="Vệ sinh" value={cleaningItems.join(' + ')} />
             <Field label="Gate in" value={formatViTime(container?.gateInAt || gateIn?.gateInOkAt)} mono />
           </dl>
@@ -292,87 +388,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                 <PaymentBody state={state} voucher={inVoucher} onOpenReceipt={onOpenReceipt} />
               </Step>
 
-              {requiresCleaning && (
-                <Step
-                  no={next()}
-                  title="Vệ sinh"
-                  confirm={{
-                    done: cleaningWo?.workStatus === 'COMPLETED',
-                    by: cleaningWo?.completedBy,
-                    at: cleaningWo?.completedAt,
-                    pending: 'Chờ vệ sinh',
-                  }}
-                >
-                  Hạng mục: <strong>{cleaningItems.join(' + ')}</strong>
-                  {cleaningWo?.resultNotes && <p className="text-slate-500">{cleaningWo.resultNotes}</p>}
-                </Step>
-              )}
-
-              <Step
-                no={next()}
-                title="Xe nâng — Hạ vỏ"
-                confirm={{ done: Boolean(placement), by: placement?.performedBy, at: placement?.performedAt, pending: 'Chờ hạ vỏ' }}
-              >
-                {placement ? (
-                  <p>Hạ vỏ vào <strong className="font-mono">{placement.toLocation}</strong></p>
-                ) : (
-                  <p className="text-slate-500">Chưa hạ vỏ.</p>
-                )}
-                {moves.length > 0 && (
-                  <ul className="mt-1.5 space-y-0.5 border-t border-slate-200 pt-1.5 text-[11px]">
-                    {moves.map((l) => (
-                      <li key={l.id} className="flex flex-wrap justify-between gap-2">
-                        <span>
-                          <strong>{l.actionType === 'YARD_SHIFT' ? 'ĐẢO CHUYỂN' : l.actionType}</strong>{' '}
-                          <span className="font-mono">{l.fromLocation} → {l.toLocation}</span>
-                        </span>
-                        <span className="text-slate-500">{l.performedBy} • {formatViTime(l.performedAt)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Step>
-
-              {isDamageFlow && (
-                <Step
-                  no={next()}
-                  title="Báo giá"
-                  confirm={{
-                    done: Boolean(repairWo),
-                    by: repairWo?.approvedBy,
-                    at: repairWo?.createdAt,
-                    pending: inspectionWo?.workStatus === 'CANCELLED' ? 'Đóng khi cấp vỏ DAMAGE' : 'Chờ báo giá',
-                  }}
-                >
-                  {repairWo ? (
-                    <p>
-                      Remark sửa chữa: <strong>{repairWo.items.join(', ')}</strong> • Giờ công: <strong>{repairWo.laborHours ?? '-'}</strong>
-                      {repairWo.estimateCost > 0 && <> • <strong className="font-mono">{formatVnd(repairWo.estimateCost)}</strong></>}
-                    </p>
-                  ) : (
-                    <p>Hư hỏng ghi nhận: <strong>{(inspectionWo?.items || gateIn.damageRemarks).join(', ') || '-'}</strong></p>
-                  )}
-                </Step>
-              )}
-
-              {repairWo && (
-                <Step
-                  no={next()}
-                  title="Sửa chữa"
-                  confirm={{
-                    done: repairWo.workStatus === 'COMPLETED',
-                    by: repairWo.completedBy,
-                    at: repairWo.completedAt,
-                    pending: repairWo.workStatus === 'CANCELLED' ? 'Đóng khi cấp vỏ DAMAGE' : 'Chờ sửa chữa',
-                  }}
-                >
-                  {repairWo.repairTeamName ? (
-                    <p>Tổ: <strong>{repairWo.repairTeamName}</strong> — {(repairWo.repairMembers || []).join(', ')}</p>
-                  ) : (
-                    <p className="text-slate-500">Chưa sửa.</p>
-                  )}
-                </Step>
-              )}
+              {renderYardSteps()}
 
               <Step
                 no={next()}
@@ -380,6 +396,37 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                 confirm={{ done: Boolean(gateIn.documentsReturnedAt), by: gateIn.documentsReturnedBy, at: gateIn.documentsReturnedAt, pending: 'Chờ lái xe quay về' }}
               >
                 <p>Lái xe quét mã tại Văn phòng → in EEIR {inVoucher && paymentInfo(state, inVoucher).receipts.length ? '+ phiếu thu' : ''}.</p>
+              </Step>
+            </>
+          )}
+
+          {/* ===================== NHẬP TÀU (DEC-069) ===================== */}
+          {importHit && (
+            <>
+              <h3 className="pt-1 text-xs font-black uppercase tracking-wider text-slate-500">Tác nghiệp NHẬP TÀU — {visitCode}</h3>
+              <Step no={next()} title="Văn phòng — Lập danh sách nhập tàu" confirm={{ done: true, by: importHit.list.createdBy, at: importHit.list.createdAt }}>
+                <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <Field label="Tên tàu" value={importHit.list.vesselName} />
+                  <Field label="Thời gian nhập tàu" value={formatViTime(importHit.list.plannedAt)} mono />
+                  <Field label="Hãng tàu" value={importHit.list.shippingLineCode} />
+                  <Field label="Số xe" value={importHit.item.truckNo} />
+                </dl>
+              </Step>
+              <Step no={next()} title="Giám định — Nhập tàu" confirm={{ done: Boolean(importHit.item.inspectedAt), by: importHit.item.inspectedBy, at: importHit.item.inspectedAt, pending: 'Chờ xe về' }}>
+                <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <Field label="Trạng thái" value={`${importHit.item.conditionClass || '-'}${importHit.item.damageRemarks?.length ? ` — ${importHit.item.damageRemarks.join(', ')}` : ''}`} />
+                  <Field label="Đóng hàng" value={importHit.item.stuffingClass} />
+                  <Field label="Vệ sinh" value={(importHit.item.cleaningItems || []).join(' + ')} />
+                  <Field label="AGE" value={importHit.item.manufactureYear} />
+                </dl>
+              </Step>
+              {renderYardSteps()}
+              <Step
+                no={next()}
+                title="Văn phòng — Duyệt nhập tàu"
+                confirm={{ done: importHit.list.status === 'APPROVED', by: importHit.list.approvedBy, at: importHit.list.approvedAt, pending: 'Chờ nhập hết danh sách' }}
+              >
+                <p>Duyệt cả danh sách tàu <strong>{importHit.list.vesselName}</strong> khi đã nhập hết. Không thu phí, không phiếu K80.</p>
               </Step>
             </>
           )}
@@ -425,6 +472,27 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
               </React.Fragment>
             );
           })}
+
+          {/* ===================== XUẤT TÀU (DEC-069) ===================== */}
+          {exportHits.map(({ list, item }) => (
+            <React.Fragment key={item.id}>
+              <h3 className="pt-2 text-xs font-black uppercase tracking-wider text-slate-500">Tác nghiệp XUẤT TÀU — {item.dossierCode}</h3>
+              <Step no={next()} title="Văn phòng — Lập danh sách xuất tàu" confirm={{ done: true, by: list.createdBy, at: list.createdAt }}>
+                <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <Field label="Tên tàu" value={list.vesselName} />
+                  <Field label="Thời gian xuất tàu" value={formatViTime(list.plannedAt)} mono />
+                  <Field label="Vị trí lúc lập" value={item.locationAtList} mono />
+                  <Field label="Xe trong danh sách" value={list.truckNos.join(', ')} />
+                </dl>
+              </Step>
+              <Step no={next()} title="Giám định / Xe nâng — Xuất tàu" confirm={{ done: item.status === 'DONE', by: item.doneBy, at: item.doneAt, pending: 'Chờ xuất tàu' }}>
+                {item.status === 'DONE' ? <p>Đã OUT khỏi bãi • xe <strong>{item.truckNo}</strong></p> : <p className="text-slate-500">Chưa xuất.</p>}
+              </Step>
+              <Step no={next()} title="Văn phòng — Duyệt xuất tàu" confirm={{ done: list.status === 'APPROVED', by: list.approvedBy, at: list.approvedAt, pending: 'Chờ xuất hết danh sách' }}>
+                <p>Duyệt cả danh sách tàu <strong>{list.vesselName}</strong> khi đã xuất hết. Không thu phí, không phiếu K80.</p>
+              </Step>
+            </React.Fragment>
+          ))}
         </div>
 
         <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-5 py-3">

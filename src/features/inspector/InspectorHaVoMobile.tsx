@@ -130,7 +130,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
   // Bấm dấu (+) góc phải dưới màn hình -> Tạo Mã Hồ Sơ Chính tự động & Chỉ hiển thị màn chụp ảnh cửa cont
   const handleCreateNewKey = () => {
     // Chỉ là mã dự kiến để hiển thị; mã thật do hệ thống cấp khi xác nhận (CR-07)
-    const newKey = peekNextCode(state, 'IN');
+    const newKey = peekNextCode(state, 'HV');
     setSelectedOrder(null);
     setActiveKey(newKey);
     setDoorPhotoDataUrl('');
