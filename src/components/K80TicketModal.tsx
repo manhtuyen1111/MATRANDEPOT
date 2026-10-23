@@ -53,10 +53,11 @@ export const K80TicketModal: React.FC<Props> = ({ ticket, state, onClose, onSimu
         </button>
 
         {/* KHỔ GIẤY IN NHIỆT K80 (80mm) */}
-        <div className="mx-auto border-2 border-dashed border-slate-800 bg-white p-3 font-mono text-[11px] leading-snug text-slate-900">
+        <div className="print-area mx-auto border-2 border-dashed border-slate-800 bg-white p-3 font-mono text-[11px] leading-snug text-slate-900">
           {/* 1. THÔNG TIN CHUNG */}
           <div className="border-b-2 border-slate-800 pb-2 text-center">
-            <p className="text-xs font-black tracking-wider">MATRAN DEPOT — PHIẾU TÁC NGHIỆP</p>
+            <p className="text-xs font-black tracking-wider">{(state?.companyProfile.shortName || "MATRAN DEPOT").toUpperCase()} — PHIẾU TÁC NGHIỆP</p>
+            {state?.companyProfile.phone && <p className="text-[10px]">ĐT: {state.companyProfile.phone}</p>}
             <p className="mt-1 inline-block bg-slate-900 px-2 py-0.5 text-sm font-black text-white">{isOut ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
             <p className="mt-1 text-[10px]">Mã hồ sơ: <strong>{ticket.outDossierCode || ticket.masterDossierCode}</strong></p>
           </div>

@@ -50,6 +50,7 @@ export type WorkspaceMenuId =
   | 'DM_CONTAINER'
   | 'DM_BIEU_GIA'
   | 'DM_SUA_CHUA'
+  | 'DM_CONG_TY'
   | 'DM_USER'
   | 'BC_HA_VO'
   | 'BC_SUA_CHUA';
@@ -402,6 +403,7 @@ export interface PaymentReceipt {
   providerTxRef?: string;
   issuedAt: string;
   issuedBy: string;
+  printLog?: { at: string; by: string }[]; // DEC-063: mỗi lần in phiếu thu
 }
 
 export interface GateInOrder {
@@ -553,4 +555,15 @@ export interface RepairTeam {
   name: string;
   members: RepairTeamMember[];
   isActive: boolean;
+}
+
+// DEC-062: thông tin CÔNG TY in trên giấy tờ (phiếu thu, EEIR, K80)
+export interface CompanyProfile {
+  name: string;
+  shortName: string;
+  address: string;
+  phone: string;
+  email: string;
+  taxCode: string;
+  bankAccount: string;
 }

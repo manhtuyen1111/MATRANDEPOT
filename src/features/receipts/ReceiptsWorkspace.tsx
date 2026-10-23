@@ -13,6 +13,7 @@ import { simulateDemoBankTransfer } from '../../services/depotOperations';
 import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, receiptOperationOf } from '../../services/payments';
 import { collectAllPages, queryReceipts, ReceiptQueryFilter, ReceiptRow, receiptsSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
+import { PrintReceiptButton, ReceiptPrintSheet } from '../../components/ReceiptPrint';
 import { defaultLastDayRange, fileStamp } from '../../services/datetime';
 import {
   DateTimeField,
@@ -188,6 +189,7 @@ export const ReceiptsWorkspace: React.FC<{
                         <th className="px-3 py-2">Hình thức</th>
                         <th className="px-3 py-2">Trạng thái</th>
                         <th className="px-3 py-2">Hồ sơ / Cont</th>
+                        <th className="px-3 py-2 text-center">Đã in</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -202,6 +204,7 @@ export const ReceiptsWorkspace: React.FC<{
                           <td className="px-3 py-2">{t.paymentCategory === 'TTT' ? 'TTT (nạp trước)' : 'TTTT'} • {PAYMENT_METHOD_LABELS[t.method]}</td>
                           <td className="px-3 py-2"><span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[t.status]}`}>{PAYMENT_TX_STATUS_LABELS[t.status]}</span></td>
                           <td className="px-3 py-2 font-mono">{t.dossierCode || t.paymentRef}{t.containerNo ? ` • ${t.containerNo}` : ''}</td>
+                          <td className={`px-3 py-2 text-center font-bold ${(r?.printLog?.length || 0) > 1 ? "text-rose-700" : "text-slate-600"}`}>{r ? r.printLog?.length || 0 : "—"}</td>
                         </tr>
                         );
                       })}
@@ -220,13 +223,28 @@ export const ReceiptsWorkspace: React.FC<{
               title={selected.receipt ? `Phiếu thu ${selected.receipt.receiptNo}` : 'Yêu cầu thanh toán (chưa phát hành phiếu thu)'}
               right={
                 selected.receipt && (
-                  <button type="button" onClick={() => window.print()} className={secondaryBtn}>
-                    <Printer className="h-3.5 w-3.5" />
-                    In
-                  </button>
+                  <PrintReceiptButton state={state} receipt={selected.receipt} onUpdateState={onUpdateState} onError={setError} />
                 )
               }
             >
+              {/* Mẫu in thống nhất (DEC-062) — chỉ hiện khi in */}
+              {selected.receipt && (
+                <div className="print-area hidden print:block">
+                  <ReceiptPrintSheet state={state} receipt={selected.receipt} printNo={selected.receipt.printLog?.length || 1} />
+                </div>
+              )}
+              {selected.receipt && (selected.receipt.printLog?.length || 0) > 0 && (
+                <div className="mb-3 rounded-md border border-slate-200 px-3 py-2 text-[11px]">
+                  <span className="font-bold text-slate-700">Lịch sử in ({selected.receipt.printLog!.length} lần)</span>
+                  <ul className="mt-1 space-y-0.5">
+                    {selected.receipt.printLog!.map((p, i) => (
+                      <li key={i} className={i > 0 ? 'text-rose-700' : 'text-slate-600'}>
+                        Lần {i + 1}{i > 0 ? ' (in lại)' : ''}: {formatViTime(p.at)} • {p.by}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <p className="mb-3 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-center text-sm font-black tracking-wide text-slate-900">
                 TÁC NGHIỆP: {RECEIPT_OPERATION_LABELS[operationOf(selected)]}
               </p>

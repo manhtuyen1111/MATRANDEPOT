@@ -1,5 +1,6 @@
 import {
   AppRole,
+  CompanyProfile,
   StaffUser,
   ContainerRecord,
   ContainerSize,
@@ -1803,4 +1804,47 @@ export function gateInContainerConflict(state: DepotState, rawContainerNo: strin
   );
   if (dup) return `Container ${contNo} đang có hồ sơ Hạ vỏ khác chưa hoàn tất (${dup.masterDossierCode}) (GIN-006).`;
   return null;
+}
+
+// ============================================================================
+// 18. DANH MỤC CHUNG — CÔNG TY (DEC-062, chỉ ADMIN): thông tin in trên giấy tờ
+// ============================================================================
+export function updateCompanyProfile(state: DepotState, input: CompanyProfile): DepotState {
+  assertAdmin(state);
+  const name = input.name.trim();
+  if (!name) throw new Error('Vui lòng nhập TÊN CÔNG TY.');
+  const profile: CompanyProfile = {
+    name,
+    shortName: input.shortName.trim() || name,
+    address: input.address.trim(),
+    phone: input.phone.trim(),
+    email: input.email.trim(),
+    taxCode: input.taxCode.trim(),
+    bankAccount: input.bankAccount.trim(),
+  };
+  return appendAudit({ ...state, companyProfile: profile }, 'ADMIN_UPDATE_COMPANY', 'CATALOG', 'COMPANY', `[Admin Danh mục chung] Cập nhật thông tin công ty: ${name}`);
+}
+
+// ============================================================================
+// 19. IN PHIẾU THU — theo dõi số lần in (DEC-063): mỗi lần in đều ghi nhận người + giờ
+// ============================================================================
+export function recordReceiptPrint(state: DepotState, input: { receiptNo: string }): DepotState {
+  if (!hasRolePermission(state.currentUser, ['OFFICE', 'MANAGER'])) {
+    throw new Error('Không đủ quyền: chỉ Văn phòng / Quản lý được in phiếu thu.');
+  }
+  const r = state.paymentReceipts.find((x) => x.receiptNo === input.receiptNo);
+  if (!r) throw new Error(`Không tìm thấy phiếu thu ${input.receiptNo}.`);
+  const entry = { at: nowIso(), by: state.currentUser.fullName };
+  const count = (r.printLog?.length || 0) + 1;
+  return appendAudit(
+    {
+      ...state,
+      paymentReceipts: state.paymentReceipts.map((x) => (x.id === r.id ? { ...x, printLog: [...(x.printLog || []), entry] } : x)),
+    },
+    count === 1 ? 'RECEIPT_PRINT' : 'RECEIPT_REPRINT',
+    'FINANCE',
+    r.receiptNo,
+    `In phiếu thu ${r.receiptNo} lần ${count}${count > 1 ? ' (IN LẠI)' : ''}`,
+    r.dossierCode
+  );
 }

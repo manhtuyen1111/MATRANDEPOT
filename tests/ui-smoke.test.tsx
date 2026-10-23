@@ -16,6 +16,8 @@ import { RepairTeamCatalog } from '../src/features/catalog/RepairTeamCatalog';
 import { UserRoleCatalog } from '../src/features/catalog/UserRoleCatalog';
 import { DocumentReturnWorkspace } from '../src/features/office/DocumentReturnWorkspace';
 import { K80TicketModal } from '../src/components/K80TicketModal';
+import { CompanyCatalog } from '../src/features/catalog/CompanyCatalog';
+import { ReceiptPrintSheet } from '../src/components/ReceiptPrint';
 import { confirmGateInPaymentAndComplete, recordGateInFieldStep, toggleContainerHold, verifyGateInOfficeAndCreatePayment } from '../src/services/depotOperations';
 
 // Smoke test: mỗi màn hình render được với dữ liệu mẫu, không ném lỗi khi render
@@ -140,5 +142,31 @@ describe('DEC-056: màn Phiếu thu / Báo cáo mở lần đầu đã điền s
 describe('DEC-059: nút xóa hồ sơ ở Giám định', () => {
   it('Màn Giám định render được (nút xóa nằm trong chi tiết hồ sơ chưa qua Văn phòng)', () => {
     expect(renderToString(<InspectorHaVoMobile state={as(base, 'usr-inspector')} onUpdateState={noop} />)).toContain('Hạ vỏ');
+  });
+});
+
+describe('DEC-062/064: mẫu in phiếu thu thống nhất; Trả chứng từ 2 phần; Danh mục Công ty', () => {
+  it('Phiếu thu in có tên công ty + TÁC NGHIỆP; bản in lại có nhãn; Trả chứng từ có 2 tab', () => {
+    const office = as(base, 'usr-office');
+    let s = recordGateInFieldStep(as(base, 'usr-inspector'), {
+      gateInType: 'CUSTOMER_RETURN', doorPhotoUrl: 'data:x', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
+    });
+    const gi = s.gateInOrders[0];
+    s = verifyGateInOfficeAndCreatePayment({ ...s, currentUser: office.currentUser }, {
+      gateInId: gi.id, containerNo: 'MSKU1234567', size: '40', type: 'HC', truckNo: '15C', driverPhone: '0912345678',
+      customerName: 'Công ty Tiếp Vận Việt (VietLog)', shippingLineCode: 'MAERSK', orderDocNo: '', feeCatalogIds: ['fee-rac-40'],
+    });
+    s = confirmGateInPaymentAndComplete(s, { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const r = s.paymentReceipts[0];
+    const first = renderToString(<ReceiptPrintSheet state={s} receipt={r} printNo={1} />);
+    expect(first).toContain(s.companyProfile.name);
+    expect(first.replace(/<!-- -->/g, '')).toContain('TÁC NGHIỆP: HẠ VỎ');
+    expect(first).not.toContain('BẢN IN LẠI');
+    expect(renderToString(<ReceiptPrintSheet state={s} receipt={r} printNo={2} />)).toContain('BẢN IN LẠI');
+
+    const ret = renderToString(<DocumentReturnWorkspace state={office} onUpdateState={noop} />);
+    expect(ret.replace(/<!-- -->/g, '')).toContain('TRẢ CHỨNG TỪ HẠ VỎ');
+    expect(ret.replace(/<!-- -->/g, '')).toContain('TRẢ CHỨNG TỪ CẤP VỎ');
+    expect(renderToString(<CompanyCatalog state={as(base, 'usr-admin')} onUpdateState={noop} />)).toContain('Lưu thông tin công ty');
   });
 });

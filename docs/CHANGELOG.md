@@ -39,6 +39,11 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-23, tiếp)
 - Xe nâng Chờ hạ vỏ / Chờ cấp vỏ: khung nổi bật thống nhất (số cont, size/type, trạng thái/đóng hàng hoặc vị trí), bỏ dòng trùng, tối ưu mobile (DEC-061). Kiểm thử: 56/56 pass.
 
+### Added (2026-10-23, tiếp)
+- Danh mục chung → Công ty; mẫu in phiếu thu thống nhất có thông tin công ty + tác nghiệp (DEC-062).
+- Theo dõi số lần in phiếu thu: cột Đã in, lịch sử in, xác nhận In lại, nhãn BẢN IN LẠI (DEC-063).
+- Trả chứng từ chia 2 phần HẠ VỎ / CẤP VỎ (DEC-064). Kiểm thử: 59/59 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

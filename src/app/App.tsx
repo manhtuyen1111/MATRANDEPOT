@@ -35,6 +35,7 @@ import { DocumentReturnWorkspace } from '../features/office/DocumentReturnWorksp
 import { ticketsAwaitingReturn } from '../services/driverRoute';
 import { RepairTeamCatalog } from '../features/catalog/RepairTeamCatalog';
 import { UserRoleCatalog } from '../features/catalog/UserRoleCatalog';
+import { CompanyCatalog } from '../features/catalog/CompanyCatalog';
 
 interface MenuItem {
   id: WorkspaceMenuId;
@@ -101,6 +102,7 @@ const MENU: MenuGroup[] = [
       { id: 'DM_VI_TRI', label: 'Vị trí bãi' },
       { id: 'DM_CONTAINER', label: 'Container' },
       { id: 'DM_BIEU_GIA', label: 'Biểu giá' },
+      { id: 'DM_CONG_TY', label: 'Công ty' },
       { id: 'DM_SUA_CHUA', label: 'Sửa chữa' },
       { id: 'DM_USER', label: 'User - Phân quyền' },
     ],
@@ -416,6 +418,7 @@ export const App: React.FC = () => {
           )}
           {activeMenu === 'DM_SUA_CHUA' && <RepairTeamCatalog state={state} onUpdateState={handleUpdateState} />}
           {activeMenu === 'DM_USER' && <UserRoleCatalog state={state} onUpdateState={handleUpdateState} />}
+          {activeMenu === 'DM_CONG_TY' && <CompanyCatalog state={state} onUpdateState={handleUpdateState} />}
           {CATALOG_TABS[activeMenu] &&<MasterCatalogWorkspace state={state} onUpdateState={handleUpdateState} tab={CATALOG_TABS[activeMenu]} />}
         </main>
       </div>

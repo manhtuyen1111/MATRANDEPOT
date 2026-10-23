@@ -394,13 +394,14 @@ export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData 
     columns: [
       'MÃ PHIẾU THU', 'TÁC NGHIỆP', 'TRẠNG THÁI', 'SỐ TIỀN', 'TRƯỜNG HỢP', 'HÌNH THỨC', 'BÊN THANH TOÁN', 'MÃ HỒ SƠ',
       'SỐ CONTAINER', 'CHỨNG TỪ', 'PHIẾU THU MẸ', 'MÃ THAM CHIẾU', 'MÃ GD NGÂN HÀNG', 'TẠO LÚC', 'NGƯỜI TẠO',
-      'XÁC NHẬN THU LÚC', 'NGƯỜI XÁC NHẬN', 'LÝ DO HỦY',
+      'XÁC NHẬN THU LÚC', 'NGƯỜI XÁC NHẬN', 'LÝ DO HỦY', 'SỐ LẦN IN', 'IN GẦN NHẤT',
     ],
     rows: rows.map(({ transaction: t, receipt: r }) => [
       r?.receiptNo || '', OP[receiptOperationOf(state, { ...t, operation: r?.operation })], STATUS[t.status] || t.status, t.amount,
       t.paymentCategory, t.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản', t.payerName, t.dossierCode || '', t.containerNo || '',
       r?.voucherNo || '', r?.masterReceiptCode || (t.purpose === 'PREPAID_TOPUP' ? t.paymentRef : ''), t.paymentRef,
       t.providerTxRef || '', fmt(t.createdAt), t.createdBy, fmt(t.confirmedAt), t.confirmedBy || '', t.cancelReason || '',
+      r?.printLog?.length || 0, r?.printLog?.length ? `${fmt(r.printLog[r.printLog.length - 1].at)} • ${r.printLog[r.printLog.length - 1].by}` : '',
     ]),
   };
 }

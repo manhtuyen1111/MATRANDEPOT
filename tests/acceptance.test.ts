@@ -775,3 +775,40 @@ describe('DEC-060: Văn phòng Hạ vỏ kiểm tra Tồn vỏ ngay khi nhập s
     expect(() => officeStep(s, gi.id, 'MSKU4089123')).toThrow(/TỒN VỎ/);
   });
 });
+
+describe('DEC-062 / DEC-063: thông tin công ty; theo dõi số lần in phiếu thu', () => {
+  it('Chỉ Admin sửa thông tin công ty; mỗi lần in phiếu thu được ghi nhận (lần 2 = in lại, có nhật ký)', async () => {
+    const { updateCompanyProfile, recordReceiptPrint } = await import('../src/services/depotOperations');
+    const s0 = createInitialState();
+    const profile = { ...s0.companyProfile, name: 'CÔNG TY CP MATRAN', address: 'Hải Phòng', phone: '0225 123 4567' };
+    expect(() => updateCompanyProfile(as(s0, 'usr-office'), profile)).toThrow(/ADMIN/);
+    expect(() => updateCompanyProfile(as(s0, 'usr-admin'), { ...profile, name: ' ' })).toThrow(/TÊN CÔNG TY/);
+    let s = updateCompanyProfile(as(s0, 'usr-admin'), profile);
+    expect(s.companyProfile.address).toBe('Hải Phòng');
+
+    s = fieldStep(s);
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const no = s.paymentReceipts[0].receiptNo;
+    expect(() => recordReceiptPrint(as(s, 'usr-forklift'), { receiptNo: no })).toThrow(/Không đủ quyền/);
+    s = recordReceiptPrint(as(s, 'usr-office'), { receiptNo: no });
+    s = recordReceiptPrint(as(s, 'usr-office'), { receiptNo: no });
+    expect(s.paymentReceipts[0].printLog).toHaveLength(2);
+    expect(s.auditLogs[0].actionCode).toBe('RECEIPT_REPRINT');
+  });
+
+  it('Trả chứng từ tự in → tính 1 lần in cho phiếu thu kèm theo', async () => {
+    const { confirmDocumentsReturn } = await import('../src/services/driverRoute');
+    const { recordReceiptPrint } = await import('../src/services/depotOperations');
+    let s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    s = placeInYard(s, 'MSKU1234567');
+    const res = confirmDocumentsReturn(as(s, 'usr-office'), { scannedQrCode: s.k80Tickets[0].qrCode });
+    let n = res.state;
+    for (const r of res.pack.receipts) n = recordReceiptPrint(n, { receiptNo: r.receiptNo });
+    expect(n.paymentReceipts[0].printLog).toHaveLength(1);
+  });
+});

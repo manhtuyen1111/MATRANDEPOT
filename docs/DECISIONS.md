@@ -428,6 +428,24 @@ Quy ước trạng thái:
   - Dòng 2: **SIZE / TYPE** + (Chờ hạ vỏ: **TRẠNG THÁI / ĐÓNG HÀNG**; Chờ cấp vỏ: **VỊ TRÍ HIỆN TẠI**).
   - Các dòng chi tiết bên dưới bỏ phần trùng với khung (chỉ còn AGE, vệ sinh, số xe / SĐT, hồ sơ...).
 
+### DEC-062 — Danh mục CÔNG TY; mẫu in phiếu thu thống nhất
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định:
+  - Danh mục chung có mục **Công ty** (chỉ Admin sửa): tên công ty, tên viết tắt, mã số thuế, địa chỉ, điện thoại, email, tài khoản ngân hàng. Thông tin này in ở đầu **phiếu thu, EEIR, phiếu K80**.
+  - **Một mẫu in phiếu thu duy nhất** dùng ở Văn phòng → Phiếu thu và Văn phòng → Trả chứng từ: thông tin công ty, PHIẾU THU + số phiếu, **TÁC NGHIỆP (HẠ VỎ / CẤP VỎ / THU TRƯỚC)**, bên thanh toán, mã hồ sơ, số cont, chứng từ, hình thức, thời gian thu, các dòng chi phí, tổng thu, chỗ ký người nộp / người thu.
+  - Khi in chỉ in phần giấy tờ (không in menu / màn hình).
+
+### DEC-063 — Theo dõi số lần in phiếu thu
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: Mỗi lần in phiếu thu được ghi nhận (người + giờ) và ghi nhật ký kiểm toán. Danh sách Phiếu thu có cột **Đã in**; chi tiết có **Lịch sử in**; Excel có cột SỐ LẦN IN / IN GẦN NHẤT. Từ lần in thứ 2 phải **xác nhận "In lại"** (hiện số lần đã in, lần gần nhất), bản in ghi **"BẢN IN LẠI — LẦN N"**. In tự động khi Trả chứng từ cũng tính là 1 lần in. Quyền in: Văn phòng / Quản lý.
+
+### DEC-064 — Trả chứng từ chia 2 phần HẠ VỎ / CẤP VỎ
+
+- Trạng thái: CONFIRMED (2026-10-23)
+- Quyết định: Văn phòng → Trả chứng từ có 2 phần (tab) **TRẢ CHỨNG TỪ HẠ VỎ** và **TRẢ CHỨNG TỪ CẤP VỎ**, mỗi phần có ô quét mã và danh sách đang chờ riêng (kèm số lượng). Quét phiếu khác loại → báo chuyển sang đúng phần.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -517,6 +535,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-061 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-064 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
