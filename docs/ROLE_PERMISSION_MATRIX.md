@@ -30,6 +30,7 @@ Nguồn duy nhất trong code: `src/services/permissions.ts` (`PERMISSIONS`, `ME
 | Thao tác | Vai trò được phép | Căn cứ |
 |---|---|---|
 | Giám định Hạ vỏ | INSPECTOR, MANAGER | DEC-020 |
+| Xóa hồ sơ hạ vỏ (Văn phòng chưa thao tác) | INSPECTOR, MANAGER | DEC-059 |
 | Văn phòng Hạ vỏ (bổ sung hồ sơ, lập chi phí) | OFFICE, MANAGER | DEC-022 |
 | Xác nhận thanh toán Hạ vỏ / Cấp vỏ | OFFICE, MANAGER | DEC-004, DEC-047 |
 | Hoàn tất vệ sinh | CLEANING, OFFICE | DEC-035 |

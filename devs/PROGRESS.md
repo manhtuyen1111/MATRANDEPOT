@@ -5,7 +5,7 @@
 
 Cập nhật lần cuối: 2026-10-23 — Claude Code
 Trạng thái chung: **GĐ 3 xong** (nhánh `feature/cr-2026-10-batch1` đã push). Hôm nay (nhánh `agent/claude/p4-prep-xlsx`): Excel .xlsx; phiếu thu ghi tác nghiệp; K80 có lộ trình + Trả chứng từ; thời gian dd/MM/yyyy HH:mm:ss; Xuất Excel mọi báo cáo. **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
-Kiểm thử mới nhất: `npm test` **53/53 pass** • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+Kiểm thử mới nhất: `npm test` **56/56 pass** • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
@@ -29,7 +29,7 @@ Kiểm thử mới nhất: `npm test` **53/53 pass** • `npm run build` **PASS*
 | Vai trò | **8 vai trò**: Giám định, Văn phòng, Xe nâng, Vệ sinh, Báo giá, Quản lý, Admin, Sửa chữa. Bỏ Kế toán (Văn phòng thay), nhân viên cổng/hiện trường = Giám định, **bỏ QC Sửa chữa** | 045, 047, 049 |
 | Menu | Mỗi vai trò chỉ thấy màn của mình; Văn phòng / Quản lý thấy khối văn phòng, báo cáo, danh mục (xem); Admin thấy tất cả | 045 |
 | User | Danh mục chung → User - Phân quyền (Admin): thêm, sửa vai trò, khóa; luôn còn ≥ 1 Admin | 045 |
-| Hạ vỏ | Giám định (mobile) → Văn phòng (SĐT lái xe, khách hàng, chi phí từ biểu giá, TTT/TTS/TTTT) → GATE IN OK → (Vệ sinh nếu có) → Xe nâng hạ vỏ → **Văn phòng trả chứng từ** (in EEIR + phiếu thu) | 020–025, 052 |
+| Hạ vỏ | Giám định (mobile; được xóa hồ sơ khi Văn phòng chưa thao tác) → Văn phòng (số cont trùng Tồn vỏ bị chặn ngay khi nhập; SĐT lái xe, khách hàng, chi phí từ biểu giá, TTT/TTS/TTTT) → GATE IN OK → (Vệ sinh nếu có) → Xe nâng hạ vỏ → **Văn phòng trả chứng từ** (in EEIR + phiếu thu) | 020–025, 052, 059, 060 |
 | Phiếu K80 | Thông tin chung ở đầu → LỘ TRÌNH các bước (ô ☐ tích tay) → QR; lái xe đi theo thứ tự, quét mã tại từng bộ phận | 052 |
 | Thanh toán | TTT trừ dần Phiếu thu mẹ; TTS = công nợ; Tiền mặt / Chuyển khoản mới phát hành phiếu thu `PT-YYYY-NNNNNN` | 031, 032 |
 | Phiếu thu | Văn phòng tạo phiếu thu TTT và xác nhận tiền mặt; phiếu thu ghi rõ **tác nghiệp** (Hạ vỏ / Cấp vỏ / Thu trước); hồ sơ container link thẳng về Phiếu thu | 032, 047, 051 |
@@ -65,6 +65,7 @@ Kiểm thử mới nhất: `npm test` **53/53 pass** • `npm run build` **PASS*
 | P4-pre4 | Thời gian thống nhất dd/MM/yyyy HH:mm:ss (ô nhập chuẩn cho mọi bộ lọc); nút Xuất Excel theo bộ lọc ở Phiếu thu + mọi báo cáo | 2026-10-23 | DEC-054, 055 | **50/50 • build PASS** | agent/claude/p4-prep-xlsx |
 | P4-pre5 | Bộ lọc thời gian mặc định 1 ngày trước → hiện tại (Phiếu thu + mọi báo cáo) | 2026-10-23 | DEC-056 | **52/52 • build PASS** | agent/claude/p4-prep-xlsx |
 | P4-pre6 | **Sửa lỗi QR trùng** (QR theo mã hồ sơ, đóng sau trả chứng từ); hồ sơ container cấu trúc thống nhất Hạ vỏ – Cấp vỏ | 2026-10-23 | DEC-057, 058 | **53/53 • build PASS** | agent/claude/p4-prep-xlsx |
+| P4-pre7 | Giám định xóa hồ sơ khi Văn phòng chưa thao tác; Văn phòng Hạ vỏ báo + chặn trùng Tồn vỏ ngay khi nhập số cont | 2026-10-23 | DEC-059, 060 | **56/56 • build PASS** | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -104,3 +105,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-23 — Claude Code: P4-pre4 (DEC-054, 055) — định dạng thời gian thống nhất, Xuất Excel mọi báo cáo + Phiếu thu.
 - 2026-10-23 — Claude Code: P4-pre5 (DEC-056) — mặc định bộ lọc 24 giờ gần nhất.
 - 2026-10-23 — Claude Code: P4-pre6 (DEC-057, 058) — QR duy nhất + đóng mã; hồ sơ container thống nhất.
+- 2026-10-23 — Claude Code: P4-pre7 (DEC-059, 060).
