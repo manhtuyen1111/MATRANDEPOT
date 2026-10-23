@@ -558,6 +558,11 @@ Quy ước trạng thái:
   - In kèm phiếu thu **vẫn đếm số lần in**: đã in trước đó → hỏi xác nhận "In lại", bản in có nhãn BẢN IN LẠI (DEC-063). Văn phòng → Trả chứng từ: lần in tự động = EEIR + phiếu thu; nút "In lại EEIR" chỉ in EEIR.
   - Kỹ thuật: lệnh in đi qua `PrintPortal` (gắn vào `<body>`, không bị cửa sổ đang mở cắt); khi có lệnh in này, các vùng in khác trên trang bị ẩn — mỗi lần in đúng 1 bộ giấy tờ.
 
+### DEC-073 — Lập danh sách XUẤT TÀU: Tìm hàng loạt như Tồn vỏ
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-069, DEC-070
+- Quyết định: Bộ chọn container từ tồn vỏ (Văn phòng → Xuất tàu: **Lập danh sách** và **Thêm cont**) có nút **Tìm hàng loạt** giống Tồn vỏ (DEC-067): dán danh sách số cont (mỗi dòng / dấu phẩy / khoảng trắng) → lọc đúng các cont đó, báo số tìm thấy / chọn được, nút **Chọn tất cả cont tìm được**, báo các số **không có trong tồn vỏ**. Cont không đưa vào xuất tàu được (khóa, đã lập lệnh cấp, đã trong danh sách khác) vẫn hiện lý do, không chọn được.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -647,6 +652,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-072 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-073 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

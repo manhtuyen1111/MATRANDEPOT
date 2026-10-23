@@ -83,6 +83,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Fixed (2026-10-24, DEC-072)
 - Hồ sơ container: "In hồ sơ" in ra trang trắng → thay bằng In EEIR / In EEIR + phiếu thu cho từng lượt Hạ vỏ / Cấp vỏ. EEIR và phiếu thu dùng chung khung in (công ty, Số, Tác nghiệp, chữ ký, In lúc). In kèm phiếu thu vẫn đếm số lần in. Trả chứng từ: "In lại EEIR" không in lại phiếu thu. Kiểm thử: 74/74 pass.
 
+### Added (2026-10-24, DEC-073)
+- Văn phòng → Xuất tàu → Lập danh sách / Thêm cont: nút Tìm hàng loạt như Tồn vỏ (dán nhiều số cont, chọn tất cả cont tìm được, báo số không có trong tồn vỏ). Kiểm thử: 75/75 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 
