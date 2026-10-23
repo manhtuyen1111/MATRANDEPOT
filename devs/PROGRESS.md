@@ -122,3 +122,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-23 — Claude Code: Tồn vỏ — thao tác dạng sổ xuống (UI). 60/60 • build PASS.
 - 2026-10-23 — Claude Code: Tồn vỏ — Thao tác chỉ Khóa / Mở khóa; bút sửa vị trí ở cột Vị trí. 60/60 • build PASS.
 - 2026-10-23 — Claude Code: chốt DEC-066 (dữ liệu lớn) — DECISIONS + DATABASE_CONTRACT mục 10.
+- 2026-10-23 — Claude Code: Tồn vỏ — Thao tác = 1 nút Khóa / Mở khóa. 60/60 • build PASS.

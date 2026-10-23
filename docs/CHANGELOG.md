@@ -62,6 +62,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Decided (2026-10-23)
 - DEC-066: lọc báo cáo tối đa 3 tháng; Excel > 20.000 dòng xuất phía máy chủ; giữ dữ liệu 10 năm; thiết kế index / phân trang — DATABASE_CONTRACT mục 10.
 
+### Changed (2026-10-23)
+- Tồn vỏ: cột Thao tác trở lại 1 nút Khóa / Mở khóa (bỏ sổ xuống).
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

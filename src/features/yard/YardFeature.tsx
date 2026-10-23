@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Check, MessageSquarePlus, Pencil, Pin, Search, X } from 'lucide-react';
+import { Check, Lock, LockOpen, MessageSquarePlus, Pencil, Pin, Search, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
 import { correctContainerLocation, toggleContainerHold, updateContainerOfficeNote } from '../../services/depotOperations';
 import { formatLocation, getContainerProgress, PROGRESS_LABELS } from '../../services/core';
@@ -17,6 +17,7 @@ import {
   labelCls,
   Pager,
   primaryBtn,
+  secondaryBtn,
   SlotPicker,
   SlotValue,
 } from '../../components/shared';
@@ -224,15 +225,15 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                       </td>
                       <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                         {canLock && (
-                          <select
-                            aria-label={`Thao tác ${c.containerNo}`}
-                            value={panelOpen && panel!.kind === 'LOCK' ? 'LOCK' : ''}
-                            onChange={(e) => openPanel(c, e.target.value as 'LOCK' | '')}
-                            className={`${inputCls} w-32`}
+                          <button
+                            type="button"
+                            onClick={() => openPanel(c, panelOpen && panel!.kind === 'LOCK' ? '' : 'LOCK')}
+                            className={secondaryBtn}
+                            title={c.isOnHold ? 'Mở khóa container' : 'Khóa container'}
                           >
-                            <option value="">Thao tác…</option>
-                            <option value="LOCK">{c.isOnHold ? 'Mở khóa' : 'Khóa'}</option>
-                          </select>
+                            {c.isOnHold ? <LockOpen className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                            {c.isOnHold ? 'Mở khóa' : 'Khóa'}
+                          </button>
                         )}
                       </td>
                     </tr>
