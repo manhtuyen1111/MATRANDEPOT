@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Check, Lock, LockOpen, MapPinned, MessageSquarePlus, Pencil, Pin, Search, X } from 'lucide-react';
+import { Check, MessageSquarePlus, Pencil, Pin, Search, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
 import { correctContainerLocation, toggleContainerHold, updateContainerOfficeNote } from '../../services/depotOperations';
 import { formatLocation, getContainerProgress, PROGRESS_LABELS } from '../../services/core';
@@ -17,7 +17,6 @@ import {
   labelCls,
   Pager,
   primaryBtn,
-  secondaryBtn,
   SlotPicker,
   SlotValue,
 } from '../../components/shared';
@@ -85,9 +84,8 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
     }
   };
 
-  const openPanel = (e: React.MouseEvent, c: ContainerRecord, kind: 'LOCATION' | 'LOCK') => {
-    e.stopPropagation();
-    setPanel(panel?.id === c.id && panel.kind === kind ? null : { id: c.id, kind });
+  const openPanel = (c: ContainerRecord, kind: 'LOCATION' | 'LOCK' | '') => {
+    setPanel(kind ? { id: c.id, kind } : null);
     setSlot(EMPTY_SLOT);
     setLockNote(kind === 'LOCK' && !c.isOnHold ? c.officeNote || '' : '');
   };
@@ -210,20 +208,18 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="inline-flex gap-1">
-                          {canEditLocation && hasPosition && (
-                            <button type="button" onClick={(e) => openPanel(e, c, 'LOCATION')} className={secondaryBtn} title="Sửa vị trí bãi">
-                              <MapPinned className="h-3.5 w-3.5" />
-                              Sửa vị trí
-                            </button>
-                          )}
-                          {canLock && (
-                            <button type="button" onClick={(e) => openPanel(e, c, 'LOCK')} className={secondaryBtn} title={c.isOnHold ? 'Mở khóa container' : 'Khóa container'}>
-                              {c.isOnHold ? <LockOpen className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                              {c.isOnHold ? 'Mở khóa' : 'Khóa'}
-                            </button>
-                          )}
-                        </div>
+                        {((canEditLocation && hasPosition) || canLock) && (
+                          <select
+                            aria-label={`Thao tác ${c.containerNo}`}
+                            value={panelOpen ? panel!.kind : ''}
+                            onChange={(e) => openPanel(c, e.target.value as 'LOCATION' | 'LOCK' | '')}
+                            className={`${inputCls} w-32`}
+                          >
+                            <option value="">Thao tác…</option>
+                            {canEditLocation && hasPosition && <option value="LOCATION">Sửa vị trí</option>}
+                            {canLock && <option value="LOCK">{c.isOnHold ? 'Mở khóa' : 'Khóa'}</option>}
+                          </select>
+                        )}
                       </td>
                     </tr>
                     {panelOpen && (

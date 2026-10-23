@@ -119,3 +119,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-23 — Claude Code: Cấp vỏ — chỉ icon khóa, thêm cột Ghi chú văn phòng (DEC-065).
 - 2026-10-23 — Claude Code: cập nhật tiến độ chung; push nhánh agent/claude/p4-prep-xlsx lên GitHub.
 - 2026-10-23 — Claude Code: Trả chứng từ 1 ô quét, danh sách chờ 2 cột Hạ vỏ / Cấp vỏ (DEC-064 sửa). 60/60 • build PASS.
+- 2026-10-23 — Claude Code: Tồn vỏ — thao tác dạng sổ xuống (UI). 60/60 • build PASS.

@@ -53,6 +53,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-23, DEC-064 sửa)
 - Trả chứng từ: 1 ô quét chung; danh sách đang chờ chia 2 cột Hạ vỏ / Cấp vỏ kèm số lượt.
 
+### Changed (2026-10-23)
+- Tồn vỏ: các thao tác (Sửa vị trí, Khóa / Mở khóa) gom vào 1 ô sổ xuống trên mỗi dòng.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 
