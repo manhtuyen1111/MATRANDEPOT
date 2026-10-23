@@ -267,6 +267,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
   }
 
   const needsSlot = mode === 'XN_CHO_HA_VO';
+  const isForklift = mode === 'XN_CHO_HA_VO' || mode === 'XN_CHO_CAP_VO';
   const isRepair = mode === 'SC_CHO_SUA_CHUA';
   const canConfirm = scanned && (!needsSlot || isSlotComplete(slot)) && (!isRepair || (selectedTeam && memberIds.length > 0));
 
@@ -308,32 +309,68 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
       {scanned && (
         <div className="space-y-3 rounded-lg border border-blue-600 bg-white p-4 text-xs">
           <div className="flex items-center justify-between">
-            <ContainerNo no={scanned.containerNo} locked={scanned.isOnHold} lockReason={scanned.holdReason} className="text-base" />
+            {isForklift ? (
+              <span className="text-[11px] font-bold uppercase text-blue-700">Container vừa quét</span>
+            ) : (
+              <ContainerNo no={scanned.containerNo} locked={scanned.isOnHold} lockReason={scanned.holdReason} className="text-base" />
+            )}
             <button type="button" onClick={() => setScanned(null)} aria-label="Bỏ chọn" className="text-slate-400 hover:text-slate-700">
               <X className="h-4 w-4" />
             </button>
           </div>
-          {mode === 'XN_CHO_CAP_VO' && (
-            <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-900 p-3 text-white">
+          {/* DEC-061: khung nổi bật dùng chung cho Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ) — tối ưu đọc nhanh trên điện thoại */}
+          {(mode === 'XN_CHO_HA_VO' || mode === 'XN_CHO_CAP_VO') && (
+            <div className="space-y-2 rounded-lg bg-slate-900 p-3 text-white" data-testid="forklift-focus">
               <div>
                 <span className="block text-[10px] font-semibold uppercase text-slate-300">Số container</span>
-                <span className="font-mono text-lg font-black tracking-wide">{scanned.containerNo}</span>
+                <span className="block break-all font-mono text-2xl font-black leading-tight tracking-wide">
+                  {scanned.containerNo}
+                  {scanned.isOnHold && <span className="ml-2 align-middle text-xs font-bold text-rose-300">ĐANG KHÓA</span>}
+                </span>
               </div>
-              <div className="text-right">
-                <span className="block text-[10px] font-semibold uppercase text-slate-300">Vị trí hiện tại</span>
-                <span className="font-mono text-lg font-black text-amber-300">{formatLocation(scanned)}</span>
+              <div className="grid grid-cols-2 gap-2 border-t border-white/20 pt-2">
+                <div>
+                  <span className="block text-[10px] font-semibold uppercase text-slate-300">Size / Type</span>
+                  <span className="font-mono text-lg font-black">{scanned.size} / {scanned.type}</span>
+                </div>
+                {mode === 'XN_CHO_HA_VO' ? (
+                  <div className="text-right">
+                    <span className="block text-[10px] font-semibold uppercase text-slate-300">Trạng thái / Đóng hàng</span>
+                    <span className={`font-mono text-lg font-black ${scanned.conditionClass === 'DAMAGE' ? 'text-rose-300' : 'text-emerald-300'}`}>
+                      {scanned.conditionClass} / {scanned.stuffingClass}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-right">
+                    <span className="block text-[10px] font-semibold uppercase text-slate-300">Vị trí hiện tại</span>
+                    <span className="font-mono text-lg font-black text-amber-300">{formatLocation(scanned)}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
-            <dt className="text-slate-500">Size / Type / AGE</dt>
-            <dd className="font-semibold">{scanned.size}/{scanned.type} • {scanned.manufactureYear}</dd>
-            <dt className="text-slate-500">Trạng thái / Đóng hàng</dt>
-            <dd className="font-semibold">{scanned.conditionClass} • {scanned.stuffingClass}</dd>
+            {isForklift ? (
+              <>
+                <dt className="text-slate-500">AGE</dt>
+                <dd className="font-semibold">{scanned.manufactureYear}</dd>
+              </>
+            ) : (
+              <>
+                <dt className="text-slate-500">Size / Type / AGE</dt>
+                <dd className="font-semibold">{scanned.size}/{scanned.type} • {scanned.manufactureYear}</dd>
+                <dt className="text-slate-500">Trạng thái / Đóng hàng</dt>
+                <dd className="font-semibold">{scanned.conditionClass} • {scanned.stuffingClass}</dd>
+              </>
+            )}
             <dt className="text-slate-500">Vệ sinh</dt>
             <dd className="font-semibold">{scanned.cleaningItems.join(', ')}</dd>
-            <dt className="text-slate-500">Vị trí hiện tại</dt>
-            <dd className="font-mono font-semibold">{formatLocation(scanned)}</dd>
+            {mode !== "XN_CHO_CAP_VO" && (
+              <>
+                <dt className="text-slate-500">Vị trí hiện tại</dt>
+                <dd className="font-mono font-semibold">{formatLocation(scanned)}</dd>
+              </>
+            )}
             {mode === 'XN_CHO_CAP_VO' && (
               <>
                 <dt className="text-slate-500">Số xe nhận vỏ</dt>

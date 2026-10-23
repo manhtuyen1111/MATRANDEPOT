@@ -35,13 +35,13 @@ Kiểm thử mới nhất: `npm test` **56/56 pass** • `npm run build` **PASS*
 | Phiếu thu | Văn phòng tạo phiếu thu TTT và xác nhận tiền mặt; phiếu thu ghi rõ **tác nghiệp** (Hạ vỏ / Cấp vỏ / Thu trước); hồ sơ container link thẳng về Phiếu thu | 032, 047, 051 |
 | DAMAGE | Báo giá (remark + giờ công) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → **AV** (không có QC) | 040–043, 049 |
 | Tổ sửa chữa | Danh mục chung → Sửa chữa: thêm tổ; thêm **user Sửa chữa có sẵn** hoặc nhập tên; ngưng thay vì xóa | 042, 048 |
-| Cấp vỏ | Nhập booking (tự đếm), chọn cont (AV mặc định, DAMAGE được), số xe + SĐT, chi phí, thanh toán tại Văn phòng → Xe nâng OUT (khung nổi số cont + vị trí) → **Văn phòng trả chứng từ** | 027, 033, 034, 052, 053 |
+| Cấp vỏ | Nhập booking (tự đếm), chọn cont (AV mặc định, DAMAGE được), số xe + SĐT, chi phí, thanh toán tại Văn phòng → Xe nâng OUT (khung nổi số cont, size/type, vị trí) → **Văn phòng trả chứng từ** | 027, 033, 034, 052, 061 |
 | Vị trí / Khóa | Đảo chuyển (Xe nâng, có lịch sử); Sửa vị trí (Văn phòng, không lịch sử); Khóa bắt buộc ghi chú, không cấp được; Block do Admin cấu hình | 030, 036, 050 |
 | Mã hồ sơ / QR | `IN-YYMMDD-NNN`, `OUT-YYMMDD-NNN` do hệ thống cấp; QR phiếu K80 = `QR-<mã hồ sơ>` (duy nhất), **đóng sau khi trả chứng từ** | 037, 057 |
 | Hồ sơ container | Đầu: thông tin container (số cont lớn) → các bộ phận theo thứ tự, xác nhận ✓ HOÀN THÀNH bên phải → **Thanh toán 1 mục riêng dưới Văn phòng**, link phiếu thu | 058 |
 | Báo cáo | Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp 5 sheet — bắt buộc lọc, phân trang; **Xuất Excel .xlsx theo bộ lọc** ở mọi báo cáo + Phiếu thu | 044, 046, 050, 055 |
 | Thời gian | Toàn app **dd/MM/yyyy HH:mm:ss** (hiển thị, bộ lọc, in, Excel); bộ lọc mặc định **1 ngày trước → hiện tại** | 054, 056 |
-| Mobile | Giám định – Hạ vỏ, Vệ sinh, Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ / **Đảo chuyển**), Sửa chữa: khung mobile, biểu tượng điện thoại trên menu | 012, 049 |
+| Mobile | Giám định – Hạ vỏ, Vệ sinh, Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ / **Đảo chuyển**), Sửa chữa: khung mobile, biểu tượng điện thoại trên menu; Xe nâng quét mã: khung nền đậm thống nhất (số cont, size/type, trạng thái/đóng hàng hoặc vị trí) | 012, 049, 061 |
 | Nhập / Xuất tàu | Để giai đoạn sau | 038 |
 
 ## D. ĐÃ HOÀN THÀNH
@@ -66,6 +66,7 @@ Kiểm thử mới nhất: `npm test` **56/56 pass** • `npm run build` **PASS*
 | P4-pre5 | Bộ lọc thời gian mặc định 1 ngày trước → hiện tại (Phiếu thu + mọi báo cáo) | 2026-10-23 | DEC-056 | **52/52 • build PASS** | agent/claude/p4-prep-xlsx |
 | P4-pre6 | **Sửa lỗi QR trùng** (QR theo mã hồ sơ, đóng sau trả chứng từ); hồ sơ container cấu trúc thống nhất Hạ vỏ – Cấp vỏ | 2026-10-23 | DEC-057, 058 | **53/53 • build PASS** | agent/claude/p4-prep-xlsx |
 | P4-pre7 | Giám định xóa hồ sơ khi Văn phòng chưa thao tác; Văn phòng Hạ vỏ báo + chặn trùng Tồn vỏ ngay khi nhập số cont | 2026-10-23 | DEC-059, 060 | **56/56 • build PASS** | agent/claude/p4-prep-xlsx |
+| P4-pre8 | Xe nâng Chờ hạ vỏ / Chờ cấp vỏ: khung nổi bật thống nhất, bỏ dòng trùng, tối ưu mobile | 2026-10-23 | DEC-061 | 56/56 • build PASS; **chưa test hiển thị sau khi quét** (cần thử trên điện thoại) | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -106,3 +107,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-23 — Claude Code: P4-pre5 (DEC-056) — mặc định bộ lọc 24 giờ gần nhất.
 - 2026-10-23 — Claude Code: P4-pre6 (DEC-057, 058) — QR duy nhất + đóng mã; hồ sơ container thống nhất.
 - 2026-10-23 — Claude Code: P4-pre7 (DEC-059, 060).
+- 2026-10-23 — Claude Code: P4-pre8 (DEC-061) — khung nổi bật Xe nâng.

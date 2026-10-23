@@ -369,7 +369,7 @@ Quy ước trạng thái:
   - **Bước cuối mới — Văn phòng → Trả chứng từ:** lái xe quay về Văn phòng, quét QR phiếu K80 → hệ thống ghi nhận trả chứng từ và **tự mở lệnh in EEIR + phiếu thu (nếu có)**. Chỉ trả được khi đã qua đủ các bộ phận trước; mỗi phiếu trả 1 lần. Quyền: Văn phòng / Quản lý.
   - EEIR in kèm bảng các bước đã xác nhận (người, giờ) và chỗ ký lái xe / đại diện bãi. TTT / TTS không có phiếu thu (ghi chú trên bộ chứng từ).
 
-### DEC-053 — Xe nâng – Chờ cấp vỏ: làm nổi số container + vị trí
+### DEC-053 — Xe nâng – Chờ cấp vỏ: làm nổi số container + vị trí (THAY BỞI DEC-061)
 
 - Trạng thái: CONFIRMED (2026-10-23)
 - Quyết định: Khi quét phiếu ở **Xe nâng → Chờ cấp vỏ**, **SỐ CONTAINER** và **VỊ TRÍ HIỆN TẠI** hiển thị trong khung nền đậm, chữ lớn, ở trên cùng chi tiết công việc.
@@ -419,6 +419,14 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-23)
 - Quyết định: Ngay khi nhập đủ **SỐ CONTAINER** (4 chữ + 7 số), hệ thống kiểm tra: container đang có trong **TỒN VỎ** (chưa OUT) hoặc đang có hồ sơ Hạ vỏ khác chưa hoàn tất → báo đỏ ngay dưới ô (kèm mã hồ sơ + vị trí) và **chặn** không mở các bước tiếp (chi phí, thanh toán). Cùng một hàm `gateInContainerConflict` dùng cho giao diện và kiểm tra khi xác nhận.
+
+### DEC-061 — Khung nổi bật thống nhất ở Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ)
+
+- Trạng thái: CONFIRMED (2026-10-23) — thay DEC-053
+- Quyết định: Sau khi quét mã ở **Xe nâng → Chờ hạ vỏ** và **Xe nâng → Chờ cấp vỏ**, thông tin chính nằm trong **một khung nền đậm giống nhau**, chữ lớn, tối ưu đọc trên điện thoại:
+  - Dòng 1: **SỐ CONTAINER** (rất lớn; có nhãn ĐANG KHÓA nếu bị khóa).
+  - Dòng 2: **SIZE / TYPE** + (Chờ hạ vỏ: **TRẠNG THÁI / ĐÓNG HÀNG**; Chờ cấp vỏ: **VỊ TRÍ HIỆN TẠI**).
+  - Các dòng chi tiết bên dưới bỏ phần trùng với khung (chỉ còn AGE, vệ sinh, số xe / SĐT, hồ sơ...).
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
@@ -509,6 +517,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-060 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-061 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

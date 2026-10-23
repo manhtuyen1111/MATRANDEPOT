@@ -36,6 +36,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Giám định xóa hồ sơ hạ vỏ khi Văn phòng chưa thao tác (DEC-059).
 - Văn phòng Hạ vỏ: báo trùng Tồn vỏ ngay khi nhập số container và chặn các bước tiếp (DEC-060). Kiểm thử: 56/56 pass.
 
+### Changed (2026-10-23, tiếp)
+- Xe nâng Chờ hạ vỏ / Chờ cấp vỏ: khung nổi bật thống nhất (số cont, size/type, trạng thái/đóng hàng hoặc vị trí), bỏ dòng trùng, tối ưu mobile (DEC-061). Kiểm thử: 56/56 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 
