@@ -559,13 +559,14 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                   <th className="py-2 pr-2">Hãng tàu</th>
                   <th className="py-2 pr-2">Trạng thái</th>
                   <th className="py-2 pr-2">Đóng hàng</th>
-                  <th className="py-2">Vị trí</th>
+                  <th className="py-2 pr-2">Vị trí</th>
+                  <th className="py-2">Ghi chú văn phòng</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {ready.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-6 text-center text-slate-500">Không có container phù hợp bộ lọc.</td>
+                    <td colSpan={7} className="py-6 text-center text-slate-500">Không có container phù hợp bộ lọc.</td>
                   </tr>
                 ) : (
                   ready.map((c) => (
@@ -577,12 +578,13 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                       }}
                       className={`${c.isOnHold ? "cursor-not-allowed bg-rose-50/60 text-slate-500" : "cursor-pointer"} ${selectedContainerId === c.id ? "bg-blue-50" : c.isOnHold ? "" : "hover:bg-slate-50"}`}
                     >
-                      <td className="py-2 pr-2"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.officeNote || c.holdReason} />{c.isOnHold && <span className="ml-1 text-[10px] font-bold text-rose-700">KHÓA — mở khóa trước khi cấp</span>}</td>
+                      <td className="py-2 pr-2"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.officeNote || c.holdReason} /></td>
                       <td className="py-2 pr-2">{c.size}/{c.type}</td>
                       <td className="py-2 pr-2">{c.shippingLineCode}</td>
                       <td className={`py-2 pr-2 font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
                       <td className="py-2 pr-2">{c.stuffingClass}</td>
-                      <td className="py-2 font-mono">{formatLocation(c)}</td>
+                      <td className="py-2 pr-2 font-mono">{formatLocation(c)}</td>
+                      <td className="py-2 text-[11px] font-semibold text-amber-900">{c.officeNote || "-"}</td>
                     </tr>
                   ))
                 )}

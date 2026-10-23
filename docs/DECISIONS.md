@@ -451,7 +451,7 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-23) — bổ sung DEC-030
 - Quyết định:
   - Khi KHÓA container, nội dung bắt buộc là **REMARK VĂN PHÒNG** (ghi thẳng vào cột Ghi chú văn phòng ở Tồn vỏ), không phải một ghi chú riêng.
-  - Văn phòng → Cấp vỏ: container **đang khóa vẫn hiển thị** trong danh sách (biểu tượng khóa + nhãn), nhưng **không chọn để cấp được** — phải mở khóa ở Tồn vỏ trước.
+  - Văn phòng → Cấp vỏ: container **đang khóa vẫn hiển thị** trong danh sách (chỉ hiện biểu tượng khóa), danh sách có cột **Ghi chú văn phòng**, nhưng **không chọn để cấp được** — phải mở khóa ở Tồn vỏ trước.
   - Tồn vỏ có nút **Xuất Excel** (theo bộ lọc đang chọn; gồm cột khóa, người khóa, Remark Văn phòng).
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo

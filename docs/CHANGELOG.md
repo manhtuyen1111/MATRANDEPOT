@@ -47,6 +47,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-23, DEC-065)
 - Khóa container: nội dung bắt buộc là Remark Văn phòng. Cấp vỏ hiển thị cả cont đang khóa, phải mở khóa trước khi cấp. Tồn vỏ có Xuất Excel. Kiểm thử: 60/60 pass.
 
+### Changed (2026-10-23, DEC-065 bổ sung)
+- Cấp vỏ: cont khóa chỉ hiện biểu tượng khóa; thêm cột Ghi chú văn phòng.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

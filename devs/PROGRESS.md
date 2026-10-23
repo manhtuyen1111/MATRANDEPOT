@@ -115,3 +115,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-23 — Claude Code: P4-pre8 (DEC-061) — khung nổi bật Xe nâng.
 - 2026-10-23 — Claude Code: P4-pre9 (DEC-062, 063, 064).
 - 2026-10-23 — Claude Code: P4-pre10 (DEC-065).
+- 2026-10-23 — Claude Code: Cấp vỏ — chỉ icon khóa, thêm cột Ghi chú văn phòng (DEC-065).
