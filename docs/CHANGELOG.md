@@ -2,6 +2,68 @@
 
 Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, database và chức năng dự án.
 
+## [0.4.0] — 2026-10-22 (Change Request đợt 1 — nhánh `feature/cr-2026-10-batch1`)
+
+Phạm vi: frontend + tầng nghiệp vụ chế độ Demo (localStorage). **Chưa thay đổi database / Supabase.**
+
+### Added
+- Vai trò `QUOTATION` (Bộ phận Báo giá) và nhân sự mẫu.
+- Menu **Xe nâng → Đảo chuyển** (CR-01): tìm / lọc SIZE, TIẾN ĐỘ; lưu lịch sử ĐẢO CHUYỂN.
+- **Tồn vỏ**: SỬA VỊ TRÍ hành chính, KHÓA / MỞ KHÓA container có ghi chú bắt buộc, biểu tượng khóa, vị trí chưa chính thức hiển thị `-` (CR-02).
+- Menu **Văn phòng → Phiếu thu** (CR-04): tra cứu có lọc và phân trang; Kế toán tạo phiếu thu TTT (Tiền mặt / Chuyển khoản API QR); mã `PT-YYYY-NNNNNN`.
+- Giao dịch thu tiền và phiếu thu tách khỏi chứng từ; chuyển khoản chờ ngân hàng xác nhận, chống xử lý lặp; nút giả lập ngân hàng chỉ ở chế độ Demo.
+- **Cấp vỏ** (CR-05): theo dõi booking (đếm đã cấp, mở danh sách), SỐ XE + SĐT LÁI XE, CHI PHÍ + thanh toán tại Văn phòng như Hạ vỏ, bộ lọc Hãng tàu–Size–Type–Trạng thái, cột Phân loại đóng hàng, cho phép cấp DAMAGE.
+- Mã hồ sơ `IN-YYMMDD-NNN` / `OUT-YYMMDD-NNN` do hệ thống cấp (CR-07); hồ sơ cấp vỏ xem được cả khi container đã OUT.
+- **Báo cáo** (CR-08): Cấp vỏ, Nhập tàu, Xuất tàu (tra cứu bắt buộc lọc, phân trang), Tổng hợp xuất Excel 5 sheet.
+- Menu mới có icon, nhóm thu gọn / mở rộng, thu thành thanh icon, ngăn kéo trên điện thoại, hiển thị theo quyền (CR-06, CR-09); Danh mục chung tách mục con trên menu.
+- `AGENTS.md`, `CLAUDE.md`, `.claude/settings.json` (harness cho AI agent).
+- 34 test tự động (nghiệp vụ + smoke render UI).
+
+### Changed
+- Hạ vỏ: `ĐẠI DIỆN KHÁCH HÀNG` → `SĐT LÁI XE` (giữ trường Khách hàng); tiêu đề `CHI PHÍ (ĐÃ BAO GỒM VAT)`; bỏ phần giải thích dài; chi phí chỉ từ biểu giá.
+- TTS ghi nhận là công nợ (`DEFERRED`), không còn ghi là đã thanh toán; dữ liệu demo cũ được quy đổi tự động.
+- Container có yêu cầu vệ sinh chỉ vào hàng chờ Xe nâng hạ vỏ sau khi vệ sinh xong (CR-03).
+- Quyền: Vệ sinh và Xe nâng thêm Văn phòng; Báo giá chỉ `QUOTATION`; Sửa chữa chỉ `REPAIR_STAFF`; ghi chú tồn vỏ chỉ Văn phòng / Quản lý.
+- Xe nâng Chờ cấp vỏ chỉ xác nhận OUT; không còn tự ghi phí 0đ / TTS.
+- Hồ sơ container bố trí lại nhóm A/B/C và 2 cột cho từng bộ phận (CR-07).
+- Mỗi lượt lưu bãi là một bản ghi riêng; lượt đã OUT được giữ lại.
+- Nhập tàu / Xuất tàu thành màn hình chờ (không ghi dữ liệu) theo DEC-038.
+
+### Fixed
+- `npm run build` lỗi TypeScript ở `ReportsWorkspace` (`releaseBookings`).
+- Container đã OUT có thể bị "giải phóng" về tồn bãi.
+- Hồ sơ Hạ vỏ đã hủy vẫn có thể GATE IN OK; hai hồ sơ đang mở cho cùng số container.
+- Lập lệnh cấp vỏ tự tạo booking với số lượng gán cứng 5.
+- Danh sách cấp vỏ hiển thị container còn chờ vệ sinh.
+- Mã hồ sơ / phiếu sinh theo số lượng bản ghi hoặc `Date.now()` có thể trùng.
+- Phí Hạ vỏ gán cứng 1.150.000 / 850.000đ; dữ liệu "giả" dự phòng trong hồ sơ.
+- Xóa Block đang có container tồn bãi.
+
+### Removed
+- Menu HẠ SỬA CHỮA, HẠ KỆ GIÁM ĐỊNH (thay bằng Đảo chuyển); ba mục báo cáo TỒN VỎ / HẠ VỎ / CẤP VỎ.
+- 5 file giao diện không được sử dụng: `BookingGateOutFeature`, `GateInFeature`, `PaymentsFeature`, `ServicesFeature`, `ReportsAuditFeature`.
+
+### Added (bổ sung 2026-10-22)
+- Giờ công sửa chữa (Báo giá), danh mục Tổ sửa chữa, chọn tổ + nhân viên khi hoàn tất sửa chữa, báo cáo Sửa chữa chi tiết, số xe + SĐT lái xe ở Xe nâng – Chờ cấp vỏ, bỏ nhãn "Mới nhất" ở Giám định (DEC-041 → 044).
+
+### Added (bổ sung 2026-10-22, đợt 3)
+- Báo cáo Hạ vỏ; Danh mục USER - PHÂN QUYỀN; vai trò QC SỬA CHỮA; menu giới hạn theo vai trò; đổi nhãn Danh mục Container / Sửa chữa (DEC-045, DEC-046).
+
+### Changed (bổ sung 2026-10-22, đợt 4)
+- Bỏ vai trò Kế toán (Văn phòng tạo phiếu thu TTT, xác nhận tiền mặt); gộp nhân viên cổng / hiện trường vào Giám định; dữ liệu cũ tự quy đổi (DEC-047).
+- Sửa chữa hoàn tất → Chờ nghiệm thu; thêm menu QC sửa chữa → Chờ nghiệm thu, QC nghiệm thu đạt → AV (DEC-047).
+- Danh mục Sửa chữa: thêm user Sửa chữa có sẵn vào tổ (DEC-048).
+
+### Changed (bổ sung 2026-10-22, đợt 5)
+- Bỏ vai trò và menu QC Sửa chữa — Sửa chữa hoàn tất chuyển AV (DEC-049).
+- Xe nâng → Đảo chuyển tối ưu cho điện thoại.
+- Giám định → Hạ vỏ: tiêu đề đơn giản đồng bộ các màn mobile.
+- Kiểm thử: 42/42 test pass, build PASS.
+
+### Pending
+- Database Supabase (viết lại migration, RPC, RLS, pgTAP) — kiểm tra quyền và khóa container ở database.
+- Câu hỏi còn mở: OPEN-001, 002, 003, 005, 006, 008; Q-034 (định dạng Excel). Xem `devs/PROGRESS.md` mục A.
+
 ## [0.3.0] — 2026-10-21
 
 ### Added

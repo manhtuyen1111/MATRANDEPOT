@@ -13,13 +13,42 @@ Xác định vai trò nhân sự và nguyên tắc phân quyền cho toàn bộ 
 | ADMIN | Quản trị hệ thống | Cấu hình, tài khoản, phân quyền và quản trị kỹ thuật |
 | MANAGER | Quản lý bãi | Giám sát vận hành, xử lý ngoại lệ và phê duyệt theo thẩm quyền |
 | OFFICE | Nhân viên văn phòng | Hồ sơ container, booking và điều phối nghiệp vụ |
-| GATE_STAFF | Nhân viên cổng | Tiếp nhận, kiểm tra và xác nhận các bước tại cổng |
-| YARD_STAFF | Nhân viên hiện trường | Chụp ảnh, kiểm tra và xác nhận công việc tại bãi |
+| ~~GATE_STAFF~~ | (Đã bỏ — DEC-047) | Gộp vào INSPECTOR |
+| ~~YARD_STAFF~~ | (Đã bỏ — DEC-047) | Gộp vào INSPECTOR |
 | FORKLIFT | Nhân viên xe nâng | Nhận lệnh và xác nhận thao tác di chuyển container |
 | CLEANING | Nhân viên vệ sinh | Thực hiện và cập nhật kết quả vệ sinh |
-| INSPECTOR | Nhân viên giám định | Kiểm tra tình trạng và lập kết quả giám định |
+| INSPECTOR | Nhân viên giám định | Giám định Hạ vỏ (chụp ảnh, phân loại, vệ sinh, AGE) |
+| QUOTATION | Bộ phận Báo giá | Báo giá container DAMAGE (DEC-026) — bổ sung 2026-10-22 |
+| ~~REPAIR_QC~~ | (Đã bỏ — DEC-049) | Gộp vào REPAIR_STAFF |
 | REPAIR_STAFF | Nhân viên sửa chữa | Thực hiện và cập nhật công việc M&R |
-| ACCOUNTANT | Nhân viên kế toán | Phí, khoản phải thu, thanh toán và đối soát |
+| ~~ACCOUNTANT~~ | (Đã bỏ — DEC-047) | Quyền chuyển sang OFFICE |
+
+## 2A. Quyền thao tác đang áp dụng trong code (2026-10-22)
+
+Nguồn duy nhất trong code: `src/services/permissions.ts` (`PERMISSIONS`, `MENU_ACCESS`). `ADMIN` có toàn quyền. Ở chế độ Supabase, cùng ma trận này phải được kiểm tra trong RPC/RLS.
+
+| Thao tác | Vai trò được phép | Căn cứ |
+|---|---|---|
+| Giám định Hạ vỏ | INSPECTOR, MANAGER | DEC-020 |
+| Văn phòng Hạ vỏ (bổ sung hồ sơ, lập chi phí) | OFFICE, MANAGER | DEC-022 |
+| Xác nhận thanh toán Hạ vỏ / Cấp vỏ | OFFICE, MANAGER | DEC-004, DEC-047 |
+| Hoàn tất vệ sinh | CLEANING, OFFICE | DEC-035 |
+| Xe nâng hạ vỏ, đảo chuyển | FORKLIFT, OFFICE, MANAGER | DEC-035, DEC-036 |
+| Báo giá (remark + giờ công) | QUOTATION | DEC-026, DEC-035, DEC-041 |
+| Hoàn tất sửa chữa (chọn tổ + nhân viên) | REPAIR_STAFF | DEC-035, DEC-043 |
+| Thêm user Sửa chữa vào tổ | ADMIN | DEC-048 |
+| Sửa vị trí hành chính | OFFICE, MANAGER | DEC-036 |
+| Khóa / mở khóa container | OFFICE, MANAGER | DEC-017, DEC-030 |
+| Ghi chú tồn vỏ | OFFICE, MANAGER | DEC-029 |
+| Lập / hủy lệnh cấp vỏ | OFFICE, MANAGER | DEC-033 |
+| Xe nâng xác nhận OUT | FORKLIFT, OFFICE, MANAGER | DEC-015 |
+| Xem PHIẾU THU | OFFICE, MANAGER | DEC-032, DEC-047 |
+| Tạo phiếu thu TTT, xác nhận tiền mặt TTT | OFFICE | DEC-047 |
+| Báo cáo Tổng hợp, cột chi phí trong báo cáo | OFFICE, MANAGER | Mục 5 (dữ liệu tài chính) |
+| Giả lập ngân hàng (chỉ Demo) | OFFICE, MANAGER | DEC-039 |
+| Cấu hình Danh mục chung (kể cả tổ sửa chữa) | ADMIN | DEC-028, DEC-042 |
+| Quản lý User - Phân quyền | ADMIN | DEC-045 |
+| Hiển thị menu | Theo `MENU_ACCESS`: mỗi vai trò chỉ thấy màn của mình | DEC-045 |
 
 ## 3. Quy ước quyền
 
@@ -33,7 +62,7 @@ Xác định vai trò nhân sự và nguyên tắc phân quyền cho toàn bộ 
 
 Có quyền xem không đồng nghĩa với có quyền sửa hoặc xác nhận.
 
-## 4. Ma trận quyền dự kiến
+## 4. Ma trận quyền dự kiến (bản tham khảo ban đầu — đã được thay bởi mục 2A và DEC-045, DEC-047)
 
 | Nghiệp vụ | ADMIN | MANAGER | OFFICE | GATE_STAFF | YARD_STAFF | FORKLIFT | CLEANING | INSPECTOR | REPAIR_STAFF | ACCOUNTANT |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -79,7 +108,7 @@ Ma trận trên là bản nháp để thảo luận, không phải cấu hình q
 
 ## 7. Trạng thái
 
-- Danh sách vai trò: dự kiến.
-- Ma trận quyền: dự kiến.
-- Quy tắc phân tách nhiệm vụ: chưa chốt.
-- Cấu hình RLS và quyền backend: chưa triển khai.
+- Danh sách vai trò: 11 vai trò đã xác nhận (DEC-017, DEC-026).
+- Quyền thao tác: mục 2A đã áp dụng ở tầng nghiệp vụ chế độ Demo; ma trận mục 4 vẫn là bản tham khảo cho các phân hệ chưa làm.
+- Quy tắc phân tách nhiệm vụ: không tách người làm / người duyệt cho Vệ sinh, Xe nâng, Báo giá, Sửa chữa (DEC-035); các thao tác khác chưa chốt.
+- Cấu hình RLS và quyền backend Supabase: chưa triển khai (migration 0001 là bản nháp, sẽ viết lại).

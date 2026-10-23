@@ -33,25 +33,29 @@ import {
 } from '../../services/depotOperations';
 import { FeeTariffCategory } from '../../types/depot';
 
-interface Props {
-  state: DepotState;
-  onUpdateState: (next: DepotState) => void;
-}
-
-type CatalogTab =
+export type CatalogTab =
   | 'KHACH_HANG'
   | 'VI_TRI'
   | 'HANG_TAU'
   | 'CONTAINER'
   | 'BIEU_GIA';
 
+interface Props {
+  state: DepotState;
+  onUpdateState: (next: DepotState) => void;
+  // Mục con được chọn từ menu DANH MỤC CHUNG (CR-06); khi có thì ẩn thanh tab nội bộ
+  tab?: CatalogTab;
+}
+
 export const MasterCatalogWorkspace: React.FC<Props> = ({
   state,
   onUpdateState,
+  tab,
 }) => {
   const isAdmin = state.currentUser.roles.includes('ADMIN');
 
-  const [activeTab, setActiveTab] = useState<CatalogTab>('BIEU_GIA');
+  const [activeTabState, setActiveTab] = useState<CatalogTab>('BIEU_GIA');
+  const activeTab = tab || activeTabState;
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -286,7 +290,8 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 5 TABS DANH MỤC CHUNG */}
+      {/* 5 TABS DANH MỤC CHUNG — chỉ dùng khi không điều hướng từ menu */}
+      {!tab && (
       <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2 text-xs">
         {(
           [
@@ -321,16 +326,16 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
               icon: Receipt,
             },
           ] as const
-        ).map((tab) => {
-          const Icon = tab.icon;
-          const active = activeTab === tab.id;
+        ).map((item) => {
+          const Icon = item.icon;
+          const active = activeTab === item.id;
           return (
             <button
-              key={tab.id}
+              key={item.id}
               type="button"
               onClick={() => {
                 clearFeedback();
-                setActiveTab(tab.id);
+                setActiveTab(item.id);
               }}
               className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 font-bold transition ${
                 active
@@ -339,7 +344,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
               }`}
             >
               <Icon className="h-4 w-4" />
-              <span>{tab.label}</span>
+              <span>{item.label}</span>
               <span
                 className={`rounded px-1.5 py-0.5 text-[10px] font-black ${
                   active
@@ -347,12 +352,13 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                     : 'bg-slate-100 text-slate-600'
                 }`}
               >
-                {tab.count}
+                {item.count}
               </span>
             </button>
           );
         })}
       </div>
+      )}
 
       {/* ===================================================================== */}
       {/* TAB 1: + KHÁCH HÀNG */}

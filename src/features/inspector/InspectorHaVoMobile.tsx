@@ -26,6 +26,7 @@ import {
   normalizeCleaningItems,
   recordGateInFieldStep,
 } from '../../services/depotOperations';
+import { peekNextCode } from '../../services/codes';
 
 interface Props {
   state: DepotState;
@@ -36,15 +37,6 @@ interface Props {
 const QUICK_YEARS = [
   2001, 2002, 2005, 2008, 2010, 2012, 2015, 2017, 2018, 2019, 2020, 2022,
 ];
-
-function generateInspectionKey(seqNumber: number): string {
-  const now = new Date();
-  const y = String(now.getFullYear()).slice(-2);
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  const seq = String(seqNumber).padStart(3, '0');
-  return `HS-${y}${m}${d}-${seq}`;
-}
 
 function formatDateTimeVi(isoString: string): string {
   try {
@@ -149,8 +141,8 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
 
   // Bấm dấu (+) góc phải dưới màn hình -> Tạo Mã Hồ Sơ Chính tự động & Chỉ hiển thị màn chụp ảnh cửa cont
   const handleCreateNewKey = () => {
-    const nextSeq = state.gateInOrders.length + 1;
-    const newKey = generateInspectionKey(nextSeq);
+    // Chỉ là mã dự kiến để hiển thị; mã thật do hệ thống cấp khi xác nhận (CR-07)
+    const newKey = peekNextCode(state, 'IN');
     setSelectedOrder(null);
     setActiveKey(newKey);
     setDoorPhotoDataUrl('');
@@ -281,7 +273,6 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
       const next = recordGateInFieldStep(state, {
         gateInType: 'CUSTOMER_RETURN',
         doorPhotoUrl: doorPhotoDataUrl,
-        initialContainerHint: activeKey || undefined,
         conditionClass,
         damageRemarks: remarks,
         stuffingClass,
@@ -305,25 +296,15 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
   };
 
   return (
-    <div className="relative w-full space-y-4 pb-24">
+    <div className="relative mx-auto w-full max-w-lg space-y-4 pb-24">
       {/* TIÊU ĐỀ MÀN HẠ VỎ (TỐI ƯU MOBILE NGOÀI HIỆN TRƯỜNG) */}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3">
+      {/* Đồng bộ tiêu đề với các màn mobile khác (Vệ sinh, Xe nâng, Sửa chữa) */}
+      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-slate-900">
-              GIÁM ĐỊNH — HẠ VỎ (DANH SÁCH CHỜ XÁC NHẬN VĂN PHÒNG)
-            </h2>
-            <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
-              Tác nghiệp Mobile Hiện trường
-            </span>
-          </div>
-          <p className="mt-0.5 text-xs text-slate-500">
-            Tác nghiệp mới luôn ở trên cùng • Khi Văn phòng xác nhận xong sẽ tự ẩn khỏi danh sách này
-          </p>
+          <span className="block text-[11px] font-semibold uppercase text-slate-500">Bộ phận Giám định</span>
+          <h2 className="text-sm font-bold text-slate-900">Hạ vỏ</h2>
         </div>
-        <span className="rounded bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
-          Đang chờ: {recentOrders.length} phiếu
-        </span>
+        <span className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">{recentOrders.length}</span>
       </div>
 
       {successMsg && (
@@ -376,11 +357,6 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                     <span className="font-mono text-sm font-bold text-blue-700">
                       {item.masterDossierCode || item.orderCode}
                     </span>
-                    {idx === 0 && (
-                      <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
-                        Mới nhất
-                      </span>
-                    )}
                   </div>
 
                   {/* Cột 2: Thời gian xác nhận giám định */}
@@ -526,7 +502,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
         type="button"
         onClick={handleCreateNewKey}
         title="Tạo tác nghiệp Hạ vỏ mới"
-        className="fixed bottom-6 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 active:scale-95 transition"
+        className="sticky bottom-6 z-30 ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 active:scale-95 transition"
       >
         <Plus className="h-7 w-7 stroke-[2.5]" />
       </button>
@@ -539,7 +515,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
             <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
               <div>
                 <span className="text-[11px] text-slate-500 block">
-                  MÃ HỒ SƠ CHÍNH (Tự động khởi tạo)
+                  MÃ HỒ SƠ HẠ VỎ (dự kiến — cấp chính thức khi xác nhận)
                 </span>
                 <span className="font-mono text-base font-bold text-blue-700">
                   {activeKey}

@@ -29,15 +29,24 @@ Xây dựng hệ thống quản lý tập trung, thay thế các quy trình rờ
 - Kiểm tra quyền tại backend/database, không chỉ tại giao diện.
 - Các quy tắc nghiệp vụ chưa xác nhận phải được làm rõ trước khi triển khai.
 
-## 4. Công nghệ dự kiến
+## 4. Công nghệ (DEC-010 → DEC-013)
 
-- Frontend: React + TypeScript + Vite.
-- Backend/database: Supabase và PostgreSQL.
-- Xác thực: Supabase Auth.
-- Lưu trữ ảnh: Supabase Storage hoặc phương án được xác nhận.
+- Frontend: React 19 + TypeScript + Vite + Tailwind CSS.
+- Backend/database: Supabase và PostgreSQL (chưa triển khai — xem mục 6).
+- Xác thực: Supabase Auth (chưa triển khai).
+- Lưu trữ ảnh: Supabase Storage (chưa triển khai).
 - Quản lý mã nguồn: Git và GitHub.
 
-**Lưu ý:** Công nghệ trên là đề xuất ban đầu, chưa được xác nhận chính thức.
+## 4A. Chạy và kiểm tra
+
+```bash
+npm install        # chỉ khi chưa có node_modules
+npm run dev        # chạy ứng dụng (http://localhost:5173)
+npm test           # chạy test tự động (Vitest)
+npm run build      # kiểm tra TypeScript + build production
+```
+
+Không có file `.env` → ứng dụng chạy chế độ **Demo** (dữ liệu mẫu lưu trên trình duyệt, nhãn `DEMO` trên thanh tiêu đề, có thể đổi người dùng để thử quyền).
 
 ## 5. Tài liệu dự án
 
@@ -58,11 +67,19 @@ Các tài liệu nghiệp vụ và kỹ thuật nằm trong thư mục `docs/`.
 | `DEVELOPMENT_RULES.md` | Quy tắc phát triển |
 | `ENVIRONMENT_SETUP.md` | Chuẩn bị môi trường |
 
-## 6. Trạng thái hiện tại
+## 6. Trạng thái hiện tại (2026-10-22)
 
-Giai đoạn chuẩn bị tài liệu và xác nhận nghiệp vụ.
+- Giao diện và tầng nghiệp vụ chạy ở **chế độ Demo** (`src/services/`, lưu localStorage). Quy tắc nghiệp vụ và quyền được kiểm tra trong tầng nghiệp vụ; **chưa có kiểm tra ở database**.
+- Database Supabase: chỉ có migration bản nháp, chưa áp dụng, không khớp nghiệp vụ hiện tại — sẽ viết lại (xem `docs/DATABASE_CONTRACT.md` mục 8–9).
+- Nhập tàu / Xuất tàu: để giai đoạn sau (DEC-038).
+- Kết quả kiểm thử: `docs/ACCEPTANCE_TESTS.md` mục 13 (42/42 test tự động pass). Tiến độ & logic đã chốt: `devs/PROGRESS.md`.
+- Không đưa vào vận hành chính thức cho tới khi hoàn thành database, phân quyền backend và nghiệm thu (DEC-008).
 
-Chưa coi database schema, quyền chính thức hoặc cấu hình công nghệ là hoàn tất chỉ dựa trên các tài liệu đề xuất.
+## 6A. Làm việc với AI agent
+
+Mọi AI agent (Claude Code, Antigravity, ...) phải đọc `AGENTS.md` trước khi làm việc.
+
+**Người giao việc: bắt đầu từ `devs/README.md`** (tiến độ, lộ trình, mẫu giao việc). Tài liệu cho agent: `docs/README.md`.
 
 ## 7. Quy trình bắt đầu công việc
 

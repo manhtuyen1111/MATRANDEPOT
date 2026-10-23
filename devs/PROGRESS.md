@@ -1,0 +1,92 @@
+# PROGRESS — Theo dõi tiến độ MATRAN DEPOT
+
+> Agent cập nhật file này sau mỗi việc (skill `matran-docs-sync`). Bạn chỉ cần đọc mục A, B và F.
+> Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
+
+Cập nhật lần cuối: 2026-10-22 — Claude Code
+Trạng thái chung: **GĐ 3 xong code, đã push nhánh `feature/cr-2026-10-batch1`** — chờ bạn thử trên trình duyệt, tạo PR và merge `main`. Phiên tiếp theo: bắt đầu từ mục A / B.
+Kiểm thử mới nhất: `npm test` **42/42 pass** • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+
+## A. CẦN BẠN QUYẾT ĐỊNH
+| # | Nội dung | Ảnh hưởng |
+|---|---|---|
+| 1 | Nhánh `feature/cr-2026-10-batch1` **đã push lên GitHub** (4 commit, 2026-10-22). Tạo Pull Request và merge vào `main` khi bạn đã thử xong | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/feature/cr-2026-10-batch1 |
+| 2 | Q-034: Excel `.xls` (XML, đang dùng) hay `.xlsx` chuẩn (phải cài thư viện)? | Báo cáo Tổng hợp, Sửa chữa |
+| 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
+| 4 | OPEN-003, Q-006: danh mục trạng thái chính thức, danh sách Block thật | Chặn GĐ 4 database |
+| 5 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
+
+## B. VIỆC TIẾP THEO (đề xuất theo thứ tự)
+| Mã | Việc | Giao cho | Ghi chú |
+|---|---|---|---|
+| P3-T | Bạn chạy `npm run dev`, thử các luồng ở mục F, báo lỗi | Bạn | Agent chưa thử được trên trình duyệt |
+| P4-01 | Viết lại schema Supabase (bảng, bộ đếm mã, RLS) | Claude Code | Cần trả lời A.4 trước |
+| P4-02 | RPC Hạ vỏ + thanh toán + pgTAP | Claude Code | Sau P4-01 |
+| UI-01 | Rà soát giao diện mobile các màn hiện trường | Antigravity | Không đụng `src/services/` |
+
+## C. LOGIC ĐÃ CHỐT (tóm tắt — chi tiết ở `docs/DECISIONS.md`)
+| Chủ đề | Quy tắc | DEC |
+|---|---|---|
+| Vai trò | **8 vai trò**: Giám định, Văn phòng, Xe nâng, Vệ sinh, Báo giá, Quản lý, Admin, Sửa chữa. Bỏ Kế toán (Văn phòng thay), nhân viên cổng/hiện trường = Giám định, **bỏ QC Sửa chữa** | 045, 047, 049 |
+| Menu | Mỗi vai trò chỉ thấy màn của mình; Văn phòng / Quản lý thấy khối văn phòng, báo cáo, danh mục (xem); Admin thấy tất cả | 045 |
+| User | Danh mục chung → User - Phân quyền (Admin): thêm, sửa vai trò, khóa; luôn còn ≥ 1 Admin | 045 |
+| Hạ vỏ | Giám định (mobile) → Văn phòng (SĐT lái xe, khách hàng, chi phí từ biểu giá, TTT/TTS/TTTT) → GATE IN OK → (Vệ sinh nếu có) → Xe nâng hạ vỏ | 020–025 |
+| Thanh toán | TTT trừ dần Phiếu thu mẹ; TTS = công nợ; Tiền mặt / Chuyển khoản mới phát hành phiếu thu `PT-YYYY-NNNNNN` | 031, 032 |
+| Phiếu thu | Văn phòng tạo phiếu thu TTT và xác nhận tiền mặt | 032, 047 |
+| DAMAGE | Báo giá (remark + giờ công) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → **AV** (không có QC) | 040–043, 049 |
+| Tổ sửa chữa | Danh mục chung → Sửa chữa: thêm tổ; thêm **user Sửa chữa có sẵn** hoặc nhập tên; ngưng thay vì xóa | 042, 048 |
+| Cấp vỏ | Nhập booking (tự đếm), chọn cont (AV mặc định, DAMAGE được), số xe + SĐT, chi phí, thanh toán tại Văn phòng → Xe nâng OUT | 027, 033, 034 |
+| Vị trí / Khóa | Đảo chuyển (Xe nâng, có lịch sử); Sửa vị trí (Văn phòng, không lịch sử); Khóa bắt buộc ghi chú, không cấp được | 030, 036 |
+| Mã hồ sơ | `IN-YYMMDD-NNN`, `OUT-YYMMDD-NNN` do hệ thống cấp | 037 |
+| Báo cáo | Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết, Tổng hợp 5 sheet — bắt buộc lọc, phân trang | 044, 046 |
+| Mobile | Giám định – Hạ vỏ, Vệ sinh, Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ / **Đảo chuyển**), Sửa chữa: khung mobile, biểu tượng điện thoại trên menu | 012, 049 |
+| Nhập / Xuất tàu | Để giai đoạn sau | 038 |
+
+## D. ĐÃ HOÀN THÀNH
+| Mã | Việc | Ngày | Kết quả | Kiểm thử | Nhánh |
+|---|---|---|---|---|---|
+| P0 | Khảo sát repo | 2026-10-22 | Báo cáo khảo sát | — | — |
+| P1 | Quy tắc nghiệp vụ DEC-018 → 040 | 2026-10-22 | `docs/DECISIONS.md` | Đối chiếu code | feature/cr-2026-10-batch1 |
+| P2 | Harness: AGENTS, CLAUDE, settings, 6 skill, docs/agents, devs/ | 2026-10-22 | Đủ file | settings.json hợp lệ | feature/cr-2026-10-batch1 |
+| P3 | CR-01 → CR-09 (Demo) + sửa lỗi cũ | 2026-10-22 | Xem `docs/CHANGELOG.md` 0.4.0 | 34/34 • build PASS | feature/cr-2026-10-batch1 |
+| P3-a | Báo giá chỉ cần remark → Chờ sửa chữa | 2026-10-22 | DEC-040 | pass | feature/cr-2026-10-batch1 |
+| P3-b | Biểu tượng điện thoại cho tác nghiệp mobile | 2026-10-22 | Menu + nhãn Mobile | smoke test đếm icon | feature/cr-2026-10-batch1 |
+| P3-c | Màn Giám định – Hạ vỏ hiển thị khung mobile | 2026-10-22 | max-w-lg, nút (+) bám khung | build PASS | feature/cr-2026-10-batch1 |
+| P3-d | Giờ công, Tổ sửa chữa, chọn nhân viên, BC Sửa chữa chi tiết, số xe/SĐT ở Chờ cấp vỏ, bỏ "Mới nhất" | 2026-10-22 | DEC-041 → 044 | 35/35 | feature/cr-2026-10-batch1 |
+| P3-e | Báo cáo Hạ vỏ, User - Phân quyền, menu theo vai trò, đổi nhãn danh mục | 2026-10-22 | DEC-045, 046 | 38/38 | feature/cr-2026-10-batch1 |
+| P3-f | Bỏ Kế toán (Văn phòng thay), gộp Cổng/Hiện trường vào Giám định, **QC nghiệm thu** (menu Chờ nghiệm thu), **thêm user có sẵn vào tổ sửa chữa** | 2026-10-22 | DEC-047, 048 | **41/41 • build PASS** | feature/cr-2026-10-batch1 |
+| P3-g | **Bỏ vai trò + menu QC Sửa chữa** (Sửa chữa xong → AV); **Đảo chuyển tối ưu mobile** (thẻ, chọn ở trên cùng, Xem thêm, lịch sử thu gọn); thêm Lưu ý chung vào AGENTS.md | 2026-10-22 | DEC-049 | **42/42 • build PASS** | feature/cr-2026-10-batch1 |
+| P3-h | Tiêu đề Giám định – Hạ vỏ đồng bộ đơn giản như các màn mobile khác (Bộ phận • tên màn • số đang chờ) | 2026-10-22 | — | 42/42 • build PASS | feature/cr-2026-10-batch1 |
+
+## E. TÀI KHOẢN DEMO (đổi ở góc phải)
+| User | Vai trò | Màn hình thấy |
+|---|---|---|
+| Nguyễn Quản Trị | Admin + Quản lý | Tất cả |
+| Trần Thị Minh, Đỗ Thị Thu | Văn phòng | Tồn vỏ, Văn phòng (Hạ vỏ / Cấp vỏ / Phiếu thu…), Vệ sinh, Xe nâng, Báo cáo, Danh mục (xem) |
+| Lê Hoàng Giám Định | Giám định | Giám định – Hạ vỏ |
+| Phạm Hoàng Xe Nâng | Xe nâng | Chờ hạ vỏ, Chờ cấp vỏ, Đảo chuyển |
+| Vũ Văn Vệ Sinh | Vệ sinh | Chờ vệ sinh |
+| Ngô Thị Báo Giá | Báo giá | Chờ báo giá |
+| Đặng Kỹ Thuật Sửa Chữa | Sửa chữa | Chờ sửa chữa |
+
+> Dữ liệu demo cũ trong trình duyệt được tự quy đổi vai trò. Nếu thấy lạ, bấm **Reset demo**.
+
+## F. CÁCH TỰ KIỂM TRA (trên trình duyệt)
+Chạy `npm run dev`, đổi người dùng ở góc phải:
+1. **Giám định** → (+) tạo hạ vỏ → mã `IN-...`.
+2. **Văn phòng** → Hạ vỏ: nhập SĐT lái xe, thêm chi phí, thử TTS / Tiền mặt / Chuyển khoản (bấm "Giả lập ngân hàng").
+3. Container có vệ sinh: chưa thấy ở **Xe nâng → Chờ hạ vỏ** cho tới khi **Vệ sinh** xác nhận.
+4. DAMAGE: **Báo giá** nhập remark + giờ công → **Sửa chữa** chọn tổ (mặc định chọn hết, bỏ chọn được) → AV.
+5. **Admin → Danh mục chung → Sửa chữa**: chọn user Sửa chữa có sẵn để thêm vào tổ. **User - Phân quyền**: thêm user, sửa vai trò, khóa.
+6. Đổi sang từng user ở mục E → kiểm tra mỗi người chỉ thấy đúng màn hình của mình.
+7. **Tồn vỏ**: Khóa (bắt buộc ghi chú), Sửa vị trí. **Xe nâng → Đảo chuyển** (mở trên điện thoại hoặc thu nhỏ trình duyệt): tìm cont, lọc Chờ sửa chữa, chọn thẻ → vị trí mới.
+8. **Văn phòng → Cấp vỏ**: booking, chọn cont, số xe + SĐT, chi phí, thanh toán → **Xe nâng → Chờ cấp vỏ** (thấy số xe, SĐT) → OUT.
+9. **Văn phòng → Phiếu thu**: tạo phiếu thu TTT tiền mặt → xác nhận → mã `PT-...`.
+10. **Báo cáo**: Hạ vỏ, Cấp vỏ, Sửa chữa chi tiết (lọc theo tổ), Tổng hợp → Tải Excel.
+
+## G. NHẬT KÝ CẬP NHẬT
+- 2026-10-22 — Claude Code: tạo file; ghi P0 → P3-e.
+- 2026-10-22 — Claude Code: P3-f (DEC-047, 048); thêm mục C (logic đã chốt) và E (tài khoản demo).
+- 2026-10-22 — Claude Code: P3-g (DEC-049) — bỏ QC, Đảo chuyển mobile, thêm "Lưu ý chung" (AGENTS.md mục 8).
+- 2026-10-22 — Claude Code: P3-h (tiêu đề Giám định – Hạ vỏ); đồng bộ ROADMAP, ACCEPTANCE_TESTS, CHANGELOG, README với kết quả 42/42.
+- 2026-10-22 — Claude Code: commit 4 nhóm (services / ui / docs / harness) và push nhánh lên GitHub. Chưa merge `main`.

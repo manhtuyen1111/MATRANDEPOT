@@ -98,6 +98,39 @@ Chứa các bài kiểm thử ứng dụng.
 - Không sửa trực tiếp database production mà không có kế hoạch migration và kiểm thử.
 - Mọi thay đổi lớn phải cập nhật tài liệu liên quan.
 
-## 5. Trạng thái
+## 5. Cấu trúc thực tế (2026-10-22)
 
-Cấu trúc này là bản đề xuất ban đầu. Chỉ triển khai sau khi xác nhận công nghệ và phạm vi từng giai đoạn.
+```text
+AGENTS.md                      Luật chung cho mọi AI agent
+CLAUDE.md                      Hướng dẫn riêng cho Claude Code (import AGENTS.md)
+.claude/settings.json          Quyền / chặn thao tác nguy hiểm cho Claude Code
+src/
+├── app/App.tsx                Khung ứng dụng, menu theo quyền, điều hướng
+├── components/
+│   ├── shared.tsx             Thành phần dùng chung: Chi phí, Thanh toán, Chọn vị trí, Phân trang, Thông báo
+│   ├── MasterDossierModal.tsx Hồ sơ container (IN-/OUT-)
+│   └── K80TicketModal.tsx     Phiếu K80
+├── features/
+│   ├── inspector/             Giám định — Hạ vỏ (mobile)
+│   ├── office/                Văn phòng — Hạ vỏ, Cấp vỏ, Nhập/Xuất tàu (chờ)
+│   ├── receipts/              Văn phòng — Phiếu thu
+│   ├── field-queues/          Hàng chờ Vệ sinh, Xe nâng (hạ / cấp), Báo giá, Sửa chữa
+│   ├── forklift/              Xe nâng — Đảo chuyển
+│   ├── yard/                  Tồn vỏ (sửa vị trí, khóa, ghi chú)
+│   ├── reports/               Báo cáo
+│   └── catalog/               Danh mục chung
+├── services/                  TẦNG NGHIỆP VỤ — mọi quy tắc và kiểm tra quyền nằm ở đây
+│   ├── depotOperations.ts     Các bước nghiệp vụ (Hạ vỏ, vị trí, dịch vụ, cấp vỏ, danh mục)
+│   ├── payments.ts            Chứng từ → giao dịch thu tiền → phiếu thu
+│   ├── reports.ts             Truy vấn báo cáo / phiếu thu có lọc, phân trang, xuất Excel
+│   ├── permissions.ts         Ma trận quyền (nguồn duy nhất cho nghiệp vụ và menu)
+│   ├── codes.ts               Cấp mã IN- / OUT- / PT- / PTM- / CT-
+│   ├── core.ts                Audit, kiểm tra vị trí, tiến độ, chuẩn hóa dữ liệu
+│   └── depotStore.ts          State Demo, dữ liệu mẫu, chuẩn hóa dữ liệu localStorage cũ
+├── lib/env.ts, lib/supabase.ts  Cấu hình môi trường / client Supabase (chưa dùng)
+└── types/depot.ts             Kiểu dữ liệu
+supabase/migrations/           Migration bản nháp (CHƯA ÁP DỤNG — sẽ viết lại)
+tests/                         acceptance.test.ts (nghiệp vụ), ui-smoke.test.tsx (render màn hình)
+```
+
+Nguyên tắc: giao diện (`features/`, `components/`) không tự đặt quy tắc nghiệp vụ; chỉ gọi hàm trong `services/`. Khi có Supabase, `services/` sẽ được thay bằng lớp gọi RPC với cùng hợp đồng.

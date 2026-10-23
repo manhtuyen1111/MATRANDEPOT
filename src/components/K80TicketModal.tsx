@@ -45,7 +45,7 @@ export const K80TicketModal: React.FC<Props> = ({
               {ticket.operationMode === 'HA_VO' ? 'HẠ VỎ' : 'CẤP VỎ'})
             </p>
             <p className="mt-1 rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white inline-block">
-              MÃ HỒ SƠ CHÍNH: {ticket.masterDossierCode}
+              MÃ HỒ SƠ: {ticket.outDossierCode || ticket.masterDossierCode}
             </p>
           </div>
 
@@ -61,6 +61,10 @@ export const K80TicketModal: React.FC<Props> = ({
               >
                 {ticket.isPaid ? '✓ (ĐÃ TT)' : '✗ (CHƯA TT)'}
               </span>
+            </div>
+            <div className="border-b border-dotted border-slate-400 pb-1.5 text-[10px]">
+              <span className="font-bold">THANH TOÁN : </span>
+              <span>{ticket.paymentLabel}</span>
             </div>
 
             <div className="border-b border-dotted border-slate-400 pb-1.5">
@@ -120,6 +124,7 @@ export const K80TicketModal: React.FC<Props> = ({
             {ticket.truckNo && (
               <div className="flex justify-between text-[10px] text-slate-600">
                 <span>SỐ XE: {ticket.truckNo}</span>
+                {ticket.driverPhone && <span>SĐT: {ticket.driverPhone}</span>}
                 <span>{new Date(ticket.issuedAt).toLocaleTimeString('vi-VN')}</span>
               </div>
             )}

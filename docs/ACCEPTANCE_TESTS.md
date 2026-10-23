@@ -210,8 +210,37 @@ Không đánh dấu PASS nếu chưa thực hiện kiểm thử và xác minh k�
 - Quy trình nghiệp vụ phải được người phụ trách xác nhận.
 - Phải kiểm thử trên môi trường riêng trước khi vận hành thật.
 
-## 13. Trạng thái
+## 13. Kết quả chạy thực tế (2026-10-22)
 
-- Danh sách kiểm thử ban đầu: đã tạo.
-- Kết quả chạy thực tế: chưa có.
+Phạm vi: **tầng nghiệp vụ chế độ Demo** (`src/services/`), chạy bằng `npm test` (Vitest) — file `tests/acceptance.test.ts`, `tests/ui-smoke.test.tsx`. Kết quả: 42/42 test đạt (cập nhật 2026-10-22).
+Chưa có kết quả ở **database / RLS / thao tác đồng thời thật** vì chưa có backend Supabase. Một mục chỉ được coi là nghiệm thu đầy đủ khi đạt ở cả hai tầng.
+
+| ID | Tầng nghiệp vụ (Demo) | Database / RLS | Bằng chứng (tên test) |
+|---|---|---|---|
+| AUTH-001 → 004 | NOT_RUN | NOT_RUN | Chưa có Supabase Auth (phân quyền menu / thao tác đã test ở Demo: "DEC-045 USER - PHÂN QUYỀN") |
+| GIN-001 | PASS | NOT_RUN | "GIN-001/CR-07: mã hồ sơ IN-..." |
+| GIN-002 | BLOCKED | NOT_RUN | Ảnh chưa lưu Storage |
+| GIN-003 | PASS | NOT_RUN | "GIN-003/CR-04: Văn phòng nhập SĐT LÁI XE..." |
+| GIN-004 | PASS | NOT_RUN | "GIN-004: không GATE IN OK khi chưa lập chứng từ" |
+| GIN-005 | PASS | NOT_RUN | Các test TTT / TTS / TTTT |
+| GIN-006 | PASS | NOT_RUN | "GIN-006: chặn hai hồ sơ Hạ vỏ..." |
+| GIN-007 | NOT_RUN | NOT_RUN | Chưa có chức năng hủy Hạ vỏ (OPEN-006) |
+| YARD-001, 002 | PASS | NOT_RUN | "YARD-002: ĐẢO CHUYỂN lưu lịch sử..." |
+| YARD-003 | PASS | NOT_RUN | "YARD-003/004: từ chối ô ngoài cấu hình..." |
+| YARD-004 | PASS (kiểm tra trùng ô) | NOT_RUN | Đồng thời thật cần ràng buộc database |
+| REL-001, 002 | PASS | NOT_RUN | "REL-001/GOUT-001", "REL-002" |
+| REL-003 | NOT_RUN | NOT_RUN | Đổi container chưa có quy trình (Q-012) |
+| REL-004 | PASS | NOT_RUN | "REL-004: hủy lệnh chưa thanh toán..." |
+| GOUT-001 → 004 | PASS | NOT_RUN | "REL-001/GOUT-001", "Container quay lại bãi lần 2..." |
+| SRV-001 → 003, 005 | PASS | NOT_RUN | "CR-03 & DEC-035...", "DAMAGE (DEC-040)" (remark + giờ công, tổ + nhân viên → AV) |
+| SRV-004 | N/A | N/A | Không có bước duyệt báo giá (DEC-040) |
+| PAY-001, 002 | PASS | NOT_RUN | Test TTTT tiền mặt, phiếu thu TTT |
+| PAY-003 | PASS | NOT_RUN | "PAY-003: ngân hàng báo thất bại" |
+| PAY-004 | PASS | NOT_RUN | "...callback lặp không tạo phiếu thu trùng" |
+| PAY-005 | NOT_RUN | NOT_RUN | Xác minh chữ ký webhook thuộc Edge Function (chưa làm) |
+| PAY-006, 007 | NOT_RUN | NOT_RUN | Chưa có đối soát / hoàn tiền |
+| AUD-001 | PASS | NOT_RUN | Mọi thao tác ghi `auditLogs` |
+| AUD-002, 003 | NOT_RUN | NOT_RUN | Cần RLS / Storage |
+| SYS-001 → 004 | NOT_RUN | NOT_RUN | Cần môi trường Supabase test |
+
 - Người nghiệm thu và ngày nghiệm thu: chưa xác định.

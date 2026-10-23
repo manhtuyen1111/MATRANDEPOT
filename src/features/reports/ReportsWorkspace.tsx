@@ -1,745 +1,439 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
+import { Download, FileSpreadsheet, Search } from 'lucide-react';
+import { GateInOrder, GateOutOrder } from '../../types/depot';
+import { DepotState, formatVnd } from '../../services/depotStore';
 import {
-  FileBarChart2,
-  Package,
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  Calendar,
-  Building2,
-  Printer,
-  CheckCircle2,
-  Search,
-  RotateCcw,
-  FileText,
-  StickyNote,
-} from 'lucide-react';
-import { ContainerStatus } from '../../types/depot';
-import { DepotState } from '../../services/depotStore';
+  buildSummaryReport,
+  OperationReportFilter,
+  PagedResult,
+  queryGateInReport,
+  queryGateOutReport,
+  SheetData,
+  toSpreadsheetXml,
+} from '../../services/reports';
+import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportSheet } from '../../services/reports';
+import { can } from '../../services/permissions';
+import { Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard } from '../../components/shared';
+
+export type ReportSection = 'BC_HA_VO' | 'BC_CAP_VO' | 'BC_NHAP_TAU' | 'BC_XUAT_TAU' | 'BC_SUA_CHUA' | 'BC_TONG_HOP';
 
 interface Props {
   state: DepotState;
-  onOpenDossier: (masterDossierCode: string) => void;
+  section: ReportSection;
+  onOpenDossier: (code: string) => void;
 }
 
-type ReportTab = 'TON_VO' | 'HA_VO' | 'CAP_VO';
-
-const STATUS_BADGE: Record<
-  ContainerStatus,
-  { label: string; bg: string; text: string }
-> = {
-  PENDING_GATE_IN: {
-    label: 'Đang làm thủ tục Hạ vỏ',
-    bg: 'bg-purple-100',
-    text: 'text-purple-800',
-  },
-  WAITING_PLACEMENT: {
-    label: 'Chờ Xe nâng hạ bãi',
-    bg: 'bg-amber-100',
-    text: 'text-amber-800',
-  },
-  IN_YARD: {
-    label: 'Đang tồn bãi (IN YARD)',
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-800',
-  },
-  ALLOCATED: {
-    label: 'Đã phân bổ Cấp vỏ',
-    bg: 'bg-sky-100',
-    text: 'text-sky-800',
-  },
-  GATED_OUT: {
-    label: 'Đã xuất bãi (GATED OUT)',
-    bg: 'bg-slate-100',
-    text: 'text-slate-600',
-  },
+const TITLES: Record<ReportSection, string> = {
+  BC_CAP_VO: 'Báo cáo Cấp vỏ',
+  BC_HA_VO: 'Báo cáo Hạ vỏ',
+  BC_NHAP_TAU: 'Báo cáo Nhập tàu',
+  BC_XUAT_TAU: 'Báo cáo Xuất tàu',
+  BC_SUA_CHUA: 'Báo cáo Sửa chữa chi tiết',
+  BC_TONG_HOP: 'Báo cáo Tổng hợp',
 };
 
-export const ReportsWorkspace: React.FC<Props> = ({ state, onOpenDossier }) => {
-  const [activeTab, setActiveTab] = useState<ReportTab>('TON_VO');
+const GATE_IN_STATUS: Record<GateInOrder['status'], string> = {
+  FIELD_RECORDED: 'Chờ văn phòng',
+  OFFICE_VERIFIED: 'Văn phòng đã kiểm tra',
+  PAYMENT_PENDING: 'Chờ thanh toán',
+  GATE_IN_OK: 'GATE IN OK',
+  CANCELLED: 'Đã hủy',
+};
 
-  // Bộ lọc HẠ VỎ (yêu cầu chọn khoảng thời gian + HÃNG TÀU trước khi tạo báo cáo)
-  const [haVoFromDate, setHaVoFromDate] = useState<string>('2026-01-01');
-  const [haVoToDate, setHaVoToDate] = useState<string>(
-    new Date().toISOString().slice(0, 10)
+const GATE_OUT_STATUS: Record<GateOutOrder['status'], string> = {
+  PAYMENT_PENDING: 'Chờ thanh toán',
+  PENDING_FORKLIFT: 'Chờ xe nâng',
+  GATE_OUT_OK: 'Đã OUT',
+  CANCELLED: 'Đã hủy',
+};
+
+export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossier }) => {
+  // key theo section để reset bộ lọc khi đổi báo cáo
+  if (section === 'BC_SUA_CHUA') return <RepairReport key={section} state={state} onOpenDossier={onOpenDossier} />;
+  return section === 'BC_TONG_HOP' ? (
+    <SummaryReport key={section} state={state} />
+  ) : (
+    <OperationReport key={section} state={state} section={section} onOpenDossier={onOpenDossier} />
   );
-  const [haVoShippingLine, setHaVoShippingLine] = useState<string>('');
-  const [haVoGenerated, setHaVoGenerated] = useState<boolean>(false);
+};
 
-  // Bộ lọc CẤP VỎ (yêu cầu chọn khoảng thời gian + HÃNG TÀU trước khi tạo báo cáo)
-  const [capVoFromDate, setCapVoFromDate] = useState<string>('2026-01-01');
-  const [capVoToDate, setCapVoToDate] = useState<string>(
-    new Date().toISOString().slice(0, 10)
-  );
-  const [capVoShippingLine, setCapVoShippingLine] = useState<string>('');
-  const [capVoGenerated, setCapVoGenerated] = useState<boolean>(false);
+const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => {
+  const [draft, setDraft] = useState<OperationReportFilter>({ containerNo: '', dateFrom: '', dateTo: '', shippingLineCode: '', size: '' });
+  const [applied, setApplied] = useState<OperationReportFilter | null>(null);
+  const [page, setPage] = useState(1);
+  const showMoney = can(state.currentUser, 'REPORT_FINANCE');
 
-  // Danh sách Hãng tàu từ DANH MỤC CHUNG
-  const shippingLines = useMemo(
-    () => state.partners.filter((p) => p.isShippingLine),
-    [state.partners]
-  );
-
-  // 1. TỒN VỎ: Luôn hiển thị full danh sách tồn vỏ hiện tại
-  const activeYardContainers = useMemo(() => {
-    return state.containers
-      .filter((c) => c.status !== 'GATED_OUT')
-      .sort((a, b) => {
-        const aHasNote = Boolean(a.officeNote && a.officeNote.trim());
-        const bHasNote = Boolean(b.officeNote && b.officeNote.trim());
-        if (aHasNote !== bHasNote) return aHasNote ? -1 : 1;
-        return new Date(b.gateInAt).getTime() - new Date(a.gateInAt).getTime();
-      });
-  }, [state.containers]);
-
-  // 2. HẠ VỎ: Lọc theo khoảng thời gian + Hãng tàu (chỉ những hồ sơ đã xác nhận hạ bãi GATE_IN_OK)
-  const haVoRecords = useMemo(() => {
-    if (!haVoGenerated || !haVoFromDate || !haVoToDate || !haVoShippingLine) {
-      return [];
+  let outRows: PagedResult<GateOutOrder> | null = null;
+  let inRows: PagedResult<GateInOrder> | null = null;
+  let queryError: string | null = null;
+  if (applied) {
+    const f = { ...applied, shippingLineCode: applied.shippingLineCode || undefined, size: applied.size || undefined };
+    try {
+      if (section === 'BC_HA_VO') inRows = queryGateInReport(state, 'CUSTOMER_RETURN', f, page);
+      else if (section === 'BC_NHAP_TAU') inRows = queryGateInReport(state, 'VESSEL_IMPORT', f, page);
+      else outRows = queryGateOutReport(state, section === 'BC_CAP_VO' ? ['EMPTY_RELEASE'] : ['VESSEL_EXPORT'], f, page);
+    } catch (err) {
+      queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
     }
-    const startMs = new Date(`${haVoFromDate}T00:00:00`).getTime();
-    const endMs = new Date(`${haVoToDate}T23:59:59.999`).getTime();
-
-    return state.gateInOrders
-      .filter((g) => g.status === 'GATE_IN_OK')
-      .filter((g) => {
-        const rawTime = g.gateInOkAt || g.officeVerifiedAt || g.fieldRecordedAt;
-        const ts = new Date(rawTime).getTime();
-        const inRange = ts >= startMs && ts <= endMs;
-        const matchLine =
-          haVoShippingLine === 'ALL' || g.shippingLineCode === haVoShippingLine;
-        return inRange && matchLine;
-      });
-  }, [
-    state.gateInOrders,
-    haVoGenerated,
-    haVoFromDate,
-    haVoToDate,
-    haVoShippingLine,
-  ]);
-
-  // 3. CẤP VỎ: Lọc theo khoảng thời gian + Hãng tàu
-  const capVoRecords = useMemo(() => {
-    if (!capVoGenerated || !capVoFromDate || !capVoToDate || !capVoShippingLine) {
-      return [];
-    }
-    const startMs = new Date(`${capVoFromDate}T00:00:00`).getTime();
-    const endMs = new Date(`${capVoToDate}T23:59:59.999`).getTime();
-
-    return state.gateOutOrders
-      .map((go) => {
-        const booking = state.releaseBookings.find(
-          (b) => b.bookingNo === go.bookingNo
-        );
-        const cont = state.containers.find(
-          (c) =>
-            c.masterDossierCode === go.masterDossierCode ||
-            c.containerNo === go.containerNo
-        );
-        const shippingLineCode =
-          booking?.shippingLineCode || cont?.shippingLineCode || 'MAERSK';
-        const sizeType = cont
-          ? `${cont.size}${cont.type}`
-          : booking
-          ? `${booking.size}${booking.type}`
-          : '20DC';
-        return {
-          ...go,
-          shippingLineCode,
-          sizeType,
-        };
-      })
-      .filter((go) => {
-        const ts = new Date(go.confirmedAt || go.createdAt).getTime();
-        const inRange = ts >= startMs && ts <= endMs;
-        const matchLine =
-          capVoShippingLine === 'ALL' ||
-          go.shippingLineCode === capVoShippingLine;
-        return inRange && matchLine;
-      });
-  }, [
-    state.gateOutOrders,
-    state.releaseBookings,
-    state.containers,
-    capVoGenerated,
-    capVoFromDate,
-    capVoToDate,
-    capVoShippingLine,
-  ]);
-
-  const canGenerateHaVo = Boolean(
-    haVoFromDate && haVoToDate && haVoShippingLine
-  );
-  const canGenerateCapVo = Boolean(
-    capVoFromDate && capVoToDate && capVoShippingLine
-  );
+  }
+  const result = outRows || inRows;
 
   return (
     <div className="space-y-4">
-      {/* Header & chọn loại Báo cáo */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
-              <FileBarChart2 className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">
-                BÁO CÁO TỔNG HỢP BÃI (TỒN VỎ / HẠ VỎ / CẤP VỎ)
-              </h2>
-              <p className="text-xs text-slate-500">
-                Chọn loại báo cáo: Tồn Vỏ Hiện Tại, Báo Cáo Hạ Vỏ hoặc Báo Cáo Cấp Vỏ theo Hãng Tàu & Khoảng Thời Gian
-              </p>
-            </div>
+      <SectionCard title={TITLES[section]} icon={<Search className="h-4 w-4 text-slate-500" />}>
+        {(section === 'BC_NHAP_TAU' || section === 'BC_XUAT_TAU') && (
+          <p className="mb-3 text-[11px] text-slate-500">Phân hệ {section === 'BC_NHAP_TAU' ? 'Nhập tàu' : 'Xuất tàu'} sẽ xây dựng ở giai đoạn sau; báo cáo hiển thị dữ liệu khi phân hệ đi vào sử dụng.</p>
+        )}
+        <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+          <label className="col-span-2">
+            <span className={labelCls}>Số container</span>
+            <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
+          </label>
+          <label>
+            <span className={labelCls}>Từ ngày</span>
+            <input type="date" value={draft.dateFrom} onChange={(e) => setDraft({ ...draft, dateFrom: e.target.value })} className={inputCls} />
+          </label>
+          <label>
+            <span className={labelCls}>Đến ngày</span>
+            <input type="date" value={draft.dateTo} onChange={(e) => setDraft({ ...draft, dateTo: e.target.value })} className={inputCls} />
+          </label>
+          <label>
+            <span className={labelCls}>Hãng tàu</span>
+            <select value={draft.shippingLineCode} onChange={(e) => setDraft({ ...draft, shippingLineCode: e.target.value })} className={inputCls}>
+              <option value="">Tất cả</option>
+              {state.partners.filter((p) => p.isShippingLine).map((p) => <option key={p.id} value={p.code}>{p.code}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className={labelCls}>Size</span>
+            <select value={draft.size} onChange={(e) => setDraft({ ...draft, size: e.target.value })} className={inputCls}>
+              <option value="">Tất cả</option>
+              {state.containerSizes.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </label>
+          <div className="col-span-2 sm:col-span-6">
+            <button type="submit" className={primaryBtn}>
+              <Search className="h-4 w-4" />
+              Tra cứu
+            </button>
           </div>
+        </form>
+      </SectionCard>
 
-          {/* 3 Nút chọn chế độ báo cáo */}
-          <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
-            <button
-              type="button"
-              onClick={() => setActiveTab('TON_VO')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'TON_VO'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-white hover:text-slate-900'
-              }`}
-            >
-              <Package className="w-4 h-4" />
-              TỒN VỎ ({activeYardContainers.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('HA_VO')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'HA_VO'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-white hover:text-slate-900'
-              }`}
-            >
-              <ArrowDownToLine className="w-4 h-4" />
-              HẠ VỎ
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('CAP_VO')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'CAP_VO'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-white hover:text-slate-900'
-              }`}
-            >
-              <ArrowUpFromLine className="w-4 h-4" />
-              CẤP VỎ
-            </button>
-          </div>
-        </div>
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        {!applied ? (
+          <p className="p-8 text-center text-xs text-slate-500">Nhập số container hoặc chọn khoảng thời gian, sau đó bấm Tra cứu.</p>
+        ) : queryError ? (
+          <p className="p-6 text-center text-xs text-red-700">{queryError}</p>
+        ) : !result || result.total === 0 ? (
+          <p className="p-8 text-center text-xs text-slate-500">Không có dữ liệu phù hợp.</p>
+        ) : (
+          <>
+            {outRows && (
+              <table className="w-full min-w-[860px] text-left text-xs">
+                <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
+                  <tr>
+                    <th className="px-3 py-2">Mã hồ sơ</th>
+                    <th className="px-3 py-2">Số container</th>
+                    <th className="px-3 py-2">Booking</th>
+                    <th className="px-3 py-2">Khách hàng</th>
+                    <th className="px-3 py-2">Số xe</th>
+                    <th className="px-3 py-2">SĐT lái xe</th>
+                    <th className="px-3 py-2">Trạng thái</th>
+                    <th className="px-3 py-2">Lập lệnh</th>
+                    <th className="px-3 py-2">OUT</th>
+                    {showMoney && <th className="px-3 py-2 text-right">Chi phí</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {outRows.rows.map((o) => (
+                    <tr key={o.id} className="hover:bg-slate-50">
+                      <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.gateOutCode)} className="font-mono text-blue-700 hover:underline">{o.gateOutCode}</button></td>
+                      <td className="px-3 py-2 font-mono font-bold">{o.containerNo}</td>
+                      <td className="px-3 py-2 font-mono">{o.bookingNo}</td>
+                      <td className="px-3 py-2">{o.receiverRep}</td>
+                      <td className="px-3 py-2">{o.truckNo}</td>
+                      <td className="px-3 py-2">{o.driverPhone || '-'}</td>
+                      <td className="px-3 py-2">{GATE_OUT_STATUS[o.status]}</td>
+                      <td className="px-3 py-2">{formatViTime(o.createdAt)}</td>
+                      <td className="px-3 py-2">{formatViTime(o.confirmedAt)}</td>
+                      {showMoney && <td className="px-3 py-2 text-right font-mono">{formatVnd(o.feeAmount)}</td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {inRows && (
+              <table className="w-full min-w-[960px] text-left text-xs">
+                <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
+                  <tr>
+                    <th className="px-3 py-2">Mã hồ sơ</th>
+                    <th className="px-3 py-2">Số container</th>
+                    <th className="px-3 py-2">Size/Type</th>
+                    <th className="px-3 py-2">Hãng tàu</th>
+                    <th className="px-3 py-2">Khách hàng</th>
+                    <th className="px-3 py-2">Số xe</th>
+                    <th className="px-3 py-2">SĐT lái xe</th>
+                    <th className="px-3 py-2">Trạng thái cont</th>
+                    <th className="px-3 py-2">Hồ sơ</th>
+                    <th className="px-3 py-2">Giám định</th>
+                    <th className="px-3 py-2">GATE IN OK</th>
+                    {showMoney && <th className="px-3 py-2 text-right">Chi phí</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {inRows.rows.map((o) => (
+                    <tr key={o.id} className="hover:bg-slate-50">
+                      <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.masterDossierCode)} className="font-mono text-blue-700 hover:underline">{o.masterDossierCode}</button></td>
+                      <td className="px-3 py-2 font-mono font-bold">{o.containerNo || '-'}</td>
+                      <td className="px-3 py-2">{o.size || '-'}/{o.type || '-'}</td>
+                      <td className="px-3 py-2">{o.shippingLineCode || '-'}</td>
+                      <td className="px-3 py-2">{o.customerRep || '-'}</td>
+                      <td className="px-3 py-2">{o.truckNo || '-'}</td>
+                      <td className="px-3 py-2">{o.driverPhone || '-'}</td>
+                      <td className="px-3 py-2">{o.conditionClass}</td>
+                      <td className="px-3 py-2">{GATE_IN_STATUS[o.status]}</td>
+                      <td className="px-3 py-2">{formatViTime(o.fieldRecordedAt)}</td>
+                      <td className="px-3 py-2">{formatViTime(o.gateInOkAt)}</td>
+                      {showMoney && <td className="px-3 py-2 text-right font-mono">{formatVnd(o.feeAmount || 0)}</td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} />
+          </>
+        )}
       </div>
+    </div>
+  );
+};
 
-      {/* TAB 1: TỒN VỎ - Luôn hiển thị full danh sách tồn vỏ hiện tại */}
-      {activeTab === 'TON_VO' && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs font-bold uppercase tracking-wider">
-                BÁO CÁO TỒN VỎ: LUÔN HIỂN THỊ FULL DANH SÁCH TỒN VỎ HIỆN TẠI ({activeYardContainers.length} CONTAINER)
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              In Báo Cáo Tồn Vỏ
+const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
+  const [range, setRange] = useState({ dateFrom: '', dateTo: '' });
+  const [sheets, setSheets] = useState<SheetData[] | null>(null);
+  const [generatedAt, setGeneratedAt] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const generate = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      setSheets(buildSummaryReport(state, range));
+      setGeneratedAt(new Date().toISOString());
+    } catch (err) {
+      setSheets(null);
+      setError(err instanceof Error ? err.message : 'Lỗi tạo báo cáo');
+    }
+  };
+
+  const download = () => {
+    if (!sheets) return;
+    const blob = new Blob([toSpreadsheetXml(sheets)], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MATRAN_TONG_HOP_${range.dateFrom}_${range.dateTo}.xls`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="space-y-4">
+      <SectionCard title="Báo cáo Tổng hợp" icon={<FileSpreadsheet className="h-4 w-4 text-slate-500" />}>
+        <form onSubmit={generate} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <label>
+            <span className={labelCls}>Từ ngày *</span>
+            <input type="date" value={range.dateFrom} onChange={(e) => setRange({ ...range, dateFrom: e.target.value })} className={inputCls} />
+          </label>
+          <label>
+            <span className={labelCls}>Đến ngày *</span>
+            <input type="date" value={range.dateTo} onChange={(e) => setRange({ ...range, dateTo: e.target.value })} className={inputCls} />
+          </label>
+          <button type="submit" className={primaryBtn}>Tạo báo cáo</button>
+        </form>
+        <p className="mt-2 text-[11px] text-slate-500">
+          Gồm 5 sheet: HẠ VỎ, CẤP VỎ, XUẤT VỎ, NHẬP VỎ (theo khoảng thời gian) và TỒN VỎ (tại thời điểm lập báo cáo).
+        </p>
+      </SectionCard>
+
+      <Feedback error={error} />
+
+      {sheets && (
+        <SectionCard
+          title={`Kết quả — lập lúc ${formatViTime(generatedAt)}`}
+          right={
+            <button type="button" onClick={download} className={primaryBtn}>
+              <Download className="h-4 w-4" />
+              Tải Excel
             </button>
-          </div>
+          }
+        >
+          <ul className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
+            {sheets.map((s) => (
+              <li key={s.name} className="rounded-md border border-slate-200 px-3 py-2">
+                <span className="block text-[11px] font-semibold uppercase text-slate-500">{s.name}</span>
+                <span className="text-lg font-bold text-slate-900">{s.rows.length}</span>
+                <span className="text-[11px] text-slate-500"> dòng • {s.columns.length} cột</span>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+      )}
+    </div>
+  );
+};
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase">
-                  <th className="py-2.5 px-3">STT</th>
-                  <th className="py-2.5 px-3">Số Container</th>
-                  <th className="py-2.5 px-3">Mã Hồ Sơ EEIR</th>
-                  <th className="py-2.5 px-3">Size - Type</th>
-                  <th className="py-2.5 px-3">Hãng Tàu</th>
-                  <th className="py-2.5 px-3">Phân Loại</th>
-                  <th className="py-2.5 px-3">Trạng Thái</th>
-                  <th className="py-2.5 px-3">Vị Trí Bãi</th>
-                  <th className="py-2.5 px-3">Ngày Hạ Bãi</th>
-                  <th className="py-2.5 px-3">Ghi Chú Văn Phòng</th>
+const REPAIR_STATUS: Record<string, string> = {
+  OPEN: 'Chờ sửa chữa',
+  COMPLETED: 'Đã sửa xong',
+  CANCELLED: 'Đã đóng (cấp DAMAGE)',
+  IN_PROGRESS: 'Đang sửa',
+  REWORK_REQUIRED: 'Làm lại',
+};
+
+// BÁO CÁO SỬA CHỮA CHI TIẾT (DEC-044): bắt buộc lọc, phân trang, xuất Excel kết quả lọc
+const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) => void }> = ({ state, onOpenDossier }) => {
+  const [draft, setDraft] = useState<RepairReportFilter>({ containerNo: '', dateFrom: '', dateTo: '', teamCode: '', shippingLineCode: '', status: 'ALL' });
+  const [applied, setApplied] = useState<RepairReportFilter | null>(null);
+  const [page, setPage] = useState(1);
+
+  const clean = (f: RepairReportFilter): RepairReportFilter => ({
+    ...f,
+    teamCode: f.teamCode || undefined,
+    shippingLineCode: f.shippingLineCode || undefined,
+  });
+  let result: PagedResult<RepairReportRow> | null = null;
+  let queryError: string | null = null;
+  if (applied) {
+    try {
+      result = queryRepairReport(state, clean(applied), page);
+    } catch (err) {
+      queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
+    }
+  }
+
+  const download = () => {
+    if (!applied || !result) return;
+    const f = clean(applied);
+    const rows = Array.from({ length: result.pageCount }, (_, i) => queryRepairReport(state, f, i + 1).rows).flat();
+    const blob = new Blob([toSpreadsheetXml([repairReportSheet(rows)])], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MATRAN_SUA_CHUA_${applied.dateFrom || ''}_${applied.dateTo || ''}.xls`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="space-y-4">
+      <SectionCard title="Báo cáo Sửa chữa chi tiết" icon={<Search className="h-4 w-4 text-slate-500" />}>
+        <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+          <label className="col-span-2 sm:col-span-1">
+            <span className={labelCls}>Số container</span>
+            <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
+          </label>
+          <label>
+            <span className={labelCls}>Từ ngày</span>
+            <input type="date" value={draft.dateFrom} onChange={(e) => setDraft({ ...draft, dateFrom: e.target.value })} className={inputCls} />
+          </label>
+          <label>
+            <span className={labelCls}>Đến ngày</span>
+            <input type="date" value={draft.dateTo} onChange={(e) => setDraft({ ...draft, dateTo: e.target.value })} className={inputCls} />
+          </label>
+          <label>
+            <span className={labelCls}>Tổ sửa chữa</span>
+            <select value={draft.teamCode} onChange={(e) => setDraft({ ...draft, teamCode: e.target.value })} className={inputCls}>
+              <option value="">Tất cả</option>
+              {state.repairTeams.map((t) => <option key={t.id} value={t.code}>{t.code}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className={labelCls}>Hãng tàu</span>
+            <select value={draft.shippingLineCode} onChange={(e) => setDraft({ ...draft, shippingLineCode: e.target.value })} className={inputCls}>
+              <option value="">Tất cả</option>
+              {state.partners.filter((p) => p.isShippingLine).map((p) => <option key={p.id} value={p.code}>{p.code}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className={labelCls}>Trạng thái</span>
+            <select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as RepairReportFilter['status'] })} className={inputCls}>
+              <option value="ALL">Tất cả</option>
+              <option value="OPEN">Chờ sửa chữa</option>
+              <option value="COMPLETED">Đã sửa xong</option>
+              <option value="CANCELLED">Đã đóng</option>
+            </select>
+          </label>
+          <div className="col-span-2 flex gap-2 sm:col-span-6">
+            <button type="submit" className={primaryBtn}>
+              <Search className="h-4 w-4" />
+              Tra cứu
+            </button>
+            {result && result.total > 0 && (
+              <button type="button" onClick={download} className={primaryBtn}>
+                <Download className="h-4 w-4" />
+                Tải Excel
+              </button>
+            )}
+          </div>
+        </form>
+      </SectionCard>
+
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        {!applied ? (
+          <p className="p-8 text-center text-xs text-slate-500">Nhập số container hoặc chọn khoảng thời gian, sau đó bấm Tra cứu.</p>
+        ) : queryError ? (
+          <p className="p-6 text-center text-xs text-red-700">{queryError}</p>
+        ) : !result || result.total === 0 ? (
+          <p className="p-8 text-center text-xs text-slate-500">Không có dữ liệu phù hợp.</p>
+        ) : (
+          <>
+            <table className="w-full min-w-[960px] text-left text-xs">
+              <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
+                <tr>
+                  <th className="px-3 py-2">Mã hồ sơ</th>
+                  <th className="px-3 py-2">Số container</th>
+                  <th className="px-3 py-2">Hãng tàu</th>
+                  <th className="px-3 py-2">Remark sửa chữa</th>
+                  <th className="px-3 py-2 text-right">Giờ công</th>
+                  <th className="px-3 py-2">Trạng thái</th>
+                  <th className="px-3 py-2">Tổ</th>
+                  <th className="px-3 py-2">Nhân viên</th>
+                  <th className="px-3 py-2">Báo giá</th>
+                  <th className="px-3 py-2">Hoàn tất</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 text-xs">
-                {activeYardContainers.map((c, idx) => {
-                  const badge = STATUS_BADGE[c.status];
-                  const hasNote = Boolean(c.officeNote && c.officeNote.trim());
-                  const locText = c.currentBlock
-                    ? `${c.currentBlock}-${c.currentBay || '01'}-${c.currentRow || '01'}-${c.currentTier || '1'}`
-                    : 'Chưa xếp vị trí';
-                  return (
-                    <tr
-                      key={c.id}
-                      onClick={() => onOpenDossier(c.masterDossierCode)}
-                      className={`cursor-pointer transition-colors ${
-                        hasNote
-                          ? 'bg-amber-50/90 hover:bg-amber-100/80'
-                          : 'hover:bg-blue-50/40'
-                      }`}
-                    >
-                      <td className="py-2.5 px-3 font-semibold text-slate-500">
-                        {idx + 1}
-                      </td>
-                      <td className="py-2.5 px-3 font-mono font-black text-slate-900">
-                        {c.containerNo}
-                      </td>
-                      <td className="py-2.5 px-3 font-mono font-bold text-blue-700">
-                        {c.masterDossierCode}
-                      </td>
-                      <td className="py-2.5 px-3 font-bold text-slate-800">
-                        {c.size}
-                        {c.type}
-                      </td>
-                      <td className="py-2.5 px-3 font-bold text-indigo-700">
-                        {c.shippingLineCode}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                            c.conditionClass === 'AV'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-rose-100 text-rose-800'
-                          }`}
-                        >
-                          {c.conditionClass}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${badge.bg} ${badge.text}`}
-                        >
-                          {badge.label}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 font-mono font-bold text-slate-800">
-                        {locText}
-                      </td>
-                      <td className="py-2.5 px-3 text-slate-600">
-                        {new Date(c.gateInAt).toLocaleString('vi-VN')}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        {hasNote ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-200/80 text-amber-950 font-bold text-[11px]">
-                            <StickyNote className="w-3 h-3 text-amber-700" />
-                            {c.officeNote}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 italic">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+              <tbody className="divide-y divide-slate-100">
+                {result.rows.map(({ workOrder: w, container: c }) => (
+                  <tr key={w.id} className="hover:bg-slate-50">
+                    <td className="px-3 py-2">
+                      <button type="button" onClick={() => onOpenDossier(w.masterDossierCode)} className="font-mono text-blue-700 hover:underline">{w.masterDossierCode}</button>
+                    </td>
+                    <td className="px-3 py-2 font-mono font-bold">{w.containerNo}</td>
+                    <td className="px-3 py-2">{c?.shippingLineCode || '-'}</td>
+                    <td className="px-3 py-2">{w.items.join(', ')}</td>
+                    <td className="px-3 py-2 text-right font-mono">{w.laborHours ?? '-'}</td>
+                    <td className="px-3 py-2">{REPAIR_STATUS[w.workStatus] || w.workStatus}</td>
+                    <td className="px-3 py-2">{w.repairTeamName || '-'}</td>
+                    <td className="px-3 py-2">{(w.repairMembers || []).join(', ') || '-'}</td>
+                    <td className="px-3 py-2">{w.approvedBy || '-'} • {formatViTime(w.createdAt)}</td>
+                    <td className="px-3 py-2">{w.completedBy ? `${w.completedBy} • ${formatViTime(w.completedAt)}` : '-'}</td>
+                  </tr>
+                ))}
               </tbody>
+              <tfoot>
+                <tr className="border-t border-slate-200 bg-slate-50 font-semibold">
+                  <td colSpan={4} className="px-3 py-2 text-right">Tổng giờ công (trang này)</td>
+                  <td className="px-3 py-2 text-right font-mono">{result.rows.reduce((s, r) => s + (r.workOrder.laborHours || 0), 0)}</td>
+                  <td colSpan={5} />
+                </tr>
+              </tfoot>
             </table>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: HẠ VỎ - Yêu cầu chọn khoảng thời gian + HÃNG TÀU để tiến hành tạo báo cáo */}
-      {activeTab === 'HA_VO' && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-emerald-600" />
-                CHỌN BỘ LỌC KHOẢNG THỜI GIAN + HÃNG TÀU ĐỂ TIẾN HÀNH TẠO BÁO CÁO HẠ VỎ
-              </h3>
-              {haVoGenerated && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHaVoGenerated(false);
-                    setHaVoShippingLine('');
-                  }}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Đặt lại bộ lọc
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Từ ngày <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={haVoFromDate}
-                  onChange={(e) => {
-                    setHaVoFromDate(e.target.value);
-                    setHaVoGenerated(false);
-                  }}
-                  className="w-full px-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Đến ngày <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={haVoToDate}
-                  onChange={(e) => {
-                    setHaVoToDate(e.target.value);
-                    setHaVoGenerated(false);
-                  }}
-                  className="w-full px-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Hãng Tàu (Danh mục chung) <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  value={haVoShippingLine}
-                  onChange={(e) => {
-                    setHaVoShippingLine(e.target.value);
-                    setHaVoGenerated(false);
-                  }}
-                  className="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
-                >
-                  <option value="">-- Chọn Hãng Tàu --</option>
-                  <option value="ALL">Tất cả Hãng tàu (ALL)</option>
-                  {shippingLines.map((line) => (
-                    <option key={line.id} value={line.code}>
-                      {line.code} - {line.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  disabled={!canGenerateHaVo}
-                  onClick={() => setHaVoGenerated(true)}
-                  className={`w-full py-2 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                    canGenerateHaVo
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  }`}
-                >
-                  <Search className="w-4 h-4" />
-                  TẠO BÁO CÁO HẠ VỎ
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {!haVoGenerated ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
-              <Building2 className="w-8 h-8 text-amber-600 mx-auto mb-2" />
-              <div className="text-sm font-bold text-amber-900">
-                Vui lòng chọn Khoảng thời gian (Từ ngày - Đến ngày) và HÃNG TÀU, sau đó nhấn &quot;TẠO BÁO CÁO HẠ VỎ&quot;
-              </div>
-              <p className="text-xs text-amber-700 mt-1">
-                Hệ thống yêu cầu chọn đủ bộ lọc ở bước trên trước khi hiển thị kết quả báo cáo hạ vỏ.
-              </p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-4 py-3 bg-emerald-900 text-white flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-bold uppercase tracking-wider">
-                    KẾT QUẢ BÁO CÁO HẠ VỎ ({haVoFromDate} → {haVoToDate} | Hãng tàu: {haVoShippingLine}) — {haVoRecords.length} CONT
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  In Báo Cáo Hạ Vỏ
-                </button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase">
-                      <th className="py-2.5 px-3">STT</th>
-                      <th className="py-2.5 px-3">Mã Hồ Sơ EEIR</th>
-                      <th className="py-2.5 px-3">Số Container</th>
-                      <th className="py-2.5 px-3">Size - Type</th>
-                      <th className="py-2.5 px-3">Hãng Tàu</th>
-                      <th className="py-2.5 px-3">Số Xe Hạ</th>
-                      <th className="py-2.5 px-3">Đại Diện KH</th>
-                      <th className="py-2.5 px-3">Phân Loại</th>
-                      <th className="py-2.5 px-3 text-right">Tổng Chi Phí (Gồm VAT)</th>
-                      <th className="py-2.5 px-3">Thời Gian Hạ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 text-xs">
-                    {haVoRecords.length === 0 ? (
-                      <tr>
-                        <td colSpan={10} className="py-8 text-center text-slate-400">
-                          Không có dữ liệu Hạ Vỏ nào khớp với khoảng thời gian và Hãng tàu đã chọn.
-                        </td>
-                      </tr>
-                    ) : (
-                      haVoRecords.map((g, idx) => (
-                        <tr
-                          key={g.id}
-                          onClick={() => onOpenDossier(g.masterDossierCode)}
-                          className="hover:bg-emerald-50/40 cursor-pointer"
-                        >
-                          <td className="py-2.5 px-3 font-semibold text-slate-500">
-                            {idx + 1}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono font-bold text-blue-700">
-                            {g.masterDossierCode}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono font-black text-slate-900">
-                            {g.containerNo || '—'}
-                          </td>
-                          <td className="py-2.5 px-3 font-bold text-slate-800">
-                            {g.size || '20'}
-                            {g.type || 'DC'}
-                          </td>
-                          <td className="py-2.5 px-3 font-bold text-indigo-700">
-                            {g.shippingLineCode || '—'}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono font-semibold text-slate-700">
-                            {g.truckNo || '—'}
-                          </td>
-                          <td className="py-2.5 px-3 text-slate-700">
-                            {g.customerRep || '—'}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className="px-2 py-0.5 rounded bg-slate-100 font-bold text-slate-700 text-[11px]">
-                              {g.conditionClass}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-bold text-emerald-700">
-                            {g.feeAmount.toLocaleString('vi-VN')} đ
-                          </td>
-                          <td className="py-2.5 px-3 text-slate-600">
-                            {new Date(
-                              g.gateInOkAt || g.officeVerifiedAt || g.fieldRecordedAt
-                            ).toLocaleString('vi-VN')}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 3: CẤP VỎ - Yêu cầu chọn khoảng thời gian + HÃNG TÀU để tiến hành tạo báo cáo */}
-      {activeTab === 'CAP_VO' && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-amber-600" />
-                CHỌN BỘ LỌC KHOẢNG THỜI GIAN + HÃNG TÀU ĐỂ TIẾN HÀNH TẠO BÁO CÁO CẤP VỎ
-              </h3>
-              {capVoGenerated && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCapVoGenerated(false);
-                    setCapVoShippingLine('');
-                  }}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Đặt lại bộ lọc
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Từ ngày <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={capVoFromDate}
-                  onChange={(e) => {
-                    setCapVoFromDate(e.target.value);
-                    setCapVoGenerated(false);
-                  }}
-                  className="w-full px-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Đến ngày <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={capVoToDate}
-                  onChange={(e) => {
-                    setCapVoToDate(e.target.value);
-                    setCapVoGenerated(false);
-                  }}
-                  className="w-full px-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Hãng Tàu (Danh mục chung) <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  value={capVoShippingLine}
-                  onChange={(e) => {
-                    setCapVoShippingLine(e.target.value);
-                    setCapVoGenerated(false);
-                  }}
-                  className="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none bg-white"
-                >
-                  <option value="">-- Chọn Hãng Tàu --</option>
-                  <option value="ALL">Tất cả Hãng tàu (ALL)</option>
-                  {shippingLines.map((line) => (
-                    <option key={line.id} value={line.code}>
-                      {line.code} - {line.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  disabled={!canGenerateCapVo}
-                  onClick={() => setCapVoGenerated(true)}
-                  className={`w-full py-2 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                    canGenerateCapVo
-                      ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm'
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  }`}
-                >
-                  <Search className="w-4 h-4" />
-                  TẠO BÁO CÁO CẤP VỎ
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {!capVoGenerated ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
-              <FileText className="w-8 h-8 text-amber-600 mx-auto mb-2" />
-              <div className="text-sm font-bold text-amber-900">
-                Vui lòng chọn Khoảng thời gian (Từ ngày - Đến ngày) và HÃNG TÀU, sau đó nhấn &quot;TẠO BÁO CÁO CẤP VỎ&quot;
-              </div>
-              <p className="text-xs text-amber-700 mt-1">
-                Hệ thống yêu cầu chọn đủ bộ lọc ở bước trên trước khi hiển thị kết quả báo cáo cấp vỏ.
-              </p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-4 py-3 bg-amber-900 text-white flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-amber-300" />
-                  <span className="text-xs font-bold uppercase tracking-wider">
-                    KẾT QUẢ BÁO CÁO CẤP VỎ ({capVoFromDate} → {capVoToDate} | Hãng tàu: {capVoShippingLine}) — {capVoRecords.length} CONT
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  In Báo Cáo Cấp Vỏ
-                </button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase">
-                      <th className="py-2.5 px-3">STT</th>
-                      <th className="py-2.5 px-3">Mã Hồ Sơ EEIR</th>
-                      <th className="py-2.5 px-3">Số Container</th>
-                      <th className="py-2.5 px-3">Size - Type</th>
-                      <th className="py-2.5 px-3">Hãng Tàu</th>
-                      <th className="py-2.5 px-3">Số Booking / Lệnh Cấp</th>
-                      <th className="py-2.5 px-3">Số Xe Nhận</th>
-                      <th className="py-2.5 px-3">Đại Diện Nhận</th>
-                      <th className="py-2.5 px-3 text-right">Phí Nâng (Gồm VAT)</th>
-                      <th className="py-2.5 px-3">Thời Gian Cấp</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 text-xs">
-                    {capVoRecords.length === 0 ? (
-                      <tr>
-                        <td colSpan={10} className="py-8 text-center text-slate-400">
-                          Không có dữ liệu Cấp Vỏ nào khớp với khoảng thời gian và Hãng tàu đã chọn.
-                        </td>
-                      </tr>
-                    ) : (
-                      capVoRecords.map((go, idx) => (
-                        <tr
-                          key={go.id}
-                          onClick={() => onOpenDossier(go.masterDossierCode)}
-                          className="hover:bg-amber-50/40 cursor-pointer"
-                        >
-                          <td className="py-2.5 px-3 font-semibold text-slate-500">
-                            {idx + 1}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono font-bold text-blue-700">
-                            {go.masterDossierCode}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono font-black text-slate-900">
-                            {go.containerNo}
-                          </td>
-                          <td className="py-2.5 px-3 font-bold text-slate-800">
-                            {go.sizeType}
-                          </td>
-                          <td className="py-2.5 px-3 font-bold text-indigo-700">
-                            {go.shippingLineCode}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono font-semibold text-slate-800">
-                            {go.bookingNo}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono font-semibold text-slate-700">
-                            {go.truckNo}
-                          </td>
-                          <td className="py-2.5 px-3 text-slate-700">
-                            {go.receiverRep}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-bold text-amber-700">
-                            {go.feeAmount.toLocaleString('vi-VN')} đ
-                          </td>
-                          <td className="py-2.5 px-3 text-slate-600">
-                            {new Date(go.confirmedAt || go.createdAt).toLocaleString('vi-VN')}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+            <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} />
+          </>
+        )}
+      </div>
     </div>
   );
 };

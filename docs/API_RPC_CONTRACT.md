@@ -196,3 +196,27 @@ Thông báo cho người dùng phải dễ hiểu; log kỹ thuật không đư�
 - Các thao tác cập nhật nhiều bảng liên quan cần transaction khi phù hợp.
 - Dùng ràng buộc database để bảo vệ các điều kiện quan trọng.
 - Xác định cơ chế idempotency (chống xử lý lặp) cho các thao tác tạo giao dịch, trừ quỹ Phiếu thu mẹ (`TTT`), xác nhận webhook chuyển khoản API (`TTTT`) và hoàn tất nghiệp vụ (`GATE IN OK`, `Gate Out`).
+
+## 13. Ánh xạ thao tác nghiệp vụ → RPC dự kiến (2026-10-22)
+
+Các hàm ở cột "Demo" đang là hợp đồng nghiệp vụ chạy thật trong `src/services/`. Khi làm database, mỗi dòng trở thành một RPC (`SECURITY DEFINER`, `SET search_path`, kiểm tra quyền theo `permissions.ts`, kiểm tra trạng thái trước, khóa dòng, ghi audit) với cùng điều kiện và thông báo lỗi. Tên RPC là đề xuất.
+
+| Nghiệp vụ | Hàm Demo | RPC dự kiến | Chống lặp / đồng thời |
+|---|---|---|---|
+| Giám định Hạ vỏ | `recordGateInFieldStep` | `rpc_gate_in_record_field` | Cấp mã IN trong DB |
+| Văn phòng lập chứng từ | `verifyGateInOfficeAndCreatePayment` | `rpc_gate_in_office_verify` | 1 hồ sơ mở / container |
+| Thanh toán Hạ vỏ → GATE IN OK | `confirmGateInPaymentAndComplete` | `rpc_gate_in_settle` | Khóa chứng từ; 1 lượt lưu bãi mở / container |
+| Xe nâng hạ vỏ | `updateContainerLocation` | `rpc_yard_place` | Unique ô chi tiết |
+| Đảo chuyển | `shiftContainer` | `rpc_yard_shift` | Unique ô chi tiết |
+| Sửa vị trí | `correctContainerLocation` | `rpc_yard_correct_location` | Unique ô chi tiết |
+| Khóa / mở khóa | `toggleContainerHold` | `rpc_container_set_lock` | — |
+| Vệ sinh / Báo giá / Sửa chữa | `completeCleaningTask`, `approveDamageQuotation`, `completeRepairTask` | `rpc_service_*` | Kiểm tra trạng thái công việc |
+| Lập lệnh cấp vỏ | `createReleaseOrder` | `rpc_release_create` | Unique phân bổ hiệu lực / container; cấp mã OUT |
+| Thanh toán cấp vỏ | `confirmReleasePayment` | `rpc_release_settle` | Khóa chứng từ |
+| Hủy lệnh cấp | `releaseAllocatedContainer` | `rpc_release_cancel` | Chặn khi đã thanh toán |
+| Xe nâng OUT | `executeGateOut` | `rpc_gate_out_confirm` | 5 điều kiện DEC-015; 1 lần OUT |
+| Kết quả chuyển khoản | `processBankTransferCallback` | Edge Function webhook → `rpc_payment_bank_callback` | Xác minh chữ ký; `UNIQUE(provider_tx_ref)` |
+| Tạo phiếu thu TTT | `createMasterPrepaidReceipt` | `rpc_prepaid_create` | — |
+| Xác nhận tiền mặt TTT | `confirmPrepaidCash` | `rpc_prepaid_confirm_cash` | `UNIQUE(transaction_id)` trên phiếu thu |
+| Hủy yêu cầu thanh toán | `cancelPendingTransaction` | `rpc_payment_cancel` | Chỉ khi PENDING |
+| Tra cứu báo cáo / phiếu thu | `queryGateOutReport`, `queryGateInReport`, `queryReceipts` | View + `range()` có giới hạn | Bắt buộc bộ lọc |

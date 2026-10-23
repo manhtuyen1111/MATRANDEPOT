@@ -1,60 +1,69 @@
 # OPEN QUESTIONS — MATRAN DEPOT
 
-Danh sách các vấn đề nghiệp vụ cần xác nhận trước khi triển khai database và chức năng chính thức.
+Danh sách các vấn đề nghiệp vụ cần xác nhận. Câu đã trả lời ghi rõ quyết định tương ứng trong `DECISIONS.md`.
+
+Cập nhật lần cuối: 2026-10-22.
 
 ## 1. Gate In — Nhập container vào bãi
 
-- [ ] Q-001: *(Đã xác nhận 2 trường hợp: Khách hàng trả rỗng theo lệnh hãng tàu; và `NHẬP TÀU` làm module riêng sau)* — Còn loại tiếp nhận nào khác cần hỗ trợ trong giai đoạn đầu không, và quy trình chi tiết của `NHẬP TÀU` như thế nào?
-- [ ] Q-002: *(Đã xác nhận trường hiện trường: Phân loại `DAMAGE`/`AV`, Phân loại đóng hàng `M`/`K`/`E`, Tình trạng vệ sinh `KHÔNG VỆ SINH`/`QUÉT`/`RỬA NƯỚC`/`VỆ SINH CÔNG NGHIỆP`/`NHỔ ĐINH`/`BÓC TEM`; và trường văn phòng: `SỐ CONTAINER`, `SIZE`, `TYPE`, `SỐ XE`, `ĐẠI DIỆN KHÁCH HÀNG`)* — Danh mục giá trị chuẩn của `SIZE`, `TYPE` là gì? Trường `Tình trạng vệ sinh` chọn một hay chọn nhiều giá trị cùng lúc? Có bắt buộc ghi nhận thêm hãng tàu/chủ vỏ hoặc số lệnh ở bước văn phòng không?
-- [ ] Q-003: Nhân viên hiện trường chụp ảnh cửa container có số container, sau đó xác nhận vào bãi. Cần quy định xử lý thế nào nếu ảnh không rõ hoặc nhập sai số container?
-- [ ] Q-004: Thu phí trước khi hoàn tất Gate In (`GATE IN OK`). Ai được xác nhận thanh toán thủ công để chuyển sang `GATE IN OK`?
-- [ ] Q-005: Nếu khách đã thanh toán nhưng Gate In bị hủy, xử lý hoàn tiền hoặc chuyển tiền thế nào?
-- [ ] Q-030: Sau khi cập nhật `GATE IN OK`, bộ phận tiếp theo nhận xử lý là bộ phận nào (xe nâng, giám định, vệ sinh...) và quy tắc điều phối sang bộ phận tiếp theo dựa trên tiêu chí gì?
+- [ ] Q-001: *(Đã xác nhận 2 trường hợp; NHẬP TÀU để sau — DEC-038)* Còn loại tiếp nhận nào khác cần hỗ trợ, và quy trình chi tiết của `NHẬP TÀU`?
+- [x] Q-002: Tình trạng vệ sinh chọn nhiều giá trị (DEC-016, DEC-020); danh mục SIZE/TYPE cấu hình tại Danh mục chung (DEC-028); văn phòng ghi nhận hãng tàu, khách hàng, số lệnh (DEC-022).
+- [ ] Q-003: Xử lý thế nào nếu ảnh không rõ hoặc nhập sai số container sau khi đã GATE IN OK?
+- [x] Q-004: Văn phòng / Quản lý xác nhận thanh toán tại Văn phòng (DEC-047 — bỏ Kế toán).
+- [ ] Q-005: Khách đã thanh toán nhưng Gate In bị hủy thì hoàn tiền / chuyển tiền thế nào? (OPEN-008)
+- [x] Q-030: Bộ phận tiếp theo sau `GATE IN OK` (DEC-024).
 
 ## 2. Vị trí và tồn bãi
 
-- [ ] Q-006: *(Đã xác nhận có cấp `Block` và cấp chi tiết `Bay/Row/Tier`; `Block` không phải vị trí độc quyền của một container)* — Danh mục tên các `Block`, quy ước mã hóa `Bay/Row/Tier` và sức chứa tối đa của từng vị trí cụ thể như thế nào?
-- [ ] Q-007: *(Đã xác nhận cho phép ghi nhận vị trí ở cấp `Block` khi chưa có `Bay/Row/Tier`)* — Trong khoảng thời gian từ lúc `GATE IN OK` đến trước khi xếp vào `Block`, trạng thái vị trí của container được ghi nhận như thế nào?
-- [ ] Q-008: Ai được phép thay đổi vị trí container (cập nhật `Block` hoặc cập nhật chi tiết `Bay/Row/Tier`)?
-- [ ] Q-009: Quy trình xử lý khi hệ thống và vị trí thực tế không khớp là gì?
-- [ ] Q-031: Ai có thẩm quyền đặt và gỡ trạng thái tạm giữ / khóa xuất container, và cần lưu những thông tin bắt buộc nào khi khóa/mở khóa?
+- [ ] Q-006: Danh mục `Block`, quy ước `Bay/Row/Tier` và sức chứa thực tế (hiện cấu hình mẫu trong Danh mục chung).
+- [x] Q-007: Từ `GATE IN OK` đến khi Xe nâng hạ vỏ, container ở trạng thái Chờ hạ vỏ, vị trí hiển thị `-` (DEC-036).
+- [x] Q-008: Xe nâng / Hiện trường / Văn phòng / Quản lý được ĐẢO CHUYỂN; Văn phòng / Quản lý được SỬA VỊ TRÍ hành chính (DEC-035, DEC-036).
+- [ ] Q-009: Quy trình khi vị trí hệ thống và thực tế không khớp (ngoài SỬA VỊ TRÍ) — có cần kiểm kê định kỳ không?
+- [x] Q-031: Văn phòng / Quản lý khóa / mở khóa, bắt buộc ghi chú (DEC-030).
 
 ## 3. Booking và cấp container
 
-- [ ] Q-010: Một booking/lệnh cấp có thể cấp nhiều container không?
-- [ ] Q-011: Ai được quyền chọn container để cấp cho khách?
-- [ ] Q-012: Khi đổi container đã giữ chỗ, điều kiện mở khóa container cũ là gì?
-- [ ] Q-013: Nếu hai nhân viên đồng thời chọn cùng một container, hệ thống cần xử lý thế nào?
+- [x] Q-010: Một booking cấp nhiều container; chỉ nhập số booking, hệ thống tự đếm (DEC-017, DEC-034).
+- [x] Q-011: Văn phòng / Quản lý chọn container để cấp (DEC-027, DEC-033).
+- [ ] Q-012: Đổi container đã lập lệnh và đã thu phí xử lý thế nào? (Hiện: chỉ hủy được khi chưa thanh toán — OPEN-008.)
+- [x] Q-013: Hệ thống chặn lập lệnh lần 2 cho container đã lập lệnh (DEC-006). Ở chế độ Supabase cần ràng buộc database.
 
 ## 4. Gate Out — Xuất container khỏi bãi
 
-- [ ] Q-014: *(Đã xác nhận 3 trường hợp xuất: `CẤP VỎ`, `XUẤT TÀU`, trả theo lệnh riêng; và 5 điều kiện kiểm tra: có lệnh hợp lệ, không bị tạm giữ/khóa xuất, đúng số container, đã thanh toán phí bắt buộc, hoàn tất chứng từ/thủ tục)* — Chi tiết các khoản phí bắt buộc và bộ chứng từ bắt buộc đối với từng trường hợp (`CẤP VỎ`, `XUẤT TÀU`, trả theo lệnh riêng) khác nhau như thế nào?
-- [ ] Q-015: Có trường hợp được xuất container khi chưa thanh toán đủ (ví dụ theo diện công nợ) không?
-- [ ] Q-016: Ai được phép hủy hoặc sửa một lượt Gate Out đã xác nhận?
+- [ ] Q-014: Khoản phí và bộ chứng từ bắt buộc riêng cho `XUẤT TÀU` và trả container theo lệnh riêng.
+- [x] Q-015: TTS là hình thức thanh toán sau hợp lệ để cấp vỏ (DEC-031, DEC-033).
+- [ ] Q-016: Ai được phép hủy hoặc sửa một lượt Gate Out đã xác nhận OUT?
 
 ## 5. Dịch vụ và sửa chữa
 
-- [ ] Q-017: Quy trình vệ sinh container gồm những trạng thái nào?
-- [ ] Q-018: Quy trình giám định cần lưu những thông tin nào?
-- [ ] Q-019: Khi nào tạo yêu cầu sửa chữa và ai được duyệt?
-- [ ] Q-020: Những ảnh nào bắt buộc phải lưu khi hoàn tất sửa chữa?
+- [ ] Q-017: Trạng thái chi tiết của quy trình vệ sinh (hiện: Chờ vệ sinh → Hoàn tất).
+- [x] Q-018: Báo giá lưu REMARK SỬA CHỮA; số tiền không bắt buộc (DEC-040).
+- [x] Q-019: Báo giá do vai trò Báo giá riêng, chỉ nhập remark, không cần hãng tàu duyệt (DEC-026, DEC-040).
+- [ ] Q-020: Ảnh bắt buộc khi hoàn tất sửa chữa.
 
 ## 6. Thanh toán và đối soát
 
-- [ ] Q-021: Các hình thức thanh toán cần hỗ trợ là gì?
-- [ ] Q-022: Những dịch vụ nào thu phí trước, thu phí sau hoặc được miễn phí?
-- [ ] Q-023: Cần quản lý công nợ theo khách hàng, hãng tàu hay bên chịu phí nào khác?
-- [ ] Q-024: Quy trình xử lý giao dịch thanh toán trùng, thất bại hoặc hoàn tiền là gì?
-- [ ] Q-025: Ai được phép xác nhận thanh toán thủ công và điều chỉnh giao dịch?
+- [x] Q-021: TTT / TTS / TTTT (tiền mặt, chuyển khoản API QR) và trạng thái từng loại (DEC-031).
+- [ ] Q-022: Dịch vụ nào thu trước, thu sau hoặc miễn phí (ngoài Hạ vỏ, Cấp vỏ)?
+- [ ] Q-023: Công nợ TTS quản lý theo khách hàng, hãng tàu hay bên chịu phí? Quy trình thu nợ TTS phát hành phiếu thu như thế nào?
+- [ ] Q-024: Quy trình xử lý giao dịch thất bại / hoàn tiền (OPEN-008).
+- [ ] Q-025: Ai được điều chỉnh giao dịch đã ghi nhận?
+- [ ] Q-032: Ngân hàng / cổng thanh toán nào dùng cho chuyển khoản API QR, và định dạng nội dung chuyển khoản?
 
 ## 7. Người dùng và phân quyền
 
-- [ ] Q-026: Những vai trò chính thức nào cần có?
-- [ ] Q-027: Nhân viên có thể kiêm nhiều vai trò không?
+- [x] Q-026: 11 vai trò (DEC-017, DEC-026).
+- [x] Q-027: Cho phép kiêm nhiệm (DEC-017).
 - [ ] Q-028: Ai được tạo tài khoản và cấp quyền?
-- [ ] Q-029: Những thao tác nào bắt buộc lưu nhật ký kiểm toán?
+- [ ] Q-029: Danh sách thao tác bắt buộc lưu nhật ký kiểm toán (hiện: mọi thao tác ghi dữ liệu đều ghi nhật ký).
 
-## 8. Quy tắc quản lý câu hỏi
+## 8. Báo cáo
+
+- [x] Q-033: (Xác nhận — DEC-040) Sheet `XUẤT VỎ` / `NHẬP VỎ` của báo cáo Tổng hợp hiện được hiểu là XUẤT TÀU (+ trả theo lệnh riêng) / NHẬP TÀU. Đúng chưa?
+- [ ] Q-034 (CHỜ BẠN): Định dạng file báo cáo Tổng hợp: hiện xuất Excel dạng XML (.xls, mở được bằng Excel). Có cần `.xlsx` chuẩn không (cần thêm thư viện)?
+- [x] Q-035: Không còn hiệu lực — đã bỏ bước QC (DEC-049).
+
+## 9. Quy tắc quản lý câu hỏi
 
 - Chỉ đánh dấu hoàn thành sau khi nghiệp vụ được xác nhận.
 - Câu trả lời đã xác nhận phải được cập nhật vào `DECISIONS.md`.
