@@ -15,7 +15,7 @@ import {
 } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { formatLocation, getContainerProgress, PROGRESS_LABELS, storageDays } from './core';
-import { receiptOperationOf } from './payments';
+import { masterReceiptUsage, receiptOperationOf } from './payments';
 import { formatDateTime, parseDateTime } from './datetime';
 
 // ============================================================================
@@ -398,9 +398,9 @@ export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData 
   return {
     name: 'PHIẾU THU',
     columns: [
-      'MÃ PHIẾU THU', 'TÁC NGHIỆP', 'TRẠNG THÁI', 'SỐ TIỀN', 'TRƯỜNG HỢP', 'HÌNH THỨC', 'BÊN THANH TOÁN', 'MÃ HỒ SƠ',
+      'MÃ PHIẾU THU', 'TÁC NGHIỆP', 'TRẠNG THÁI', 'SỐ TIỀN', 'TRƯỜNG HỢP', 'PHƯƠNG THỨC TT', 'BÊN THANH TOÁN', 'MÃ HỒ SƠ',
       'SỐ CONTAINER', 'CHỨNG TỪ', 'PHIẾU THU MẸ', 'MÃ THAM CHIẾU', 'MÃ GD NGÂN HÀNG', 'TẠO LÚC', 'NGƯỜI TẠO',
-      'XÁC NHẬN THU LÚC', 'NGƯỜI XÁC NHẬN', 'LÝ DO HỦY', 'SỐ LẦN IN', 'IN GẦN NHẤT',
+      'XÁC NHẬN THU LÚC', 'NGƯỜI XÁC NHẬN', 'LÝ DO HỦY', 'SỐ LẦN IN', 'IN GẦN NHẤT', 'SỐ LƯỢT ĐÃ DÙNG (TTT)', 'CÒN LẠI (TTT)',
     ],
     rows: rows.map(({ transaction: t, receipt: r }) => [
       r?.receiptNo || '', OP[receiptOperationOf(state, { ...t, operation: r?.operation })], STATUS[t.status] || t.status, t.amount,
@@ -408,6 +408,11 @@ export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData 
       r?.voucherNo || '', r?.masterReceiptCode || (t.purpose === 'PREPAID_TOPUP' ? t.paymentRef : ''), t.paymentRef,
       t.providerTxRef || '', fmt(t.createdAt), t.createdBy, fmt(t.confirmedAt), t.confirmedBy || '', t.cancelReason || '',
       r?.printLog?.length || 0, r?.printLog?.length ? `${fmt(r.printLog[r.printLog.length - 1].at)} • ${r.printLog[r.printLog.length - 1].by}` : '',
+      // DEC-079: phiếu thu trước — số lượt tác nghiệp đã trừ, số tiền còn lại
+      ...(() => {
+        const u = t.purpose === 'PREPAID_TOPUP' ? masterReceiptUsage(state, r?.masterReceiptCode || t.paymentRef) : undefined;
+        return u ? [u.usedCount, u.remainingAmount] : ['', ''];
+      })(),
     ]),
   };
 }

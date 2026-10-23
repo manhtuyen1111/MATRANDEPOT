@@ -10,7 +10,7 @@ import { VesselFieldMobile } from '../src/features/vessel/VesselFieldMobile';
 import { createVesselList, inspectVesselImportItem } from '../src/services/vessel';
 import { FieldQueueWorkspaces, FieldQueueMode, getFieldQueue } from '../src/features/field-queues/FieldQueueWorkspaces';
 import { YardShiftWorkspace } from '../src/features/forklift/YardShiftWorkspace';
-import { ReceiptsWorkspace } from '../src/features/receipts/ReceiptsWorkspace';
+import { MasterUsagePanel, ReceiptsWorkspace } from '../src/features/receipts/ReceiptsWorkspace';
 import { ReportsWorkspace } from '../src/features/reports/ReportsWorkspace';
 import { MasterCatalogWorkspace } from '../src/features/catalog/MasterCatalogWorkspace';
 import { MasterDossierModal } from '../src/components/MasterDossierModal';
@@ -312,5 +312,16 @@ describe('DEC-077: phiếu thu trước — biểu giá × số lượng, bản 
     expect(html).toContain('>SL<');
     const editor = renderToString(<FeeLinesEditor catalog={s.feeCatalog} selectedIds={[fee.id]} onChange={noop} quantities={[3]} onQuantitiesChange={noop} />);
     expect(editor).toContain('Số lượng');
+  });
+});
+
+describe('DEC-079: khối Sử dụng phiếu thu mẹ', () => {
+  it('Hiện tổng nạp, số lượt, đã trừ, còn lại và bảng từng lần trừ (link hồ sơ)', () => {
+    const html = renderToString(<MasterUsagePanel state={base} code="PTT-2026-001" />).replace(/<!-- -->/g, '');
+    expect(html).toContain('Sử dụng phiếu thu mẹ PTT-2026-001');
+    expect(html).toContain('1 lượt');
+    expect(html).toContain('HV-261019-001');
+    expect(html).toContain('CT-GIN-261019-01');
+    expect(html).toContain('Còn lại');
   });
 });

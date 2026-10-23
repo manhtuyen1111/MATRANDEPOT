@@ -906,3 +906,42 @@ describe('DEC-077: phiếu thu trước chọn biểu giá kèm số lượng', 
     expect(() => createMasterPrepaidReceipt(as(s0, 'usr-inspector'), { customerCode: customer, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: fee.id, quantity: 1 }] })).toThrow(/Không đủ quyền/);
   });
 });
+
+describe('DEC-079: phiếu thu mẹ liên kết từng lần trừ tiền — chứng từ, hồ sơ, số lượt, số tiền', () => {
+  it('Tổng hợp sử dụng: số lượt, đã trừ, còn lại; mỗi lượt gắn chứng từ + hồ sơ + tác nghiệp', async () => {
+    const { masterReceiptUsage } = await import('../src/services/payments');
+    let s = createInitialState();
+    const before = masterReceiptUsage(s, 'PTT-2026-001')!;
+    expect(before.usedCount).toBe(1);
+    expect(before.rows[0]).toMatchObject({ voucherNo: 'CT-GIN-261019-01', dossierCode: 'HV-261019-001', operation: 'HẠ VỎ', amount: 1200000 });
+    s = fieldStep(s);
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTT', scannedQrCode: 'QR-TTT-VIETLOG-001' });
+    const after = masterReceiptUsage(s, 'PTT-2026-001')!;
+    expect(after.usedCount).toBe(2);
+    expect(after.rows[0]).toMatchObject({ dossierCode: gi.masterDossierCode, containerNo: 'MSKU1234567', operation: 'HẠ VỎ' });
+    expect(after.usedAmount).toBe(before.usedAmount + after.rows[0].amount);
+    expect(after.remainingAmount).toBe(before.remainingAmount - after.rows[0].amount);
+    expect(masterReceiptUsage(s, 'PTT-9999-999')).toBeUndefined();
+  });
+});
+
+describe('DEC-079: Excel phiếu thu', () => {
+  it('Cột PHƯƠNG THỨC TT, số lượt / còn lại TTT; số cột tiêu đề = số ô mỗi dòng', async () => {
+    const { receiptsSheet, queryReceipts, collectAllPages } = await import('../src/services/reports');
+    const { createMasterPrepaidReceipt: create, confirmPrepaidCash } = await import('../src/services/payments');
+    const office = as(createInitialState(), 'usr-office');
+    let s = create(office, { customerCode: office.partners.find((p) => p.isCustomer)!.code, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: office.feeCatalog[0].id, quantity: 2 }] });
+    s = confirmPrepaidCash(s, { transactionId: s.paymentTransactions[0].id });
+    const receiptNo = s.paymentReceipts[0].receiptNo;
+    const rows = collectAllPages((p) => queryReceipts(s, { receiptNo }, p));
+    const sheet = receiptsSheet(s, rows);
+    expect(sheet.columns).toContain('PHƯƠNG THỨC TT');
+    expect(sheet.columns.slice(-2)).toEqual(['SỐ LƯỢT ĐÃ DÙNG (TTT)', 'CÒN LẠI (TTT)']);
+    expect(sheet.rows.length).toBeGreaterThan(0);
+    for (const row of sheet.rows) expect(row.length).toBe(sheet.columns.length);
+    expect(sheet.rows[0].slice(-2)).toEqual([0, office.feeCatalog[0].defaultAmountInclVat * 2]);
+    expect(sheet.rows[0][sheet.columns.indexOf('PHƯƠNG THỨC TT')]).toBe('Tiền mặt');
+  });
+});

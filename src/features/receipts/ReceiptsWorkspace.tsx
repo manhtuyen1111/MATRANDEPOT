@@ -10,7 +10,7 @@ import {
 } from '../../types/depot';
 import { DepotState, formatVnd } from '../../services/depotStore';
 import { simulateDemoBankTransfer } from '../../services/depotOperations';
-import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, receiptOperationOf } from '../../services/payments';
+import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, masterReceiptUsage, receiptOperationOf } from '../../services/payments';
 import { collectAllPages, queryReceipts, ReceiptQueryFilter, ReceiptRow, receiptsSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
 import { PrintReceiptButton, ReceiptPrintSheet } from '../../components/ReceiptPrint';
@@ -254,34 +254,47 @@ export const ReceiptsWorkspace: React.FC<{
                       <tr>
                         <th className="whitespace-nowrap px-2 py-2">Mã phiếu thu</th>
                         <th className="whitespace-nowrap px-2 py-2">Tác nghiệp</th>
-                        <th className="whitespace-nowrap px-2 py-2">Trạng thái</th>
                         <th className="whitespace-nowrap px-2 py-2 text-right">Số tiền</th>
-                        <th className="whitespace-nowrap px-2 py-2">Trường hợp • Hình thức</th>
+                        <th className="whitespace-nowrap px-2 py-2">Phương thức TT</th>
                         <th className="px-2 py-2">Bên thanh toán</th>
-                        <th className="whitespace-nowrap px-2 py-2">Mã hồ sơ</th>
+                        <th className="whitespace-nowrap px-2 py-2">Mã hồ sơ / Phiếu thu mẹ</th>
                         <th className="whitespace-nowrap px-2 py-2">Số cont</th>
                         <th className="whitespace-nowrap px-2 py-2">Chứng từ</th>
-                        <th className="whitespace-nowrap px-2 py-2">Tạo lúc • bởi</th>
-                        <th className="whitespace-nowrap px-2 py-2">Xác nhận thu</th>
+                        <th className="whitespace-nowrap px-2 py-2">Thời gian</th>
+                        <th className="whitespace-nowrap px-2 py-2">Nhân viên</th>
+                        <th className="whitespace-nowrap px-2 py-2">Trạng thái</th>
                         <th className="whitespace-nowrap px-2 py-2 text-center">Đã in</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {result.rows.map((row) => {
                         const { transaction: t, receipt: r } = row;
+                        // DEC-079: phiếu thu trước → hiện luôn số lượt đã dùng / số tiền còn lại của Phiếu thu mẹ
+                        const usage = t.purpose === 'PREPAID_TOPUP' ? masterReceiptUsage(state, r?.masterReceiptCode || t.paymentRef) : undefined;
                         return (
                         <tr key={t.id} onClick={() => setSelectedTxId(t.id)} className={`cursor-pointer ${selectedTxId === t.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
                           <td className="whitespace-nowrap px-2 py-2 font-mono font-bold">{r?.receiptNo || '—'}</td>
                           <td className="whitespace-nowrap px-2 py-2 font-bold">{RECEIPT_OPERATION_LABELS[operationOf(row)]}</td>
-                          <td className="px-2 py-2"><span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[t.status]}`}>{PAYMENT_TX_STATUS_LABELS[t.status]}</span></td>
                           <td className="whitespace-nowrap px-2 py-2 text-right font-mono font-bold">{formatVnd(t.amount)}</td>
-                          <td className="whitespace-nowrap px-2 py-2">{t.paymentCategory === 'TTT' ? 'TTT (nạp trước)' : 'TTTT'} • {PAYMENT_METHOD_LABELS[t.method]}</td>
+                          <td className="whitespace-nowrap px-2 py-2">{PAYMENT_METHOD_LABELS[t.method]}</td>
                           <td className="px-2 py-2">{t.payerName}</td>
-                          <td className="whitespace-nowrap px-2 py-2 font-mono">{t.dossierCode || r?.masterReceiptCode || (t.purpose === 'PREPAID_TOPUP' ? t.paymentRef : '-')}</td>
+                          <td className="whitespace-nowrap px-2 py-2 font-mono">
+                            {usage ? (
+                              <>
+                                <span className="block font-bold">{usage.master.receiptCode}</span>
+                                <span className="block font-sans text-[11px] text-slate-600">
+                                  Dùng <strong className="text-blue-700">{usage.usedCount} lượt</strong> • còn <strong className="text-emerald-700">{formatVnd(usage.remainingAmount)}</strong>
+                                </span>
+                              </>
+                            ) : (
+                              t.dossierCode || r?.masterReceiptCode || '-'
+                            )}
+                          </td>
                           <td className="whitespace-nowrap px-2 py-2 font-mono">{t.containerNo || '-'}</td>
                           <td className="whitespace-nowrap px-2 py-2 font-mono">{r?.voucherNo || '-'}</td>
-                          <td className="whitespace-nowrap px-2 py-2 text-[11px]">{formatViTime(t.createdAt)} • {t.createdBy}</td>
-                          <td className="whitespace-nowrap px-2 py-2 text-[11px]">{t.confirmedAt ? `${formatViTime(t.confirmedAt)} • ${t.confirmedBy || ''}` : '-'}</td>
+                          <td className="whitespace-nowrap px-2 py-2 font-mono text-[11px]">{formatViTime(t.createdAt)}</td>
+                          <td className="px-2 py-2 text-[11px]">{t.createdBy}</td>
+                          <td className="px-2 py-2"><span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[t.status]}`}>{PAYMENT_TX_STATUS_LABELS[t.status]}</span></td>
                           <td className={`px-2 py-2 text-center font-bold ${(r?.printLog?.length || 0) > 1 ? "text-rose-700" : "text-slate-600"}`}>{r ? r.printLog?.length || 0 : "—"}</td>
                         </tr>
                         );
@@ -331,8 +344,8 @@ export const ReceiptsWorkspace: React.FC<{
                 <dd><span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[selected.transaction.status]}`}>{PAYMENT_TX_STATUS_LABELS[selected.transaction.status]}</span></dd>
                 <dt className="text-slate-500">Số tiền</dt>
                 <dd className="font-mono font-bold">{formatVnd(selected.transaction.amount)}</dd>
-                <dt className="text-slate-500">Trường hợp / Phương thức</dt>
-                <dd>{selected.transaction.paymentCategory} • {PAYMENT_METHOD_LABELS[selected.transaction.method]}</dd>
+                <dt className="text-slate-500">Phương thức TT</dt>
+                <dd>{PAYMENT_METHOD_LABELS[selected.transaction.method]}</dd>
                 <dt className="text-slate-500">Bên thanh toán</dt>
                 <dd>{selected.transaction.payerName}</dd>
                 <dt className="text-slate-500">Mã tham chiếu</dt>
@@ -387,6 +400,9 @@ export const ReceiptsWorkspace: React.FC<{
                   </>
                 )}
               </dl>
+              {selected.transaction.purpose === "PREPAID_TOPUP" && (
+                <MasterUsagePanel state={state} code={selected.receipt?.masterReceiptCode || selected.transaction.paymentRef} onOpenDossier={onOpenDossier} />
+              )}
 
               {selected.transaction.status === 'PENDING' && (
                 <div className="mt-3 space-y-2">
@@ -428,6 +444,69 @@ export const ReceiptsWorkspace: React.FC<{
 
         </div>
       </div>
+    </div>
+  );
+};
+
+// DEC-079: SỬ DỤNG PHIẾU THU MẸ — mỗi lần trừ tiền gắn chứng từ, hồ sơ; tổng nạp / số lượt / đã dùng / còn lại
+export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpenDossier?: (code: string) => void }> = ({ state, code, onOpenDossier }) => {
+  const usage = masterReceiptUsage(state, code);
+  if (!usage) return null;
+  const tile = (label: string, value: React.ReactNode, tone: string) => (
+    <div className={`rounded-md border px-2.5 py-1.5 ${tone}`}>
+      <p className="text-[10px] font-semibold uppercase">{label}</p>
+      <p className="font-mono text-sm font-black">{value}</p>
+    </div>
+  );
+  return (
+    <div className="mt-3 space-y-2 rounded-md border-2 border-blue-200 p-3 text-xs">
+      <p className="font-black uppercase text-slate-800">Sử dụng phiếu thu mẹ {usage.master.receiptCode}</p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {tile('Tổng nạp', formatVnd(usage.master.totalAmount), 'border-slate-200 text-slate-800')}
+        {tile('Số lượt đã dùng', `${usage.usedCount} lượt`, 'border-blue-200 bg-blue-50 text-blue-800')}
+        {tile('Đã trừ', formatVnd(usage.usedAmount), 'border-amber-200 bg-amber-50 text-amber-800')}
+        {tile('Còn lại', formatVnd(usage.remainingAmount), 'border-emerald-200 bg-emerald-50 text-emerald-800')}
+      </div>
+      {usage.rows.length === 0 ? (
+        <p className="text-slate-500">{usage.master.status === 'PENDING_PAYMENT' ? 'Chưa thu tiền nạp — chưa dùng được để trừ.' : 'Chưa có lượt tác nghiệp nào trừ vào phiếu thu mẹ này.'}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left">
+            <thead className="border-b border-slate-200 text-[11px] uppercase text-slate-500">
+              <tr>
+                <th className="py-1.5 pr-2">#</th>
+                <th className="py-1.5 pr-2">Thời gian</th>
+                <th className="py-1.5 pr-2">Tác nghiệp</th>
+                <th className="py-1.5 pr-2">Mã hồ sơ</th>
+                <th className="py-1.5 pr-2">Số cont</th>
+                <th className="py-1.5 pr-2">Chứng từ</th>
+                <th className="py-1.5 pr-2 text-right">Số tiền trừ</th>
+                <th className="py-1.5 pr-2 text-right">Số dư sau</th>
+                <th className="py-1.5">Nhân viên</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {usage.rows.map((u, i) => (
+                <tr key={u.deductionId}>
+                  <td className="py-1.5 pr-2 text-slate-400">{usage.rows.length - i}</td>
+                  <td className="whitespace-nowrap py-1.5 pr-2 font-mono text-[11px]">{formatViTime(u.performedAt)}</td>
+                  <td className="py-1.5 pr-2 font-bold">{u.operation}</td>
+                  <td className="py-1.5 pr-2 font-mono">
+                    {u.dossierCode ? (
+                      <button type="button" onClick={() => onOpenDossier?.(u.dossierCode)} className="text-blue-700 hover:underline">{u.dossierCode}</button>
+                    ) : '-'}
+                  </td>
+                  <td className="py-1.5 pr-2 font-mono">{u.containerNo}</td>
+                  <td className="py-1.5 pr-2 font-mono">{u.voucherNo}</td>
+                  <td className="py-1.5 pr-2 text-right font-mono font-bold">{formatVnd(u.amount)}</td>
+                  <td className="py-1.5 pr-2 text-right font-mono">{formatVnd(u.balanceAfter)}</td>
+                  <td className="py-1.5 text-[11px]">{u.performedBy}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

@@ -470,3 +470,47 @@ function buildPrepaidFeeLines(state: DepotState, items: { catalogId: string; qua
     return { id: newId('fl'), catalogCode: cat.code, name: cat.name, quantity: qty, unitAmountInclVat: unit, amountInclVat: unit * qty };
   });
 }
+
+// DEC-079: SỬ DỤNG PHIẾU THU MẸ (TTT) — từng lần trừ tiền gắn với chứng từ, hồ sơ, tác nghiệp; tổng nạp / đã dùng / còn lại
+export interface MasterReceiptUsageRow {
+  deductionId: string;
+  voucherNo: string;
+  dossierCode: string;   // HV-... / CV-...
+  operation: 'HẠ VỎ' | 'CẤP VỎ' | 'KHÁC';
+  containerNo: string;
+  amount: number;
+  balanceAfter: number;
+  performedBy: string;
+  performedAt: string;
+}
+export interface MasterReceiptUsage {
+  master: MasterPrepaidReceipt;
+  rows: MasterReceiptUsageRow[]; // mới nhất trước
+  usedCount: number;             // số lượt tác nghiệp đã trừ
+  usedAmount: number;
+  remainingAmount: number;
+}
+
+export function masterReceiptUsage(state: DepotState, receiptCode: string): MasterReceiptUsage | undefined {
+  const master = state.masterReceipts.find((m) => m.receiptCode === receiptCode);
+  if (!master) return undefined;
+  const rows = state.receiptDeductions
+    .filter((d) => d.receiptCode === receiptCode)
+    .map((d) => {
+      const v = state.vouchers.find((x) => x.voucherNo === d.voucherNo);
+      return {
+        deductionId: d.id,
+        voucherNo: d.voucherNo,
+        dossierCode: v?.referenceCode || v?.masterDossierCode || '',
+        operation: v?.serviceType === 'GATE_IN' ? ('HẠ VỎ' as const) : v?.serviceType === 'GATE_OUT' ? ('CẤP VỎ' as const) : ('KHÁC' as const),
+        containerNo: d.containerNo,
+        amount: d.deductedAmount,
+        balanceAfter: d.balanceAfter,
+        performedBy: d.performedBy,
+        performedAt: d.performedAt,
+      };
+    })
+    .sort((a, b) => b.performedAt.localeCompare(a.performedAt));
+  const usedAmount = rows.reduce((s, r) => s + r.amount, 0);
+  return { master, rows, usedCount: rows.length, usedAmount, remainingAmount: master.remainingAmount };
+}
