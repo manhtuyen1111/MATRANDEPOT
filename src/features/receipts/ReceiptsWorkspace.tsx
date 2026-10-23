@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FilePlus2, Printer, ReceiptText, Search } from 'lucide-react';
+import { FilePlus2, Printer, ReceiptText, Search, X } from 'lucide-react';
 import {
   DirectPaymentMethod,
   PAYMENT_METHOD_LABELS,
@@ -49,6 +49,7 @@ export const ReceiptsWorkspace: React.FC<{
   const [page, setPage] = useState(1);
   const [selectedTxId, setSelectedTxId] = useState('');
   const [create, setCreate] = useState({ customerCode: '', totalAmount: '', lotDescription: '', method: 'CASH' as DirectPaymentMethod });
+  const [createOpen, setCreateOpen] = useState(false); // DEC-076: nút Tạo phiếu thu TTT cùng hàng Tra cứu
   const [cancelReason, setCancelReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -106,6 +107,7 @@ export const ReceiptsWorkspace: React.FC<{
       setSelectedTxId(next.paymentTransactions[0].id);
       setSuccess(`Đã tạo phiếu thu TTT ${next.masterReceipts[0].receiptCode} — đang chờ thanh toán.`);
       setCreate({ customerCode: '', totalAmount: '', lotDescription: '', method: 'CASH' });
+      setCreateOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lỗi tạo phiếu thu');
     }
@@ -163,9 +165,52 @@ export const ReceiptsWorkspace: React.FC<{
                 getSheets={() => [receiptsSheet(state, collectAllPages((p) => queryReceipts(state, applied, p)))]}
               />
             )}
+            {canCreate && (
+              <button type="button" onClick={() => setCreateOpen(!createOpen)} className={`${secondaryBtn} ${createOpen ? "border-blue-600 text-blue-700" : ""}`}>
+                <FilePlus2 className="h-4 w-4" />
+                Tạo phiếu thu TTT (thanh toán trước)
+              </button>
+            )}
           </div>
         </form>
       </SectionCard>
+
+      {canCreate && createOpen && (
+        <SectionCard
+          title="Tạo phiếu thu TTT (thanh toán trước)"
+          icon={<FilePlus2 className="h-4 w-4 text-slate-500" />}
+          right={<button type="button" onClick={() => setCreateOpen(false)} aria-label="Đóng" className={secondaryBtn}><X className="h-3.5 w-3.5" /></button>}
+        >
+          <form onSubmit={handleCreate} className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-6 sm:items-end">
+            <label className="sm:col-span-2">
+              <span className={labelCls}>Khách hàng / đối tác *</span>
+              <select value={create.customerCode} onChange={(e) => setCreate({ ...create, customerCode: e.target.value })} className={inputCls}>
+                <option value="">-- Chọn --</option>
+                {state.partners.map((p) => <option key={p.id} value={p.code}>[{p.code}] {p.name}</option>)}
+              </select>
+            </label>
+            <label>
+              <span className={labelCls}>Số tiền (VNĐ) *</span>
+              <input type="number" min={0} inputMode="numeric" value={create.totalAmount} onChange={(e) => setCreate({ ...create, totalAmount: e.target.value })} className={`${inputCls} font-mono`} />
+            </label>
+            <label>
+              <span className={labelCls}>Hình thức *</span>
+              <select value={create.method} onChange={(e) => setCreate({ ...create, method: e.target.value as DirectPaymentMethod })} className={inputCls}>
+                <option value="CASH">Tiền mặt</option>
+                <option value="BANK_TRANSFER_API">Chuyển khoản (API QR)</option>
+              </select>
+            </label>
+            <label className="sm:col-span-2">
+              <span className={labelCls}>Diễn giải lô</span>
+              <input value={create.lotDescription} onChange={(e) => setCreate({ ...create, lotDescription: e.target.value })} placeholder="VD: Thanh toán trước lô 20 cont tháng 11" className={inputCls} />
+            </label>
+            <div className="flex flex-wrap items-center gap-2 sm:col-span-6">
+              <button type="submit" disabled={!create.customerCode || !Number(create.totalAmount)} className={primaryBtn}>Tạo phiếu thu (chờ thanh toán)</button>
+              <span className="text-[11px] text-slate-500">Chỉ ghi nhận đã thu khi Văn phòng xác nhận tiền mặt hoặc ngân hàng xác nhận chuyển khoản; khi đó Phiếu thu mẹ mới dùng được để trừ dần.</span>
+            </div>
+          </form>
+        </SectionCard>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="lg:col-span-7">
@@ -348,42 +393,6 @@ export const ReceiptsWorkspace: React.FC<{
             </SectionCard>
           )}
 
-          {canCreate && (
-            <SectionCard title="Tạo phiếu thu TTT (thanh toán trước)" icon={<FilePlus2 className="h-4 w-4 text-slate-500" />}>
-              <form onSubmit={handleCreate} className="space-y-3 text-xs">
-                <label className="block">
-                  <span className={labelCls}>Khách hàng / đối tác *</span>
-                  <select value={create.customerCode} onChange={(e) => setCreate({ ...create, customerCode: e.target.value })} className={inputCls}>
-                    <option value="">-- Chọn --</option>
-                    {state.partners.map((p) => <option key={p.id} value={p.code}>[{p.code}] {p.name}</option>)}
-                  </select>
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <label>
-                    <span className={labelCls}>Số tiền (VNĐ) *</span>
-                    <input type="number" min={0} inputMode="numeric" value={create.totalAmount} onChange={(e) => setCreate({ ...create, totalAmount: e.target.value })} className={`${inputCls} font-mono`} />
-                  </label>
-                  <label>
-                    <span className={labelCls}>Hình thức *</span>
-                    <select value={create.method} onChange={(e) => setCreate({ ...create, method: e.target.value as DirectPaymentMethod })} className={inputCls}>
-                      <option value="CASH">Tiền mặt</option>
-                      <option value="BANK_TRANSFER_API">Chuyển khoản (API QR)</option>
-                    </select>
-                  </label>
-                </div>
-                <label className="block">
-                  <span className={labelCls}>Diễn giải lô</span>
-                  <input value={create.lotDescription} onChange={(e) => setCreate({ ...create, lotDescription: e.target.value })} placeholder="VD: Thanh toán trước lô 20 cont tháng 11" className={inputCls} />
-                </label>
-                <button type="submit" disabled={!create.customerCode || !Number(create.totalAmount)} className={`${primaryBtn} w-full`}>
-                  Tạo phiếu thu (chờ thanh toán)
-                </button>
-                <p className="text-[11px] text-slate-500">
-                  Phiếu chỉ được ghi nhận đã thu khi Văn phòng xác nhận tiền mặt hoặc ngân hàng xác nhận chuyển khoản. Khi đó Phiếu thu mẹ mới dùng được để trừ dần.
-                </p>
-              </form>
-            </SectionCard>
-          )}
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@ import { DepotState, formatVnd } from '../services/depotStore';
 import { receiptOperationOf } from '../services/payments';
 import { recordReceiptPrint } from '../services/depotOperations';
 import { formatDateTime } from '../services/datetime';
-import { getDriverRoute, ticketContext } from '../services/driverRoute';
+import { ticketContext } from '../services/driverRoute';
 import { secondaryBtn } from './shared';
 
 // ============================================================================
@@ -42,7 +42,7 @@ const PrintFrame: React.FC<{ state: DepotState; title: string; number: string; o
   reprintNo,
   children,
 }) => (
-  <section className="relative break-inside-avoid border-2 border-slate-800 bg-white p-4 text-xs text-slate-900 print:mb-4">
+  <section className="print-sheet relative break-inside-avoid border-2 border-slate-800 bg-white p-4 text-xs text-slate-900">
     {reprintNo && reprintNo > 1 && (
       <span className="absolute right-3 top-3 rounded border-2 border-rose-600 px-2 py-0.5 text-[11px] font-black text-rose-600">BẢN IN LẠI — LẦN {reprintNo}</span>
     )}
@@ -133,7 +133,6 @@ export const EeirPrintSheet: React.FC<{ state: DepotState; ticket: K80InternalTi
   const location = isOut
     ? loc.find((l) => l.actionType === 'GATE_OUT_CLEAR')?.fromLocation
     : [...loc].reverse().find((l) => l.actionType === 'INITIAL_BLOCK')?.toLocation;
-  const steps = getDriverRoute(state, t);
   return (
     <PrintFrame state={state} title="EEIR — PHIẾU GIAO NHẬN CONTAINER" number={dossierCode} operation={isOut ? 'CẤP VỎ' : 'HẠ VỎ'}>
       <InfoGrid
@@ -141,10 +140,6 @@ export const EeirPrintSheet: React.FC<{ state: DepotState; ticket: K80InternalTi
           ['Số container', <span className="text-sm">{t.containerNo}</span>, true],
           ['Size / Type', `${t.size} / ${t.type}`],
           ['Hãng tàu', container?.shippingLineCode || gateIn?.shippingLineCode],
-          ['Trạng thái • Đóng hàng', `${t.conditionClass} • ${t.stuffingClass}`],
-          ['AGE', t.manufactureYear],
-          ...(t.damageRemarks?.length ? ([['Hư hỏng', t.damageRemarks.join(', ')]] as [string, React.ReactNode][]) : []),
-          ['Vệ sinh', (t.cleaningItems || []).join(' + ')],
           ['Khách hàng', isOut ? gateOut?.receiverRep : t.customerRep],
           ...(isOut ? ([['Booking', gateOut?.bookingNo, true]] as [string, React.ReactNode, boolean][]) : ([['Số lệnh / chứng từ', gateIn?.orderDocNo, true]] as [string, React.ReactNode, boolean][])),
           ['Số xe • SĐT lái xe', `${t.truckNo || '-'} • ${t.driverPhone || '-'}`],
@@ -153,20 +148,18 @@ export const EeirPrintSheet: React.FC<{ state: DepotState; ticket: K80InternalTi
           ['Thanh toán', t.paymentLabel],
         ]}
       />
-      <table className="mt-3 w-full border-collapse text-left">
-        <thead>
-          <tr className="border-y border-slate-400"><th className="py-1">Bước</th><th className="py-1">Bộ phận</th><th className="py-1">Xác nhận</th></tr>
-        </thead>
-        <tbody>
-          {steps.map((s, i) => (
-            <tr key={s.key} className="border-b border-slate-200">
-              <td className="py-1">{i + 1}. {s.action}</td>
-              <td className="py-1 font-semibold">{s.dept}</td>
-              <td className="py-1">{s.done ? `✓ ${s.doneBy || ''} • ${formatDateTime(s.doneAt)}` : '—'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* TÌNH TRẠNG VỎ do Giám định ghi nhận (DEC-076) — không in các bộ phận */}
+      <div className="mt-2 border border-slate-400 p-2">
+        <p className="mb-1 font-black uppercase">Tình trạng vỏ (Giám định)</p>
+        <dl className="grid grid-cols-[110px_1fr_70px_1fr] gap-x-2 gap-y-0.5">
+          <dt className="text-slate-600">Trạng thái</dt><dd className="font-black">{t.conditionClass}</dd>
+          <dt className="text-slate-600">Đóng hàng</dt><dd className="font-semibold">{t.stuffingClass}</dd>
+          <dt className="text-slate-600">Hư hỏng</dt><dd className="col-span-3 font-semibold">{t.damageRemarks?.length ? t.damageRemarks.join(", ") : "Không"}</dd>
+          <dt className="text-slate-600">Vệ sinh</dt><dd className="font-semibold">{(t.cleaningItems || []).join(" + ") || "-"}</dd>
+          <dt className="text-slate-600">AGE</dt><dd className="font-semibold">{t.manufactureYear || "-"}</dd>
+          <dt className="text-slate-600">Giám định</dt><dd className="col-span-3 font-semibold">{gateIn?.fieldStaffName || "-"} • {formatDateTime(gateIn?.fieldRecordedAt)}</dd>
+        </dl>
+      </div>
       <Signatures left="Lái xe / Khách hàng" right={`Đại diện ${state.companyProfile.shortName || state.companyProfile.name}`} />
       <PrintFooter />
     </PrintFrame>

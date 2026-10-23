@@ -23,3 +23,32 @@
     display: none !important;
   }
 }
+
+/* DEC-076: EEIR / Phiếu thu — mỗi phiếu nửa tờ A4 (khổ A5, 148mm); 2 phiếu = 1 tờ A4.
+   Khổ giấy có tên riêng (a4sheet) để không ảnh hưởng phiếu K80 in nhiệt 80mm. */
+@page a4sheet {
+  size: A4 portrait;
+  margin: 0;
+}
+@media print {
+  .print-sheet {
+    page: a4sheet;
+    box-sizing: border-box;
+    width: 210mm;
+    height: 148mm;
+    margin: 0 !important;
+    padding: 7mm 10mm;
+    overflow: hidden;
+    border-width: 0;
+    border-bottom: 1px dashed #64748b; /* đường cắt giữa 2 nửa tờ */
+    font-size: 10px;
+    line-height: 1.3;
+  }
+  .print-sheet:nth-of-type(2n) {
+    border-bottom: 0;
+    break-after: page;
+  }
+  .print-area:has(.print-sheet) {
+    width: 210mm;
+  }
+}

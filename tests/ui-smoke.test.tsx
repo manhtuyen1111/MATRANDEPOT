@@ -269,6 +269,10 @@ describe('DEC-072: in EEIR đồng bộ với phiếu thu', () => {
     expect(eeir).toMatch(/TÁC NGHIỆP: (HẠ|CẤP) VỎ/);
     expect(eeir).toContain(t.containerNo);
     expect(eeir).toContain('In lúc');
+    // DEC-076: EEIR ghi tình trạng vỏ của Giám định, không in các bộ phận; khổ A5 (print-sheet)
+    expect(eeir).toContain('Tình trạng vỏ (Giám định)');
+    expect(eeir).not.toContain('Bộ phận');
+    expect(eeir).toContain('print-sheet');
   });
 });
 
@@ -277,5 +281,13 @@ describe('DEC-073: Lập danh sách XUẤT TÀU có Tìm hàng loạt như Tồn
     const html = renderToString(<ExportPicker state={as(base, 'usr-office')} picked={new Set()} onChange={noop} />);
     expect(html).toContain('Tìm hàng loạt');
     expect(html).toContain('Chọn container từ tồn vỏ');
+  });
+});
+
+describe('DEC-076: Phiếu thu — nút Tạo phiếu thu TTT cùng hàng Tra cứu', () => {
+  it('Nút Tạo phiếu thu TTT nằm trong hàng nút tra cứu; form chưa mở sẵn', () => {
+    const html = renderToString(<ReceiptsWorkspace state={as(base, 'usr-office')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    expect(html).toMatch(/Tra cứu<\/button>.*Tạo phiếu thu TTT \(thanh toán trước\)<\/button>/s);
+    expect(html).not.toContain('Tạo phiếu thu (chờ thanh toán)');
   });
 });
