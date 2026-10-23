@@ -11,8 +11,8 @@ Kiểm thử mới nhất: `npm test` **43/43 pass** • `npm run build` **PASS*
 | # | Nội dung | Ảnh hưởng |
 |---|---|---|
 | 1 | Nhánh `feature/cr-2026-10-batch1` **đã push lên GitHub** (4 commit, 2026-10-22). Tạo Pull Request và merge vào `main` khi bạn đã thử xong | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/feature/cr-2026-10-batch1 |
-| 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
 | 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |
+| 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
 | 4 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
 
 ## B. VIỆC TIẾP THEO (đề xuất theo thứ tự)
