@@ -571,6 +571,14 @@ Quy ước trạng thái:
   - Excel Tồn vỏ: **DATE IN** ngay sau HÃNG TÀU (thay cột GATE IN cũ ở cuối) và thêm cột **VÀO BÃI BẰNG** (HẠ VỎ / NHẬP TÀU).
   - Độ rộng cột: Mã hồ sơ, Số cont không xuống dòng; Size, Type, Trạng thái hẹp và căn giữa; Lưu bãi căn phải; Vị trí, Tiến độ vừa; **Ghi chú rộng nhất**; khoảng đệm ô gọn hơn.
 
+### DEC-075 — Menu báo việc đang chờ cho Nhập tàu / Xuất tàu và mọi việc hiện trường
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-071
+- Bối cảnh: có việc Nhập tàu / Xuất tàu đang chờ nhưng menu Giám định / Xe nâng không có số đếm, ô đếm của các mục khác màu xám nhạt → bộ phận không thấy việc.
+- Quyết định:
+  - Menu có **số đếm việc chờ** cho: Giám định → Nhập tàu (cont chờ giám định), Xe nâng → Nhập tàu (cont chờ hạ bãi, đã xong vệ sinh), Giám định / Xe nâng → Xuất tàu (cont chờ xuất) — cộng mọi tàu đang mở, cùng cách tính với tab "Chờ làm" (`vesselStepSummary`). Văn phòng → Nhập tàu / Xuất tàu: số danh sách đang thực hiện.
+  - **Mọi mục tác nghiệp hiện trường (mục có biểu tượng điện thoại) đang có việc chờ**: ô đếm **màu cam + chấm nhấp nháy** ("Có việc đang chờ"); nhóm menu chứa mục đó cũng hiện số **màu cam** (cả khi thu gọn / thanh biểu tượng). Không có việc thì không hiện số.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -660,6 +668,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-074 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-075 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

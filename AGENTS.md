@@ -78,7 +78,7 @@ Một việc chỉ "xong" khi:
   - Tiêu đề thống nhất: dòng nhỏ "Bộ phận ..." + tên màn + ô số lượng đang chờ (không thêm mô tả dài).
   - Màn quét mã của Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ) dùng chung **một khung nền đậm**: số container chữ rất lớn → Size / Type + (Trạng thái / Đóng hàng hoặc Vị trí hiện tại). Không lặp lại các thông tin này ở bên dưới (DEC-061).
   - Khung `mx-auto w-full max-w-lg`, một cột, nút lớn, danh sách dạng thẻ (không dùng bảng rộng), "Xem thêm" thay phân trang, phần đang thao tác đặt trên cùng.
-  - Đánh dấu `mobile: true` ở mục menu trong `src/app/App.tsx` (hiện biểu tượng điện thoại).
+  - Đánh dấu `mobile: true` ở mục menu trong `src/app/App.tsx` (hiện biểu tượng điện thoại). Mục mobile có số đếm việc chờ (`badges` trong App) → tự tô **cam + nhấp nháy** khi có việc (DEC-075); thêm màn hiện trường mới thì phải thêm số đếm.
   - Smoke test `tests/ui-smoke.test.tsx` kiểm tra số biểu tượng mobile và `max-w-lg` — thêm màn mobile mới thì cập nhật test này.
 - **Màn văn phòng / báo cáo** (máy tính): bảng được, bắt buộc bộ lọc trước khi tải dữ liệu, có phân trang.
 - **Văn phòng làm phần tài chính** (phiếu thu TTT, xác nhận tiền mặt) — không còn Kế toán (DEC-047).

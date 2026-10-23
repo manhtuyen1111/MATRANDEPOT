@@ -89,6 +89,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-074)
 - Tồn vỏ: cột Date in (thời gian vào bãi) giữa Hãng tàu và Trạng thái; Excel thêm DATE IN + VÀO BÃI BẰNG; sắp lại độ rộng cột. Kiểm thử: 75/75 pass.
 
+### Changed (2026-10-24, DEC-075)
+- Menu: số đếm việc chờ cho Giám định / Xe nâng → Nhập tàu, Xuất tàu; mọi việc hiện trường đang chờ hiện ô đếm màu cam + chấm nhấp nháy, nhóm menu cũng báo màu cam. Kiểm thử: 75/75 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

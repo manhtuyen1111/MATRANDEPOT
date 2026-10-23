@@ -4,7 +4,7 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-074), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069), hoàn thiện màn Văn phòng dạng danh sách → chi tiết, sửa / thêm / xóa khi chưa duyệt, sắp xếp + tìm kiếm (DEC-070), màn hiện trường có theo dõi đã làm / chờ làm (DEC-071); **sửa In hồ sơ trang trắng → In EEIR, EEIR đồng bộ khung với phiếu thu** (DEC-072). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo (DEC-069)** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → DEC-075), chưa merge vào `main`. Mới nhất (2026-10-24): Tồn vỏ cột Lưu bãi + khóa tại icon + thao tác hàng loạt (DEC-067); mã hồ sơ HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập tàu / Xuất tàu** đủ Văn phòng – Giám định – Vệ sinh – Xe nâng – Báo cáo (DEC-069), hoàn thiện màn Văn phòng dạng danh sách → chi tiết, sửa / thêm / xóa khi chưa duyệt, sắp xếp + tìm kiếm (DEC-070), màn hiện trường có theo dõi đã làm / chờ làm (DEC-071); **sửa In hồ sơ trang trắng → In EEIR, EEIR đồng bộ khung với phiếu thu** (DEC-072). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
 
 **Điểm dừng 2026-10-24:** đã **push đầy đủ lên GitHub** (DEC-050 → DEC-069). Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
 Kiểm thử mới nhất: `npm test` **75/75 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
@@ -51,7 +51,7 @@ Kiểm thử mới nhất: `npm test` **75/75 pass** (3 file test) • `npm run 
 | Nhập tàu | Văn phòng lập danh sách (tên tàu, thời gian, **hãng tàu**, số xe, cont – size – type) → **Giám định** xác nhận cont thực tế, chọn xe, DAMAGE/AV, M/K/E, vệ sinh, AGE → mã **NT-** → **Vệ sinh → Chờ vệ sinh** (nếu có, chung hàng chờ Hạ vỏ) → Xe nâng hạ + vị trí → **tồn vỏ ngay, cấp vỏ được**; DAMAGE như Hạ vỏ; hết danh sách → Văn phòng / Quản lý **duyệt**. Không thu phí, không K80 | 069, 070 |
 | Xuất tàu | Văn phòng lập danh sách **chọn từ Tồn vỏ** (có **Tìm hàng loạt** như Tồn vỏ — DEC-073) (mọi cont tồn bãi trừ cont khóa / đã lập lệnh cấp / đã trong danh sách khác) → mã **XT-** từng cont, cont không cấp vỏ được → **Giám định / Xe nâng** chọn cont + gán xe → OUT → **duyệt**. Không thu phí, không K80 | 069, 070, 073 |
 | Danh sách tàu (Văn phòng) | Màn chính = danh sách đang thực hiện, nút **Lập danh sách** bên phải tiêu đề, bấm dòng → chi tiết; **chưa duyệt** thì sửa thông tin (hãng tàu chỉ đổi khi chưa giám định), thêm cont, bỏ cont chờ, **xóa** (khi chưa tác nghiệp cont nào); cont luôn xếp **size 20 → 40, số cont A→Z**; Giám định / Xe nâng tìm cont lọc ngay khi gõ như Tồn vỏ | 070 |
-| Màn hiện trường tàu | Giám định / Xe nâng × Nhập / Xuất tàu dùng 1 mẫu: **tiến độ trên cùng** (xong/tổng, chờ làm, chưa tới lượt, **bạn đã làm**, số cont theo xe), tab **Chờ làm / Đã xong / Tất cả**, thẻ ✓ kèm xe + người + giờ, **gõ trúng cont đã làm → báo, không làm lại**, dải "Vừa xong" | 071 |
+| Màn hiện trường tàu | Giám định / Xe nâng × Nhập / Xuất tàu dùng 1 mẫu: **tiến độ trên cùng** (xong/tổng, chờ làm, chưa tới lượt, **bạn đã làm**, số cont theo xe), tab **Chờ làm / Đã xong / Tất cả**, thẻ ✓ kèm xe + người + giờ, **gõ trúng cont đã làm → báo, không làm lại**, dải "Vừa xong" ; **menu báo việc chờ màu cam nhấp nháy** cho mọi việc hiện trường | 071, 075 |
 
 ## D. ĐÃ HOÀN THÀNH
 | Mã | Việc | Ngày | Kết quả | Kiểm thử | Nhánh |
@@ -86,6 +86,7 @@ Kiểm thử mới nhất: `npm test` **75/75 pass** (3 file test) • `npm run 
 | P7-04 | Sửa In hồ sơ (trang trắng) → In EEIR / EEIR + phiếu thu từng lượt; EEIR và phiếu thu chung 1 khung in; lớp in PrintPortal | 2026-10-24 | DEC-072 | **74/74 • build PASS**; **chưa thử in giấy thật** | agent/claude/p4-prep-xlsx |
 | P7-05 | Lập danh sách Xuất tàu / Thêm cont: Tìm hàng loạt như Tồn vỏ | 2026-10-24 | DEC-073 | **75/75 • build PASS** | agent/claude/p4-prep-xlsx |
 | P4-pre13 | Tồn vỏ: cột Date in, Excel DATE IN + VÀO BÃI BẰNG, sắp lại độ rộng cột | 2026-10-24 | DEC-074 | **75/75 • build PASS** | agent/claude/p4-prep-xlsx |
+| P7-06 | Menu báo việc chờ: số đếm Nhập / Xuất tàu cho Giám định, Xe nâng; việc hiện trường đang chờ tô cam + nhấp nháy | 2026-10-24 | DEC-075 | **75/75 • build PASS** | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -160,3 +161,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - **Bàn giao bổ sung (P7-04):** mẫu in chung ở `src/components/ReceiptPrint.tsx` (`PrintFrame`, `EeirPrintSheet`, `ReceiptPrintSheet`, `PrintPortal`). Hồ sơ: `DossierPrintBar` trong `MasterDossierModal.tsx` (cần prop `onUpdateState` để đếm lần in phiếu thu). CSS `index.css`: `.print-job` ẩn các vùng in khác khi đang in.
 - 2026-10-24 — Claude Code: P7-05 (DEC-073) Tìm hàng loạt ở Lập danh sách Xuất tàu. 75/75 • build PASS.
 - 2026-10-24 — Claude Code: P4-pre13 (DEC-074) Tồn vỏ cột Date in. 75/75 • build PASS.
+- 2026-10-24 — Claude Code: P7-06 (DEC-075) menu báo việc chờ hiện trường. 75/75 • build PASS.
