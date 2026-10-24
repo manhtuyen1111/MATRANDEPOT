@@ -471,6 +471,15 @@ describe('DEC-090: Xe nâng → Đảo chuyển — vị trí thẳng cột', ()
     expect(html).toMatch(/>BLOCK-A<\/span><span class="truncate"> \/ 04-02-01<\/span>/);
     expect(html).toMatch(/>BLOCK-B<\/span><span class="truncate"><\/span>/);
     expect(html).not.toContain('>Tier</span>');
+    // DEC-094: ô TRẠNG THÁI đầu dòng (AV / DAMAGE), tiến độ ở cuối ô
+    expect(html.match(/data-testid="shift-status"/g)?.length).toBe(rows);
+    expect(html.match(/data-testid="shift-progress"/g)?.length).toBe(rows);
+    const c = base.containers.find((x) => x.containerNo === 'MSKU4089123')!;
+    const at = html.indexOf(c.containerNo);
+    const statusAt = html.lastIndexOf('data-testid="shift-status"', at);
+    const progressAt = html.indexOf('data-testid="shift-progress"', at);
+    expect(statusAt).toBeGreaterThan(-1);
+    expect(progressAt).toBeGreaterThan(html.indexOf('/ 04-02-01', at));
   });
 });
 

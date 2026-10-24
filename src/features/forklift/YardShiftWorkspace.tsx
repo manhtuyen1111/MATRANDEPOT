@@ -148,18 +148,34 @@ export const YardShiftWorkspace: React.FC<{
                 onClick={() => { setSelectedId(c.id); setSlot(EMPTY_SLOT); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className={`w-full rounded-lg border px-3 py-2.5 text-left text-xs ${selectedId === c.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white active:bg-slate-50'}`}
               >
-                {/* DEC-092: 1 dòng SỐ CONT | SIZE/TYPE | VỊ TRÍ "BLOCK-A / 17-02-02"; ô Block rộng cố định (mã dài nhất) → Block thẳng Block, Bay thẳng Bay */}
-                <div className="grid grid-cols-[7rem_2.75rem_1fr] items-center gap-2" data-testid="shift-row">
-                  <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
-                  <span className="font-mono text-slate-600">{c.size}/{c.type}</span>
-                  <span className="flex min-w-0 font-mono text-[11px] font-bold text-slate-900" data-testid="shift-slot">
-                    <span className="shrink-0" style={{ width: `${blockCh}ch` }}>{c.currentBlock || ''}</span>
-                    <span className="truncate">{slotDetail(c) ? ` / ${slotDetail(c)}` : ''}</span>
+                {/* DEC-094: cấu trúc như danh sách Xe nâng — ô TRẠNG THÁI riêng bên trái; bên phải dòng 1 SỐ CONT | VỊ TRÍ
+                    (ô Block rộng cố định → vị trí thẳng cột, DEC-092), dòng cuối SIZE/TYPE | TIẾN ĐỘ */}
+                <div className="grid grid-cols-[3.5rem_1fr] items-center gap-2.5" data-testid="shift-row">
+                  <span
+                    data-testid="shift-status"
+                    className={`flex h-full items-center justify-center rounded text-[11px] font-black ${c.conditionClass === 'DAMAGE' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`}
+                  >
+                    {c.conditionClass}
                   </span>
-                </div>
-                <div className="mt-0.5 grid grid-cols-[7rem_1fr] gap-2 text-[11px] text-slate-500">
-                  <span className={c.conditionClass === 'DAMAGE' ? 'font-semibold text-rose-700' : 'font-semibold text-emerald-700'}>{c.conditionClass}</span>
-                  <span className="truncate">{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</span>
+                  <span className="min-w-0">
+                    <span className="grid grid-cols-[7rem_1fr] items-center gap-2">
+                      <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
+                      <span className="flex min-w-0 font-mono text-[11px] font-bold text-slate-900" data-testid="shift-slot">
+                        <span className="shrink-0" style={{ width: `${blockCh}ch` }}>{c.currentBlock || ''}</span>
+                        <span className="truncate">{slotDetail(c) ? ` / ${slotDetail(c)}` : ''}</span>
+                      </span>
+                    </span>
+                    <span className="mt-1 grid grid-cols-[7rem_1fr] items-center gap-2">
+                      <span className="font-mono text-[11px] text-slate-600">{c.size}/{c.type}</span>
+                      <span className="flex min-w-0 flex-wrap gap-1" data-testid="shift-progress">
+                        {getContainerProgress(c).map((p) => (
+                          <span key={p} className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${p === 'SAN_SANG' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
+                            {PROGRESS_LABELS[p]}
+                          </span>
+                        ))}
+                      </span>
+                    </span>
+                  </span>
                 </div>
               </button>
             </li>
