@@ -131,6 +131,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-087)
 - Vị trí: chỉ chặn trùng khi đủ Block – Bay – Row – Tier; thiếu chiều thì nhiều cont chung 1 vị trí.
 
+### Added (2026-10-24, DEC-088)
+- Chờ báo giá: Tìm hàng loạt, chọn nhiều, Xác nhận chờ sửa chữa hàng loạt (bỏ qua cont chưa cập nhật). Kiểm thử: 92/92 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

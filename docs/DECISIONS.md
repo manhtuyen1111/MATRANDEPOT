@@ -671,6 +671,11 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-24)
 - Quyết định: **Chỉ khi vị trí đầy đủ 4 phần BLOCK – BAY – ROW – TIER** mới chặn 2 cont trùng 1 ô. Vị trí **không đủ 4 phần** (Block chỉ có tên, chỉ Bay, Bay + Row…) → **1 vị trí gán được cho nhiều cont** (1 Block / 1 Bay / 1 Row chứa được nhiều đơn vị cont). Quy tắc bắt buộc nhập đủ các chiều đã cấu hình (DEC-082) không đổi.
 
+### DEC-088 — Chờ báo giá: tìm hàng loạt + xác nhận chờ sửa chữa hàng loạt
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-086
+- Quyết định: Chờ báo giá có **Tìm hàng loạt** giống Tồn vỏ (dán danh sách số cont, báo số không có trong Chờ báo giá) và **ô chọn từng dòng / chọn tất cả theo bộ lọc** → **Xác nhận chờ sửa chữa hàng loạt**. Áp dụng từng cont qua `confirmQuotationToRepair` (`bulkConfirmQuotationToRepair`); cont **chưa cập nhật tình trạng sửa chữa / giờ công được bỏ qua và báo lại**, không chặn cả lô.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -760,6 +765,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-087 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-088 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
