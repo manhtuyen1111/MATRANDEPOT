@@ -11,6 +11,7 @@ import {
 import { formatLocation } from '../../services/core';
 import { findTicketByQr, isTicketClosed } from '../../services/driverRoute';
 import { OperationBadge } from '../vessel/VesselShared';
+import { containerOperation } from '../../services/vessel';
 import { QuotationWorkspace } from '../quotation/QuotationWorkspace';
 import {
   ContainerNo,
@@ -402,21 +403,18 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
             ) : (
               queue.map((c) => (
                 <li key={c.id}>
-                  {/* DEC-085: số cont luôn ở cột cố định bên trái (thẳng hàng dọc); nhãn tác nghiệp + tên tàu xuống dòng 2 */}
-                  <button type="button" onClick={() => lookup(c.activeQrCode)} className="block w-full px-4 py-2.5 text-left text-xs hover:bg-slate-50" data-testid="queue-row">
-                    <span className="grid grid-cols-[9.5rem_3.5rem_1fr] items-center gap-2">
-                      <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
-                      <span className="font-mono text-slate-600">{c.size}/{c.type}</span>
-                      <span className="truncate text-right font-mono text-[11px] text-slate-600">{formatLocation(c)}</span>
-                    </span>
-                    <span className="mt-1 flex items-center justify-between gap-2">
-                      <span className="min-w-0 truncate"><OperationBadge state={state} container={c} /></span>
-                      {mode === 'XN_CHO_CAP_VO' && (
-                        <span className="shrink-0 text-[11px] text-slate-700">{c.allocatedTruckNo || '-'} • {c.allocatedDriverPhone || '-'}</span>
-                      )}
-                      {isRepair && <span className="shrink-0 text-[11px] text-slate-700">{repairWoOf(c)?.laborHours ?? c.quotationLaborHours ?? '-'} giờ công</span>}
-                    </span>
-                  </button>
+                  <QueueListRow
+                    state={state}
+                    container={c}
+                    extra={
+                      mode === 'XN_CHO_CAP_VO'
+                        ? `${c.allocatedTruckNo || '-'} • ${c.allocatedDriverPhone || '-'}`
+                        : isRepair
+                        ? `${repairWoOf(c)?.laborHours ?? c.quotationLaborHours ?? '-'} giờ công`
+                        : undefined
+                    }
+                    onClick={() => lookup(c.activeQrCode)}
+                  />
                 </li>
               ))
             )}
@@ -436,3 +434,25 @@ const QueueHeader: React.FC<{ dept: string; name: string; count: number }> = ({ 
     <span className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">{count}</span>
   </div>
 );
+
+// DEC-089: 1 dòng danh sách chờ Vệ sinh / Xe nâng — ô TÁC NGHIỆP riêng bên trái;
+//   bên phải: tầng 1 số cont (cột cố định, thẳng hàng) | size/type | vị trí; tầng 2 tên tàu | thông tin phụ
+export const QueueListRow: React.FC<{ state: DepotState; container: ContainerRecord; extra?: string; onClick: () => void }> = ({ state, container: c, extra, onClick }) => {
+  const op = containerOperation(state, c);
+  return (
+    <button type="button" onClick={onClick} className="grid w-full grid-cols-[5rem_1fr] items-center gap-2.5 px-3 py-2.5 text-left text-xs hover:bg-slate-50" data-testid="queue-row">
+      <OperationBadge state={state} container={c} hideVessel block />
+      <span className="min-w-0">
+        <span className="grid grid-cols-[8.5rem_3rem_1fr] items-center gap-2">
+          <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
+          <span className="font-mono text-slate-600">{c.size}/{c.type}</span>
+          <span className="truncate text-right font-mono text-[11px] text-slate-600">{formatLocation(c)}</span>
+        </span>
+        <span className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-slate-600">
+          <span className="min-w-0 truncate font-semibold">{op.vesselName ? `Tàu ${op.vesselName}` : ''}</span>
+          {extra && <span className="shrink-0">{extra}</span>}
+        </span>
+      </span>
+    </button>
+  );
+};

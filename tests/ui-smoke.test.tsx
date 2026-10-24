@@ -8,7 +8,7 @@ import { OfficeCapVoWorkspace, OfficeHaVoWorkspace } from '../src/features/offic
 import { ExportPicker, OfficeVesselWorkspace } from '../src/features/vessel/OfficeVesselWorkspace';
 import { VesselFieldMobile } from '../src/features/vessel/VesselFieldMobile';
 import { createVesselList, inspectVesselImportItem } from '../src/services/vessel';
-import { FieldQueueWorkspaces, FieldQueueMode, getFieldQueue } from '../src/features/field-queues/FieldQueueWorkspaces';
+import { FieldQueueWorkspaces, FieldQueueMode, getFieldQueue, QueueListRow } from '../src/features/field-queues/FieldQueueWorkspaces';
 import { YardShiftWorkspace } from '../src/features/forklift/YardShiftWorkspace';
 import { MasterUsagePanel, ReceiptsWorkspace } from '../src/features/receipts/ReceiptsWorkspace';
 import { ReportsWorkspace } from '../src/features/reports/ReportsWorkspace';
@@ -438,5 +438,23 @@ describe('DEC-084: Báo giá → Chờ báo giá hiển thị như Tồn vỏ', 
       expect(html).toContain('Số dòng mỗi trang');
     }
     expect(html).not.toContain('max-w-2xl');
+  });
+});
+
+describe('DEC-089: dòng danh sách chờ Vệ sinh / Xe nâng — ô tác nghiệp riêng bên trái', () => {
+  it('Ô tác nghiệp đứng đầu (không kèm tên tàu); bên phải số cont rồi tên tàu ở tầng 2', () => {
+    const strip = (h: string) => h.replace(/<!-- -->/g, '');
+    const office = as(createInitialState(), 'usr-office');
+    const nt = createVesselList(office, { mode: 'NHAP_TAU', vesselName: 'Tàu Tên Rất Dài', plannedAt: new Date().toISOString(), truckNos: ['15C-1'], shippingLineCode: 'MAERSK', importItems: [{ containerNo: 'TCLU4444444', size: '20', type: 'DC' }] });
+    const s = inspectVesselImportItem(as(nt.state, 'usr-inspector'), { listId: nt.listId, itemId: nt.state.vesselLists[0].items[0].id, actualContainerNo: 'TCLU4444444', truckNo: '15C-1', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['WW'], manufactureYear: 2018 });
+    const c = s.containers.find((x) => x.containerNo === 'TCLU4444444')!;
+    const html = strip(renderToString(<QueueListRow state={s} container={c} onClick={noop} />));
+    const iOp = html.indexOf('NHẬP TÀU');
+    const iCont = html.indexOf('TCLU4444444');
+    const iVessel = html.indexOf('Tàu TÀU TÊN RẤT DÀI');
+    expect(iOp).toBeGreaterThan(-1);
+    expect(iCont).toBeGreaterThan(iOp);
+    expect(iVessel).toBeGreaterThan(iCont);
+    expect(html.match(/TÀU TÊN RẤT DÀI/g)?.length).toBe(1);
   });
 });
