@@ -1,13 +1,13 @@
 import React from 'react';
 import { CheckCircle2, Clock, Printer, QrCode, ReceiptText, X } from 'lucide-react';
-import { ContainerStatus, K80InternalTicket, PaymentVoucher, RECEIPT_OPERATION_LABELS } from '../types/depot';
+import { ContainerStatus, K80InternalTicket, PaymentVoucher, RECEIPT_OPERATION_LABELS, VesselList, VesselListItem } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
 import { formatLocation } from '../services/core';
 import { paymentLabelOf, receiptOperationOf } from '../services/payments';
 import { documentPackOf, isTicketClosed } from "../services/driverRoute";
 import { recordReceiptPrint } from "../services/depotOperations";
 import { formatDateTime } from "../services/datetime";
-import { EeirPrintSheet, PrintPortal, ReceiptPrintSheet } from "./ReceiptPrint";
+import { EeirPrintSheet, PrintPortal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
 import { findVesselItemByCode } from '../services/vessel';
 import { formatViTime } from './shared';
 
@@ -519,7 +519,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
             </button>
           )}
         </footer>
-        <DossierPrintBar state={state} tickets={tickets} onUpdateState={onUpdateState} />
+        <DossierPrintBar state={state} tickets={tickets} onUpdateState={onUpdateState} vessel={[...(importHit ? [importHit] : []), ...exportHits]} />
       </div>
     </div>
   );
@@ -528,13 +528,23 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
 // ---------------------------------------------------------------------------
 // IN EEIR từ hồ sơ (DEC-072): mỗi lượt Hạ vỏ / Cấp vỏ 1 EEIR; in kèm phiếu thu thì ghi nhận số lần in (DEC-063)
 // ---------------------------------------------------------------------------
-const DossierPrintBar: React.FC<{ state: DepotState; tickets: K80InternalTicket[]; onUpdateState?: (next: DepotState) => void }> = ({ state, tickets, onUpdateState }) => {
+const DossierPrintBar: React.FC<{
+  state: DepotState;
+  tickets: K80InternalTicket[];
+  onUpdateState?: (next: DepotState) => void;
+  // DEC-081: EEIR Nhập tàu / Xuất tàu (không có K80)
+  vessel?: { list: VesselList; item: VesselListItem }[];
+}> = ({ state, tickets, onUpdateState, vessel = [] }) => {
   const [job, setJob] = React.useState<{ ticketCode: string; withReceipts: boolean } | null>(null);
+  const [vesselJob, setVesselJob] = React.useState<string | null>(null);
   const [confirmCode, setConfirmCode] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   // In xong thì gỡ lớp in để không chặn giấy tờ khác (VD phiếu K80)
   React.useEffect(() => {
-    const clear = () => setJob(null);
+    const clear = () => {
+      setJob(null);
+      setVesselJob(null);
+    };
     window.addEventListener("afterprint", clear);
     return () => window.removeEventListener("afterprint", clear);
   }, []);
@@ -548,7 +558,17 @@ const DossierPrintBar: React.FC<{ state: DepotState; tickets: K80InternalTicket[
       return true;
     })
     .map((t) => documentPackOf(state, t));
-  if (packs.length === 0) return null;
+  if (packs.length === 0 && vessel.length === 0) return null;
+
+  // EEIR tàu: Nhập tàu in được từ khi Giám định xác nhận; Xuất tàu khi cont đã OUT
+  const vesselReady = (v: { list: VesselList; item: VesselListItem }) => (v.list.mode === 'NHAP_TAU' ? v.item.status !== 'PENDING' : v.item.status === 'DONE');
+  const printVessel = (itemId: string) => {
+    setError(null);
+    setJob(null);
+    setVesselJob(itemId);
+    setTimeout(() => window.print(), 150);
+  };
+  const vesselJobHit = vesselJob ? vessel.find((v) => v.item.id === vesselJob) : undefined;
 
   const print = (ticketCode: string, withReceipts: boolean) => {
     setError(null);
@@ -564,6 +584,7 @@ const DossierPrintBar: React.FC<{ state: DepotState; tickets: K80InternalTicket[
         return setError(err instanceof Error ? err.message : 'Không in được phiếu thu');
       }
     }
+    setVesselJob(null);
     setJob({ ticketCode, withReceipts });
     setTimeout(() => window.print(), 150);
   };
@@ -606,10 +627,36 @@ const DossierPrintBar: React.FC<{ state: DepotState; tickets: K80InternalTicket[
           </div>
         );
       })}
+      {vessel.map((v) => {
+        const op = v.list.mode === 'NHAP_TAU' ? 'NHẬP TÀU' : 'XUẤT TÀU';
+        const ready = vesselReady(v);
+        return (
+          <div key={v.item.id} className="flex flex-wrap items-center justify-end gap-2">
+            <span className="mr-auto font-semibold text-slate-700">
+              EEIR {op} — <span className="font-mono">{v.item.dossierCode}</span> • tàu {v.list.vesselName}
+            </span>
+            <button
+              type="button"
+              disabled={!ready}
+              title={ready ? '' : v.list.mode === 'NHAP_TAU' ? 'Chờ Giám định xác nhận cont' : 'Chờ cont xuất tàu'}
+              onClick={() => printVessel(v.item.id)}
+              className={`${btn} border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40`}
+            >
+              <Printer className="h-4 w-4" />
+              In EEIR {op}
+            </button>
+          </div>
+        );
+      })}
       {jobPack && (
         <PrintPortal>
           <EeirPrintSheet state={state} ticket={jobPack.ticket} />
           {job!.withReceipts && jobPack.receipts.map((r) => <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={r.printLog?.length || 1} />)}
+        </PrintPortal>
+      )}
+      {vesselJobHit && (
+        <PrintPortal>
+          <VesselEeirPrintSheet state={state} list={vesselJobHit.list} item={vesselJobHit.item} />
         </PrintPortal>
       )}
     </div>

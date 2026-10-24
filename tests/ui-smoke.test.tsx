@@ -20,7 +20,7 @@ import { UserRoleCatalog } from '../src/features/catalog/UserRoleCatalog';
 import { DocumentReturnWorkspace } from '../src/features/office/DocumentReturnWorkspace';
 import { K80TicketModal } from '../src/components/K80TicketModal';
 import { CompanyCatalog } from '../src/features/catalog/CompanyCatalog';
-import { EeirPrintSheet, ReceiptPrintSheet } from '../src/components/ReceiptPrint';
+import { EeirPrintSheet, ReceiptPrintSheet, VesselEeirPrintSheet } from '../src/components/ReceiptPrint';
 import { DetailDrawer, FeeLinesEditor, Pager } from '../src/components/shared';
 import { confirmGateInPaymentAndComplete, recordGateInFieldStep, toggleContainerHold, verifyGateInOfficeAndCreatePayment } from '../src/services/depotOperations';
 
@@ -336,5 +336,43 @@ describe('DEC-080: trang nhiều dữ liệu — chi tiết mở cửa sổ trư
     const pager = renderToString(<Pager page={1} pageCount={3} total={120} onPage={noop} pageSize={50} onPageSize={noop} />).replace(/<!-- -->/g, '');
     expect(pager).toContain('Số dòng mỗi trang');
     expect(pager).toContain('100 dòng / trang');
+  });
+});
+
+describe('DEC-081: EEIR cho hồ sơ Nhập tàu / Xuất tàu', () => {
+  it('Hồ sơ NT- / XT- có nút In EEIR; mẫu EEIR tàu cùng khung, có tình trạng vỏ Giám định', async () => {
+    const { executeVesselExport } = await import('../src/services/vessel');
+    const strip = (h: string) => h.replace(/<!-- -->/g, '');
+    const office = as(createInitialState(), 'usr-office');
+    let { state: s, listId } = createVesselList(office, {
+      mode: 'NHAP_TAU', vesselName: 'Tàu EEIR', plannedAt: new Date().toISOString(), truckNos: ['15C-9'], shippingLineCode: 'MAERSK',
+      importItems: [{ containerNo: 'TCLU8888888', size: '40', type: 'HC' }],
+    });
+    s = inspectVesselImportItem(as(s, 'usr-inspector'), {
+      listId, itemId: s.vesselLists[0].items[0].id, actualContainerNo: 'TCLU8888888', truckNo: '15C-9',
+      conditionClass: 'DAMAGE', damageRemarks: ['Móp vách'], stuffingClass: 'E', cleaningItems: ['WW'], manufactureYear: 2016,
+    });
+    const nt = s.vesselLists[0];
+    const ntItem = nt.items[0];
+    expect(strip(renderToString(<MasterDossierModal masterDossierCode={ntItem.dossierCode!} state={s} onClose={noop} />))).toContain('In EEIR NHẬP TÀU');
+    const ntSheet = strip(renderToString(<VesselEeirPrintSheet state={s} list={nt} item={ntItem} />));
+    expect(ntSheet).toContain('EEIR — PHIẾU GIAO NHẬN CONTAINER');
+    expect(ntSheet).toContain(`Số: ${ntItem.dossierCode}`);
+    expect(ntSheet).toContain('TÁC NGHIỆP: NHẬP TÀU');
+    expect(ntSheet).toContain('TÀU EEIR');
+    expect(ntSheet).toContain('Tình trạng vỏ (Giám định)');
+    expect(ntSheet).toContain('Móp vách');
+    expect(ntSheet).toContain('Không thu phí');
+
+    // Xuất tàu: cont đang tồn bãi → lập danh sách → xuất → EEIR XUẤT TÀU
+    const yardId = s.containers.find((c) => c.status === 'IN_YARD')!.id;
+    const xt = createVesselList(as(s, 'usr-office'), { mode: 'XUAT_TAU', vesselName: 'Tàu Ra', plannedAt: new Date().toISOString(), truckNos: ['15C-7'], exportContainerIds: [yardId] });
+    s = executeVesselExport(as(xt.state, 'usr-forklift'), { listId: xt.listId, itemId: xt.state.vesselLists[0].items[0].id, truckNo: '15C-7' });
+    const xtList = s.vesselLists.find((l) => l.id === xt.listId)!;
+    const xtSheet = strip(renderToString(<VesselEeirPrintSheet state={s} list={xtList} item={xtList.items[0]} />));
+    expect(xtSheet).toContain('TÁC NGHIỆP: XUẤT TÀU');
+    expect(xtSheet).toContain('Thời gian OUT');
+    expect(xtSheet).toContain('15C-7');
+    expect(strip(renderToString(<MasterDossierModal masterDossierCode={xtList.items[0].dossierCode!} state={s} onClose={noop} />))).toContain('In EEIR XUẤT TÀU');
   });
 });
