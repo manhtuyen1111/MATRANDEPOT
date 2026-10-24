@@ -146,6 +146,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-092)
 - Đảo chuyển: số cont / size-type / vị trí trên 1 dòng (BLOCK-A / 17-02-02), ô Block rộng cố định để vị trí thẳng cột; bỏ hàng tiêu đề cột.
 
+### Changed (2026-10-24, DEC-093)
+- Hạ vỏ / Cấp vỏ: ô Khách hàng gõ tay hoặc chọn, gợi ý từ Danh mục; khách ngoài Danh mục chỉ thanh toán Tiền mặt / Chuyển khoản. Kiểm thử: 96/96 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

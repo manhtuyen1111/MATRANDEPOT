@@ -699,6 +699,15 @@ Quy ước trạng thái:
 - Quyết định: Mỗi thẻ Đảo chuyển: **1 dòng SỐ CONT | SIZE / TYPE | VỊ TRÍ** dạng `BLOCK-A / 17-02-02` (người dùng xác nhận); dòng 2 Trạng thái | Tiến độ. Bỏ hàng tiêu đề BLOCK | BAY | ROW | TIER. Để vẫn **Block thẳng Block, Bay thẳng Bay**: ô tên Block rộng cố định bằng mã Block dài nhất trong danh mục (chữ đều nét), phần `/ Bay-Row-Tier` đi sau; chiều không có thì bỏ (Block chỉ có tên → chỉ hiện tên Block).
 - Lưu ý: máy rất hẹp (~360px) với mã Block dài (VD BLOCK-DAMAGE) có thể cắt "…" ở cuối vị trí.
 
+### DEC-093 — Khách hàng (Hạ vỏ / Cấp vỏ): gõ tay hoặc chọn, có gợi ý từ Danh mục
+
+- Trạng thái: CONFIRMED (2026-10-24) — sửa DEC-016 / DEC-033 phần "chọn khách theo Danh mục"
+- Quyết định:
+  - Ô **Khách hàng** ở Văn phòng → Hạ vỏ và → Cấp vỏ: **gõ tay hoặc chọn**; khi gõ hiện **gợi ý khách trong Danh mục** (theo tên; gõ đúng mã khách → tự điền tên).
+  - Tên trùng khách Danh mục (không phân biệt hoa thường) → lưu đúng tên Danh mục. **Tên không có trong Danh mục vẫn lưu được** (người dùng chọn).
+  - **Khách ngoài Danh mục chỉ được thanh toán TRỰC TIẾP (Tiền mặt / Chuyển khoản)** — **không TTS, không TTT** (TTS / TTT dựa trên khách trong Danh mục). Ô nhập hiện cảnh báo khi gõ tên mới; service chặn khi thanh toán.
+  - Code: `normalizeCustomer`, `isCatalogCustomer` (`depotOperations.ts`); kiểm tra trong `settleVoucher` (`payments.ts`); ô `CustomerInput` (`shared.tsx`).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -788,6 +797,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-092 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-093 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
