@@ -688,6 +688,11 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-089
 - Quyết định: Mỗi thẻ danh sách Đảo chuyển dùng **cột cố định** như danh sách chờ: tầng 1 **Số container** | Size / Type | **VỊ TRÍ canh trái** (mọi dòng bắt đầu cùng 1 cột dọc, không còn canh phải theo độ dài vị trí); tầng 2 Trạng thái | Tiến độ.
 
+### DEC-091 — Đảo chuyển: vị trí tách cột BLOCK | BAY | ROW | TIER
+
+- Trạng thái: CONFIRMED (2026-10-24) — thay bố cục vị trí của DEC-090
+- Quyết định: Danh sách Đảo chuyển có **hàng tiêu đề cột cố định** BLOCK | BAY | ROW | TIER; mỗi thẻ tầng 1 Số container | Size / Type | Trạng thái • Tiến độ, tầng 2 **4 ô vị trí** cùng lưới với tiêu đề → **Block thẳng Block, Bay thẳng Bay, Row thẳng Row, Tier thẳng Tier** từ trên xuống; chiều nào không có (Block chỉ có tên, chưa có vị trí) thì **để trống ô đó**.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -777,6 +782,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-090 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-091 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
