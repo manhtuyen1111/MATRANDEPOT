@@ -657,6 +657,15 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-083
 - Quyết định: Mỗi dòng danh sách chờ (Chờ vệ sinh, Chờ hạ vỏ, Chờ cấp vỏ, Chờ sửa chữa) gồm **2 tầng**: tầng 1 các **cột cố định** — **Số container** (cột rộng cố định bên trái, luôn thẳng hàng dọc) | Size / Type | Vị trí (canh phải); tầng 2 chữ nhỏ — **nhãn tác nghiệp + tên tàu** | thông tin phụ (số xe • SĐT, giờ công). Tên tàu dài / ngắn không làm lệch cột số cont.
 
+### DEC-086 — Báo giá 2 bước: cập nhật tình trạng sửa chữa + giờ công → xác nhận chờ sửa chữa
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-040, DEC-041, DEC-084
+- Quyết định:
+  - Danh sách Chờ báo giá: **bỏ cột Hư hỏng (giám định)**, thay bằng **TÌNH TRẠNG SỬA CHỮA** (Báo giá nhập tình trạng sửa chữa thực tế) + cột **Giờ công**; thêm cột **TÁC NGHIỆP** ở cuối. Hư hỏng do Giám định ghi vẫn xem được trong cửa sổ chi tiết.
+  - Bước 1 — **Cập nhật** (cửa sổ trượt): nhập Tình trạng sửa chữa * + Giờ công * → **Lưu cập nhật báo giá** — cont **vẫn ở Chờ báo giá**, lưu người / giờ cập nhật, sửa lại được nhiều lần.
+  - Bước 2 — **Xác nhận chờ sửa chữa** (nút ở cột Tác nghiệp hoặc trong cửa sổ): chỉ bấm được khi đã cập nhật đủ; chuyển cont sang **bộ phận Sửa chữa** với đúng tình trạng + giờ công đã lưu.
+  - Code: `saveQuotationDraft`, `confirmQuotationToRepair` (`depotOperations.ts`, gọi lại `approveDamageQuotation`).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -746,6 +755,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-085 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-086 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

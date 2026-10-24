@@ -4,10 +4,10 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-085**), **đã push đầy đủ lên GitHub 2026-10-24**, chưa merge vào `main`. Hôm nay: Tồn vỏ (Lưu bãi, Date in, khóa tại icon, hàng loạt — DEC-067, 074); mã HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập / Xuất tàu** đầy đủ (DEC-069 → 073, 075); In EEIR + phiếu thu A5 trên 1 tờ A4 (DEC-072, 076); Phiếu thu: phiếu thu trước theo biểu giá × số lượng, phiếu thu mẹ liên kết từng lần trừ (DEC-077, 079); menu báo việc chờ + biểu tượng mobile thẳng hàng (DEC-075, 078); **quy chuẩn trang nhiều dữ liệu** (DEC-080). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-086**), **đã push đầy đủ lên GitHub 2026-10-24**, chưa merge vào `main`. Hôm nay: Tồn vỏ (Lưu bãi, Date in, khóa tại icon, hàng loạt — DEC-067, 074); mã HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập / Xuất tàu** đầy đủ (DEC-069 → 073, 075); In EEIR + phiếu thu A5 trên 1 tờ A4 (DEC-072, 076); Phiếu thu: phiếu thu trước theo biểu giá × số lượng, phiếu thu mẹ liên kết từng lần trừ (DEC-077, 079); menu báo việc chờ + biểu tượng mobile thẳng hàng (DEC-075, 078); **quy chuẩn trang nhiều dữ liệu** (DEC-080). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
 
 **Điểm dừng 2026-10-24 (tối — tạm nghỉ):** đã kiểm tra + **push đầy đủ lên GitHub** (DEC-050 → DEC-080). **Đọc mục I trước khi làm việc tiếp theo.** Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
-Kiểm thử mới nhất: `npm test` **90/90 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+Kiểm thử mới nhất: `npm test` **91/91 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
@@ -37,7 +37,7 @@ Kiểm thử mới nhất: `npm test` **90/90 pass** (3 file test) • `npm run 
 | Phiếu K80 | Thông tin chung ở đầu → LỘ TRÌNH các bước (ô ☐ tích tay) → QR; lái xe đi theo thứ tự, quét mã tại từng bộ phận; Văn phòng → Trả chứng từ: 1 ô quét chung, danh sách chờ chia **2 cột HẠ VỎ / CẤP VỎ** (có số lượt) | 052, 064 |
 | Thanh toán | TTT trừ dần Phiếu thu mẹ; TTS = công nợ; Tiền mặt / Chuyển khoản mới phát hành phiếu thu `PT-YYYY-NNNNNN` | 031, 032 |
 | Phiếu thu | Văn phòng tạo phiếu thu TTT và xác nhận tiền mặt; phiếu thu ghi rõ **tác nghiệp** (Hạ vỏ / Cấp vỏ / Thu trước); hồ sơ container link thẳng về Phiếu thu; **mẫu in thống nhất** (thông tin công ty + tác nghiệp); **đếm số lần in**, in lại phải xác nhận + nhãn BẢN IN LẠI ; **EEIR cùng khung với phiếu thu**, in từ hồ sơ (In EEIR / In EEIR + phiếu thu) ; nút **Tạo phiếu thu TTT** cùng hàng Tra cứu; **in EEIR + phiếu thu = 1 tờ A4** (mỗi phiếu A5), EEIR ghi tình trạng vỏ Giám định ; danh sách full chiều ngang; **phiếu thu trước**: Khách hàng → Chi phí (**biểu giá × số lượng**) → Hình thức; in **PHIẾU THU TRƯỚC (TTT)** có khung PTT- nổi bật ; phiếu thu mẹ hiện **số lượt đã dùng / còn lại** + bảng từng lần trừ (chứng từ, hồ sơ) | 032, 047, 051, 062, 063, 072, 076, 077, 079 |
-| DAMAGE | Báo giá (remark + giờ công) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → **AV** (không có QC) | 040–043, 049 |
+| DAMAGE | Báo giá (**cập nhật tình trạng sửa chữa + giờ công → xác nhận chờ sửa chữa**, DEC-086) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → **AV** (không có QC) | 040–043, 049 |
 | Tổ sửa chữa | Danh mục chung → Sửa chữa: thêm tổ; thêm **user Sửa chữa có sẵn** hoặc nhập tên; ngưng thay vì xóa | 042, 048 |
 | Danh mục Công ty | Admin cấu hình tên, MST, địa chỉ, ĐT, email, TK ngân hàng — in ở đầu phiếu thu / EEIR / K80 | 062 |
 | Cấp vỏ | Nhập booking (tự đếm), chọn cont (AV mặc định, DAMAGE được), số xe + SĐT, chi phí, thanh toán tại Văn phòng → Xe nâng OUT (khung nổi số cont, size/type, vị trí) → **Văn phòng trả chứng từ** | 027, 033, 034, 052, 061 |
@@ -98,6 +98,7 @@ Kiểm thử mới nhất: `npm test` **90/90 pass** (3 file test) • `npm run 
 | P7-13 | Vệ sinh / Xe nâng: nhãn tác nghiệp (Hạ vỏ / Cấp vỏ / Nhập tàu + tàu / Xuất tàu + tàu) | 2026-10-24 | DEC-083 | **89/89 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-14 | Báo giá → Chờ báo giá: bảng như Tồn vỏ + cửa sổ trượt nhập báo giá | 2026-10-24 | DEC-084 | **90/90 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-15 | Danh sách chờ Vệ sinh / Xe nâng: số cont thẳng cột, nhãn tác nghiệp tầng 2 | 2026-10-24 | DEC-085 | 90/90 • build PASS; **chưa có test hiển thị dòng** (danh sách thu gọn mặc định) | agent/claude/p4-prep-xlsx |
+| P7-16 | Báo giá 2 bước: cột Tình trạng sửa chữa / Giờ công / Tác nghiệp; lưu nháp → xác nhận chờ sửa chữa | 2026-10-24 | DEC-086 | **91/91 • build PASS** | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -205,3 +206,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-24 — Claude Code: P7-13 (DEC-083) nhãn tác nghiệp Vệ sinh / Xe nâng. 89/89 • build PASS.
 - 2026-10-24 — Claude Code: P7-14 (DEC-084) Chờ báo giá như Tồn vỏ. 90/90 • build PASS.
 - 2026-10-24 — Claude Code: P7-15 (DEC-085) danh sách chờ số cont thẳng cột.
+- 2026-10-24 — Claude Code: P7-16 (DEC-086) Báo giá 2 bước. 91/91 • build PASS.

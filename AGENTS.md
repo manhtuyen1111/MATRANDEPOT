@@ -83,7 +83,7 @@ Một việc chỉ "xong" khi:
   - Smoke test `tests/ui-smoke.test.tsx` kiểm tra số biểu tượng mobile và `max-w-lg` — thêm màn mobile mới thì cập nhật test này.
 - **Màn văn phòng / báo cáo / tra cứu nhiều dữ liệu** (máy tính): theo **`docs/UI_DATA_LIST_STANDARD.md` (DEC-080)** — danh sách full chiều ngang, bắt buộc bộ lọc, `Pager` có chọn 20 / 50 / 100 dòng (`usePageSize`), **bấm dòng mở chi tiết bằng `DetailDrawer` (cửa sổ trượt bên phải)** — không hiện chi tiết bên dưới, nút tác nghiệp cùng hàng nút Tra cứu.
 - **Văn phòng làm phần tài chính** (phiếu thu TTT, xác nhận tiền mặt) — không còn Kế toán (DEC-047).
-- **Luồng DAMAGE:** Báo giá (remark + giờ công) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → AV. Không có bước QC (DEC-049).
+- **Luồng DAMAGE:** Báo giá — **cập nhật tình trạng sửa chữa + giờ công, rồi xác nhận chờ sửa chữa** (2 bước, DEC-086) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → AV. Không có bước QC (DEC-049).
 - Tóm tắt toàn bộ logic đã chốt: `devs/PROGRESS.md` mục C.
 - **Phiếu K80 = tờ hướng dẫn lái xe** (DEC-052): thông tin chung ở đầu (số cont, số xe, SĐT, thanh toán) → LỘ TRÌNH các bước đánh số có ô ☐ → mã QR. Lộ trình tính trong `src/services/driverRoute.ts` — thêm bộ phận mới vào luồng thì cập nhật `getDriverRoute`. Bước cuối luôn là **Văn phòng → Trả chứng từ** (in EEIR + phiếu thu).
 - **Thời gian (DEC-054):** mọi chỗ hiển thị / nhập / lọc / in / Excel đều theo **`dd/MM/yyyy HH:mm:ss`** (24 giờ). Chỉ dùng `formatDateTime` / `parseDateTime` (`src/services/datetime.ts`) và `DateTimeField` (`shared.tsx`). **Cấm** `toLocaleString`, `toLocaleTimeString`, `<input type="date">` trực tiếp.
