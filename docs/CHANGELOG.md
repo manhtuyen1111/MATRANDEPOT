@@ -137,6 +137,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-089)
 - Danh sách chờ Vệ sinh / Xe nâng: ô tác nghiệp riêng bên trái, bên phải số cont / size-type / vị trí, tầng 2 tên tàu tách riêng + thông tin phụ. Kiểm thử: 93/93 pass.
 
+### Changed (2026-10-24, DEC-090)
+- Xe nâng → Đảo chuyển: vị trí thẳng cột (lưới cột cố định số cont / size-type / vị trí canh trái). Kiểm thử: 94/94 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

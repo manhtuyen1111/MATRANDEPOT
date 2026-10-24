@@ -683,6 +683,11 @@ Quy ước trạng thái:
   - **Bên trái**: 1 **ô TÁC NGHIỆP** cố định (HẠ VỎ / CẤP VỎ / NHẬP TÀU / XUẤT TÀU — chỉ tên tác nghiệp, mỗi loại 1 màu).
   - **Bên phải** — thông tin của tác nghiệp: tầng 1 **Số container** (cột cố định, thẳng hàng) | Size / Type | Vị trí; tầng 2 **Tàu …** (tách khỏi nhãn tác nghiệp) | thông tin phụ (số xe • SĐT, giờ công).
 
+### DEC-090 — Xe nâng → Đảo chuyển: vị trí thẳng cột
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-089
+- Quyết định: Mỗi thẻ danh sách Đảo chuyển dùng **cột cố định** như danh sách chờ: tầng 1 **Số container** | Size / Type | **VỊ TRÍ canh trái** (mọi dòng bắt đầu cùng 1 cột dọc, không còn canh phải theo độ dài vị trí); tầng 2 Trạng thái | Tiến độ.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -772,6 +777,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-089 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-090 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
