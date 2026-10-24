@@ -637,7 +637,7 @@ Quy ước trạng thái:
   - **Mọi tác vụ vị trí** (Xe nâng hạ vỏ, Nhập tàu, Đảo chuyển, Sửa vị trí…): chỉ **hiện và bắt buộc nhập đúng các chiều Block có cấu hình**; chiều không cấu hình không hiện, không yêu cầu, không lưu.
   - Block **có cấu hình** chiều nào thì **bắt buộc nhập đủ** các chiều đó — **bỏ cách đặt cấp Block trước rồi cập nhật sau** (người dùng chọn).
   - Block **chỉ có BLOCK** (không Bay / Row / Tier): nhiều cont đặt chung, **không giới hạn** số cont.
-  - Chống trùng ô khi Block có ít nhất 1 chiều; hiển thị vị trí: đủ 3 chiều `BLOCK-A / 04-02-01`, thiếu chiều thì ghi nhãn (VD `BLOCK-D / Bay 03`).
+  - Chống trùng ô **chỉ khi đủ 4 phần Block – Bay – Row – Tier (DEC-087)**; hiển thị vị trí: đủ 3 chiều `BLOCK-A / 04-02-01`, thiếu chiều thì ghi nhãn (VD `BLOCK-D / Bay 03`).
   - Dữ liệu mẫu: BLOCK-B chuyển thành Block chỉ có BLOCK. Dữ liệu đã lưu trên trình duyệt giữ cấu hình cũ tới khi Reset demo.
   - Code: `blockDimensions`, `validateTargetSlot`, `formatLocation` (`src/services/core.ts`); `SlotPicker` / `isSlotComplete(slot, state)` (`shared.tsx`); `addYardBlockCatalogItem`.
 
@@ -665,6 +665,11 @@ Quy ước trạng thái:
   - Bước 1 — **Cập nhật** (cửa sổ trượt): nhập Tình trạng sửa chữa * + Giờ công * → **Lưu cập nhật báo giá** — cont **vẫn ở Chờ báo giá**, lưu người / giờ cập nhật, sửa lại được nhiều lần.
   - Bước 2 — **Xác nhận chờ sửa chữa** (nút ở cột Tác nghiệp hoặc trong cửa sổ): chỉ bấm được khi đã cập nhật đủ; chuyển cont sang **bộ phận Sửa chữa** với đúng tình trạng + giờ công đã lưu.
   - Code: `saveQuotationDraft`, `confirmQuotationToRepair` (`depotOperations.ts`, gọi lại `approveDamageQuotation`).
+
+### DEC-087 — Chặn trùng vị trí chỉ khi đủ BLOCK – BAY – ROW – TIER (sửa DEC-082)
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Quyết định: **Chỉ khi vị trí đầy đủ 4 phần BLOCK – BAY – ROW – TIER** mới chặn 2 cont trùng 1 ô. Vị trí **không đủ 4 phần** (Block chỉ có tên, chỉ Bay, Bay + Row…) → **1 vị trí gán được cho nhiều cont** (1 Block / 1 Bay / 1 Row chứa được nhiều đơn vị cont). Quy tắc bắt buộc nhập đủ các chiều đã cấu hình (DEC-082) không đổi.
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
@@ -755,6 +760,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-086 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-087 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

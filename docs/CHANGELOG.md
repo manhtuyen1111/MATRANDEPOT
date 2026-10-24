@@ -128,6 +128,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-086)
 - Chờ báo giá: cột Tình trạng sửa chữa + Giờ công thay Hư hỏng giám định; cột Tác nghiệp (Cập nhật / Xác nhận chờ sửa chữa); báo giá lưu nháp trước, xác nhận mới chuyển Sửa chữa. Kiểm thử: 91/91 pass.
 
+### Changed (2026-10-24, DEC-087)
+- Vị trí: chỉ chặn trùng khi đủ Block – Bay – Row – Tier; thiếu chiều thì nhiều cont chung 1 vị trí.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 
