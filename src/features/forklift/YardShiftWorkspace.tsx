@@ -150,10 +150,10 @@ export const YardShiftWorkspace: React.FC<{
               >
                 {/* DEC-094: cấu trúc như danh sách Xe nâng — ô TRẠNG THÁI riêng bên trái; bên phải dòng 1 SỐ CONT | VỊ TRÍ
                     (ô Block rộng cố định → vị trí thẳng cột, DEC-092), dòng cuối SIZE/TYPE | TIẾN ĐỘ */}
-                <div className="grid grid-cols-[3.5rem_1fr] items-center gap-2.5" data-testid="shift-row">
+                <div className="grid grid-cols-[5rem_1fr] items-center gap-2.5" data-testid="shift-row">
                   <span
                     data-testid="shift-status"
-                    className={`flex h-full items-center justify-center rounded text-[11px] font-black ${c.conditionClass === 'DAMAGE' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`}
+                    className={`flex w-full flex-wrap items-center justify-center rounded px-1.5 py-1 text-center text-[10px] font-black uppercase ${c.conditionClass === 'DAMAGE' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`}
                   >
                     {c.conditionClass}
                   </span>

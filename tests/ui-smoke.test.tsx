@@ -486,6 +486,12 @@ describe('DEC-090: Xe nâng → Đảo chuyển — vị trí thẳng cột', ()
     const noted = toggleContainerHold(as(base, 'usr-office'), { containerNo: 'MSKU4089123', hold: true, reason: 'Chờ hãng tàu' });
     const html2 = renderToString(<YardShiftWorkspace state={noted} onUpdateState={noop} />).replace(/<!-- -->/g, '');
     expect(html2).toMatch(/bg-yellow-200[^"]*"[^>]*>Ghi chú: Chờ hãng tàu</);
+    // DEC-096: ô AV / DAMAGE cùng kích thước ô tác nghiệp ở danh sách Xe nâng (cột 5rem, px-1.5 py-1 text-[10px])
+    expect(html).toContain('grid grid-cols-[5rem_1fr] items-center gap-2.5" data-testid="shift-row"');
+    expect(html).toMatch(/data-testid="shift-status" class="[^"]*px-1\.5 py-1 text-center text-\[10px\]/);
+    const row = renderToString(<QueueListRow state={base} container={c} onClick={noop} />);
+    expect(row).toContain('grid-cols-[5rem_1fr]');
+    expect(row).toMatch(/px-1\.5 py-1 text-\[10px\]/);
   });
 });
 
