@@ -249,6 +249,8 @@ export interface ContainerRecord {
   quotationAmount?: number;
   quotationItems?: string[];
   quotationLaborHours?: number; // GIỜ CÔNG SỬA CHỮA do Báo giá nhập (DEC-041)
+  quotationUpdatedBy?: string; // DEC-086: người / giờ cập nhật báo giá (trước khi chuyển sửa chữa)
+  quotationUpdatedAt?: string;
   // KHÓA CONTAINER = Tạm giữ / Khóa xuất (DEC-002, DEC-015, CR-02)
   isOnHold: boolean;
   holdReason?: string;

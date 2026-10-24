@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { FileSpreadsheet, Search } from 'lucide-react';
 import { ContainerRecord } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
-import { approveDamageQuotation } from '../../services/depotOperations';
+import { confirmQuotationToRepair, saveQuotationDraft } from "../../services/depotOperations";
 import { formatLocation, storageDays } from '../../services/core';
 import { formatDateTime, fileStamp } from '../../services/datetime';
 import { yardStockSheet } from '../../services/reports';
@@ -15,6 +15,7 @@ import {
   labelCls,
   Pager,
   primaryBtn,
+  secondaryBtn,
   usePageSize,
 } from '../../components/shared';
 
@@ -52,23 +53,35 @@ export const QuotationWorkspace: React.FC<{
 
   const open = (c: ContainerRecord) => {
     setSelectedId(c.id);
-    setItems(c.damageRemarks.join(', '));
-    setHours('');
+    setItems((c.quotationItems || []).join(", "));
+    setHours(c.quotationLaborHours ? String(c.quotationLaborHours) : "");
     setError(null);
   };
 
-  const submit = () => {
+  // DEC-086: (1) lưu tình trạng sửa chữa + giờ công; (2) xác nhận chờ sửa chữa → chuyển bộ phận Sửa chữa
+  const save = () => {
     if (!selected) return;
     setError(null);
     setSuccess(null);
     try {
-      onUpdateState(approveDamageQuotation(state, { containerNo: selected.containerNo, quotationItems: items.split(','), laborHours: Number(hours) }));
-      setSuccess(`Đã cập nhật ${selected.containerNo} → Chờ sửa chữa.`);
-      setSelectedId('');
+      onUpdateState(saveQuotationDraft(state, { containerNo: selected.containerNo, quotationItems: items.split(","), laborHours: Number(hours) }));
+      setSuccess(`Đã lưu báo giá ${selected.containerNo} — bấm "Xác nhận chờ sửa chữa" để chuyển bộ phận Sửa chữa.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Lỗi cập nhật báo giá');
+      setError(err instanceof Error ? err.message : "Lỗi cập nhật báo giá");
     }
   };
+  const confirmRepair = (c: ContainerRecord) => {
+    setError(null);
+    setSuccess(null);
+    try {
+      onUpdateState(confirmQuotationToRepair(state, { containerNo: c.containerNo }));
+      setSuccess(`Đã xác nhận ${c.containerNo} → CHỜ SỬA CHỮA (chuyển bộ phận Sửa chữa).`);
+      setSelectedId("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi xác nhận chờ sửa chữa");
+    }
+  };
+  const hasDraft = (c: ContainerRecord) => Boolean(c.quotationItems?.length && Number(c.quotationLaborHours) > 0);
 
   return (
     <div className="w-full space-y-3">
@@ -118,13 +131,15 @@ export const QuotationWorkspace: React.FC<{
               <th className="w-20 whitespace-nowrap px-2 py-2.5 text-center">Trạng thái</th>
               <th className="w-16 whitespace-nowrap px-2 py-2.5 text-right">Lưu bãi</th>
               <th className="w-40 px-2 py-2.5">Vị trí</th>
-              <th className="min-w-[12rem] px-2 py-2.5">Hư hỏng (giám định)</th>
+              <th className="min-w-[12rem] px-2 py-2.5">Tình trạng sửa chữa</th>
+              <th className="w-16 whitespace-nowrap px-2 py-2.5 text-right">Giờ công</th>
               <th className="min-w-[10rem] px-2 py-2.5">Ghi chú</th>
+              <th className="w-56 whitespace-nowrap px-2 py-2.5 text-right">Tác nghiệp</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.length === 0 ? (
-              <tr><td colSpan={11} className="px-4 py-8 text-center text-slate-500">Không có container DAMAGE nào đang chờ báo giá.</td></tr>
+              <tr><td colSpan={13} className="px-4 py-8 text-center text-slate-500">Không có container DAMAGE nào đang chờ báo giá.</td></tr>
             ) : (
               rows.map((c) => (
                 <tr key={c.id} onClick={() => open(c)} className={`cursor-pointer ${selectedId === c.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
@@ -142,8 +157,15 @@ export const QuotationWorkspace: React.FC<{
                   <td className="px-2 py-2.5 text-center font-bold text-rose-700">{c.conditionClass}</td>
                   <td className="px-2 py-2.5 text-right font-mono font-bold">{storageDays(c.gateInAt, now)}</td>
                   <td className="px-2 py-2.5 font-mono">{formatLocation(c)}</td>
-                  <td className="px-2 py-2.5 font-semibold text-rose-800">{c.damageRemarks.join(', ') || '-'}</td>
+                  <td className="px-2 py-2.5">{c.quotationItems?.length ? <span className="font-semibold text-slate-900">{c.quotationItems.join(", ")}</span> : <span className="italic text-slate-400">Chưa cập nhật</span>}</td>
+                  <td className="px-2 py-2.5 text-right font-mono font-bold">{c.quotationLaborHours ?? "-"}</td>
                   <td className={`px-2 py-2.5 ${c.officeNote ? 'bg-yellow-200 font-semibold' : 'text-slate-400'}`}>{c.officeNote || '-'}</td>
+                  <td className="px-2 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                    <span className="inline-flex gap-1">
+                      <button type="button" onClick={() => open(c)} className={secondaryBtn}>Cập nhật</button>
+                      <button type="button" disabled={!hasDraft(c)} title={hasDraft(c) ? "" : "Cập nhật tình trạng sửa chữa + giờ công trước"} onClick={() => confirmRepair(c)} className={primaryBtn}>Xác nhận chờ sửa chữa</button>
+                    </span>
+                  </td>
                 </tr>
               ))
             )}
@@ -170,17 +192,26 @@ export const QuotationWorkspace: React.FC<{
               <dt className="text-slate-500">Hư hỏng giám định</dt><dd className="font-semibold text-rose-800 sm:col-span-3">{selected.damageRemarks.join(', ') || '-'}</dd>
             </dl>
             <label className="block">
-              <span className={labelCls}>Remark sửa chữa * (phân cách bằng dấu phẩy)</span>
-              <input value={items} onChange={(e) => setItems(e.target.value)} placeholder="Móp vách, Hư sàn..." className={inputCls} />
+              <span className={labelCls}>Tình trạng sửa chữa thực tế * (phân cách bằng dấu phẩy)</span>
+              <input value={items} onChange={(e) => setItems(e.target.value)} placeholder="Thay tôn vách trái 1m2, Hàn sàn..." className={inputCls} />
             </label>
             <label className="block w-48">
               <span className={labelCls}>Giờ công sửa chữa *</span>
               <input type="number" min={0} step={0.5} inputMode="decimal" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="VD: 2.5" className={`${inputCls} font-mono`} />
             </label>
-            <button type="button" disabled={!items.trim() || !(Number(hours) > 0)} onClick={submit} className={primaryBtn}>
-              <FileSpreadsheet className="h-4 w-4" />
-              Cập nhật sang Chờ sửa chữa
-            </button>
+            <Feedback success={success} onClose={() => setSuccess(null)} />
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={!items.trim() || !(Number(hours) > 0)} onClick={save} className={secondaryBtn}>
+                <FileSpreadsheet className="h-4 w-4" />
+                Lưu cập nhật báo giá
+              </button>
+              <button type="button" disabled={!hasDraft(selected)} onClick={() => confirmRepair(selected)} className={primaryBtn} title={hasDraft(selected) ? '' : 'Lưu cập nhật báo giá trước'}>
+                Xác nhận chờ sửa chữa → chuyển Sửa chữa
+              </button>
+            </div>
+            {selected.quotationUpdatedBy && (
+              <p className="text-[11px] text-slate-500">Cập nhật gần nhất: {selected.quotationUpdatedBy} • {formatDateTime(selected.quotationUpdatedAt)}</p>
+            )}
           </div>
         )}
       </DetailDrawer>

@@ -718,6 +718,51 @@ export function approveDamageQuotation(
   );
 }
 
+// DEC-086: BÁO GIÁ 2 bước — (1) cập nhật TÌNH TRẠNG SỬA CHỮA thực tế + GIỜ CÔNG (lưu, vẫn ở Chờ báo giá)
+//   (2) XÁC NHẬN CHỜ SỬA CHỮA → chuyển bộ phận Sửa chữa (dùng đúng nội dung đã lưu)
+export function saveQuotationDraft(
+  state: DepotState,
+  input: { containerNo: string; quotationItems: string[]; laborHours: number }
+): DepotState {
+  assertPermission(state, 'QUOTATION', 'chỉ Bộ phận Báo giá được cập nhật báo giá.');
+  const container = findActiveContainer(state, input.containerNo);
+  if (!container || !container.needsQuotation) throw new Error('Container không nằm trong hàng chờ Báo giá.');
+  const items = input.quotationItems.map((i) => i.trim()).filter(Boolean);
+  if (items.length === 0) throw new Error('Vui lòng nhập TÌNH TRẠNG SỬA CHỮA.');
+  const laborHours = Number(input.laborHours);
+  if (!Number.isFinite(laborHours) || laborHours <= 0 || laborHours > 1000) {
+    throw new Error('Vui lòng nhập GIỜ CÔNG SỬA CHỮA lớn hơn 0.');
+  }
+  const next = updateContainerById(state, container.id, {
+    quotationItems: items,
+    quotationLaborHours: laborHours,
+    quotationUpdatedBy: state.currentUser.fullName,
+    quotationUpdatedAt: nowIso(),
+  });
+  return appendAudit(
+    next,
+    'SAVE_QUOTATION',
+    'QUOTATION',
+    container.masterDossierCode,
+    `[Hồ sơ ${container.masterDossierCode}] Báo giá cập nhật ${container.containerNo}: TÌNH TRẠNG SỬA CHỮA [${items.join(', ')}] • ${laborHours} giờ công (chưa chuyển sửa chữa)`,
+    container.masterDossierCode
+  );
+}
+
+export function confirmQuotationToRepair(state: DepotState, input: { containerNo: string }): DepotState {
+  assertPermission(state, 'QUOTATION', 'chỉ Bộ phận Báo giá được xác nhận báo giá.');
+  const container = findActiveContainer(state, input.containerNo);
+  if (!container || !container.needsQuotation) throw new Error('Container không nằm trong hàng chờ Báo giá.');
+  if (!container.quotationItems?.length || !(Number(container.quotationLaborHours) > 0)) {
+    throw new Error(`Chưa cập nhật TÌNH TRẠNG SỬA CHỮA / GIỜ CÔNG cho ${container.containerNo} — bấm "Cập nhật" trước.`);
+  }
+  return approveDamageQuotation(state, {
+    containerNo: container.containerNo,
+    quotationItems: container.quotationItems,
+    laborHours: Number(container.quotationLaborHours),
+  });
+}
+
 // ============================================================================
 // 9. BỘ PHẬN SỬA CHỮA — CHỜ SỬA CHỮA: hoàn tất -> AV
 // ============================================================================

@@ -995,3 +995,29 @@ describe('DEC-082: vị trí theo cấu hình thực tế của Block', () => {
     expect(() => shift(as(moved, 'usr-forklift'), { containerId: other.id, blockCode: 'BLOCK-D', bay: '03' })).toThrow(/đang có container/);
   });
 });
+
+describe('DEC-086: Báo giá 2 bước — cập nhật tình trạng sửa chữa + giờ công, rồi xác nhận chờ sửa chữa', () => {
+  it('Lưu nháp vẫn ở Chờ báo giá; xác nhận cần đã cập nhật; chuyển Sửa chữa đúng nội dung đã lưu', async () => {
+    const { saveQuotationDraft, confirmQuotationToRepair } = await import('../src/services/depotOperations');
+    const s0 = createInitialState();
+    const c = s0.containers.find((x) => x.needsQuotation && x.status !== 'GATED_OUT')!;
+    expect(c).toBeTruthy();
+    const q = as(s0, 'usr-quotation');
+    expect(() => saveQuotationDraft(as(s0, 'usr-office'), { containerNo: c.containerNo, quotationItems: ['x'], laborHours: 1 })).toThrow(/Không đủ quyền/);
+    expect(() => saveQuotationDraft(q, { containerNo: c.containerNo, quotationItems: [' '], laborHours: 1 })).toThrow(/TÌNH TRẠNG SỬA CHỮA/);
+    expect(() => saveQuotationDraft(q, { containerNo: c.containerNo, quotationItems: ['Hàn sàn'], laborHours: 0 })).toThrow(/GIỜ CÔNG/);
+    expect(() => confirmQuotationToRepair(q, { containerNo: c.containerNo })).toThrow(/Chưa cập nhật/);
+
+    let s = saveQuotationDraft(q, { containerNo: c.containerNo, quotationItems: ['Thay tôn vách', 'Hàn sàn'], laborHours: 3.5 });
+    const draft = s.containers.find((x) => x.id === c.id)!;
+    expect(draft).toMatchObject({ needsQuotation: true, needsRepair: false, quotationItems: ['Thay tôn vách', 'Hàn sàn'], quotationLaborHours: 3.5, quotationUpdatedBy: expect.any(String) });
+    expect(s.auditLogs[0].actionCode).toBe('SAVE_QUOTATION');
+
+    s = confirmQuotationToRepair(s, { containerNo: c.containerNo });
+    const done = s.containers.find((x) => x.id === c.id)!;
+    expect(done).toMatchObject({ needsQuotation: false, needsRepair: true });
+    const wo = s.workOrders.find((w) => w.masterDossierCode === c.masterDossierCode && w.category === 'REPAIR')!;
+    expect(wo).toMatchObject({ items: ['Thay tôn vách', 'Hàn sàn'], laborHours: 3.5, workStatus: 'OPEN' });
+    expect(() => confirmQuotationToRepair(s, { containerNo: c.containerNo })).toThrow(/không nằm trong hàng chờ/);
+  });
+});
