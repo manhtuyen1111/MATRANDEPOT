@@ -143,6 +143,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-091)
 - Đảo chuyển: vị trí tách cột Block / Bay / Row / Tier thẳng hàng với hàng tiêu đề, thiếu thì để trống.
 
+### Changed (2026-10-24, DEC-092)
+- Đảo chuyển: số cont / size-type / vị trí trên 1 dòng (BLOCK-A / 17-02-02), ô Block rộng cố định để vị trí thẳng cột; bỏ hàng tiêu đề cột.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

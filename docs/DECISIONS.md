@@ -693,6 +693,12 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-24) — thay bố cục vị trí của DEC-090
 - Quyết định: Danh sách Đảo chuyển có **hàng tiêu đề cột cố định** BLOCK | BAY | ROW | TIER; mỗi thẻ tầng 1 Số container | Size / Type | Trạng thái • Tiến độ, tầng 2 **4 ô vị trí** cùng lưới với tiêu đề → **Block thẳng Block, Bay thẳng Bay, Row thẳng Row, Tier thẳng Tier** từ trên xuống; chiều nào không có (Block chỉ có tên, chưa có vị trí) thì **để trống ô đó**.
 
+### DEC-092 — Đảo chuyển: số cont, size/type và vị trí trên 1 dòng (thay bố cục DEC-091)
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Quyết định: Mỗi thẻ Đảo chuyển: **1 dòng SỐ CONT | SIZE / TYPE | VỊ TRÍ** dạng `BLOCK-A / 17-02-02` (người dùng xác nhận); dòng 2 Trạng thái | Tiến độ. Bỏ hàng tiêu đề BLOCK | BAY | ROW | TIER. Để vẫn **Block thẳng Block, Bay thẳng Bay**: ô tên Block rộng cố định bằng mã Block dài nhất trong danh mục (chữ đều nét), phần `/ Bay-Row-Tier` đi sau; chiều không có thì bỏ (Block chỉ có tên → chỉ hiện tên Block).
+- Lưu ý: máy rất hẹp (~360px) với mã Block dài (VD BLOCK-DAMAGE) có thể cắt "…" ở cuối vị trí.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -782,6 +788,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-091 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-092 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
