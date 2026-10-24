@@ -230,7 +230,7 @@ export const VesselFieldMobile: React.FC<{
             <div className="space-y-3 rounded-lg border-2 border-blue-600 bg-white p-3 text-xs">
               <div className="relative rounded-lg bg-slate-900 px-4 py-3 text-white">
                 <button type="button" onClick={resetForm} aria-label="Bỏ chọn" className="absolute right-2 top-2 text-slate-300 hover:text-white"><X className="h-4 w-4" /></button>
-                <p className="text-[10px] font-semibold uppercase text-slate-300">Đang tác nghiệp</p>
+                <p className="text-[11px] font-black uppercase text-amber-300">Đang tác nghiệp: {t.name} • Tàu {list.vesselName}</p>
                 <p className="font-mono text-3xl font-black tracking-wider">{item.containerNo}</p>
                 <p className="mt-1 text-sm font-bold">
                   {item.size} / {item.type}

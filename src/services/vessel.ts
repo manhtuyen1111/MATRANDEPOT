@@ -576,3 +576,40 @@ export function vesselStepSummary(state: DepotState, step: VesselFieldStep, list
     byTruck: Array.from(counts, ([truckNo, count]) => ({ truckNo, count })),
   };
 }
+
+// ---------------------------------------------------------------------------
+// DEC-083: TÁC NGHIỆP hiện tại của 1 cont — để Vệ sinh / Xe nâng biết đang làm việc gì
+//   NT- → NHẬP TÀU (+ tên tàu); trong danh sách xuất tàu → XUẤT TÀU (+ tên tàu);
+//   đã lập lệnh cấp → CẤP VỎ; còn lại → HẠ VỎ.
+// ---------------------------------------------------------------------------
+export type ContainerOperationCode = 'HA_VO' | 'CAP_VO' | 'NHAP_TAU' | 'XUAT_TAU';
+export const CONTAINER_OPERATION_LABELS: Record<ContainerOperationCode, string> = {
+  HA_VO: 'HẠ VỎ',
+  CAP_VO: 'CẤP VỎ',
+  NHAP_TAU: 'NHẬP TÀU',
+  XUAT_TAU: 'XUẤT TÀU',
+};
+
+export interface ContainerOperation {
+  code: ContainerOperationCode;
+  label: string;
+  dossierCode: string;   // mã hồ sơ của tác nghiệp (HV- / CV- / NT- / XT-)
+  vesselName?: string;   // Nhập tàu / Xuất tàu
+}
+
+export function containerOperation(state: DepotState, c: ContainerRecord): ContainerOperation {
+  const lists = state.vesselLists || [];
+  if (c.vesselExportItemId) {
+    const list = lists.find((l) => l.items.some((i) => i.id === c.vesselExportItemId));
+    const item = list?.items.find((i) => i.id === c.vesselExportItemId);
+    return { code: 'XUAT_TAU', label: CONTAINER_OPERATION_LABELS.XUAT_TAU, dossierCode: item?.dossierCode || c.masterDossierCode, vesselName: list?.vesselName };
+  }
+  if (c.status === 'ALLOCATED' && c.outDossierCode) {
+    return { code: 'CAP_VO', label: CONTAINER_OPERATION_LABELS.CAP_VO, dossierCode: c.outDossierCode };
+  }
+  if (c.masterDossierCode.startsWith('NT-')) {
+    const list = lists.find((l) => l.mode === 'NHAP_TAU' && l.items.some((i) => i.dossierCode === c.masterDossierCode));
+    return { code: 'NHAP_TAU', label: CONTAINER_OPERATION_LABELS.NHAP_TAU, dossierCode: c.masterDossierCode, vesselName: list?.vesselName };
+  }
+  return { code: 'HA_VO', label: CONTAINER_OPERATION_LABELS.HA_VO, dossierCode: c.masterDossierCode };
+}

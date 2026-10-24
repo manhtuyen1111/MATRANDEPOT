@@ -1,7 +1,8 @@
 import React from 'react';
 import { Ship } from 'lucide-react';
-import { VesselList } from '../../types/depot';
-import { vesselListProgress } from '../../services/vessel';
+import { ContainerRecord, VesselList } from '../../types/depot';
+import type { DepotState } from '../../services/depotStore';
+import { ContainerOperationCode, containerOperation, vesselListProgress } from '../../services/vessel';
 import { formatDateTime } from '../../services/datetime';
 
 // Thanh tiến độ 1 danh sách tàu — mọi bộ phận cùng theo dõi (DEC-069)
@@ -63,3 +64,24 @@ export function ChoiceButtons<T extends string>({
     </div>
   );
 }
+
+// DEC-083: nhãn TÁC NGHIỆP (Hạ vỏ / Cấp vỏ / Nhập tàu + tàu / Xuất tàu + tàu) cho màn Vệ sinh / Xe nâng
+const OP_TONE: Record<ContainerOperationCode, string> = {
+  HA_VO: 'bg-blue-600 text-white',
+  CAP_VO: 'bg-violet-600 text-white',
+  NHAP_TAU: 'bg-emerald-600 text-white',
+  XUAT_TAU: 'bg-amber-500 text-slate-900',
+};
+
+export const OperationBadge: React.FC<{ state: DepotState; container: ContainerRecord; large?: boolean }> = ({ state, container, large }) => {
+  const op = containerOperation(state, container);
+  return (
+    <span
+      data-testid="operation-badge"
+      className={`inline-flex flex-wrap items-center gap-x-1.5 rounded font-black uppercase ${OP_TONE[op.code]} ${large ? 'px-2.5 py-1 text-sm' : 'px-1.5 py-0.5 text-[10px]'}`}
+    >
+      {op.label}
+      {op.vesselName && <span className={`font-semibold normal-case ${large ? 'text-xs' : ''}`}>• Tàu {op.vesselName}</span>}
+    </span>
+  );
+};

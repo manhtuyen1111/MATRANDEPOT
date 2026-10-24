@@ -11,6 +11,7 @@ import {
 } from '../../services/depotOperations';
 import { formatLocation } from '../../services/core';
 import { findTicketByQr, isTicketClosed } from '../../services/driverRoute';
+import { OperationBadge } from '../vessel/VesselShared';
 import {
   ContainerNo,
   EMPTY_SLOT,
@@ -310,9 +311,12 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
         <div className="space-y-3 rounded-lg border border-blue-600 bg-white p-4 text-xs">
           <div className="flex items-center justify-between">
             {isForklift ? (
-              <span className="text-[11px] font-bold uppercase text-blue-700">Container vừa quét</span>
+              <OperationBadge state={state} container={scanned} large />
             ) : (
-              <ContainerNo no={scanned.containerNo} locked={scanned.isOnHold} lockReason={scanned.holdReason} className="text-base" />
+              <span className="flex flex-wrap items-center gap-2">
+                <OperationBadge state={state} container={scanned} large />
+                <ContainerNo no={scanned.containerNo} locked={scanned.isOnHold} lockReason={scanned.holdReason} className="text-base" />
+              </span>
             )}
             <button type="button" onClick={() => setScanned(null)} aria-label="Bỏ chọn" className="text-slate-400 hover:text-slate-700">
               <X className="h-4 w-4" />
@@ -457,6 +461,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                 <li key={c.id}>
                   <button type="button" onClick={() => lookup(c.activeQrCode)} className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left text-xs hover:bg-slate-50">
                     <span className="flex items-center gap-2">
+                      <OperationBadge state={state} container={c} />
                       <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} />
                       <span className="text-slate-500">{c.size}/{c.type}</span>
                     </span>

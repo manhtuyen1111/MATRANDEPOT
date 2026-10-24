@@ -412,3 +412,11 @@ describe('DEC-082: chọn vị trí chỉ hiện chiều Block có cấu hình',
     expect(isSlotComplete({ blockCode: 'BLOCK-A', bay: '01', row: '', tier: '' }, base)).toBe(false);
   });
 });
+
+describe('DEC-083: nhãn tác nghiệp ở màn Vệ sinh / Xe nâng', () => {
+  it('OperationBadge hiện HẠ VỎ cho cont thường', async () => {
+    const { OperationBadge } = await import('../src/features/vessel/VesselShared');
+    const c = base.containers.find((x) => x.status === 'IN_YARD')!;
+    expect(renderToString(<OperationBadge state={base} container={c} large />)).toContain('HẠ VỎ');
+  });
+});

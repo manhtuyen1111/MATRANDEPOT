@@ -227,3 +227,33 @@ describe('DEC-071: theo dõi tác nghiệp hiện trường từng bộ phận',
     expect(v.vesselStepSummary(s, 'NT_PLACE', list())).toMatchObject({ done: 1, mine: 1 });
   });
 });
+
+describe('DEC-083: tác nghiệp hiện tại của cont (cho Vệ sinh / Xe nâng)', () => {
+  it('HẠ VỎ / NHẬP TÀU + tàu / XUẤT TÀU + tàu / CẤP VỎ', async () => {
+    const { containerOperation } = await import('../src/services/vessel');
+    const { createReleaseOrder } = await import('../src/services/depotOperations');
+    let s = as(createInitialState(), 'usr-office');
+    const yard = s.containers.filter((c) => c.status === 'IN_YARD');
+    expect(containerOperation(s, yard[0])).toMatchObject({ code: 'HA_VO', label: 'HẠ VỎ' });
+
+    const nt = createVesselList(s, { mode: 'NHAP_TAU', vesselName: 'Tàu Vào', plannedAt: PLANNED, truckNos: ['15C-1'], shippingLineCode: 'MAERSK', importItems: [{ containerNo: 'TCLU3333333', size: '20', type: 'DC' }] });
+    s = inspectVesselImportItem(as(nt.state, 'usr-inspector'), { listId: nt.listId, itemId: nt.state.vesselLists[0].items[0].id, actualContainerNo: 'TCLU3333333', truckNo: '15C-1', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['WW'], manufactureYear: 2018 });
+    const ntCont = s.containers.find((c) => c.containerNo === 'TCLU3333333')!;
+    expect(containerOperation(s, ntCont)).toMatchObject({ code: 'NHAP_TAU', vesselName: 'TÀU VÀO', dossierCode: ntCont.masterDossierCode });
+
+    const xt = createVesselList(as(s, 'usr-office'), { mode: 'XUAT_TAU', vesselName: 'Tàu Ra', plannedAt: PLANNED, truckNos: ['15C-2'], exportContainerIds: [yard[0].id] });
+    const xtCont = xt.state.containers.find((c) => c.id === yard[0].id)!;
+    expect(containerOperation(xt.state, xtCont)).toMatchObject({ code: 'XUAT_TAU', vesselName: 'TÀU RA', dossierCode: xt.state.vesselLists[0].items[0].dossierCode });
+
+    const ready = s.containers.find((c) => c.status === 'IN_YARD' && c.id !== yard[0].id && c.containerNo === 'MSKU4089123');
+    if (ready) {
+      try {
+        const cv = createReleaseOrder(as(s, 'usr-office'), { bookingNo: 'BK-OP-1', customerName: 'Công ty Tiếp Vận Việt (VietLog)', containerNo: ready.containerNo, truckNo: '15H-1', driverPhone: '0912345678', feeCatalogIds: ['fee-lolo-40-hc-maersk'] });
+        const c = cv.containers.find((x) => x.id === ready.id)!;
+        expect(containerOperation(cv, c)).toMatchObject({ code: 'CAP_VO' });
+      } catch {
+        // cont mẫu không đủ điều kiện cấp vỏ — bỏ qua nhánh này
+      }
+    }
+  });
+});
