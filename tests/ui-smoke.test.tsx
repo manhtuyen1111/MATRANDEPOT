@@ -429,6 +429,9 @@ describe('DEC-084: Báo giá → Chờ báo giá hiển thị như Tồn vỏ', 
     for (const col of ['Mã hồ sơ', 'Số container', 'Hãng tàu', 'Date in', 'Trạng thái', 'Lưu bãi', 'Vị trí', 'Tình trạng sửa chữa', 'Giờ công', 'Ghi chú', 'Tác nghiệp']) expect(html).toContain(col);
     expect(html).not.toContain('Hư hỏng (giám định)');
     if (q.length) expect(html).toContain('Xác nhận chờ sửa chữa');
+    // DEC-088: tìm hàng loạt + chọn nhiều
+    expect(html).toContain('Tìm hàng loạt');
+    expect(html).toContain('Chọn tất cả theo bộ lọc');
     expect(html).toContain('Xuất Excel');
     if (q.length) {
       expect(html).toContain(q[0].containerNo);

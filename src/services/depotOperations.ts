@@ -1960,3 +1960,27 @@ export function bulkUpdateOfficeNote(state: DepotState, input: { containerIds: s
   }
   return { state: next, done, skipped };
 }
+
+// DEC-088: BÁO GIÁ — XÁC NHẬN CHỜ SỬA CHỮA HÀNG LOẠT (gọi lại confirmQuotationToRepair cho từng cont;
+//   cont chưa cập nhật tình trạng sửa chữa / giờ công được bỏ qua và báo lại)
+export function bulkConfirmQuotationToRepair(state: DepotState, input: { containerIds: string[] }): BulkResult {
+  assertPermission(state, 'QUOTATION', 'chỉ Bộ phận Báo giá được xác nhận báo giá.');
+  if (input.containerIds.length === 0) throw new Error('Chưa chọn container nào.');
+  let next = state;
+  const done: string[] = [];
+  const skipped: BulkResult['skipped'] = [];
+  for (const id of input.containerIds) {
+    const c = next.containers.find((x) => x.id === id);
+    if (!c || c.status === 'GATED_OUT' || !c.needsQuotation) {
+      skipped.push({ containerNo: c?.containerNo || id, reason: 'Không còn chờ báo giá' });
+      continue;
+    }
+    if (!c.quotationItems?.length || !(Number(c.quotationLaborHours) > 0)) {
+      skipped.push({ containerNo: c.containerNo, reason: 'Chưa cập nhật tình trạng sửa chữa / giờ công' });
+      continue;
+    }
+    next = confirmQuotationToRepair(next, { containerNo: c.containerNo });
+    done.push(c.containerNo);
+  }
+  return { state: next, done, skipped };
+}

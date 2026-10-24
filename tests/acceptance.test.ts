@@ -1022,3 +1022,26 @@ describe('DEC-086: Báo giá 2 bước — cập nhật tình trạng sửa ch�
     expect(() => confirmQuotationToRepair(s, { containerNo: c.containerNo })).toThrow(/không nằm trong hàng chờ/);
   });
 });
+
+describe('DEC-088: Báo giá xác nhận chờ sửa chữa hàng loạt', () => {
+  it('Đúng quyền; bỏ qua cont chưa cập nhật; xác nhận cont đã cập nhật', async () => {
+    const { saveQuotationDraft, bulkConfirmQuotationToRepair } = await import('../src/services/depotOperations');
+    let s = fieldStep(createInitialState(), { conditionClass: 'DAMAGE', damageRemarks: ['Móp vách'] });
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const q = as(s, 'usr-quotation');
+    const waiting = q.containers.filter((c) => c.needsQuotation && c.status !== 'GATED_OUT');
+    expect(waiting.length).toBeGreaterThanOrEqual(2);
+    const [a, b] = waiting;
+    expect(() => bulkConfirmQuotationToRepair(as(s, 'usr-office'), { containerIds: [a.id] })).toThrow(/Không đủ quyền/);
+    expect(() => bulkConfirmQuotationToRepair(q, { containerIds: [] })).toThrow(/Chưa chọn/);
+    let next = saveQuotationDraft(q, { containerNo: a.containerNo, quotationItems: ['Hàn vách'], laborHours: 2 });
+    const res = bulkConfirmQuotationToRepair(next, { containerIds: [a.id, b.id] });
+    expect(res.done).toEqual([a.containerNo]);
+    expect(res.skipped).toEqual([{ containerNo: b.containerNo, reason: 'Chưa cập nhật tình trạng sửa chữa / giờ công' }]);
+    next = res.state;
+    expect(next.containers.find((c) => c.id === a.id)).toMatchObject({ needsQuotation: false, needsRepair: true });
+    expect(next.containers.find((c) => c.id === b.id)).toMatchObject({ needsQuotation: true });
+  });
+});
