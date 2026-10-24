@@ -1045,3 +1045,28 @@ describe('DEC-088: Báo giá xác nhận chờ sửa chữa hàng loạt', () =>
     expect(next.containers.find((c) => c.id === b.id)).toMatchObject({ needsQuotation: true });
   });
 });
+
+describe('DEC-093: khách hàng gõ tay hoặc chọn; khách ngoài Danh mục chỉ thanh toán trực tiếp', () => {
+  it('Chuẩn hóa tên Danh mục; lưu tên tự do; chặn TTS / TTT với khách ngoài Danh mục, cho Tiền mặt', async () => {
+    const { normalizeCustomer, isCatalogCustomer } = await import('../src/services/depotOperations');
+    const s0 = createInitialState();
+    expect(normalizeCustomer(s0, '  công ty tiếp vận việt (vietlog) ')).toBe(VIETLOG);
+    expect(normalizeCustomer(s0, 'Anh  Ba   Vận Tải')).toBe('Anh Ba Vận Tải');
+    expect(() => normalizeCustomer(s0, '  ')).toThrow(/KHÁCH HÀNG/);
+    expect(isCatalogCustomer(s0, VIETLOG)).toBe(true);
+    expect(isCatalogCustomer(s0, 'Anh Ba Vận Tải')).toBe(false);
+
+    // Hạ vỏ với khách tự do: lưu được; TTS / TTT bị chặn; Tiền mặt OK
+    let s = fieldStep(s0);
+    const gi = s.gateInOrders[0];
+    s = verifyGateInOfficeAndCreatePayment(as(s, 'usr-office'), {
+      gateInId: gi.id, containerNo: 'MSKU1234567', size: '40', type: 'HC', shippingLineCode: 'MAERSK',
+      customerName: 'Anh Ba Vận Tải', truckNo: '15C-1', driverPhone: '0912345678', orderDocNo: 'EIR-9', feeCatalogIds: [FEE_LOLO_40HC_MSK],
+    } as never);
+    expect(s.gateInOrders.find((o) => o.id === gi.id)!.customerRep).toBe('Anh Ba Vận Tải');
+    expect(() => confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTS', ttsNote: 'x' })).toThrow(/chưa có trong Danh mục/);
+    expect(() => confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTT', scannedQrCode: 'QR-TTT-VIETLOG-001' })).toThrow(/chưa có trong Danh mục/);
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    expect(s.gateInOrders.find((o) => o.id === gi.id)!.status).toBe('GATE_IN_OK');
+  });
+});

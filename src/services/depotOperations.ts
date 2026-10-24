@@ -99,12 +99,19 @@ function sumFees(lines: FeeLineItem[]): number {
   return lines.reduce((sum, l) => sum + Number(l.amountInclVat || 0), 0);
 }
 
-function assertCustomer(state: DepotState, customerName: string): string {
-  const name = customerName.trim();
-  if (!state.partners.some((p) => p.isCustomer && p.name === name)) {
-    throw new Error('Vui lòng chọn KHÁCH HÀNG theo Danh mục chung.');
-  }
-  return name;
+// DEC-093: khách hàng gõ tay hoặc chọn từ Danh mục. Trùng tên Danh mục (không phân biệt hoa thường) → lấy đúng tên Danh mục;
+// không có trong Danh mục → vẫn lưu tên tự do (chỉ thanh toán Tiền mặt / Chuyển khoản — xem settleVoucher).
+export function normalizeCustomer(state: DepotState, customerName: string): string {
+  const name = customerName.trim().replace(/\s+/g, ' ');
+  if (!name) throw new Error('Vui lòng nhập hoặc chọn KHÁCH HÀNG.');
+  if (name.length > 120) throw new Error('Tên KHÁCH HÀNG tối đa 120 ký tự.');
+  const known = state.partners.find((p) => p.isCustomer && p.name.toLowerCase() === name.toLowerCase());
+  return known ? known.name : name;
+}
+
+export function isCatalogCustomer(state: DepotState, name?: string): boolean {
+  const n = (name || '').trim().toLowerCase();
+  return Boolean(n) && state.partners.some((p) => p.isCustomer && p.name.toLowerCase() === n);
 }
 
 // ============================================================================
@@ -213,7 +220,7 @@ export function verifyGateInOfficeAndCreatePayment(
   if (!state.partners.some((p) => p.isShippingLine && p.code === input.shippingLineCode)) {
     throw new Error('Vui lòng chọn HÃNG TÀU theo Danh mục chung.');
   }
-  const customerName = assertCustomer(state, input.customerName);
+  const customerName = normalizeCustomer(state, input.customerName);
   const truckNo = input.truckNo.trim().toUpperCase();
   if (!truckNo) throw new Error('Văn phòng bắt buộc nhập SỐ XE.');
   const driverPhone = normalizeDriverPhone(input.driverPhone);
@@ -912,7 +919,7 @@ export function createReleaseOrder(
   assertPermission(state, 'RELEASE_ORDER', 'chỉ Văn phòng / Quản lý được lập lệnh CẤP VỎ.');
   const bookingNo = input.bookingNo.trim().toUpperCase();
   if (!bookingNo) throw new Error('Vui lòng nhập SỐ BOOKING.');
-  const customerName = assertCustomer(state, input.customerName);
+  const customerName = normalizeCustomer(state, input.customerName);
   const container = findActiveContainer(state, input.containerNo);
   if (!container) throw new Error('Không tìm thấy container đang tồn bãi.');
   const blocker = releaseBlocker(container);

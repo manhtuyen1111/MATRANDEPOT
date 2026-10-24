@@ -160,6 +160,16 @@ export function settleVoucher(
   }
   const actor = state.currentUser.fullName;
 
+  // DEC-093: khách ngoài Danh mục (tên gõ tự do) chỉ được thanh toán trực tiếp (Tiền mặt / Chuyển khoản)
+  if (input.paymentCategory === 'TTT' || input.paymentCategory === 'TTS') {
+    const payer = voucher.payerName.trim().toLowerCase();
+    if (!state.partners.some((p) => p.isCustomer && p.name.toLowerCase() === payer)) {
+      throw new Error(
+        `Khách hàng "${voucher.payerName}" chưa có trong Danh mục — chỉ thanh toán TRỰC TIẾP (Tiền mặt / Chuyển khoản), không dùng ${input.paymentCategory}.`
+      );
+    }
+  }
+
   if (input.paymentCategory === 'TTT') {
     const qr = (input.scannedQrCode || '').trim().toUpperCase();
     if (!qr) throw new Error('THANH TOÁN TRƯỚC (TTT): Vui lòng quét mã QR của Phiếu thu mẹ vào chứng từ.');

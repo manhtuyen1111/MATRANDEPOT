@@ -473,3 +473,18 @@ describe('DEC-090: Xe nâng → Đảo chuyển — vị trí thẳng cột', ()
     expect(html).not.toContain('>Tier</span>');
   });
 });
+
+describe('DEC-093: ô Khách hàng gõ tay + gợi ý Danh mục', () => {
+  it('Có datalist gợi ý khách trong Danh mục; gõ tên mới thì cảnh báo chỉ Tiền mặt / Chuyển khoản', async () => {
+    const { CustomerInput } = await import('../src/components/shared');
+    const known = base.partners.find((p) => p.isCustomer)!;
+    const a = renderToString(<CustomerInput id="t" state={base} value={known.name} onChange={noop} />);
+    expect(a).toContain('<datalist id="t-list">');
+    expect(a).toContain(known.name);
+    expect(a).not.toContain('Khách ngoài Danh mục');
+    const b = renderToString(<CustomerInput id="t" state={base} value="Anh Ba Vận Tải" onChange={noop} />);
+    expect(b).toContain('Khách ngoài Danh mục');
+    const ha = renderToString(<OfficeHaVoWorkspace state={as(base, 'usr-office')} onUpdateState={noop} onOpenK80Ticket={noop} />);
+    expect(ha).not.toContain('<select value="" class') ;
+  });
+});

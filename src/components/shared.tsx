@@ -639,3 +639,40 @@ export const DetailDrawer: React.FC<{
     </div>
   );
 };
+
+// DEC-093: Ô KHÁCH HÀNG — gõ tay hoặc chọn; gõ thì hiện gợi ý khách trong Danh mục.
+//   Khách ngoài Danh mục vẫn lưu được nhưng chỉ thanh toán Tiền mặt / Chuyển khoản (service kiểm tra).
+export const CustomerInput: React.FC<{
+  state: DepotState;
+  value: string;
+  onChange: (name: string) => void;
+  id: string;
+  placeholder?: string;
+}> = ({ state, value, onChange, id, placeholder = 'Gõ tên hoặc mã khách hàng...' }) => {
+  const customers = state.partners.filter((p) => p.isCustomer);
+  const typed = value.trim().toLowerCase();
+  // Gõ đúng MÃ khách (VD VIETLOG) → điền tên khách trong Danh mục
+  const byCode = customers.find((c) => c.code.toLowerCase() === typed);
+  const known = customers.some((c) => c.name.toLowerCase() === typed);
+  return (
+    <>
+      <input
+        list={`${id}-list`}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={() => byCode && onChange(byCode.name)}
+        placeholder={placeholder}
+        className={inputCls}
+        autoComplete="off"
+      />
+      <datalist id={`${id}-list`}>
+        {customers.map((c) => (
+          <option key={c.id} value={c.name}>{c.code}</option>
+        ))}
+      </datalist>
+      {typed && !known && !byCode && (
+        <span className="mt-1 block text-[11px] font-semibold text-amber-700">Khách ngoài Danh mục — chỉ thanh toán Tiền mặt / Chuyển khoản (không TTS / TTT).</span>
+      )}
+    </>
+  );
+};

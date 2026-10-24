@@ -24,6 +24,7 @@ import { cancelPendingTransaction, pendingTransactionOf } from '../../services/p
 import { formatLocation } from '../../services/core';
 import {
   ContainerNo,
+  CustomerInput,
   EMPTY_PAYMENT,
   FeeLinesEditor,
   Feedback,
@@ -56,7 +57,6 @@ function errMsg(err: unknown, fallback: string): string {
 // BỘ PHẬN VĂN PHÒNG — HẠ VỎ
 // ============================================================================
 export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateState, onOpenK80Ticket, onOpenDossier }) => {
-  const customers = state.partners.filter((p) => p.isCustomer);
   const shippingLines = state.partners.filter((p) => p.isShippingLine);
 
   const pendingOrders = [...state.gateInOrders]
@@ -272,10 +272,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                   </label>
                   <label>
                     <span className={labelCls}>Khách hàng *</span>
-                    <select value={form.customerName} onChange={(e) => set({ customerName: e.target.value })} className={inputCls}>
-                      <option value="">-- Chọn --</option>
-                      {customers.map((c) => <option key={c.id} value={c.name}>[{c.code}] {c.name}</option>)}
-                    </select>
+                    <CustomerInput id="havo-customer" state={state} value={form.customerName} onChange={(v) => set({ customerName: v })} />
                   </label>
                   <label>
                     <span className={labelCls}>Số lệnh / chứng từ</span>
@@ -322,7 +319,6 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
 type ConditionFilter = 'ALL' | FieldConditionClass;
 
 export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateState, onOpenK80Ticket, onOpenDossier }) => {
-  const customers = state.partners.filter((p) => p.isCustomer);
   const shippingLines = state.partners.filter((p) => p.isShippingLine);
 
   const [filters, setFilters] = useState({ search: '', line: 'ALL', size: 'ALL', type: 'ALL', condition: 'AV' as ConditionFilter });
@@ -602,10 +598,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
               </label>
               <label>
                 <span className={labelCls}>Khách hàng nhận vỏ *</span>
-                <select value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={inputCls}>
-                  <option value="">-- Chọn --</option>
-                  {customers.map((c) => <option key={c.id} value={c.name}>[{c.code}] {c.name}</option>)}
-                </select>
+                <CustomerInput id="capvo-customer" state={state} value={customerName} onChange={setCustomerName} />
               </label>
             </div>
 
