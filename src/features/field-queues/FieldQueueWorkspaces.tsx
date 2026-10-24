@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, CheckCircle2, ChevronDown, ChevronUp, FileSpreadsheet, MapPin, QrCode, X } from 'lucide-react';
+import { Camera, CheckCircle2, ChevronDown, ChevronUp, MapPin, QrCode, X } from 'lucide-react';
 import { ContainerRecord } from '../../types/depot';
-import { DepotState, formatVnd } from '../../services/depotStore';
+import { DepotState } from '../../services/depotStore';
 import {
-  approveDamageQuotation,
   completeCleaningTask,
   completeRepairTask,
   executeGateOut,
@@ -12,6 +11,7 @@ import {
 import { formatLocation } from '../../services/core';
 import { findTicketByQr, isTicketClosed } from '../../services/driverRoute';
 import { OperationBadge } from '../vessel/VesselShared';
+import { QuotationWorkspace } from '../quotation/QuotationWorkspace';
 import {
   ContainerNo,
   EMPTY_SLOT,
@@ -78,7 +78,6 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
   const [cameraOpen, setCameraOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [quote, setQuote] = useState<Record<string, { hours: string; items: string }>>({});
   const [teamId, setTeamId] = useState('');
   const [memberIds, setMemberIds] = useState<string[]>([]);
   const activeTeams = state.repairTeams.filter((t) => t.isActive);
@@ -206,65 +205,9 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
     }
   };
 
+  // DEC-084: Chờ báo giá hiển thị như Tồn vỏ (bảng + cửa sổ trượt nhập báo giá)
   if (mode === 'BG_CHO_BAO_GIA') {
-    return (
-      <div className="mx-auto w-full max-w-2xl space-y-3 pb-16">
-        <QueueHeader dept={title.dept} name={title.name} count={queue.length} />
-        <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
-        {queue.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-xs text-slate-500">
-            Không có container DAMAGE nào đang chờ báo giá.
-          </p>
-        ) : (
-          queue.map((c) => {
-            const q = quote[c.id] || { hours: '', items: c.damageRemarks.join(', ') };
-            const setQ = (patch: Partial<typeof q>) => setQuote((prev) => ({ ...prev, [c.id]: { ...q, ...patch } }));
-            return (
-              <div key={c.id} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="flex items-center gap-2">
-                    <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
-                    <span className="text-slate-500">{c.size}/{c.type} • AGE {c.manufactureYear} • {formatLocation(c)}</span>
-                  </span>
-                  <button type="button" onClick={() => onOpenDossier?.(c.masterDossierCode)} className="font-mono text-blue-700 hover:underline">
-                    {c.masterDossierCode}
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
-                  <label className="block sm:col-span-3">
-                    <span className={labelCls}>Remark sửa chữa * (phân cách bằng dấu phẩy)</span>
-                    <input value={q.items} onChange={(e) => setQ({ items: e.target.value })} placeholder="Móp vách, Hư sàn..." className={inputCls} />
-                  </label>
-                  <label className="block">
-                    <span className={labelCls}>Giờ công sửa chữa *</span>
-                    <input type="number" min={0} step={0.5} inputMode="decimal" value={q.hours} onChange={(e) => setQ({ hours: e.target.value })} placeholder="VD: 2.5" className={`${inputCls} font-mono`} />
-                  </label>
-                </div>
-                <button
-                  type="button"
-                  disabled={!q.items.trim() || !(Number(q.hours) > 0)}
-                  onClick={() =>
-                    run(
-                      () =>
-                        approveDamageQuotation(state, {
-                          containerNo: c.containerNo,
-                          quotationItems: q.items.split(','),
-                          laborHours: Number(q.hours),
-                        }),
-                      `Đã cập nhật ${c.containerNo} → Chờ sửa chữa.`
-                    )
-                  }
-                  className={`${primaryBtn} w-full`}
-                >
-                  <FileSpreadsheet className="h-4 w-4" />
-                  Cập nhật sang Chờ sửa chữa
-                </button>
-              </div>
-            );
-          })
-        )}
-      </div>
-    );
+    return <QuotationWorkspace state={state} queue={queue} onUpdateState={onUpdateState} onOpenDossier={onOpenDossier} />;
   }
 
   const needsSlot = mode === 'XN_CHO_HA_VO';

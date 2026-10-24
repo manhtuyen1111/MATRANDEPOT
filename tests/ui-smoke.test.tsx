@@ -420,3 +420,18 @@ describe('DEC-083: nhãn tác nghiệp ở màn Vệ sinh / Xe nâng', () => {
     expect(renderToString(<OperationBadge state={base} container={c} large />)).toContain('HẠ VỎ');
   });
 });
+
+describe('DEC-084: Báo giá → Chờ báo giá hiển thị như Tồn vỏ', () => {
+  it('Bảng full cột như Tồn vỏ + cột Hư hỏng; có lọc, Excel, chọn số dòng; không còn thẻ form cũ', () => {
+    const q = getFieldQueue(base, 'BG_CHO_BAO_GIA');
+    const html = renderToString(<FieldQueueWorkspaces mode="BG_CHO_BAO_GIA" state={as(base, 'usr-quotation')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('Chờ báo giá');
+    for (const col of ['Mã hồ sơ', 'Số container', 'Hãng tàu', 'Date in', 'Trạng thái', 'Lưu bãi', 'Vị trí', 'Hư hỏng (giám định)', 'Ghi chú']) expect(html).toContain(col);
+    expect(html).toContain('Xuất Excel');
+    if (q.length) {
+      expect(html).toContain(q[0].containerNo);
+      expect(html).toContain('Số dòng mỗi trang');
+    }
+    expect(html).not.toContain('max-w-2xl');
+  });
+});
