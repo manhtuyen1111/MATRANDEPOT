@@ -458,3 +458,14 @@ describe('DEC-089: dòng danh sách chờ Vệ sinh / Xe nâng — ô tác nghi�
     expect(html.match(/TÀU TÊN RẤT DÀI/g)?.length).toBe(1);
   });
 });
+
+describe('DEC-090: Xe nâng → Đảo chuyển — vị trí thẳng cột', () => {
+  it('Mỗi dòng dùng lưới cột cố định (số cont | size/type | vị trí canh trái)', () => {
+    const html = renderToString(<YardShiftWorkspace state={base} onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    const rows = html.match(/data-testid="shift-row"/g)?.length || 0;
+    expect(rows).toBeGreaterThan(0);
+    expect(html.match(/grid grid-cols-\[8\.5rem_3rem_1fr\] items-center gap-2" data-testid="shift-row"/g)?.length).toBe(rows);
+    const c = base.containers.find((x) => x.containerNo === 'MSKU4089123')!;
+    expect(html.indexOf('BLOCK-A / 04-02-01')).toBeGreaterThan(html.indexOf(c.containerNo));
+  });
+});

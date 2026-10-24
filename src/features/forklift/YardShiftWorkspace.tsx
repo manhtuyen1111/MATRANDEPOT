@@ -143,13 +143,15 @@ export const YardShiftWorkspace: React.FC<{
                 onClick={() => { setSelectedId(c.id); setSlot(EMPTY_SLOT); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className={`w-full rounded-lg border px-3 py-2.5 text-left text-xs ${selectedId === c.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white active:bg-slate-50'}`}
               >
-                <div className="flex items-center justify-between gap-2">
+                {/* DEC-090: cột cố định — số cont | size/type | VỊ TRÍ canh trái (thẳng cột dọc) */}
+                <div className="grid grid-cols-[8.5rem_3rem_1fr] items-center gap-2" data-testid="shift-row">
                   <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
-                  <span className="font-mono font-bold text-slate-800">{formatLocation(c)}</span>
+                  <span className="font-mono text-slate-600">{c.size}/{c.type}</span>
+                  <span className="truncate font-mono font-bold text-slate-900">{formatLocation(c)}</span>
                 </div>
-                <div className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-slate-500">
-                  <span>{c.size}/{c.type} • <span className={c.conditionClass === 'DAMAGE' ? 'font-semibold text-rose-700' : 'font-semibold text-emerald-700'}>{c.conditionClass}</span></span>
-                  <span>{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</span>
+                <div className="mt-0.5 grid grid-cols-[8.5rem_1fr] gap-2 text-[11px] text-slate-500">
+                  <span className={c.conditionClass === 'DAMAGE' ? 'font-semibold text-rose-700' : 'font-semibold text-emerald-700'}>{c.conditionClass}</span>
+                  <span className="truncate">{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</span>
                 </div>
               </button>
             </li>
