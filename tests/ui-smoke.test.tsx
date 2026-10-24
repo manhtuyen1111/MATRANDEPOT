@@ -376,3 +376,25 @@ describe('DEC-081: EEIR cho hồ sơ Nhập tàu / Xuất tàu', () => {
     expect(strip(renderToString(<MasterDossierModal masterDossierCode={xtList.items[0].dossierCode!} state={s} onClose={noop} />))).toContain('In EEIR XUẤT TÀU');
   });
 });
+
+describe('UI-02: form Giám định dùng chung (Hạ vỏ / Nhập tàu)', () => {
+  it('progressive: chỉ hiện mục 1 khi trống, đủ mục trước mới hiện mục sau; không progressive hiện cả 4', async () => {
+    const m = await import('../src/components/InspectionFields');
+    const { InspectionFields, EMPTY_INSPECTION, isInspectionComplete, inspectionRemarks } = m;
+    const empty = renderToString(<InspectionFields progressive value={EMPTY_INSPECTION} onChange={noop} />);
+    expect(empty).toContain('1. TRẠNG THÁI');
+    expect(empty).not.toContain('2. PHÂN LOẠI ĐÓNG HÀNG');
+    const step2 = renderToString(<InspectionFields progressive value={{ ...EMPTY_INSPECTION, condition: 'AV' }} onChange={noop} />);
+    expect(step2).toContain('2. PHÂN LOẠI ĐÓNG HÀNG');
+    expect(step2).not.toContain('3. TÌNH TRẠNG VỆ SINH');
+    const damageNoRemark = renderToString(<InspectionFields progressive value={{ ...EMPTY_INSPECTION, condition: 'DAMAGE' }} onChange={noop} />);
+    expect(damageNoRemark).not.toContain('2. PHÂN LOẠI ĐÓNG HÀNG');
+    const all = renderToString(<InspectionFields value={EMPTY_INSPECTION} onChange={noop} />);
+    expect(all).toContain('4. AGE');
+    const full = { condition: 'DAMAGE' as const, damage: ['Móp vách'], damageNote: 'Thủng sàn, ', stuffing: 'E' as const, cleaning: ['WW - RỬA NƯỚC' as const], year: '2018' };
+    expect(isInspectionComplete(full)).toBe(true);
+    expect(isInspectionComplete({ ...full, year: '18' })).toBe(false);
+    expect(isInspectionComplete({ ...full, damage: [], damageNote: '' })).toBe(false);
+    expect(inspectionRemarks(full)).toEqual(['Móp vách', 'Thủng sàn']);
+  });
+});

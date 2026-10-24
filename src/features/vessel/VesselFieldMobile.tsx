@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Circle, Clock, Search, Truck, X } from 'lucide-react';
 import {
-  CLEANING_ITEM_OPTIONS,
-  DAMAGE_QUICK_SUGGESTIONS,
-  FieldCleaningItem,
   FieldConditionClass,
   FieldStuffingClass,
   VesselListItem,
@@ -23,6 +20,7 @@ import {
 import { formatDateTime } from '../../services/datetime';
 import { EMPTY_SLOT, Feedback, inputCls, isSlotComplete, labelCls, primaryBtn, SlotPicker, SlotValue } from '../../components/shared';
 import { ChoiceButtons } from './VesselShared';
+import { EMPTY_INSPECTION, InspectionFields, InspectionValue, inspectionRemarks, isInspectionComplete } from '../../components/InspectionFields';
 
 export type VesselFieldMode = 'GD_NHAP_TAU' | 'GD_XUAT_TAU' | 'XN_NHAP_TAU' | 'XN_XUAT_TAU';
 
@@ -32,7 +30,6 @@ const TITLES: Record<VesselFieldMode, { dept: string; name: string; mode: Vessel
   GD_XUAT_TAU: { dept: 'Bộ phận Giám định', name: 'Xuất tàu', mode: 'XUAT_TAU', step: 'XT_EXPORT', action: 'Xác nhận xuất tàu', doneWord: 'xuất tàu' },
   XN_XUAT_TAU: { dept: 'Bộ phận Xe nâng', name: 'Xuất tàu', mode: 'XUAT_TAU', step: 'XT_EXPORT', action: 'Xác nhận xuất tàu', doneWord: 'xuất tàu' },
 };
-const QUICK_YEARS = [2005, 2008, 2010, 2012, 2015, 2017, 2018, 2019, 2020, 2021, 2022, 2023];
 const PAGE = 15;
 type Tab = 'TODO' | 'DONE' | 'ALL';
 
@@ -58,12 +55,7 @@ export const VesselFieldMobile: React.FC<{
   const [shown, setShown] = useState(PAGE);
   const [recent, setRecent] = useState<{ no: string; truck?: string; at: string; code?: string }[]>([]);
   const [truckNo, setTruckNo] = useState('');
-  const [condition, setCondition] = useState<FieldConditionClass | ''>('');
-  const [damage, setDamage] = useState<string[]>([]);
-  const [damageNote, setDamageNote] = useState('');
-  const [stuffing, setStuffing] = useState<FieldStuffingClass | ''>('');
-  const [cleaning, setCleaning] = useState<FieldCleaningItem[]>([]);
-  const [year, setYear] = useState('');
+  const [insp, setInsp] = useState<InspectionValue>(EMPTY_INSPECTION); // UI-02: form Giám định dùng chung
   const [slot, setSlot] = useState<SlotValue>(EMPTY_SLOT);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,12 +70,7 @@ export const VesselFieldMobile: React.FC<{
     setItemId('');
     setCode('');
     setTruckNo('');
-    setCondition('');
-    setDamage([]);
-    setDamageNote('');
-    setStuffing('');
-    setCleaning([]);
-    setYear('');
+    setInsp(EMPTY_INSPECTION);
     setSlot(EMPTY_SLOT);
   };
 
@@ -122,18 +109,12 @@ export const VesselFieldMobile: React.FC<{
     pick(hit.item);
   };
 
-  const toggleCleaning = (c: FieldCleaningItem) => {
-    if (c === 'KHÔNG VỆ SINH') return setCleaning(['KHÔNG VỆ SINH']);
-    const rest = cleaning.filter((x) => x !== 'KHÔNG VỆ SINH');
-    setCleaning(rest.includes(c) ? rest.filter((x) => x !== c) : [...rest, c]);
-  };
-
-  const remarks = [...damage, ...damageNote.split(',').map((s) => s.trim()).filter(Boolean)];
+  const remarks = inspectionRemarks(insp);
   const ready = Boolean(
     item &&
       (isPlace
         ? isSlotComplete(slot)
-        : truckNo && (!isInspect || (condition && (condition === 'AV' || remarks.length > 0) && stuffing && cleaning.length > 0 && /^\d{4}$/.test(year))))
+        : truckNo && (!isInspect || isInspectionComplete(insp)))
   );
 
   const confirm = () => {
@@ -144,8 +125,8 @@ export const VesselFieldMobile: React.FC<{
       if (isInspect) {
         next = inspectVesselImportItem(state, {
           listId: list.id, itemId: item.id, actualContainerNo: code, truckNo,
-          conditionClass: condition as FieldConditionClass, damageRemarks: remarks, stuffingClass: stuffing as FieldStuffingClass,
-          cleaningItems: cleaning, manufactureYear: Number(year),
+          conditionClass: insp.condition as FieldConditionClass, damageRemarks: remarks, stuffingClass: insp.stuffing as FieldStuffingClass,
+          cleaningItems: insp.cleaning, manufactureYear: Number(insp.year),
         });
       } else if (isPlace) {
         next = updateContainerLocation(state, { containerNo: item.containerNo, ...slot, reason: `Xe nâng hạ cont NHẬP TÀU (tàu ${list.vesselName})` });
@@ -270,62 +251,7 @@ export const VesselFieldMobile: React.FC<{
                 </div>
               )}
 
-              {isInspect && (
-                <>
-                  <div className="space-y-1.5">
-                    <span className="block text-xs font-bold text-slate-800">TRẠNG THÁI : DAMAGE / AV *</span>
-                    <ChoiceButtons
-                      options={['AV', 'DAMAGE'] as const}
-                      value={condition}
-                      onChange={setCondition}
-                      tone={(v) => (v === 'DAMAGE' ? 'border-rose-600 bg-rose-600 text-white' : 'border-emerald-600 bg-emerald-600 text-white')}
-                    />
-                    {condition === 'DAMAGE' && (
-                      <div className="space-y-2 rounded-lg border border-rose-200 bg-rose-50/40 p-2.5">
-                        <div className="flex flex-wrap gap-1.5">
-                          {DAMAGE_QUICK_SUGGESTIONS.map((d) => (
-                            <button key={d} type="button" onClick={() => setDamage(damage.includes(d) ? damage.filter((x) => x !== d) : [...damage, d])}
-                              className={`rounded border px-2 py-1 text-xs font-medium ${damage.includes(d) ? 'border-rose-600 bg-rose-600 text-white' : 'border-slate-300 bg-white text-slate-700'}`}>
-                              {d}
-                            </button>
-                          ))}
-                        </div>
-                        <input value={damageNote} onChange={(e) => setDamageNote(e.target.value)} placeholder="Ghi chú thêm hư hỏng..." className={inputCls} />
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <span className="block text-xs font-bold text-slate-800">PHÂN LOẠI ĐÓNG HÀNG : M / K / E *</span>
-                    <ChoiceButtons options={['M', 'K', 'E'] as const} value={stuffing} onChange={setStuffing} cols={3} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <span className="block text-xs font-bold text-slate-800">TÌNH TRẠNG VỆ SINH (chọn 1 hoặc nhiều) *</span>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {CLEANING_ITEM_OPTIONS.map((c) => {
-                        const on = cleaning.includes(c);
-                        return (
-                          <button key={c} type="button" onClick={() => toggleCleaning(c)}
-                            className={`flex items-center justify-between rounded-lg border px-2.5 py-2 text-left text-xs font-semibold ${on ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-slate-300 bg-white text-slate-700'}`}>
-                            <span>{c}</span>{on && <span className="font-bold text-blue-600">✓</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <span className="block text-xs font-bold text-slate-800">AGE (năm sản xuất: 2001, 2002...) *</span>
-                    <input type="number" inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value)} placeholder="Nhập 4 chữ số..." className={`${inputCls} py-2.5 font-mono text-sm font-bold`} />
-                    <div className="grid grid-cols-6 gap-1">
-                      {QUICK_YEARS.map((y) => (
-                        <button key={y} type="button" onClick={() => setYear(String(y))}
-                          className={`rounded border py-1.5 font-mono text-[11px] font-bold ${year === String(y) ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white text-slate-700'}`}>
-                          {y}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
+              {isInspect && <InspectionFields value={insp} onChange={setInsp} />}
 
               <button type="button" onClick={confirm} disabled={!ready} className={`${primaryBtn} w-full py-3 text-sm`}>
                 <CheckCircle2 className="h-4 w-4" />
