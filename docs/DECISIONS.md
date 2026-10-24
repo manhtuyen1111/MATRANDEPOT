@@ -652,6 +652,11 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-040, DEC-041, DEC-080
 - Quyết định: Danh sách cont CHỜ BÁO GIÁ là **bảng full chiều ngang giống Tồn vỏ**: Mã hồ sơ (mở hồ sơ), Số container (icon khóa), Size, Type, Hãng tàu, Date in, Trạng thái, Lưu bãi, Vị trí, **Hư hỏng (giám định)**, Ghi chú (nền vàng). Có lọc số cont / size / type, chọn 20 / 50 / 100 dòng, Xuất Excel. **Bấm dòng → cửa sổ trượt bên phải** nhập **Remark sửa chữa + Giờ công** → "Cập nhật sang Chờ sửa chữa" (cùng hàm `approveDamageQuotation`, quy tắc DEC-040 / 041 không đổi).
 
+### DEC-085 — Danh sách chờ Vệ sinh / Xe nâng: số cont thẳng cột
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-083
+- Quyết định: Mỗi dòng danh sách chờ (Chờ vệ sinh, Chờ hạ vỏ, Chờ cấp vỏ, Chờ sửa chữa) gồm **2 tầng**: tầng 1 các **cột cố định** — **Số container** (cột rộng cố định bên trái, luôn thẳng hàng dọc) | Size / Type | Vị trí (canh phải); tầng 2 chữ nhỏ — **nhãn tác nghiệp + tên tàu** | thông tin phụ (số xe • SĐT, giờ công). Tên tàu dài / ngắn không làm lệch cột số cont.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -741,6 +746,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-084 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-085 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

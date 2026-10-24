@@ -4,7 +4,7 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-084**), **đã push đầy đủ lên GitHub 2026-10-24**, chưa merge vào `main`. Hôm nay: Tồn vỏ (Lưu bãi, Date in, khóa tại icon, hàng loạt — DEC-067, 074); mã HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập / Xuất tàu** đầy đủ (DEC-069 → 073, 075); In EEIR + phiếu thu A5 trên 1 tờ A4 (DEC-072, 076); Phiếu thu: phiếu thu trước theo biểu giá × số lượng, phiếu thu mẹ liên kết từng lần trừ (DEC-077, 079); menu báo việc chờ + biểu tượng mobile thẳng hàng (DEC-075, 078); **quy chuẩn trang nhiều dữ liệu** (DEC-080). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-085**), **đã push đầy đủ lên GitHub 2026-10-24**, chưa merge vào `main`. Hôm nay: Tồn vỏ (Lưu bãi, Date in, khóa tại icon, hàng loạt — DEC-067, 074); mã HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập / Xuất tàu** đầy đủ (DEC-069 → 073, 075); In EEIR + phiếu thu A5 trên 1 tờ A4 (DEC-072, 076); Phiếu thu: phiếu thu trước theo biểu giá × số lượng, phiếu thu mẹ liên kết từng lần trừ (DEC-077, 079); menu báo việc chờ + biểu tượng mobile thẳng hàng (DEC-075, 078); **quy chuẩn trang nhiều dữ liệu** (DEC-080). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
 
 **Điểm dừng 2026-10-24 (tối — tạm nghỉ):** đã kiểm tra + **push đầy đủ lên GitHub** (DEC-050 → DEC-080). **Đọc mục I trước khi làm việc tiếp theo.** Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
 Kiểm thử mới nhất: `npm test` **90/90 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
@@ -97,6 +97,7 @@ Kiểm thử mới nhất: `npm test` **90/90 pass** (3 file test) • `npm run 
 | P4-pre14 | Vị trí theo cấu hình thực tế của Block; form thêm vị trí BLOCK- + mô tả | 2026-10-24 | DEC-082 | **87/87 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-13 | Vệ sinh / Xe nâng: nhãn tác nghiệp (Hạ vỏ / Cấp vỏ / Nhập tàu + tàu / Xuất tàu + tàu) | 2026-10-24 | DEC-083 | **89/89 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-14 | Báo giá → Chờ báo giá: bảng như Tồn vỏ + cửa sổ trượt nhập báo giá | 2026-10-24 | DEC-084 | **90/90 • build PASS** | agent/claude/p4-prep-xlsx |
+| P7-15 | Danh sách chờ Vệ sinh / Xe nâng: số cont thẳng cột, nhãn tác nghiệp tầng 2 | 2026-10-24 | DEC-085 | 90/90 • build PASS; **chưa có test hiển thị dòng** (danh sách thu gọn mặc định) | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -203,3 +204,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-24 — Claude Code: P4-pre14 (DEC-082) vị trí theo cấu hình Block. 87/87 • build PASS.
 - 2026-10-24 — Claude Code: P7-13 (DEC-083) nhãn tác nghiệp Vệ sinh / Xe nâng. 89/89 • build PASS.
 - 2026-10-24 — Claude Code: P7-14 (DEC-084) Chờ báo giá như Tồn vỏ. 90/90 • build PASS.
+- 2026-10-24 — Claude Code: P7-15 (DEC-085) danh sách chờ số cont thẳng cột.

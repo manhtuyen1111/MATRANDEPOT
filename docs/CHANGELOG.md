@@ -122,6 +122,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-084)
 - Báo giá → Chờ báo giá: bảng giống Tồn vỏ (thêm cột Hư hỏng), bấm dòng mở cửa sổ trượt nhập remark + giờ công. Kiểm thử: 90/90 pass.
 
+### Changed (2026-10-24, DEC-085)
+- Danh sách chờ Vệ sinh / Xe nâng: số cont ở cột cố định (thẳng hàng), nhãn tác nghiệp + tên tàu xuống dòng 2.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 
