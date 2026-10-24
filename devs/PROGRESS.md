@@ -4,28 +4,30 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-096**), **đã push đầy đủ lên GitHub 2026-10-24**, chưa merge vào `main`. Hôm nay: Tồn vỏ (Lưu bãi, Date in, khóa tại icon, hàng loạt — DEC-067, 074); mã HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập / Xuất tàu** đầy đủ (DEC-069 → 073, 075); In EEIR + phiếu thu A5 trên 1 tờ A4 (DEC-072, 076); Phiếu thu: phiếu thu trước theo biểu giá × số lượng, phiếu thu mẹ liên kết từng lần trừ (DEC-077, 079); menu báo việc chờ + biểu tượng mobile thẳng hàng (DEC-075, 078); **quy chuẩn trang nhiều dữ liệu** (DEC-080). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-096**), **đã push đầy đủ lên GitHub 2026-10-24 (tối)**, chưa merge vào `main`. Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
-**Điểm dừng 2026-10-24 (tối — tạm nghỉ):** đã kiểm tra + **push đầy đủ lên GitHub** (DEC-050 → DEC-080). **Đọc mục I trước khi làm việc tiếp theo.** Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
+**Điểm dừng 2026-10-24 (phiên 2 — tạm nghỉ):** đã kiểm tra + **push đầy đủ lên GitHub** (DEC-050 → DEC-096). **Đọc mục I trước khi làm việc tiếp theo.** Để mở GĐ 4 Database cần bạn chốt: OPEN-003, Q-037 → Q-040 (xem `docs/DATABASE_PLATFORM_ADVICE.md`).
 Kiểm thử mới nhất: `npm test` **96/96 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
 |---|---|---|
-| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push đầy đủ** (DEC-050 → DEC-080, 2026-10-24). **Thử trên trình duyệt + in giấy thật** (mục F, F2) rồi tạo Pull Request merge vào `main` | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
+| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push đầy đủ** (DEC-050 → DEC-096, 2026-10-24). **Thử trên trình duyệt + in giấy thật** (mục F, F2) rồi tạo Pull Request merge vào `main` | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
 | 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |
 | 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
 | 4 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
 | 5 | Điểm A.5 đã xác nhận 2026-10-24 (a, b, d, e đúng; f đã làm — DEC-081). **Còn (c)**: sắp xếp danh sách tàu theo size trước (20 → 40) rồi số cont A→Z — đúng chưa? | Đổi được nhanh nếu bạn muốn khác |
+| 6 | **Nền tảng database (Q-040)**: đề xuất **Supabase vùng Singapore, gói Pro + PITR, 3 môi trường dev / staging / production**; hỏi pháp chế có bắt buộc lưu dữ liệu tại Việt Nam không (nếu có → Postgres trên cloud VN, lược đồ dùng lại được). **Sao lưu (Q-039)**: PITR 7 ngày + dump mã hóa hằng đêm ra kho ngoài + diễn tập khôi phục mỗi quý. Còn Q-037 (ảnh), Q-038 (số người dùng cùng lúc) | Chặn P4-01 cùng OPEN-003 — chi tiết `docs/DATABASE_PLATFORM_ADVICE.md` |
 
 ## B. VIỆC TIẾP THEO (đề xuất theo thứ tự)
 | Mã | Việc | Giao cho | Ghi chú |
 |---|---|---|---|
 | P3-T | Bạn chạy `npm run dev`, thử các luồng ở mục F + F2 (**Tồn vỏ hàng loạt, Nhập / Xuất tàu, in EEIR + phiếu thu A4, phiếu thu trước, chi tiết trượt phải**), **in thử giấy thật**, báo lỗi | Bạn | Agent chưa thử được trên trình duyệt |
-| P4-01 | Viết lại schema Supabase (bảng, bộ đếm mã, RLS, **index theo bộ lọc, phân trang con trỏ, partition nhật ký**) | Claude Code | ⏸ Chờ danh mục trạng thái (A.2); làm theo DEC-066 (DATABASE_CONTRACT mục 10) |
+| P4-01 | Viết lại schema Supabase (bảng, bộ đếm mã, RLS, **index theo bộ lọc, phân trang con trỏ, partition nhật ký**) | Claude Code | ⏸ Chờ A.2 (trạng thái) + A.6 (nền tảng); làm theo DEC-066 (DATABASE_CONTRACT mục 10) + DATABASE_PLATFORM_ADVICE (11 tình huống vận hành) |
 | P4-02 | RPC Hạ vỏ + thanh toán + pgTAP | Claude Code | Sau P4-01 |
 | P7-DB | Bảng `vessel_lists` / `vessel_list_items` + RPC Nhập tàu / Xuất tàu (DATABASE_CONTRACT mục 8) | Claude Code | Làm cùng P4-01 |
 | UI-01 | Rà soát giao diện mobile các màn hiện trường | Antigravity | Không đụng `src/services/` |
+| DB-OPS | Dựng staging, tác vụ dump hằng đêm ra kho ngoài, diễn tập khôi phục lần đầu | Bạn + Claude Code | Sau khi chốt A.6; agent chỉ viết script / hướng dẫn, bạn tạo project và giữ khóa |
 
 ## C. LOGIC ĐÃ CHỐT (tóm tắt — chi tiết ở `docs/DECISIONS.md`)
 | Chủ đề | Quy tắc | DEC |
@@ -227,3 +229,21 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-24 — Claude Code: P7-23 (DEC-094) Đảo chuyển ô trạng thái + tiến độ.
 - 2026-10-24 — Claude Code: P7-24 (DEC-095) Đảo chuyển tiến độ + ghi chú.
 - 2026-10-24 — Claude Code: P7-25 (DEC-096) đồng bộ ô trạng thái Đảo chuyển.
+
+### I.2 — Bổ sung sau phiên 2 (2026-10-24)
+
+**Cho bạn:**
+1. **Bấm Reset demo** trước khi thử: dữ liệu mẫu đã đổi (BLOCK-B thành Block chỉ có tên — DEC-082). Dữ liệu cũ trên trình duyệt vẫn giữ cấu hình Block cũ.
+2. Ưu tiên thử trên **điện thoại thật**: Xe nâng → Đảo chuyển (DEC-094 → 096), danh sách chờ Vệ sinh / Xe nâng (DEC-089), Giám định / Xe nâng → Nhập / Xuất tàu. Máy rất hẹp (~360px) với mã Block dài có thể bị dồn dòng — chụp ảnh gửi nếu thấy rối.
+3. Thử **Báo giá 2 bước** (Cập nhật → Xác nhận chờ sửa chữa, cả hàng loạt) và **khách hàng gõ tay** ở Hạ vỏ / Cấp vỏ (khách ngoài Danh mục chỉ thanh toán Tiền mặt / Chuyển khoản).
+4. In thử **EEIR Nhập / Xuất tàu** từ hồ sơ NT- / XT-.
+5. Đọc `docs/DATABASE_PLATFORM_ADVICE.md` và trả lời **A.2 + A.6** để mở GĐ 4 Database.
+
+**Cho agent:**
+1. Hiện tới **DEC-096**; mỗi yêu cầu mới → 1 DEC, 2 commit (code / tài liệu).
+2. File hay sửa phiên này: `src/features/forklift/YardShiftWorkspace.tsx`, `src/features/field-queues/FieldQueueWorkspaces.tsx` (`QueueListRow`), `src/features/quotation/QuotationWorkspace.tsx`, `src/components/InspectionFields.tsx`, `src/components/ReceiptPrint.tsx` (`VesselEeirPrintSheet`, `ConditionBox`), `src/services/core.ts` (`blockDimensions`, `validateTargetSlot`).
+3. **Vị trí:** chỉ dùng `SlotPicker` / `isSlotComplete(slot, state)` / `blockDimensions`. Chỉ chặn trùng khi đủ 4 phần (DEC-087).
+4. **Danh sách mobile:** số cont và vị trí phải thẳng cột. Ô nhãn bên trái cùng kích thước (`5rem`, `px-1.5 py-1 text-[10px]` — DEC-096).
+5. **Đã gặp lại 3 lần** lỗi khi sửa bằng perl / sed: mất `\` trong regex (`\s` → `s`), mất `${…}`, chèn lên đầu file khi dùng dấu phân cách `|`. Một số file dùng **CRLF**, nên chỉ mục / regex có thể không khớp. → **Dùng Edit / Write**; nếu bắt buộc dùng perl thì kiểm tra lại dòng vừa sửa bằng `grep` / `sed -n` ngay sau đó.
+6. **Database:** đọc `DATABASE_CONTRACT.md` mục 8–10 + `DATABASE_PLATFORM_ADVICE.md` mục 5 (11 tình huống: mất mạng hiện trường, thao tác đồng thời, webhook lặp, chuyển Demo → thật…) trước khi viết P4-01. **Chỉ viết migration, không apply.**
+- 2026-10-24 (phiên 2, tối) — Claude Code: tư vấn nền tảng database (docs/DATABASE_PLATFORM_ADVICE.md, Q-040); cập nhật tiến độ, bàn giao, mục I.2; kiểm tra + push đầy đủ (DEC-050 → DEC-096).

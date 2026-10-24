@@ -158,6 +158,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-096)
 - Đảo chuyển: ô AV / DAMAGE cùng kích thước ô tác nghiệp ở danh sách Xe nâng.
 
+### Docs (2026-10-24, phiên 2)
+- Tư vấn nền tảng database: docs/DATABASE_PLATFORM_ADVICE.md (Supabase Singapore + PITR, 3 môi trường, sao lưu 3-2-1, 11 tình huống vận hành, lộ trình); Q-040 mới.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

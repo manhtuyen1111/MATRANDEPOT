@@ -65,7 +65,8 @@ Cập nhật lần cuối: 2026-10-22.
 - [x] Q-036: Giới hạn lọc báo cáo, ngưỡng xuất Excel phía máy chủ, thời gian lưu dữ liệu (DEC-066).
 - [ ] Q-037: Ảnh giám định / sửa chữa — số ảnh mỗi lượt, giữ ảnh gốc bao lâu (ảnh hưởng dung lượng Storage).
 - [ ] Q-038: Số người dùng đồng thời giờ cao điểm (chọn gói Supabase).
-- [ ] Q-039: Chính sách sao lưu — khôi phục về bao lâu trước, có cần bản sao ngoài Supabase.
+- [ ] Q-039: Chính sách sao lưu — khôi phục về bao lâu trước, có cần bản sao ngoài Supabase. **Đề xuất:** PITR 7 ngày (mất tối đa ~5 phút dữ liệu) + dump mã hóa hằng đêm ra kho ngoài (30 ngày / 12 tháng / 10 năm) + diễn tập khôi phục mỗi quý — `docs/DATABASE_PLATFORM_ADVICE.md` mục 4.
+- [ ] Q-040: Nơi đặt database và ngân sách tháng — **đề xuất** Supabase vùng Singapore, gói Pro + PITR, 3 môi trường dev / staging / production; cần xác nhận có yêu cầu lưu dữ liệu tại Việt Nam không (Nghị định 53/2022) — `docs/DATABASE_PLATFORM_ADVICE.md` mục 1–3.
 
 ## 9. Quy tắc quản lý câu hỏi
 

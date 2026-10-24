@@ -232,6 +232,8 @@ Các quan hệ một-nhiều, nhiều-nhiều và điều kiện bắt buộc ph
 
 ## 10. Hiệu năng & lưu trữ dữ liệu lớn (DEC-066 — bắt buộc khi viết schema P4-01)
 
+> Nơi đặt database, gói, sao lưu 3-2-1, tình huống vận hành (mất mạng hiện trường, thao tác đồng thời, chuyển từ Demo sang thật…): xem `docs/DATABASE_PLATFORM_ADVICE.md` (đề xuất, chờ chốt Q-037 → Q-040).
+
 ### 10.1. Quy mô thiết kế
 | Bảng | Mỗi tháng | 10 năm |
 |---|---|---|
