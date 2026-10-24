@@ -620,6 +620,14 @@ Quy ước trạng thái:
   - Nút tác nghiệp cùng hàng nút Tra cứu; form tác nghiệp mở dưới khung lọc khi bấm.
   - Áp dụng ngay: Phiếu thu, Tồn vỏ, Văn phòng → Nhập tàu / Xuất tàu, mọi Báo cáo, Hồ sơ container.
 
+### DEC-081 — EEIR cho hồ sơ Nhập tàu / Xuất tàu; xác nhận các điểm A.5 (2026-10-24)
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-069, DEC-072, DEC-076
+- Quyết định:
+  - Hồ sơ **NT-** và **XT-** có **EEIR đầy đủ**, cùng khung với EEIR Hạ vỏ / Cấp vỏ (khổ A5): đầu công ty, **Số = mã NT- / XT-**, **TÁC NGHIỆP: NHẬP TÀU / XUẤT TÀU**; số cont, size/type, hãng tàu, **tên tàu**, thời gian nhập / xuất tàu, **số xe**, thời gian vào bãi (NT) / thời gian OUT + Date in (XT), vị trí hạ / lấy, "Không thu phí (tác nghiệp tàu)"; khối **TÌNH TRẠNG VỎ (GIÁM ĐỊNH)** — NT: kết quả Giám định lượt này; XT: tình trạng hiện tại + Giám định lúc cont vào bãi; chữ ký Lái xe / Đại diện công ty (`VesselEeirPrintSheet`).
+  - In từ hồ sơ container: nút **In EEIR NHẬP TÀU** (từ khi Giám định xác nhận) / **In EEIR XUẤT TÀU** (khi cont đã OUT).
+  - Người dùng **xác nhận** các điểm agent đặt ở DEC-070 / DEC-077: (a) xóa danh sách tàu chỉ khi chưa tác nghiệp cont nào; (b) đổi hãng tàu Nhập tàu chỉ khi chưa giám định; (d) Giám định Nhập tàu không bắt buộc chụp ảnh; (e) cột số lượng chỉ ở phiếu thu trước. Điểm (c) sắp xếp size → số cont: **chưa có ý kiến**, đang giữ như DEC-070.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -709,6 +717,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-080 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-081 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

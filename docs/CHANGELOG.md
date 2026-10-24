@@ -107,6 +107,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Added (2026-10-24, DEC-080)
 - Quy chuẩn trang nhiều dữ liệu (docs/UI_DATA_LIST_STANDARD.md): danh sách full màn hình, chi tiết mở cửa sổ trượt bên phải (DetailDrawer), chọn 20 / 50 / 100 dòng / trang. Áp dụng: Phiếu thu, Tồn vỏ, Nhập / Xuất tàu (Văn phòng), Báo cáo, Hồ sơ container. Kiểm thử: 83/83 pass.
 
+### Added (2026-10-24, DEC-081)
+- EEIR cho hồ sơ Nhập tàu / Xuất tàu (cùng khung EEIR Hạ vỏ / Cấp vỏ, có tình trạng vỏ Giám định, tên tàu, số xe); nút In EEIR NHẬP TÀU / XUẤT TÀU trong hồ sơ. Kiểm thử: 84/84 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

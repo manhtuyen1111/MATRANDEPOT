@@ -4,10 +4,10 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-080**), **đã push đầy đủ lên GitHub 2026-10-24**, chưa merge vào `main`. Hôm nay: Tồn vỏ (Lưu bãi, Date in, khóa tại icon, hàng loạt — DEC-067, 074); mã HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập / Xuất tàu** đầy đủ (DEC-069 → 073, 075); In EEIR + phiếu thu A5 trên 1 tờ A4 (DEC-072, 076); Phiếu thu: phiếu thu trước theo biểu giá × số lượng, phiếu thu mẹ liên kết từng lần trừ (DEC-077, 079); menu báo việc chờ + biểu tượng mobile thẳng hàng (DEC-075, 078); **quy chuẩn trang nhiều dữ liệu** (DEC-080). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-081**), **đã push đầy đủ lên GitHub 2026-10-24**, chưa merge vào `main`. Hôm nay: Tồn vỏ (Lưu bãi, Date in, khóa tại icon, hàng loạt — DEC-067, 074); mã HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập / Xuất tàu** đầy đủ (DEC-069 → 073, 075); In EEIR + phiếu thu A5 trên 1 tờ A4 (DEC-072, 076); Phiếu thu: phiếu thu trước theo biểu giá × số lượng, phiếu thu mẹ liên kết từng lần trừ (DEC-077, 079); menu báo việc chờ + biểu tượng mobile thẳng hàng (DEC-075, 078); **quy chuẩn trang nhiều dữ liệu** (DEC-080). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
 
 **Điểm dừng 2026-10-24 (tối — tạm nghỉ):** đã kiểm tra + **push đầy đủ lên GitHub** (DEC-050 → DEC-080). **Đọc mục I trước khi làm việc tiếp theo.** Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
-Kiểm thử mới nhất: `npm test` **83/83 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+Kiểm thử mới nhất: `npm test` **84/84 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
@@ -16,7 +16,7 @@ Kiểm thử mới nhất: `npm test` **83/83 pass** (3 file test) • `npm run 
 | 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |
 | 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
 | 4 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
-| 5 | **Xác nhận các điểm agent tự đặt hôm nay**: (a) xóa danh sách tàu chỉ khi chưa tác nghiệp cont nào; (b) đổi hãng tàu nhập tàu chỉ khi chưa giám định; (c) "ABC - 20/40" = xếp size trước rồi số cont A→Z; (d) giám định Nhập tàu không bắt buộc chụp ảnh; (e) cột SỐ LƯỢNG chỉ có ở phiếu thu trước (Hạ vỏ / Cấp vỏ chưa có); (f) hồ sơ NT- / XT- chưa có EEIR | Đổi được nhanh nếu bạn muốn khác |
+| 5 | Điểm A.5 đã xác nhận 2026-10-24 (a, b, d, e đúng; f đã làm — DEC-081). **Còn (c)**: sắp xếp danh sách tàu theo size trước (20 → 40) rồi số cont A→Z — đúng chưa? | Đổi được nhanh nếu bạn muốn khác |
 
 ## B. VIỆC TIẾP THEO (đề xuất theo thứ tự)
 | Mã | Việc | Giao cho | Ghi chú |
@@ -93,6 +93,7 @@ Kiểm thử mới nhất: `npm test` **83/83 pass** (3 file test) • `npm run 
 | P7-09 | Menu: biểu tượng mobile + số đếm thẳng hàng (3 cột cố định) | 2026-10-24 | DEC-078 | **78/78 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-10 | Phiếu thu: sắp lại cột (Phương thức TT, Thời gian / Nhân viên, Trạng thái cạnh Đã in); phiếu thu mẹ liên kết từng lần trừ (chứng từ, hồ sơ, số lượt, còn lại) | 2026-10-24 | DEC-079 | **81/81 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-11 | Quy chuẩn trang nhiều dữ liệu (docs/UI_DATA_LIST_STANDARD.md): chi tiết trượt phải, chọn 20 / 50 / 100 dòng; áp dụng Phiếu thu, Tồn vỏ, Nhập / Xuất tàu, Báo cáo, Hồ sơ | 2026-10-24 | DEC-080 | **83/83 • build PASS**; chưa thử trên trình duyệt | agent/claude/p4-prep-xlsx |
+| P7-12 | EEIR cho hồ sơ Nhập tàu / Xuất tàu + nút in trong hồ sơ | 2026-10-24 | DEC-081 | **84/84 • build PASS**; chưa thử in giấy | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -194,3 +195,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 5. Màn mobile mới → thêm `mobile: true`, số đếm việc chờ (`badges`), cập nhật smoke test (hiện **10** biểu tượng mobile).
 6. Xong việc: `npm test` + `npm run build` pass → ghi DEC + CHANGELOG + PROGRESS (C, D, G) + AGENTS.md mục 8 nếu là lưu ý chung → commit 2 nhóm (code / tài liệu) → **hỏi trước khi push**.
 7. Test xlsx Tổng hợp đã nâng timeout 20s; nếu vẫn lỗi lẻ tẻ thì chạy lại trước khi kết luận.
+- 2026-10-24 — Claude Code: P7-12 (DEC-081) EEIR Nhập / Xuất tàu; ghi nhận xác nhận A.5. 84/84 • build PASS.
