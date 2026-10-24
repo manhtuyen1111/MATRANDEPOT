@@ -676,6 +676,13 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-086
 - Quyết định: Chờ báo giá có **Tìm hàng loạt** giống Tồn vỏ (dán danh sách số cont, báo số không có trong Chờ báo giá) và **ô chọn từng dòng / chọn tất cả theo bộ lọc** → **Xác nhận chờ sửa chữa hàng loạt**. Áp dụng từng cont qua `confirmQuotationToRepair` (`bulkConfirmQuotationToRepair`); cont **chưa cập nhật tình trạng sửa chữa / giờ công được bỏ qua và báo lại**, không chặn cả lô.
 
+### DEC-089 — Danh sách chờ Vệ sinh / Xe nâng: ô tác nghiệp riêng bên trái, tên tàu tách riêng
+
+- Trạng thái: CONFIRMED (2026-10-24) — thay bố cục DEC-085
+- Quyết định: Mỗi dòng danh sách chờ (`QueueListRow`):
+  - **Bên trái**: 1 **ô TÁC NGHIỆP** cố định (HẠ VỎ / CẤP VỎ / NHẬP TÀU / XUẤT TÀU — chỉ tên tác nghiệp, mỗi loại 1 màu).
+  - **Bên phải** — thông tin của tác nghiệp: tầng 1 **Số container** (cột cố định, thẳng hàng) | Size / Type | Vị trí; tầng 2 **Tàu …** (tách khỏi nhãn tác nghiệp) | thông tin phụ (số xe • SĐT, giờ công).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -765,6 +772,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-088 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-089 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
