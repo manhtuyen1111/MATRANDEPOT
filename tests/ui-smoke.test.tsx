@@ -464,12 +464,12 @@ describe('DEC-090: Xe nâng → Đảo chuyển — vị trí thẳng cột', ()
     const html = renderToString(<YardShiftWorkspace state={base} onUpdateState={noop} />).replace(/<!-- -->/g, '');
     const rows = html.match(/data-testid="shift-row"/g)?.length || 0;
     expect(rows).toBeGreaterThan(0);
-    // DEC-091: vị trí tách 4 cột BLOCK | BAY | ROW | TIER, cùng lưới với hàng tiêu đề; thiếu thì để trống
-    const grid = 'grid grid-cols-[8.5rem_3rem_3rem_3rem] items-center gap-2';
+    // DEC-092: 1 dòng số cont | size/type | "BLOCK-A / 04-02-01"; ô Block rộng = mã Block dài nhất (ch) → Bay-Row-Tier thẳng cột
     expect(html.match(/data-testid="shift-slot"/g)?.length).toBe(rows);
-    expect(html.split(grid).length - 1).toBe(rows + 1);
-    expect(html).toMatch(/>Block<\/span><span>Bay<\/span><span>Row<\/span><span>Tier<\/span>/);
-    expect(html).toMatch(/>BLOCK-A<\/span><span[^>]*>04<\/span><span[^>]*>02<\/span><span[^>]*>01<\/span>/);
-    expect(html).toMatch(/>BLOCK-B<\/span><span[^>]*><\/span><span[^>]*><\/span><span[^>]*><\/span>/);
+    const ch = Math.max(5, ...base.yardBlocks.map((b) => b.blockCode.length));
+    expect(html.split(`style="width:${ch}ch"`).length - 1).toBe(rows);
+    expect(html).toMatch(/>BLOCK-A<\/span><span class="truncate"> \/ 04-02-01<\/span>/);
+    expect(html).toMatch(/>BLOCK-B<\/span><span class="truncate"><\/span>/);
+    expect(html).not.toContain('>Tier</span>');
   });
 });

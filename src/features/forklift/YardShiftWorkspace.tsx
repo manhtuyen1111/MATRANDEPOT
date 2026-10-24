@@ -18,8 +18,9 @@ import {
 } from '../../components/shared';
 
 const PAGE_SIZE = 20;
-// DEC-091: lưới 4 cột vị trí dùng chung cho tiêu đề và từng thẻ → Block thẳng Block, Bay thẳng Bay...
-const SLOT_GRID = "grid grid-cols-[8.5rem_3rem_3rem_3rem] items-center gap-2";
+// DEC-092: phần chi tiết vị trí "17-02-02" (bỏ chiều không có) — đi sau ô tên Block rộng cố định
+const slotDetail = (c: { currentBay: string | null; currentRow: string | null; currentTier: string | null }) =>
+  [c.currentBay, c.currentRow, c.currentTier].filter(Boolean).join("-");
 const PROGRESS_FILTERS: ContainerProgress[] = ['CHO_SUA_CHUA', 'CHO_BAO_GIA', 'CHO_VE_SINH', 'DA_LAP_LENH_CAP', 'SAN_SANG'];
 
 // BỘ PHẬN XE NÂNG — ĐẢO CHUYỂN (CR-01): tác nghiệp mobile (max-w-lg như các màn hiện trường), có lịch sử
@@ -32,6 +33,8 @@ export const YardShiftWorkspace: React.FC<{
   const [size, setSize] = useState('ALL');
   const [progress, setProgress] = useState<'ALL' | ContainerProgress>('ALL');
   const [shown, setShown] = useState(PAGE_SIZE);
+  // DEC-092: ô tên Block rộng đúng bằng mã Block dài nhất (đơn vị ch, chữ đều nét) → các phần Bay-Row-Tier thẳng cột
+  const blockCh = Math.max(5, ...state.yardBlocks.map((b) => b.blockCode.length));
   const [selectedId, setSelectedId] = useState('');
   const [slot, setSlot] = useState<SlotValue>(EMPTY_SLOT);
   const [note, setNote] = useState('');
@@ -134,15 +137,6 @@ export const YardShiftWorkspace: React.FC<{
         </div>
       </div>
 
-      {/* Tiêu đề cột vị trí — thẳng hàng với 4 ô vị trí của từng thẻ (DEC-091) */}
-      {inYard.length > 0 && (
-        <div className={`sticky top-0 z-10 rounded-md border border-slate-200 bg-slate-100 px-3 py-1.5 text-[10px] font-black uppercase text-slate-600 ${SLOT_GRID}`}>
-          <span>Block</span>
-          <span>Bay</span>
-          <span>Row</span>
-          <span>Tier</span>
-        </div>
-      )}
       <ul className="space-y-1.5">
         {inYard.length === 0 ? (
           <li className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center text-xs text-slate-500">Không có container phù hợp.</li>
@@ -154,20 +148,18 @@ export const YardShiftWorkspace: React.FC<{
                 onClick={() => { setSelectedId(c.id); setSlot(EMPTY_SLOT); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className={`w-full rounded-lg border px-3 py-2.5 text-left text-xs ${selectedId === c.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white active:bg-slate-50'}`}
               >
-                {/* DEC-091: tầng 1 số cont | size/type | trạng thái • tiến độ; tầng 2 VỊ TRÍ tách 4 cột BLOCK | BAY | ROW | TIER thẳng cột (thiếu thì để trống) */}
-                <div className="grid grid-cols-[8.5rem_3rem_1fr] items-center gap-2" data-testid="shift-row">
+                {/* DEC-092: 1 dòng SỐ CONT | SIZE/TYPE | VỊ TRÍ "BLOCK-A / 17-02-02"; ô Block rộng cố định (mã dài nhất) → Block thẳng Block, Bay thẳng Bay */}
+                <div className="grid grid-cols-[7rem_2.75rem_1fr] items-center gap-2" data-testid="shift-row">
                   <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
                   <span className="font-mono text-slate-600">{c.size}/{c.type}</span>
-                  <span className="truncate text-[11px] text-slate-500">
-                    <span className={c.conditionClass === 'DAMAGE' ? 'font-semibold text-rose-700' : 'font-semibold text-emerald-700'}>{c.conditionClass}</span>
-                    {' • '}{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}
+                  <span className="flex min-w-0 font-mono text-[11px] font-bold text-slate-900" data-testid="shift-slot">
+                    <span className="shrink-0" style={{ width: `${blockCh}ch` }}>{c.currentBlock || ''}</span>
+                    <span className="truncate">{slotDetail(c) ? ` / ${slotDetail(c)}` : ''}</span>
                   </span>
                 </div>
-                <div className={`mt-1 ${SLOT_GRID}`} data-testid="shift-slot">
-                  <span className="truncate font-mono font-black text-slate-900">{c.currentBlock || ''}</span>
-                  <span className="font-mono font-bold text-slate-900">{c.currentBay || ''}</span>
-                  <span className="font-mono font-bold text-slate-900">{c.currentRow || ''}</span>
-                  <span className="font-mono font-bold text-slate-900">{c.currentTier || ''}</span>
+                <div className="mt-0.5 grid grid-cols-[7rem_1fr] gap-2 text-[11px] text-slate-500">
+                  <span className={c.conditionClass === 'DAMAGE' ? 'font-semibold text-rose-700' : 'font-semibold text-emerald-700'}>{c.conditionClass}</span>
+                  <span className="truncate">{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</span>
                 </div>
               </button>
             </li>
