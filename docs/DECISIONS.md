@@ -647,6 +647,11 @@ Quy ước trạng thái:
 - Quyết định: Mọi cont đến Vệ sinh / Xe nâng có **nhãn TÁC NGHIỆP** (mỗi loại 1 màu): **HẠ VỎ**, **CẤP VỎ**, **NHẬP TÀU • Tàu …**, **XUẤT TÀU • Tàu …** — ở khung cont vừa quét (nhãn lớn, đầu khung) và từng dòng danh sách chờ (Chờ vệ sinh, Chờ hạ vỏ, Chờ cấp vỏ). 4 màn Nhập / Xuất tàu ghi "Đang tác nghiệp: NHẬP TÀU / XUẤT TÀU • Tàu …".
   - Xác định trong service `containerOperation` (`vessel.ts`): đang trong danh sách xuất tàu → XUẤT TÀU; đã lập lệnh cấp → CẤP VỎ; mã NT- → NHẬP TÀU; còn lại → HẠ VỎ.
 
+### DEC-084 — Báo giá → Chờ báo giá hiển thị như Tồn vỏ
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-040, DEC-041, DEC-080
+- Quyết định: Danh sách cont CHỜ BÁO GIÁ là **bảng full chiều ngang giống Tồn vỏ**: Mã hồ sơ (mở hồ sơ), Số container (icon khóa), Size, Type, Hãng tàu, Date in, Trạng thái, Lưu bãi, Vị trí, **Hư hỏng (giám định)**, Ghi chú (nền vàng). Có lọc số cont / size / type, chọn 20 / 50 / 100 dòng, Xuất Excel. **Bấm dòng → cửa sổ trượt bên phải** nhập **Remark sửa chữa + Giờ công** → "Cập nhật sang Chờ sửa chữa" (cùng hàm `approveDamageQuotation`, quy tắc DEC-040 / 041 không đổi).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -736,6 +741,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-083 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-084 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

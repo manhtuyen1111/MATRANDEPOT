@@ -2,7 +2,7 @@
 
 Áp dụng cho **mọi màn văn phòng / báo cáo / tra cứu** có danh sách dài (máy tính). Màn hiện trường mobile theo quy chuẩn riêng ở `AGENTS.md` mục 8 (thẻ, "Xem thêm", `max-w-lg`).
 
-Đang áp dụng: Văn phòng → Phiếu thu, Tồn vỏ, Văn phòng → Nhập tàu / Xuất tàu, Báo cáo (Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết), Hồ sơ container.
+Đang áp dụng: Văn phòng → Phiếu thu, Tồn vỏ, Báo giá → Chờ báo giá, Văn phòng → Nhập tàu / Xuất tàu, Báo cáo (Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa chi tiết), Hồ sơ container.
 
 ## 1. Bố cục màn
 
