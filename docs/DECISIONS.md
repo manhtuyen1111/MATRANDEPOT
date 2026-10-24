@@ -718,6 +718,11 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-24) — sửa bố cục DEC-094
 - Quyết định: Thẻ Đảo chuyển: ô TRẠNG THÁI bên trái (giữ); **dòng 1 Số container | Vị trí (ô rộng cố định → thẳng cột) | Tiến độ** (bên phải vị trí; máy hẹp thiếu chỗ thì tiến độ xuống ngay dưới, vẫn canh phải); **dòng 2 Size / Type | GHI CHÚ** (Remark Văn phòng — nền vàng khi có, "-" khi không).
 
+### DEC-096 — Đảo chuyển: ô AV / DAMAGE cùng kích thước ô tác nghiệp danh sách Xe nâng
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-094
+- Quyết định: Ô TRẠNG THÁI (AV / DAMAGE) ở Đảo chuyển dùng **đúng kích thước UI của ô tác nghiệp** ở Xe nâng → Chờ hạ vỏ (`QueueListRow`): cột 5rem, chữ 10px đậm in hoa, đệm px-1.5 py-1, bo góc, không kéo dài hết chiều cao thẻ.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -807,6 +812,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-095 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-096 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

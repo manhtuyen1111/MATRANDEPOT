@@ -155,6 +155,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-095)
 - Đảo chuyển: tiến độ sang bên phải vị trí; dòng 2 hiện Ghi chú (Remark Văn phòng, nền vàng khi có).
 
+### Changed (2026-10-24, DEC-096)
+- Đảo chuyển: ô AV / DAMAGE cùng kích thước ô tác nghiệp ở danh sách Xe nâng.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 
