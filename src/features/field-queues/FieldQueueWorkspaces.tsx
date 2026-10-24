@@ -402,17 +402,20 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
             ) : (
               queue.map((c) => (
                 <li key={c.id}>
-                  <button type="button" onClick={() => lookup(c.activeQrCode)} className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left text-xs hover:bg-slate-50">
-                    <span className="flex items-center gap-2">
-                      <OperationBadge state={state} container={c} />
-                      <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} />
-                      <span className="text-slate-500">{c.size}/{c.type}</span>
+                  {/* DEC-085: số cont luôn ở cột cố định bên trái (thẳng hàng dọc); nhãn tác nghiệp + tên tàu xuống dòng 2 */}
+                  <button type="button" onClick={() => lookup(c.activeQrCode)} className="block w-full px-4 py-2.5 text-left text-xs hover:bg-slate-50" data-testid="queue-row">
+                    <span className="grid grid-cols-[9.5rem_3.5rem_1fr] items-center gap-2">
+                      <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
+                      <span className="font-mono text-slate-600">{c.size}/{c.type}</span>
+                      <span className="truncate text-right font-mono text-[11px] text-slate-600">{formatLocation(c)}</span>
                     </span>
-                    {mode === 'XN_CHO_CAP_VO' && (
-                      <span className="text-[11px] text-slate-700">{c.allocatedTruckNo || '-'} • {c.allocatedDriverPhone || '-'}</span>
-                    )}
-                    {isRepair && <span className="text-[11px] text-slate-700">{repairWoOf(c)?.laborHours ?? c.quotationLaborHours ?? '-'} giờ công</span>}
-                    <span className="font-mono text-[11px] text-slate-500">{formatLocation(c)}</span>
+                    <span className="mt-1 flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate"><OperationBadge state={state} container={c} /></span>
+                      {mode === 'XN_CHO_CAP_VO' && (
+                        <span className="shrink-0 text-[11px] text-slate-700">{c.allocatedTruckNo || '-'} • {c.allocatedDriverPhone || '-'}</span>
+                      )}
+                      {isRepair && <span className="shrink-0 text-[11px] text-slate-700">{repairWoOf(c)?.laborHours ?? c.quotationLaborHours ?? '-'} giờ công</span>}
+                    </span>
                   </button>
                 </li>
               ))
