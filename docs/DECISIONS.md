@@ -641,6 +641,12 @@ Quy ước trạng thái:
   - Dữ liệu mẫu: BLOCK-B chuyển thành Block chỉ có BLOCK. Dữ liệu đã lưu trên trình duyệt giữ cấu hình cũ tới khi Reset demo.
   - Code: `blockDimensions`, `validateTargetSlot`, `formatLocation` (`src/services/core.ts`); `SlotPicker` / `isSlotComplete(slot, state)` (`shared.tsx`); `addYardBlockCatalogItem`.
 
+### DEC-083 — Vệ sinh / Xe nâng: hiện rõ tác nghiệp đang làm (kèm tên tàu)
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Quyết định: Mọi cont đến Vệ sinh / Xe nâng có **nhãn TÁC NGHIỆP** (mỗi loại 1 màu): **HẠ VỎ**, **CẤP VỎ**, **NHẬP TÀU • Tàu …**, **XUẤT TÀU • Tàu …** — ở khung cont vừa quét (nhãn lớn, đầu khung) và từng dòng danh sách chờ (Chờ vệ sinh, Chờ hạ vỏ, Chờ cấp vỏ). 4 màn Nhập / Xuất tàu ghi "Đang tác nghiệp: NHẬP TÀU / XUẤT TÀU • Tàu …".
+  - Xác định trong service `containerOperation` (`vessel.ts`): đang trong danh sách xuất tàu → XUẤT TÀU; đã lập lệnh cấp → CẤP VỎ; mã NT- → NHẬP TÀU; còn lại → HẠ VỎ.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -730,6 +736,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-082 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-083 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
