@@ -708,6 +708,11 @@ Quy ước trạng thái:
   - **Khách ngoài Danh mục chỉ được thanh toán TRỰC TIẾP (Tiền mặt / Chuyển khoản)** — **không TTS, không TTT** (TTS / TTT dựa trên khách trong Danh mục). Ô nhập hiện cảnh báo khi gõ tên mới; service chặn khi thanh toán.
   - Code: `normalizeCustomer`, `isCatalogCustomer` (`depotOperations.ts`); kiểm tra trong `settleVoucher` (`payments.ts`); ô `CustomerInput` (`shared.tsx`).
 
+### DEC-094 — Đảo chuyển: cấu trúc như danh sách Xe nâng — ô TRẠNG THÁI đầu, Tiến độ cuối
+
+- Trạng thái: CONFIRMED (2026-10-24) — thay bố cục thẻ của DEC-092 (giữ vị trí thẳng cột)
+- Quyết định: Mỗi thẻ Đảo chuyển giống dòng danh sách Xe nâng (DEC-089), nhưng **ô đầu bên trái là TRẠNG THÁI** (AV xanh / DAMAGE đỏ) thay cho tác nghiệp. Bên phải: dòng 1 **Số container | Vị trí** (`BLOCK-A / 17-02-02`, ô Block rộng cố định → thẳng cột); dòng cuối **Size / Type** (thẳng dưới số cont) | **Tiến độ** dạng nhãn nhỏ (Sẵn sàng xanh, các việc chờ màu vàng).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -797,6 +802,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-093 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-094 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

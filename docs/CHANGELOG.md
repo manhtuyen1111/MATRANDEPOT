@@ -149,6 +149,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, DEC-093)
 - Hạ vỏ / Cấp vỏ: ô Khách hàng gõ tay hoặc chọn, gợi ý từ Danh mục; khách ngoài Danh mục chỉ thanh toán Tiền mặt / Chuyển khoản. Kiểm thử: 96/96 pass.
 
+### Changed (2026-10-24, DEC-094)
+- Đảo chuyển: ô trạng thái (AV / DAMAGE) đầu dòng, số cont + vị trí, dòng cuối size/type + nhãn tiến độ. Kiểm thử: 96/96 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 
