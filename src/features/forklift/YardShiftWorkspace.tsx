@@ -158,21 +158,29 @@ export const YardShiftWorkspace: React.FC<{
                     {c.conditionClass}
                   </span>
                   <span className="min-w-0">
-                    <span className="grid grid-cols-[7rem_1fr] items-center gap-2">
-                      <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
-                      <span className="flex min-w-0 font-mono text-[11px] font-bold text-slate-900" data-testid="shift-slot">
+                    {/* DEC-095: dòng 1 SỐ CONT | VỊ TRÍ (ô rộng cố định) | TIẾN ĐỘ; dòng 2 SIZE/TYPE | GHI CHÚ */}
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="w-[7rem] shrink-0"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" /></span>
+                      <span className="flex shrink-0 font-mono text-[11px] font-bold text-slate-900" style={{ width: `${blockCh + 11}ch` }} data-testid="shift-slot">
                         <span className="shrink-0" style={{ width: `${blockCh}ch` }}>{c.currentBlock || ''}</span>
                         <span className="truncate">{slotDetail(c) ? ` / ${slotDetail(c)}` : ''}</span>
                       </span>
-                    </span>
-                    <span className="mt-1 grid grid-cols-[7rem_1fr] items-center gap-2">
-                      <span className="font-mono text-[11px] text-slate-600">{c.size}/{c.type}</span>
-                      <span className="flex min-w-0 flex-wrap gap-1" data-testid="shift-progress">
+                      <span className="ml-auto flex flex-wrap justify-end gap-1" data-testid="shift-progress">
                         {getContainerProgress(c).map((p) => (
-                          <span key={p} className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${p === 'SAN_SANG' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
+                          <span key={p} className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold ${p === 'SAN_SANG' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
                             {PROGRESS_LABELS[p]}
                           </span>
                         ))}
+                      </span>
+                    </span>
+                    <span className="mt-1 flex items-center gap-2">
+                      <span className="w-[7rem] shrink-0 font-mono text-[11px] text-slate-600">{c.size}/{c.type}</span>
+                      <span
+                        data-testid="shift-note"
+                        className={`min-w-0 flex-1 truncate rounded px-1.5 py-0.5 text-[11px] ${c.officeNote ? 'bg-yellow-200 font-semibold text-slate-900' : 'text-slate-400'}`}
+                        title={c.officeNote || ''}
+                      >
+                        {c.officeNote ? `Ghi chú: ${c.officeNote}` : 'Ghi chú: -'}
                       </span>
                     </span>
                   </span>
