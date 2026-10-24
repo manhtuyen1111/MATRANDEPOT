@@ -372,7 +372,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                               </div>
                               <button
                                 type="button"
-                                disabled={!isSlotComplete(slot)}
+                                disabled={!isSlotComplete(slot, state)}
                                 onClick={() => run(() => correctContainerLocation(state, { containerId: c.id, ...slot }), `Đã sửa vị trí ${c.containerNo}.`)}
                                 className={primaryBtn}
                               >

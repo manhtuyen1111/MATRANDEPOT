@@ -103,7 +103,7 @@ export const YardShiftWorkspace: React.FC<{
               <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: Hạ khu sửa chữa" className={inputCls} />
             </label>
           </div>
-          <button type="button" disabled={!isSlotComplete(slot)} onClick={handleShift} className={`${primaryBtn} w-full py-3`}>
+          <button type="button" disabled={!isSlotComplete(slot, state)} onClick={handleShift} className={`${primaryBtn} w-full py-3`}>
             <ArrowLeftRight className="h-4 w-4" />
             Xác nhận đảo chuyển
           </button>

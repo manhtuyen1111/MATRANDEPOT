@@ -398,3 +398,17 @@ describe('UI-02: form Giám định dùng chung (Hạ vỏ / Nhập tàu)', () =
     expect(inspectionRemarks(full)).toEqual(['Móp vách', 'Thủng sàn']);
   });
 });
+
+describe('DEC-082: chọn vị trí chỉ hiện chiều Block có cấu hình', () => {
+  it('BLOCK-A hiện Bay / Row / Tier; BLOCK-B (chỉ Block) không hiện, báo chỉ cần Block', async () => {
+    const { SlotPicker, isSlotComplete } = await import('../src/components/shared');
+    const a = renderToString(<SlotPicker state={base} value={{ blockCode: 'BLOCK-A', bay: '', row: '', tier: '' }} onChange={noop} />);
+    expect(a).toContain('Bay');
+    expect(a).toContain('Tier');
+    const b = renderToString(<SlotPicker state={base} value={{ blockCode: 'BLOCK-B', bay: '', row: '', tier: '' }} onChange={noop} />);
+    expect(b).not.toContain('>Bay');
+    expect(b).toContain('chỉ quản lý theo Block');
+    expect(isSlotComplete({ blockCode: 'BLOCK-B', bay: '', row: '', tier: '' }, base)).toBe(true);
+    expect(isSlotComplete({ blockCode: 'BLOCK-A', bay: '01', row: '', tier: '' }, base)).toBe(false);
+  });
+});

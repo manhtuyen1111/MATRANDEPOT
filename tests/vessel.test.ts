@@ -66,9 +66,9 @@ describe('DEC-069: NHẬP TÀU', () => {
     expect(() => approveVesselList(as(s, 'usr-office'), { listId, mode: 'NHAP_TAU' })).toThrow(/Chưa NHẬP TÀU hết/);
 
     // Có vệ sinh: Xe nâng chỉ hạ được sau khi Vệ sinh xong (dùng chung hàm Hạ vỏ)
-    expect(() => updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU1234567', blockCode: 'BLOCK-A', reason: '' })).toThrow(/vệ sinh/);
+    expect(() => updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU1234567', blockCode: 'BLOCK-B', reason: '' })).toThrow(/vệ sinh/);
     s = completeCleaningTask(as(s, 'usr-cleaning'), { containerNo: 'TCLU1234567' });
-    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU1234567', blockCode: 'BLOCK-A', reason: '' });
+    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU1234567', blockCode: 'BLOCK-B', reason: '' });
     expect(s.vesselLists[0].items[0].status).toBe('DONE');
     expect(s.containers.find((c) => c.id === it1.containerId)!.status).toBe('IN_YARD');
 
@@ -77,7 +77,7 @@ describe('DEC-069: NHẬP TÀU', () => {
     });
     const c2 = s.containers.find((c) => c.containerNo === 'TCLU7654321' && c.status !== 'GATED_OUT')!;
     expect(c2.needsCleaning).toBe(false);
-    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU7654321', blockCode: 'BLOCK-A', reason: '' });
+    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU7654321', blockCode: 'BLOCK-B', reason: '' });
     expect(releaseBlocker(s.containers.find((c) => c.id === c2.id)!)).toBeNull();
 
     expect(() => approveVesselList(as(s, 'usr-forklift'), { listId, mode: 'NHAP_TAU' })).toThrow(/Không đủ quyền/);
@@ -223,7 +223,7 @@ describe('DEC-071: theo dõi tác nghiệp hiện trường từng bộ phận',
     expect(v.vesselStepInfo(s, 'NT_PLACE', list().items.find((i) => i.id === b.id)!).note).toMatch(/Giám định/);
     s = completeCleaningTask(as(s, 'usr-cleaning'), { containerNo: a.containerNo });
     expect(v.vesselStepInfo(s, 'NT_PLACE', list().items[0]).status).toBe('TODO');
-    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: a.containerNo, blockCode: 'BLOCK-A', reason: '' });
+    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: a.containerNo, blockCode: 'BLOCK-B', reason: '' });
     expect(v.vesselStepSummary(s, 'NT_PLACE', list())).toMatchObject({ done: 1, mine: 1 });
   });
 });

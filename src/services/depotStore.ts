@@ -187,12 +187,13 @@ export const INITIAL_YARD_BLOCKS: YardBlock[] = [
   },
   {
     blockCode: 'BLOCK-B',
-    blockName: 'Khu B — Container Lưu bãi chung (Hạ nhanh cấp Block)',
-    maxBay: 16,
-    maxRow: 6,
-    maxTier: 5,
-    capacity: 240,
-    description: 'Cho phép gán nhanh cấp Block trước khi xếp Bay/Row/Tier',
+    blockName: 'Khu B — Container Lưu bãi chung (chỉ Block)',
+    // DEC-082: không cấu hình Bay / Row / Tier → cont chỉ cần chọn Block, không giới hạn số cont
+    maxBay: 0,
+    maxRow: 0,
+    maxTier: 0,
+    capacity: 0,
+    description: 'Khu vực chỉ quản lý theo Block — không cần Bay / Row / Tier',
   },
   {
     blockCode: 'BLOCK-CLEAN',

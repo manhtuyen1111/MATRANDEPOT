@@ -80,7 +80,7 @@ function gateInTts(state: DepotState, containerNo: string, overrides = {}) {
   return { state: s, order: s.gateInOrders.find((o) => o.id === order.id)! };
 }
 
-function placeInYard(state: DepotState, containerNo: string, slot = { blockCode: 'BLOCK-A' }) {
+function placeInYard(state: DepotState, containerNo: string, slot: { blockCode: string; bay?: string; row?: string; tier?: string } = { blockCode: 'BLOCK-B' }) {
   return updateContainerLocation(as(state, 'usr-forklift'), { containerNo, ...slot, reason: 'Hạ vỏ' });
 }
 
@@ -282,11 +282,11 @@ describe('CR-01/CR-02: ĐẢO CHUYỂN, SỬA VỊ TRÍ, KHÓA CONTAINER', () =>
   it('YARD-002: ĐẢO CHUYỂN lưu lịch sử tác nghiệp (tên, thời gian, nhân sự, trước/sau)', () => {
     const s0 = createInitialState();
     const c = s0.containers.find((x) => x.containerNo === 'MSKU4089123')!;
-    const s = shiftContainer(as(s0, 'usr-forklift'), { containerId: c.id, blockCode: 'BLOCK-B', bay: '01', row: '01', tier: '01' });
+    const s = shiftContainer(as(s0, 'usr-forklift'), { containerId: c.id, blockCode: 'BLOCK-DAMAGE', bay: '01', row: '01', tier: '01' });
     const h = s.locationHistory[0];
     expect(h.actionType).toBe('YARD_SHIFT');
     expect(h.fromLocation).toBe('BLOCK-A / 04-02-01');
-    expect(h.toLocation).toBe('BLOCK-B / 01-01-01');
+    expect(h.toLocation).toBe('BLOCK-DAMAGE / 01-01-01');
     expect(h.performedBy).toBe('Phạm Hoàng Xe Nâng');
     expect(h.performedAt).toBeTruthy();
   });
@@ -296,7 +296,12 @@ describe('CR-01/CR-02: ĐẢO CHUYỂN, SỬA VỊ TRÍ, KHÓA CONTAINER', () =>
     const one = s0.containers.find((x) => x.containerNo === 'ONEU2291045')!;
     expect(() => shiftContainer(s0, { containerId: one.id, blockCode: 'BLOCK-A', bay: '04', row: '02', tier: '01' })).toThrow(/đang có container/);
     expect(() => shiftContainer(s0, { containerId: one.id, blockCode: 'BLOCK-A', bay: '99', row: '01', tier: '01' })).toThrow(/ngoài cấu hình/);
-    expect(() => shiftContainer(s0, { containerId: one.id, blockCode: 'BLOCK-A', bay: '01' })).toThrow(/đủ cả 3/);
+    expect(() => shiftContainer(s0, { containerId: one.id, blockCode: 'BLOCK-A', bay: '01' })).toThrow(/nhập đủ: Row, Tier/);
+    // DEC-082: Block có cấu hình → bắt buộc đủ; Block chỉ có tên Block → bỏ qua Bay/Row/Tier, nhiều cont chung 1 Block
+    expect(() => shiftContainer(s0, { containerId: one.id, blockCode: 'BLOCK-A' })).toThrow(/nhập đủ: Bay, Row, Tier/);
+    const a = s0.containers.find((x) => x.containerNo === 'MSKU4089123')!;
+    const moved = shiftContainer(s0, { containerId: a.id, blockCode: 'BLOCK-B', bay: '05', row: '01', tier: '01' });
+    expect(moved.containers.find((x) => x.id === a.id)).toMatchObject({ currentBlock: 'BLOCK-B', currentBay: null, currentRow: null, currentTier: null });
   });
 
   it('Không đảo chuyển / sửa vị trí container chưa có vị trí chính thức', () => {
@@ -329,7 +334,7 @@ describe('CR-01/CR-02: ĐẢO CHUYỂN, SỬA VỊ TRÍ, KHÓA CONTAINER', () =>
       })
     ).toThrow(/KHÓA/);
     s = shiftContainer(as(s, 'usr-forklift'), { containerId: c.id, blockCode: 'BLOCK-B' });
-    s = correctContainerLocation(as(s, 'usr-office'), { containerId: c.id, blockCode: 'BLOCK-A' });
+    s = correctContainerLocation(as(s, 'usr-office'), { containerId: c.id, blockCode: 'BLOCK-A', bay: '05', row: '01', tier: '01' });
     expect(s.containers.find((x) => x.id === c.id)!.currentBlock).toBe('BLOCK-A');
   });
 });
@@ -957,5 +962,36 @@ describe('DEC-080: số dòng / trang do người dùng chọn', () => {
     const total = queryGateInReport(s, 'CUSTOMER_RETURN', all, 1, 100).total;
     expect(queryGateInReport(s, 'CUSTOMER_RETURN', all, 1, 100).pageCount).toBe(Math.max(1, Math.ceil(total / 100)));
     expect(queryGateInReport(s, 'CUSTOMER_RETURN', all, 1, 7).pageCount).toBe(Math.max(1, Math.ceil(total / 50)));
+  });
+});
+
+describe('DEC-082: vị trí theo cấu hình thực tế của Block', () => {
+  it('Mã tự thêm BLOCK-; chiều để trống = không dùng; chỉ bắt buộc chiều đã cấu hình', async () => {
+    const { addYardBlockCatalogItem, shiftContainer: shift } = await import('../src/services/depotOperations');
+    const { formatLocation, blockDimensions } = await import('../src/services/core');
+    let s = as(createInitialState(), 'usr-admin');
+    expect(() => addYardBlockCatalogItem(as(s, 'usr-office'), { blockCode: 'C' })).toThrow(/ADMIN/);
+    expect(() => addYardBlockCatalogItem(s, { blockCode: ' ' })).toThrow(/BLOCK-/);
+    expect(() => addYardBlockCatalogItem(s, { blockCode: 'C', maxBay: 2.5 })).toThrow(/số nguyên/);
+    expect(() => addYardBlockCatalogItem(s, { blockCode: 'block-a' })).toThrow(/đã tồn tại/);
+    s = addYardBlockCatalogItem(s, { blockCode: 'c', description: 'Khu C' });
+    const c = s.yardBlocks.find((b) => b.blockCode === 'BLOCK-C')!;
+    expect(c).toMatchObject({ blockName: 'Khu C', maxBay: 0, maxRow: 0, maxTier: 0, capacity: 0 });
+    expect(blockDimensions(c)).toEqual([]);
+    s = addYardBlockCatalogItem(s, { blockCode: 'BLOCK-D', maxBay: 5 });
+    const d = s.yardBlocks.find((b) => b.blockCode === 'BLOCK-D')!;
+    expect(d).toMatchObject({ maxBay: 5, maxRow: 0, maxTier: 0, capacity: 5 });
+
+    const cont = s.containers.find((x) => x.containerNo === 'MSKU4089123')!;
+    const fk = as(s, 'usr-forklift');
+    expect(() => shift(fk, { containerId: cont.id, blockCode: 'BLOCK-D' })).toThrow(/nhập đủ: Bay/);
+    expect(() => shift(fk, { containerId: cont.id, blockCode: 'BLOCK-D', bay: '06' })).toThrow(/ngoài cấu hình/);
+    const moved = shift(fk, { containerId: cont.id, blockCode: 'BLOCK-D', bay: '03', row: '09', tier: '09' });
+    const m = moved.containers.find((x) => x.id === cont.id)!;
+    expect(m).toMatchObject({ currentBlock: 'BLOCK-D', currentBay: '03', currentRow: null, currentTier: null });
+    expect(formatLocation(m)).toBe('BLOCK-D / Bay 03');
+    // Ô đã có cont (cùng Bay) bị chặn
+    const other = moved.containers.find((x) => x.containerNo === 'ONEU2291045')!;
+    expect(() => shift(as(moved, 'usr-forklift'), { containerId: other.id, blockCode: 'BLOCK-D', bay: '03' })).toThrow(/đang có container/);
   });
 });

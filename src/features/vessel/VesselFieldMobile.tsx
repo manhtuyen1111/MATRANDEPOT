@@ -113,7 +113,7 @@ export const VesselFieldMobile: React.FC<{
   const ready = Boolean(
     item &&
       (isPlace
-        ? isSlotComplete(slot)
+        ? isSlotComplete(slot, state)
         : truckNo && (!isInspect || isInspectionComplete(insp)))
   );
 

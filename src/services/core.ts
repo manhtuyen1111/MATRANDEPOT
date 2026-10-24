@@ -86,9 +86,11 @@ export function formatLocation(c: {
   currentTier: string | null;
 }): string {
   if (!c.currentBlock) return '-';
-  return c.currentBay
-    ? `${c.currentBlock} / ${c.currentBay}-${c.currentRow}-${c.currentTier}`
-    : c.currentBlock;
+  const parts = [c.currentBay, c.currentRow, c.currentTier];
+  if (parts.every(Boolean)) return `${c.currentBlock} / ${parts.join('-')}`;
+  // DEC-082: Block chỉ cấu hình một phần (VD chỉ Bay) → ghi rõ nhãn từng chiều
+  const labeled = [['Bay', c.currentBay], ['Row', c.currentRow], ['Tier', c.currentTier]].filter(([, v]) => v).map(([k, v]) => `${k} ${v}`);
+  return labeled.length ? `${c.currentBlock} / ${labeled.join(' • ')}` : c.currentBlock;
 }
 
 export interface SlotInput {
@@ -105,7 +107,24 @@ export interface ValidSlot {
   tier: string | null;
 }
 
-// Kiểm tra vị trí đích theo cấu hình Block (DEC-005, YARD-003) và chống trùng ô chi tiết
+// DEC-082: chiều vị trí Block có dùng thực tế (giá trị tối đa > 0). Chiều không cấu hình → không hiện, không nhập.
+export type SlotDimension = 'bay' | 'row' | 'tier';
+export const SLOT_DIMENSION_LABELS: Record<SlotDimension, string> = { bay: 'Bay', row: 'Row', tier: 'Tier' };
+
+export function blockDimensions(block: Pick<YardBlock, 'maxBay' | 'maxRow' | 'maxTier'>): { key: SlotDimension; max: number }[] {
+  return ([
+    ['bay', block.maxBay],
+    ['row', block.maxRow],
+    ['tier', block.maxTier],
+  ] as [SlotDimension, number][])
+    .filter(([, max]) => Number(max) > 0)
+    .map(([key, max]) => ({ key, max: Number(max) }));
+}
+
+// Kiểm tra vị trí đích theo cấu hình Block (DEC-005, DEC-082, YARD-003) và chống trùng ô
+//   - Chiều Block có cấu hình → BẮT BUỘC nhập, trong giới hạn 1 → tối đa.
+//   - Chiều không cấu hình → bỏ qua (không lưu).
+//   - Block chỉ có tên Block → nhiều cont đặt chung, không giới hạn.
 export function validateTargetSlot(
   state: DepotState,
   container: ContainerRecord,
@@ -114,44 +133,42 @@ export function validateTargetSlot(
   const block: YardBlock | undefined = state.yardBlocks.find((b) => b.blockCode === input.blockCode);
   if (!block) throw new Error(`Block "${input.blockCode}" không hợp lệ (YARD-003).`);
 
-  const bay = input.bay?.trim() || null;
-  const row = input.row?.trim() || null;
-  const tier = input.tier?.trim() || null;
-  const hasAny = Boolean(bay || row || tier);
-  const hasAll = Boolean(bay && row && tier);
-  if (hasAny && !hasAll) {
-    throw new Error(
-      'Khi nhập vị trí chi tiết, vui lòng nhập đủ cả 3 thông số Bay, Row, Tier; hoặc để trống cả 3 nếu chỉ ghi nhận ở cấp Block.'
-    );
+  const dims = blockDimensions(block);
+  const raw: Record<SlotDimension, string | null> = {
+    bay: input.bay?.trim() || null,
+    row: input.row?.trim() || null,
+    tier: input.tier?.trim() || null,
+  };
+  const value: Record<SlotDimension, string | null> = { bay: null, row: null, tier: null };
+  const missing = dims.filter((d) => !raw[d.key]).map((d) => SLOT_DIMENSION_LABELS[d.key]);
+  if (missing.length) {
+    throw new Error(`Block ${block.blockCode} có cấu hình ${dims.map((d) => SLOT_DIMENSION_LABELS[d.key]).join(' / ')} — vui lòng nhập đủ: ${missing.join(', ')} (YARD-003).`);
   }
-  if (hasAll) {
-    const limits: [string, string, number][] = [
-      ['Bay', bay!, block.maxBay],
-      ['Row', row!, block.maxRow],
-      ['Tier', tier!, block.maxTier],
-    ];
-    for (const [label, value, max] of limits) {
-      const n = Number(value);
-      if (!Number.isInteger(n) || n < 1 || n > max) {
-        throw new Error(`${label} ${value} nằm ngoài cấu hình của ${block.blockCode} (1 → ${max}) (YARD-003).`);
-      }
+  for (const d of dims) {
+    const v = raw[d.key]!;
+    const n = Number(v);
+    if (!Number.isInteger(n) || n < 1 || n > d.max) {
+      throw new Error(`${SLOT_DIMENSION_LABELS[d.key]} ${v} nằm ngoài cấu hình của ${block.blockCode} (1 → ${d.max}) (YARD-003).`);
     }
+    value[d.key] = v;
+  }
+  if (dims.length > 0) {
     const occupied = state.containers.find(
       (c) =>
         c.id !== container.id &&
         c.status !== 'GATED_OUT' &&
         c.currentBlock === block.blockCode &&
-        c.currentBay === bay &&
-        c.currentRow === row &&
-        c.currentTier === tier
+        c.currentBay === value.bay &&
+        c.currentRow === value.row &&
+        c.currentTier === value.tier
     );
     if (occupied) {
       throw new Error(
-        `Ô vị trí ${block.blockCode} / ${bay}-${row}-${tier} đang có container ${occupied.containerNo} (YARD-003).`
+        `Ô vị trí ${formatLocation({ currentBlock: block.blockCode, currentBay: value.bay, currentRow: value.row, currentTier: value.tier })} đang có container ${occupied.containerNo} (YARD-003).`
       );
     }
   }
-  return { block: block.blockCode, bay, row, tier };
+  return { block: block.blockCode, ...value };
 }
 
 // TIẾN ĐỘ của một container trong bãi (dùng cho Tồn vỏ, Đảo chuyển, Cấp vỏ)

@@ -24,6 +24,7 @@ import { can } from '../services/permissions';
 import { isSupabaseConfigured } from '../lib/env';
 import { DATETIME_PLACEHOLDER, formatDateTime, maskDateTimeInput, parseDateTime } from '../services/datetime';
 import { PAGE_SIZE_OPTIONS, SheetData, toXlsxBuffer, XLSX_MIME } from '../services/reports';
+import { blockDimensions, SLOT_DIMENSION_LABELS } from '../services/core';
 
 // ---------------------------------------------------------------------------
 // Thông báo lỗi / thành công thống nhất
@@ -434,16 +435,21 @@ export interface SlotValue {
 
 export const EMPTY_SLOT: SlotValue = { blockCode: '', bay: '', row: '', tier: '' };
 
-export function isSlotComplete(v: SlotValue): boolean {
-  return Boolean(v.blockCode) && (!v.bay || Boolean(v.row && v.tier));
+// DEC-082: đủ khi đã chọn Block và nhập đủ các chiều Block có cấu hình (service kiểm tra lại)
+export function isSlotComplete(v: SlotValue, state: DepotState): boolean {
+  const block = state.yardBlocks.find((b) => b.blockCode === v.blockCode);
+  if (!block) return false;
+  return blockDimensions(block).every((d) => Boolean(v[d.key]));
 }
 
+// Chọn vị trí: chỉ hiện Bay / Row / Tier mà Block có cấu hình (DEC-082)
 export const SlotPicker: React.FC<{
   state: DepotState;
   value: SlotValue;
   onChange: (next: SlotValue) => void;
 }> = ({ state, value, onChange }) => {
   const block = state.yardBlocks.find((b) => b.blockCode === value.blockCode);
+  const dims = block ? blockDimensions(block) : [];
   const range = (n: number) => Array.from({ length: n }, (_, i) => String(i + 1).padStart(2, '0'));
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -462,32 +468,18 @@ export const SlotPicker: React.FC<{
           ))}
         </select>
       </label>
-      <label>
-        <span className={labelCls}>Bay</span>
-        <select
-          value={value.bay}
-          disabled={!block}
-          onChange={(e) => onChange({ ...value, bay: e.target.value, row: e.target.value ? value.row : '', tier: e.target.value ? value.tier : '' })}
-          className={inputCls}
-        >
-          <option value="">Cấp Block</option>
-          {block && range(block.maxBay).map((v) => <option key={v} value={v}>{v}</option>)}
-        </select>
-      </label>
-      <label>
-        <span className={labelCls}>Row</span>
-        <select value={value.row} disabled={!value.bay} onChange={(e) => onChange({ ...value, row: e.target.value })} className={inputCls}>
-          <option value="">--</option>
-          {block && range(block.maxRow).map((v) => <option key={v} value={v}>{v}</option>)}
-        </select>
-      </label>
-      <label>
-        <span className={labelCls}>Tier</span>
-        <select value={value.tier} disabled={!value.bay} onChange={(e) => onChange({ ...value, tier: e.target.value })} className={inputCls}>
-          <option value="">--</option>
-          {block && range(block.maxTier).map((v) => <option key={v} value={v}>{v}</option>)}
-        </select>
-      </label>
+      {dims.map((d) => (
+        <label key={d.key}>
+          <span className={labelCls}>{SLOT_DIMENSION_LABELS[d.key]} *</span>
+          <select value={value[d.key]} onChange={(e) => onChange({ ...value, [d.key]: e.target.value })} className={inputCls}>
+            <option value="">--</option>
+            {range(d.max).map((v) => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </label>
+      ))}
+      {block && dims.length === 0 && (
+        <p className="col-span-2 self-end pb-2 text-[11px] text-slate-500 sm:col-span-3">{block.blockCode} chỉ quản lý theo Block — không cần Bay / Row / Tier.</p>
+      )}
     </div>
   );
 };

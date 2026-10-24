@@ -269,7 +269,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
   const needsSlot = mode === 'XN_CHO_HA_VO';
   const isForklift = mode === 'XN_CHO_HA_VO' || mode === 'XN_CHO_CAP_VO';
   const isRepair = mode === 'SC_CHO_SUA_CHUA';
-  const canConfirm = scanned && (!needsSlot || isSlotComplete(slot)) && (!isRepair || (selectedTeam && memberIds.length > 0));
+  const canConfirm = scanned && (!needsSlot || isSlotComplete(slot, state)) && (!isRepair || (selectedTeam && memberIds.length > 0));
 
   const scannedRepair = scanned && isRepair ? repairWoOf(scanned) : undefined;
 

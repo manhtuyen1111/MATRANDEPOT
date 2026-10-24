@@ -1363,27 +1363,35 @@ export function deletePartnerCatalogItem(
 export function addYardBlockCatalogItem(
   state: DepotState,
   input: {
-    blockCode: string;
-    blockName: string;
-    maxBay: number;
-    maxRow: number;
-    maxTier: number;
+    blockCode: string;        // DEC-082: nhập "A" → "BLOCK-A" (có hoặc không gõ tiền tố BLOCK-)
+    blockName?: string;       // để trống → "Khu A"
+    maxBay?: number | null;   // để trống / 0 = không dùng chiều Bay
+    maxRow?: number | null;
+    maxTier?: number | null;
     description?: string;
   }
 ): DepotState {
   assertAdmin(state);
-  const cleanCode = input.blockCode.trim().toUpperCase();
-  const cleanName = input.blockName.trim();
-  if (!cleanCode || !cleanName) {
-    throw new Error('Vui lòng nhập đầy đủ Mã Vị trí (Block) và Tên khu vực.');
-  }
+  const suffix = input.blockCode.trim().toUpperCase().replace(/^BLOCK[-\s]*/, '').replace(/\s+/g, '-');
+  if (!suffix) throw new Error('Vui lòng nhập Mã Vị trí sau chữ BLOCK- (VD: A, B, C).');
+  if (!/^[A-Z0-9-]{1,20}$/.test(suffix)) throw new Error('Mã Vị trí chỉ gồm chữ, số, dấu gạch ngang (VD: A, B1, KHO-2).');
+  const cleanCode = `BLOCK-${suffix}`;
   if (state.yardBlocks.some((b) => b.blockCode.toUpperCase() === cleanCode)) {
     throw new Error(`Mã Vị trí "${cleanCode}" đã tồn tại trong Danh mục chung.`);
   }
-  const maxBay = Math.max(1, Number(input.maxBay) || 10);
-  const maxRow = Math.max(1, Number(input.maxRow) || 4);
-  const maxTier = Math.max(1, Number(input.maxTier) || 4);
-  const capacity = maxBay * maxRow * maxTier;
+  // DEC-082: chiều nào để trống thì không dùng (0); có nhập thì phải là số nguyên 1 → 999
+  const dim = (label: string, v?: number | null): number => {
+    if (v === null || v === undefined || String(v).trim() === '' || Number(v) === 0) return 0;
+    const n = Number(v);
+    if (!Number.isInteger(n) || n < 1 || n > 999) throw new Error(`Số ${label} tối đa phải là số nguyên 1 → 999, hoặc để trống nếu không dùng.`);
+    return n;
+  };
+  const maxBay = dim('Bay', input.maxBay);
+  const maxRow = dim('Row', input.maxRow);
+  const maxTier = dim('Tier', input.maxTier);
+  const used = [maxBay, maxRow, maxTier].filter((n) => n > 0);
+  const capacity = used.length ? used.reduce((a, b) => a * b, 1) : 0; // 0 = chỉ Block, không giới hạn số cont
+  const cleanName = input.blockName?.trim() || `Khu ${suffix}`;
 
   const newBlock = {
     blockCode: cleanCode,
@@ -1392,8 +1400,9 @@ export function addYardBlockCatalogItem(
     maxRow,
     maxTier,
     capacity,
-    description: input.description?.trim() || 'Khu vực lưu bãi theo cấu hình Danh mục chung',
+    description: input.description?.trim() || '',
   };
+  const dimsLabel = [maxBay && `Bay:${maxBay}`, maxRow && `Row:${maxRow}`, maxTier && `Tier:${maxTier}`].filter(Boolean).join(' / ') || 'chỉ Block';
 
   return appendAudit(
     {
@@ -1403,7 +1412,7 @@ export function addYardBlockCatalogItem(
     'ADMIN_ADD_YARD_BLOCK',
     'CATALOG',
     cleanCode,
-    `[Admin Danh mục chung] Thêm VỊ TRÍ [${cleanCode}] ${cleanName} (Bay:${maxBay} / Row:${maxRow} / Tier:${maxTier})`
+    `[Admin Danh mục chung] Thêm VỊ TRÍ [${cleanCode}] ${cleanName} (${dimsLabel})`
   );
 }
 
