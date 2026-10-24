@@ -113,6 +113,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-24, UI-02)
 - Gom form Giám định (Trạng thái / Đóng hàng / Vệ sinh / AGE) của Giám định → Hạ vỏ và → Nhập tàu thành 1 component dùng chung `InspectionFields` (Hạ vỏ giữ cách hiện lần lượt từng mục). Không đổi nghiệp vụ. Kiểm thử: 85/85 pass.
 
+### Changed (2026-10-24, DEC-082)
+- Vị trí theo cấu hình thực tế: mã luôn BLOCK- (chỉ gõ A, B, C), mô tả bên dưới; Bay / Row / Tier tối đa để trống = không dùng; mọi tác vụ vị trí chỉ hiện / bắt buộc chiều đã cấu hình; bỏ đặt cấp Block trước. Kiểm thử: 87/87 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

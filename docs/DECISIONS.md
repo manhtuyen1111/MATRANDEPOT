@@ -628,6 +628,19 @@ Quy ước trạng thái:
   - In từ hồ sơ container: nút **In EEIR NHẬP TÀU** (từ khi Giám định xác nhận) / **In EEIR XUẤT TÀU** (khi cont đã OUT).
   - Người dùng **xác nhận** các điểm agent đặt ở DEC-070 / DEC-077: (a) xóa danh sách tàu chỉ khi chưa tác nghiệp cont nào; (b) đổi hãng tàu Nhập tàu chỉ khi chưa giám định; (d) Giám định Nhập tàu không bắt buộc chụp ảnh; (e) cột số lượng chỉ ở phiếu thu trước. Điểm (c) sắp xếp size → số cont: **chưa có ý kiến**, đang giữ như DEC-070.
 
+### DEC-082 — Vị trí theo cấu hình thực tế của Block (thay phần "đặt cấp Block trước" của DEC-005 / DEC-036)
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Quyết định:
+  - Danh mục chung → Vị trí: **Mã vị trí luôn bắt đầu bằng `BLOCK-`** — Admin chỉ gõ phần sau (A, B, C…); bên dưới là **Mô tả thông tin**. Tên khu vực không bắt buộc (mặc định "Khu A").
+  - **Số Bay / Row / Tier tối đa** để trống = **không dùng chiều đó** (lưu 0). Mỗi chiều độc lập (VD chỉ có Bay).
+  - **Mọi tác vụ vị trí** (Xe nâng hạ vỏ, Nhập tàu, Đảo chuyển, Sửa vị trí…): chỉ **hiện và bắt buộc nhập đúng các chiều Block có cấu hình**; chiều không cấu hình không hiện, không yêu cầu, không lưu.
+  - Block **có cấu hình** chiều nào thì **bắt buộc nhập đủ** các chiều đó — **bỏ cách đặt cấp Block trước rồi cập nhật sau** (người dùng chọn).
+  - Block **chỉ có BLOCK** (không Bay / Row / Tier): nhiều cont đặt chung, **không giới hạn** số cont.
+  - Chống trùng ô khi Block có ít nhất 1 chiều; hiển thị vị trí: đủ 3 chiều `BLOCK-A / 04-02-01`, thiếu chiều thì ghi nhãn (VD `BLOCK-D / Bay 03`).
+  - Dữ liệu mẫu: BLOCK-B chuyển thành Block chỉ có BLOCK. Dữ liệu đã lưu trên trình duyệt giữ cấu hình cũ tới khi Reset demo.
+  - Code: `blockDimensions`, `validateTargetSlot`, `formatLocation` (`src/services/core.ts`); `SlotPicker` / `isSlotComplete(slot, state)` (`shared.tsx`); `addYardBlockCatalogItem`.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -717,6 +730,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-081 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-082 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
