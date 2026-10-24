@@ -7,7 +7,7 @@ Cập nhật lần cuối: 2026-10-24 — Claude Code
 Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập tàu / Xuất tàu xong bản Demo** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-081**), **đã push đầy đủ lên GitHub 2026-10-24**, chưa merge vào `main`. Hôm nay: Tồn vỏ (Lưu bãi, Date in, khóa tại icon, hàng loạt — DEC-067, 074); mã HV- / CV- / NT- / XT- / PT- / PTT- (DEC-068); **Nhập / Xuất tàu** đầy đủ (DEC-069 → 073, 075); In EEIR + phiếu thu A5 trên 1 tờ A4 (DEC-072, 076); Phiếu thu: phiếu thu trước theo biểu giá × số lượng, phiếu thu mẹ liên kết từng lần trừ (DEC-077, 079); menu báo việc chờ + biểu tượng mobile thẳng hàng (DEC-075, 078); **quy chuẩn trang nhiều dữ liệu** (DEC-080). **GĐ 4 Database chờ bạn gửi danh mục trạng thái.**
 
 **Điểm dừng 2026-10-24 (tối — tạm nghỉ):** đã kiểm tra + **push đầy đủ lên GitHub** (DEC-050 → DEC-080). **Đọc mục I trước khi làm việc tiếp theo.** Câu hỏi tư vấn còn mở cho P4-01: Q-037 ảnh, Q-038 người dùng cùng lúc, Q-039 sao lưu.
-Kiểm thử mới nhất: `npm test` **84/84 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+Kiểm thử mới nhất: `npm test` **85/85 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
@@ -25,7 +25,6 @@ Kiểm thử mới nhất: `npm test` **84/84 pass** (3 file test) • `npm run 
 | P4-01 | Viết lại schema Supabase (bảng, bộ đếm mã, RLS, **index theo bộ lọc, phân trang con trỏ, partition nhật ký**) | Claude Code | ⏸ Chờ danh mục trạng thái (A.2); làm theo DEC-066 (DATABASE_CONTRACT mục 10) |
 | P4-02 | RPC Hạ vỏ + thanh toán + pgTAP | Claude Code | Sau P4-01 |
 | P7-DB | Bảng `vessel_lists` / `vessel_list_items` + RPC Nhập tàu / Xuất tàu (DATABASE_CONTRACT mục 8) | Claude Code | Làm cùng P4-01 |
-| UI-02 | Gom form Giám định (Trạng thái / Đóng hàng / Vệ sinh / AGE) của Hạ vỏ và Nhập tàu thành 1 component dùng chung | Antigravity hoặc Claude Code | Hiện 2 màn có khối giống nhau (`InspectorHaVoMobile`, `VesselFieldMobile`) — chỉ sửa giao diện |
 | UI-01 | Rà soát giao diện mobile các màn hiện trường | Antigravity | Không đụng `src/services/` |
 
 ## C. LOGIC ĐÃ CHỐT (tóm tắt — chi tiết ở `docs/DECISIONS.md`)
@@ -94,6 +93,7 @@ Kiểm thử mới nhất: `npm test` **84/84 pass** (3 file test) • `npm run 
 | P7-10 | Phiếu thu: sắp lại cột (Phương thức TT, Thời gian / Nhân viên, Trạng thái cạnh Đã in); phiếu thu mẹ liên kết từng lần trừ (chứng từ, hồ sơ, số lượt, còn lại) | 2026-10-24 | DEC-079 | **81/81 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-11 | Quy chuẩn trang nhiều dữ liệu (docs/UI_DATA_LIST_STANDARD.md): chi tiết trượt phải, chọn 20 / 50 / 100 dòng; áp dụng Phiếu thu, Tồn vỏ, Nhập / Xuất tàu, Báo cáo, Hồ sơ | 2026-10-24 | DEC-080 | **83/83 • build PASS**; chưa thử trên trình duyệt | agent/claude/p4-prep-xlsx |
 | P7-12 | EEIR cho hồ sơ Nhập tàu / Xuất tàu + nút in trong hồ sơ | 2026-10-24 | DEC-081 | **84/84 • build PASS**; chưa thử in giấy | agent/claude/p4-prep-xlsx |
+| UI-02 | Form Giám định dùng chung `InspectionFields` (Hạ vỏ + Nhập tàu) | 2026-10-24 | — (chỉ giao diện) | **85/85 • build PASS** | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -196,3 +196,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 6. Xong việc: `npm test` + `npm run build` pass → ghi DEC + CHANGELOG + PROGRESS (C, D, G) + AGENTS.md mục 8 nếu là lưu ý chung → commit 2 nhóm (code / tài liệu) → **hỏi trước khi push**.
 7. Test xlsx Tổng hợp đã nâng timeout 20s; nếu vẫn lỗi lẻ tẻ thì chạy lại trước khi kết luận.
 - 2026-10-24 — Claude Code: P7-12 (DEC-081) EEIR Nhập / Xuất tàu; ghi nhận xác nhận A.5. 84/84 • build PASS.
+- 2026-10-24 — Claude Code: UI-02 form Giám định dùng chung. 85/85 • build PASS.
