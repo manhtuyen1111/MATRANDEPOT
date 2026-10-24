@@ -124,7 +124,7 @@ export function blockDimensions(block: Pick<YardBlock, 'maxBay' | 'maxRow' | 'ma
 // Kiểm tra vị trí đích theo cấu hình Block (DEC-005, DEC-082, YARD-003) và chống trùng ô
 //   - Chiều Block có cấu hình → BẮT BUỘC nhập, trong giới hạn 1 → tối đa.
 //   - Chiều không cấu hình → bỏ qua (không lưu).
-//   - Block chỉ có tên Block → nhiều cont đặt chung, không giới hạn.
+//   - Vị trí không đủ 4 phần (Block chỉ có tên, hoặc chỉ Bay / Bay + Row...) → nhiều cont đặt chung (DEC-087).
 export function validateTargetSlot(
   state: DepotState,
   container: ContainerRecord,
@@ -152,7 +152,8 @@ export function validateTargetSlot(
     }
     value[d.key] = v;
   }
-  if (dims.length > 0) {
+  // DEC-087: chỉ chặn trùng khi vị trí ĐỦ Block + Bay + Row + Tier; thiếu chiều thì 1 vị trí chứa được nhiều cont
+  if (dims.length === 3) {
     const occupied = state.containers.find(
       (c) =>
         c.id !== container.id &&

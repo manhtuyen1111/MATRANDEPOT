@@ -990,9 +990,10 @@ describe('DEC-082: vị trí theo cấu hình thực tế của Block', () => {
     const m = moved.containers.find((x) => x.id === cont.id)!;
     expect(m).toMatchObject({ currentBlock: 'BLOCK-D', currentBay: '03', currentRow: null, currentTier: null });
     expect(formatLocation(m)).toBe('BLOCK-D / Bay 03');
-    // Ô đã có cont (cùng Bay) bị chặn
+    // DEC-087: vị trí chưa đủ 4 phần (chỉ Bay) → nhiều cont đặt chung 1 Bay được
     const other = moved.containers.find((x) => x.containerNo === 'ONEU2291045')!;
-    expect(() => shift(as(moved, 'usr-forklift'), { containerId: other.id, blockCode: 'BLOCK-D', bay: '03' })).toThrow(/đang có container/);
+    const both = shift(as(moved, 'usr-forklift'), { containerId: other.id, blockCode: 'BLOCK-D', bay: '03' });
+    expect(both.containers.filter((x) => x.currentBlock === 'BLOCK-D' && x.currentBay === '03' && x.status !== 'GATED_OUT')).toHaveLength(2);
   });
 });
 
