@@ -391,7 +391,7 @@ Quy ước trạng thái:
 ### DEC-056 — Mặc định khoảng thời gian bộ lọc
 
 - Trạng thái: CONFIRMED (2026-10-23)
-- Quyết định: Phiếu thu và mọi báo cáo, khi mở lần đầu, bộ lọc thời gian **mặc định = 1 ngày trước → thời điểm hiện tại** (ví dụ `22/10/2026 10:10:10` → `23/10/2026 10:10:10`). Người dùng sửa được; thay cho mặc định "hôm nay 00:00:00 → 23:59:59" của DEC-054. Kỹ thuật: `defaultLastDayRange()` trong `src/services/datetime.ts`.
+- Quyết định: Phiếu thu và mọi báo cáo, khi mở lần đầu, bộ lọc thời gian **mặc định = 1 ngày trước → thời điểm hiện tại** (ví dụ `22/10/2026 10:10:10` → `23/10/2026 10:10:10`). Người dùng sửa được; thay cho mặc định "hôm nay 00:00:00 → 23:59:59" của DEC-054. Kỹ thuật: `defaultLastDayRange()` trong `src/services/datetime.ts`. **Đã thay bằng DEC-102 (2026-10-25): mặc định Hôm nay.**
 
 ### DEC-057 — Mã QR phiếu K80 duy nhất; đóng mã sau khi trả chứng từ
 
@@ -757,6 +757,15 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-25)
 - Quyết định: Mục menu Báo cáo đổi tên thành **Sửa chữa**, tiêu đề màn là "Báo cáo Sửa chữa". Nội dung báo cáo không đổi (DEC-044).
 
+### DEC-102 — Lọc nhanh thời gian cho mọi bộ lọc
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Mọi bộ lọc thời gian (Phiếu thu, các báo cáo, báo cáo Nhập / Xuất tàu) dùng chung ô **Lọc nhanh** (`DateRangeFilter`, `shared.tsx`; mốc tính bằng `quickRange`, `datetime.ts`). Các mục chọn:
+  - Hôm nay / Tuần này / Tháng này / Năm nay: từ 00:00:00 đầu kỳ → hiện tại.
+  - Hôm qua / Tuần trước / Tháng trước: trọn kỳ, đến 23:59:59 ngày cuối.
+  - Tùy chọn: chỉ khi chọn mục này mới hiện 2 ô Từ - Đến (`dd/mm/yyyy hh:mm:ss`).
+- **Tuần bắt đầu Thứ Hai.** Khi mở màn lần đầu chọn sẵn **Hôm nay** (thay mặc định 24 giờ của DEC-056).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -846,6 +855,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-101 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-102 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

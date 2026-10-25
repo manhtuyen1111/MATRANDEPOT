@@ -171,6 +171,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Menu Báo cáo: "Sửa chữa chi tiết" → "Sửa chữa" (DEC-101).
 - Đề xuất xuất hóa đơn từ phiếu thu: Q-041. Kiểm thử: 99/99 pass, build PASS.
 
+### Added (2026-10-25, DEC-102)
+- Ô lọc nhanh thời gian cho mọi bộ lọc: Hôm nay / Hôm qua / Tuần này / Tuần trước / Tháng này / Tháng trước / Năm nay / Tùy chọn. Mặc định Hôm nay, tuần tính từ Thứ Hai; chọn Tùy chọn mới hiện ô Từ - Đến. Đổi nốt nhãn TTT → TR. Kiểm thử: 100/100 pass, build PASS.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 
