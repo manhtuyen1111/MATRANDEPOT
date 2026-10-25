@@ -3,27 +3,29 @@
 > Agent cập nhật file này sau mỗi việc (skill `matran-docs-sync`). Bạn chỉ cần đọc mục A, B và F.
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
-Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-110**), **đã push đầy đủ lên GitHub 2026-10-24 (tối)**, chưa merge vào `main`. Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
+Cập nhật lần cuối: 2026-10-25 — Claude Code
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-110**), **đã push đầy đủ lên GitHub 2026-10-25**, chưa merge vào `main`. Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
-**Điểm dừng 2026-10-24 (phiên 2 — tạm nghỉ):** đã kiểm tra + **push đầy đủ lên GitHub** (DEC-050 → DEC-096). **Đọc mục I trước khi làm việc tiếp theo.** Để mở GĐ 4 Database cần bạn chốt: OPEN-003, Q-037 → Q-040 (xem `docs/DATABASE_PLATFORM_ADVICE.md`).
+**Điểm dừng 2026-10-25:** đã kiểm tra (107/107 test, build) + **push đầy đủ lên GitHub** (DEC-050 → DEC-110). **Đọc mục I (I.3) trước khi làm việc tiếp theo.**
+
+**Quyết định 2026-10-25: TẠM HOÃN GĐ 4 Database** — người dùng test kỹ bản Demo trước (dữ liệu test đầy đủ đã có), khi thấy các luồng ổn định mới xây database. Lý do: sau khi có database, mỗi thay đổi nghiệp vụ phải sửa cả migration / RPC / pgTAP, tốn công hơn nhiều. API ngân hàng (GĐ 6) phụ thuộc GĐ 4. Khi mở lại cần chốt Q-037 → Q-040.
 Kiểm thử mới nhất: `npm test` **97/97 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
 |---|---|---|
-| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push đầy đủ** (DEC-050 → DEC-096, 2026-10-24). **Thử trên trình duyệt + in giấy thật** (mục F, F2) rồi tạo Pull Request merge vào `main` | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
+| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push đầy đủ** (DEC-050 → DEC-110, 2026-10-25). **Thử trên trình duyệt + in giấy thật** (mục F, F2, F3) rồi tạo Pull Request merge vào `main` | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
 | 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |
 | 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
 | 4 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
 | 5 | Điểm A.5 đã xác nhận 2026-10-24 (a, b, d, e đúng; f đã làm — DEC-081). **Còn (c)**: sắp xếp danh sách tàu theo size trước (20 → 40) rồi số cont A→Z — đúng chưa? | Đổi được nhanh nếu bạn muốn khác |
-| 6 | **Nền tảng database (Q-040)**: đề xuất **Supabase vùng Singapore, gói Pro + PITR, 3 môi trường dev / staging / production**; hỏi pháp chế có bắt buộc lưu dữ liệu tại Việt Nam không (nếu có → Postgres trên cloud VN, lược đồ dùng lại được). **Sao lưu (Q-039)**: PITR 7 ngày + dump mã hóa hằng đêm ra kho ngoài + diễn tập khôi phục mỗi quý. Còn Q-037 (ảnh), Q-038 (số người dùng cùng lúc) | Chặn P4-01 cùng OPEN-003 — chi tiết `docs/DATABASE_PLATFORM_ADVICE.md` |
+| 6 | **Nền tảng database (Q-040)**: đề xuất **Supabase vùng Singapore, gói Pro + PITR, 3 môi trường dev / staging / production**; hỏi pháp chế có bắt buộc lưu dữ liệu tại Việt Nam không (nếu có → Postgres trên cloud VN, lược đồ dùng lại được). **Sao lưu (Q-039)**: PITR 7 ngày + dump mã hóa hằng đêm ra kho ngoài + diễn tập khôi phục mỗi quý. Còn Q-037 (ảnh), Q-038 (số người dùng cùng lúc) | ⏸ **Tạm hoãn theo quyết định 2026-10-25** — trả lời khi muốn mở GĐ 4. Chi tiết `docs/DATABASE_PLATFORM_ADVICE.md` |
 
 ## B. VIỆC TIẾP THEO (đề xuất theo thứ tự)
 | Mã | Việc | Giao cho | Ghi chú |
 |---|---|---|---|
 | P3-T | Bạn chạy `npm run dev`, thử các luồng ở mục F + F2 (**Tồn vỏ hàng loạt, Nhập / Xuất tàu, in EEIR + phiếu thu A4, phiếu thu trước, chi tiết trượt phải**), **in thử giấy thật**, báo lỗi | Bạn | Agent chưa thử được trên trình duyệt |
-| P4-01 | Viết lại schema Supabase (bảng, bộ đếm mã, RLS, **index theo bộ lọc, phân trang con trỏ, partition nhật ký**) | Claude Code | ⏸ Chờ A.2 (trạng thái) + A.6 (nền tảng); làm theo DEC-066 (DATABASE_CONTRACT mục 10) + DATABASE_PLATFORM_ADVICE (11 tình huống vận hành) |
+| P4-01 | Viết lại schema Supabase (bảng, bộ đếm mã, RLS, **index theo bộ lọc, phân trang con trỏ, partition nhật ký**) | Claude Code | ⏸ **Tạm hoãn (2026-10-25)** — người dùng test Demo trước; khi mở lại chờ A.2 (trạng thái) + A.6 (nền tảng); làm theo DEC-066 (DATABASE_CONTRACT mục 10) + DATABASE_PLATFORM_ADVICE (11 tình huống vận hành) |
 | P4-02 | RPC Hạ vỏ + thanh toán + pgTAP | Claude Code | Sau P4-01 |
 | P7-DB | Bảng `vessel_lists` / `vessel_list_items` + RPC Nhập tàu / Xuất tàu (DATABASE_CONTRACT mục 8) | Claude Code | Làm cùng P4-01 |
 | UI-01 | Rà soát giao diện mobile các màn hiện trường | Antigravity | Không đụng `src/services/` |
@@ -173,6 +175,15 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-23 — Claude Code: điểm dừng — cập nhật tiến độ chung, ROADMAP GĐ 4, OPEN_QUESTIONS Q-036 → Q-039; push GitHub.
 - 2026-10-24 — Claude Code: P4-pre11 (DEC-067 Tồn vỏ), P4-pre12 (DEC-068 mã hồ sơ), P7-01 (DEC-069 Nhập tàu / Xuất tàu). 68/68 • build PASS. 
 
+## F3. THỬ CÁC TÍNH NĂNG MỚI 2026-10-25
+Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ liệu test** / **Xóa dữ liệu** ở đầu trang). Cont mẫu: `MSKU1000011` → `MSKU1000122`, cấp vỏ `MSKU2000011/22`, nhập tàu `MSKU4000011/22/33`, xuất tàu `MSKU3000011/22`.
+14. **Tồn vỏ**: cột **Hình thức TT** (TT — TRỰC TIẾP / TTR — TRẢ TRƯỚC / TTS — THANH TOÁN SAU) và **Mã phiếu thu** — bấm mã → mở đúng phiếu ở Văn phòng → Phiếu thu; TTS để trống. Xuất Excel kiểm cột.
+15. **Văn phòng → Hạ vỏ**: Hình thức thanh toán **TT đứng đầu, chọn sẵn**; thu tiền mặt → phiếu thu `PT-TT-YYMMDD-0001`.
+16. **Văn phòng → Phiếu thu**: ô **Lọc nhanh** (Hôm nay … Năm nay / Tùy chọn); cột Số cont cạnh Tác nghiệp; không còn chứng từ; Tạo phiếu thu TTR (trả trước) → `PT-TTR-…`; gọi là **PHIẾU THU TRẢ TRƯỚC**.
+17. **Hạ kệ giám định**: Giám định → Hạ vỏ tích **HẠ KỆ GIÁM ĐỊNH** → Văn phòng thu phí → Xe nâng → Chờ hạ vỏ thấy dải vàng, chỉ chọn được Kệ giám định (BLOCK-DAMAGE; Admin đổi ở Danh mục → Vị trí) → Đảo chuyển về bay. Cont mẫu: `MSKU1000111` (đã lên kệ), `MSKU1000122` (chờ vệ sinh rồi hạ kệ).
+18. **Văn phòng → Trả chứng từ**: nút **Xem trước** (bên trái Trả chứng từ) — chỉ xem EEIR + phiếu thu, không in, không trả.
+19. **Báo cáo → Sửa chữa** (đổi tên từ "Sửa chữa chi tiết").
+
 ## H. BÀN GIAO AGENT (2026-10-24 — Claude Code)
 - **Nhánh:** `agent/claude/p4-prep-xlsx`. Commit hôm nay: `7adcfd1` Tồn vỏ → `de14560` mã hồ sơ → `1d3745e` nghiệp vụ tàu → `f83fbfa` giao diện tàu → commit tài liệu. Đã push 2026-10-24.
 - **Đọc trước khi sửa:** `docs/DECISIONS.md` DEC-067 → DEC-069; `AGENTS.md` mục 8 (lưu ý Nhập tàu / Xuất tàu, mã hồ sơ, Tồn vỏ).
@@ -233,6 +244,18 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-24 — Claude Code: P7-24 (DEC-095) Đảo chuyển tiến độ + ghi chú.
 - 2026-10-24 — Claude Code: P7-25 (DEC-096) đồng bộ ô trạng thái Đảo chuyển.
 
+### I.3 — Bổ sung 2026-10-25 (đọc trước — mới nhất)
+**Cho bạn:** test theo mục F3 với dữ liệu test; ghi lại lỗi / chỗ chưa hợp lý; khi thấy ổn thì báo để mở GĐ 4 (trả lời Q-037 → Q-040) và tạo PR merge vào `main`.
+
+**Cho agent:**
+1. Hiện tới **DEC-110**; mỗi yêu cầu mới → 1 DEC, 2 commit (code / tài liệu). **GĐ 4 đang tạm hoãn theo người dùng — không tự viết migration.**
+2. **Thanh toán:** hiển thị TT / TTR / TTS, mã nội bộ vẫn TTTT / TTT / TTS (DEC-100). Mã phiếu thu `PT-TT-YYMMDD-NNNN` / `PT-TTR-YYMMDD-NNNN` (DEC-098); TTS không cấp phiếu thu. Không hiển thị chứng từ `CT-` ở Tồn vỏ / Phiếu thu (DEC-104, 107). Viết **"Phiếu thu trả trước"**, không viết "phiếu thu mẹ" (DEC-103).
+3. **Dữ liệu test:** `src/services/demoData.ts` (`createDemoState`) tạo bằng hàm service thật; thêm trường hợp mới → thêm vào đây + `tests/demo-data.test.ts`. Đổi cấu trúc dữ liệu → tăng `STORAGE_KEY` (hiện v9) để máy người dùng nạp lại dữ liệu test.
+4. **Hạ kệ giám định (DEC-109):** cờ `forkliftShiftTask = 'HA_KE_GIAM_DINH'`; kiểm tra ở `updateContainerLocation`; `SlotPicker onlyBlocks`; Đảo chuyển xóa cờ.
+5. **Bộ lọc thời gian:** chỉ dùng `DateRangeFilter` (DEC-102).
+6. **Shell trên máy này làm mất dấu gạch chéo ngược và đổi ký tự xuống dòng** khi chèn qua node -e / sed → viết script vào file scratchpad bằng heredoc, hoặc dùng Edit; regex có chữ d / dấu / thoát thì sửa bằng Edit. Máy không có Python.
+7. Tư vấn API ngân hàng (2026-10-25, chưa ghi tài liệu riêng): cần GĐ 4 trước; đề xuất cổng trung gian (payOS / Casso / SePay) + VietQR nội dung = mã tham chiếu + webhook trên Edge Function có kiểm chữ ký + chống trùng + danh sách chờ đối soát; người dùng chưa chốt (Q-032).
+
 ### I.2 — Bổ sung sau phiên 2 (2026-10-24)
 
 **Cho bạn:**
@@ -259,3 +282,5 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-25 — Claude Code: DEC-108 dữ liệu test đầy đủ trường hợp + nút Nạp dữ liệu test. 103/103 • build PASS.
 - 2026-10-25 — Claude Code: DEC-109 Hạ kệ giám định (Giám định tích → Xe nâng chỉ hạ kệ → Đảo chuyển). 106/106 • build PASS.
 - 2026-10-25 — Claude Code: DEC-110 Trả chứng từ — nút Xem trước. 107/107 • build PASS.
+
+- 2026-10-25 — Claude Code: quyết định tạm hoãn GĐ 4 (người dùng test Demo trước); cập nhật tiến độ, F3, bàn giao I.3; kiểm tra + push đầy đủ (DEC-050 → DEC-110).
