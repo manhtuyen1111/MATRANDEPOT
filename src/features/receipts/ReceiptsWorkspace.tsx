@@ -96,6 +96,13 @@ export const ReceiptsWorkspace: React.FC<{
       })()
     : undefined;
 
+  // DEC-118: bấm mã phiếu thu trả trước → mở phiếu nạp tiền (PT-TTR-) của nó trên cùng màn
+  const openMaster = (code: string) => {
+    const m = state.masterReceipts.find((x) => x.receiptCode === code);
+    const tx = m && state.paymentTransactions.find((x) => x.purpose === 'PREPAID_TOPUP' && x.masterReceiptId === m.id);
+    if (tx) setSelectedTxId(tx.id);
+  };
+
   const run = (fn: () => DepotState, message: string) => {
     setError(null);
     setSuccess(null);
@@ -284,7 +291,7 @@ export const ReceiptsWorkspace: React.FC<{
                         const usage = t.purpose === 'PREPAID_TOPUP' ? masterReceiptUsage(state, r?.masterReceiptCode || t.paymentRef) : undefined;
                         return (
                         <tr key={t.id} onClick={() => setSelectedTxId(t.id)} className={`cursor-pointer ${selectedTxId === t.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
-                          <td className="whitespace-nowrap px-2 py-2 font-mono font-bold">{r?.receiptNo || '—'}</td>
+                          <td className="whitespace-nowrap px-2 py-2">{r ? <button type="button" onClick={() => setSelectedTxId(t.id)} className={linkCls}>{r.receiptNo}</button> : '—'}</td>
                           <td className="whitespace-nowrap px-2 py-2 font-bold">{RECEIPT_OPERATION_LABELS[operationOf(row)]}</td>
                           <td className="whitespace-nowrap px-2 py-2 font-mono font-bold">{t.containerNo || '-'}</td>
                           <td className="whitespace-nowrap px-2 py-2 text-right font-mono font-bold">{formatVnd(t.amount)}</td>
@@ -293,13 +300,17 @@ export const ReceiptsWorkspace: React.FC<{
                           <td className="whitespace-nowrap px-2 py-2 font-mono">
                             {usage ? (
                               <>
-                                <span className="block font-bold">{usage.master.receiptCode}</span>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); openMaster(usage.master.receiptCode); }} className={`block ${linkCls}`}>{usage.master.receiptCode}</button>
                                 <span className="block font-sans text-[11px] text-slate-600">
                                   Dùng <strong className="text-blue-700">{usage.usedCount} lượt</strong> • còn <strong className="text-emerald-700">{formatVnd(usage.remainingAmount)}</strong>
                                 </span>
                               </>
                             ) : (
-                              t.dossierCode || r?.masterReceiptCode || '-'
+                              t.dossierCode ? (
+                                <button type="button" onClick={(e) => { e.stopPropagation(); onOpenDossier?.(t.dossierCode!); }} className={linkCls}>{t.dossierCode}</button>
+                              ) : r?.masterReceiptCode ? (
+                                <button type="button" onClick={(e) => { e.stopPropagation(); openMaster(r.masterReceiptCode!); }} className={linkCls}>{r.masterReceiptCode}</button>
+                              ) : '-'
                             )}
                           </td>
                           <td className="whitespace-nowrap px-2 py-2 font-mono text-[11px]">{formatViTime(t.createdAt)}</td>
@@ -398,7 +409,9 @@ export const ReceiptsWorkspace: React.FC<{
                   <>
                     <dt className="text-slate-500">Phiếu thu trả trước (TTR)</dt>
                     <dd className="font-mono">
-                      {selected.receipt?.masterReceiptCode || selected.transaction.paymentRef}
+                      <button type="button" onClick={() => openMaster(selected.receipt?.masterReceiptCode || selected.transaction.paymentRef)} className={linkCls}>
+                        {selected.receipt?.masterReceiptCode || selected.transaction.paymentRef}
+                      </button>
                       {(() => {
                         const m = state.masterReceipts.find((x) => x.id === selected.transaction.masterReceiptId);
                         return m ? ` • QR ${m.qrCode} • Dư ${formatVnd(m.remainingAmount)}` : '';

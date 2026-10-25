@@ -3,7 +3,7 @@ import { Eye, FileCheck2, Printer, QrCode, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
 import { recordReceiptPrint } from '../../services/depotOperations';
 import { confirmDocumentsReturn, DocumentPack, previewDocumentPack, ticketsAwaitingReturn } from '../../services/driverRoute';
-import { ContainerNo, Feedback, inputCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
+import { linkCls, ContainerNo, Feedback, inputCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
 import { EeirPrintSheet, PrintPortal, ReceiptPrintSheet } from '../../components/ReceiptPrint';
 
 type Mode = 'HA_VO' | 'CAP_VO';
@@ -13,7 +13,8 @@ const MODE_LABEL: Record<Mode, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP V�
 export const DocumentReturnWorkspace: React.FC<{
   state: DepotState;
   onUpdateState: (next: DepotState) => void;
-}> = ({ state, onUpdateState }) => {
+  onOpenDossier?: (code: string) => void;
+}> = ({ state, onUpdateState, onOpenDossier }) => {
   const [code, setCode] = useState('');
   const [pack, setPack] = useState<DocumentPack | null>(null);
   const [preview, setPreview] = useState<DocumentPack | null>(null); // DEC-110: xem trước, không in
@@ -75,7 +76,7 @@ export const DocumentReturnWorkspace: React.FC<{
                     <li key={t.ticketCode} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="flex flex-wrap items-center gap-2">
                         <ContainerNo no={t.containerNo} />
-                        <span className="font-mono text-slate-600">{t.outDossierCode || t.masterDossierCode}</span>
+                        <button type="button" onClick={() => onOpenDossier?.(t.outDossierCode || t.masterDossierCode)} className={linkCls}>{t.outDossierCode || t.masterDossierCode}</button>
                         <span className="text-slate-600">Xe {t.truckNo || '-'} • {t.driverPhone || '-'}</span>
                       </span>
                       <span className="flex gap-2">

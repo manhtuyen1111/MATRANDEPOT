@@ -6,7 +6,7 @@ import { bulkConfirmQuotationToRepair, confirmQuotationToRepair, saveQuotationDr
 import { formatLocation, parseContainerList, storageDays } from "../../services/core";
 import { formatDateTime, fileStamp } from '../../services/datetime';
 import { yardStockSheet } from '../../services/reports';
-import {
+import { linkCls,
   ContainerNo,
   DetailDrawer,
   ExportExcelButton,
@@ -214,7 +214,7 @@ export const QuotationWorkspace: React.FC<{
                     <input type="checkbox" aria-label={`Chọn ${c.containerNo}`} checked={picked.has(c.id)} onChange={() => togglePick(c.id)} />
                   </td>
                   <td className="whitespace-nowrap px-2 py-2.5 font-mono text-blue-700">
-                    <button type="button" onClick={(e) => { e.stopPropagation(); onOpenDossier?.(c.masterDossierCode); }} className="hover:underline">{c.masterDossierCode}</button>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); onOpenDossier?.(c.masterDossierCode); }} className={linkCls}>{c.masterDossierCode}</button>
                   </td>
                   <td className="whitespace-nowrap px-2 py-2.5"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.officeNote || c.holdReason} className="text-sm" /></td>
                   <td className="px-2 py-2.5 text-center">{c.size}</td>
@@ -253,7 +253,7 @@ export const QuotationWorkspace: React.FC<{
           <div className="space-y-3">
             <Feedback error={error} onClose={() => setError(null)} />
             <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-slate-200 p-3 sm:grid-cols-4">
-              <dt className="text-slate-500">Mã hồ sơ</dt><dd className="font-mono font-bold">{selected.masterDossierCode}</dd>
+              <dt className="text-slate-500">Mã hồ sơ</dt><dd><button type="button" onClick={() => onOpenDossier?.(selected.masterDossierCode)} className={linkCls}>{selected.masterDossierCode}</button></dd>
               <dt className="text-slate-500">Size / Type</dt><dd className="font-semibold">{selected.size} / {selected.type}</dd>
               <dt className="text-slate-500">Hãng tàu</dt><dd className="font-semibold">{selected.shippingLineCode || '-'}</dd>
               <dt className="text-slate-500">AGE</dt><dd className="font-semibold">{selected.manufactureYear}</dd>

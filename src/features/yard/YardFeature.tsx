@@ -283,7 +283,9 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                           <input type="checkbox" aria-label={`Chọn ${c.containerNo}`} checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
                         </td>
                       )}
-                      <td className="whitespace-nowrap px-2 py-2.5 font-mono text-blue-700">{c.masterDossierCode}</td>
+                      <td className="whitespace-nowrap px-2 py-2.5">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); onOpenDossier?.(c.masterDossierCode); }} className={linkCls}>{c.masterDossierCode}</button>
+                      </td>
                       <td className="whitespace-nowrap px-2 py-2.5">
                         <span className="inline-flex items-center gap-1.5 font-mono text-sm font-bold text-slate-900">
                           {c.containerNo}

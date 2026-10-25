@@ -86,6 +86,8 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('title="Mở phiếu thu"');
     // DEC-117: link dữ liệu cùng kiểu Mã hồ sơ (font-mono text-blue-700, gạch chân khi rê chuột)
     expect(html).toContain('class="font-mono text-blue-700 hover:underline" title="Mở phiếu thu"');
+    // DEC-118: mã hồ sơ ở Tồn vỏ cũng là link (cùng kiểu)
+    expect(html).toMatch(/<button type="button" class="font-mono text-blue-700 hover:underline">HV-/);
     expect(renderToString(<YardFeature state={base} onUpdateState={noop} />)).not.toContain('title="Mở phiếu thu"');
   });
 
