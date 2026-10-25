@@ -182,6 +182,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Dữ liệu test đầy đủ trường hợp (MSK; 20 / 40 / 45; đủ hình thức thanh toán, khóa, DAMAGE, vệ sinh, cấp vỏ, nhập / xuất tàu), tạo bằng hàm nghiệp vụ thật; nút "Nạp dữ liệu test" (DEC-108). Kiểm thử: 103/103 pass, build PASS.
 - Hạ vỏ: ô tích **HẠ KỆ GIÁM ĐỊNH** ở Giám định → Xe nâng chỉ được hạ vào block Kệ giám định (Admin đánh dấu trong Danh mục Vị trí), K80 ghi rõ bước; giám định xong thì Đảo chuyển về vị trí phù hợp (DEC-109). Kiểm thử: 106/106 pass, build PASS.
 - Trả chứng từ: nút **Xem trước** bên trái nút Trả chứng từ — xem EEIR + phiếu thu, không ghi trả, không in, không tính lần in (DEC-110). Kiểm thử: 107/107 pass, build PASS.
+- Phiếu thu có **mã bảo mật 12 ký tự** + đường link in trên phiếu; trang khách hàng `#/hoa-don` để gửi MST / Gmail / Tên công ty / Địa chỉ / Ghi chú; trạng thái CHƯA XHD → YÊU CẦU XHD → ĐÃ XHD; **thêm lại vai trò Kế toán** cập nhật ĐÃ XHD (số hóa đơn MISA tùy chọn); cột / lọc / Excel Hóa đơn; dữ liệu test có đủ 3 trạng thái (DEC-111, Q-041). Kiểm thử: 115/115 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

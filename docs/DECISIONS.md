@@ -852,6 +852,29 @@ Quy ước trạng thái:
   - **không** tăng số lần in phiếu thu.
 - Xem được cả khi lái xe chưa đi hết lộ trình. Chỉ Văn phòng / Quản lý được xem (`previewDocumentPack`, `driverRoute.ts`).
 
+### DEC-111 — Phiếu thu: mã bảo mật + khách yêu cầu xuất hóa đơn; thêm lại vai trò Kế toán
+
+- Trạng thái: CONFIRMED (2026-10-25). Giải quyết Q-041. **Thay một phần DEC-047:** thêm lại vai trò **Kế toán**, nay là vai trò thứ 9 (DEC-047 đã bỏ vai trò này).
+- **Mã bảo mật:**
+  - Mỗi phiếu thu (`PT-TT-…`, `PT-TTR-…`) có mã bảo mật **12 ký tự** gồm chữ hoa, chữ thường và số.
+  - Mã sinh ngẫu nhiên bằng nguồn ngẫu nhiên mật mã (`crypto.getRandomValues`), có khoảng 3,2 × 10^21 khả năng nên không đoán được, và không trùng.
+  - Mã **in trên phiếu thu** kèm đường link trang yêu cầu hóa đơn. Mã **không hiển thị** trên màn nội bộ và không có trong Excel.
+  - Phiếu thu cũ được tự bổ sung mã khi nạp dữ liệu.
+- **Trang khách hàng** (`#/hoa-don`, không cần đăng nhập):
+  - Khách dán mã (phân biệt chữ hoa / thường) và thấy thông tin tối thiểu: số phiếu, ngày, số tiền, bên thanh toán, số cont, trạng thái.
+  - Khách nhập **MÃ SỐ THUẾ** (10 số, hoặc 10 số + "-" + 3 số), **GMAIL NHẬN HÓA ĐƠN**, **TÊN CÔNG TY**, **ĐỊA CHỈ** (đều bắt buộc) và **GHI CHÚ** (không bắt buộc).
+  - Sửa được khi chưa xuất hóa đơn.
+- **Trạng thái phiếu thu:**
+  - **CHƯA XHD:** mặc định.
+  - **YÊU CẦU XHD:** khách đã gửi.
+  - **ĐÃ XHD:** **Kế toán** cập nhật sau khi xuất trên MISA, kèm số hóa đơn (không bắt buộc). Chỉ chuyển được khi đã có yêu cầu. Sau khi ĐÃ XHD, khách không sửa được.
+- **Kế toán (ACCOUNTANT):** chỉ thấy menu Văn phòng → Phiếu thu (xem, lọc, xuất Excel) và cập nhật ĐÃ XHD.
+- **Màn Phiếu thu:** thêm cột / bộ lọc **Hóa đơn**; cửa sổ chi tiết có khối "Xuất hóa đơn". Excel thêm các cột TRẠNG THÁI HĐ, MÃ SỐ THUẾ, GMAIL NHẬN HĐ, TÊN CÔNG TY, ĐỊA CHỈ, GHI CHÚ HĐ, SỐ HÓA ĐƠN, CẬP NHẬT XHD.
+- **Giới hạn bản Demo:**
+  - Trang khách hàng chỉ dùng chung dữ liệu với **cùng trình duyệt** (localStorage).
+  - Khi có database, trang này phải gọi RPC công khai có **giới hạn số lần thử** theo IP / thiết bị (chống dò mã), và gửi email thông báo cho Kế toán.
+  - Kết nối API MISA làm sau.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -941,6 +964,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-110 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-111 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

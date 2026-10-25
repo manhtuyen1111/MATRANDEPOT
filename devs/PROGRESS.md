@@ -4,7 +4,7 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-25 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-110**), **đã push đầy đủ lên GitHub 2026-10-25**, chưa merge vào `main`. Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-111**), **đã push đầy đủ lên GitHub 2026-10-25**, chưa merge vào `main`. Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
 **Điểm dừng 2026-10-25:** đã kiểm tra (107/107 test, build) + **push đầy đủ lên GitHub** (DEC-050 → DEC-110). **Đọc mục I (I.3) trước khi làm việc tiếp theo.**
 
@@ -183,6 +183,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 17. **Hạ kệ giám định**: Giám định → Hạ vỏ tích **HẠ KỆ GIÁM ĐỊNH** → Văn phòng thu phí → Xe nâng → Chờ hạ vỏ thấy dải vàng, chỉ chọn được Kệ giám định (BLOCK-DAMAGE; Admin đổi ở Danh mục → Vị trí) → Đảo chuyển về bay. Cont mẫu: `MSKU1000111` (đã lên kệ), `MSKU1000122` (chờ vệ sinh rồi hạ kệ).
 18. **Văn phòng → Trả chứng từ**: nút **Xem trước** (bên trái Trả chứng từ) — chỉ xem EEIR + phiếu thu, không in, không trả.
 19. **Báo cáo → Sửa chữa** (đổi tên từ "Sửa chữa chi tiết").
+20. **Xuất hóa đơn (DEC-111)**: Văn phòng → Phiếu thu → in 1 phiếu → thấy **mã bảo mật** + link. Mở link `…/#/hoa-don` (cùng trình duyệt), dán mã → nhập MST / Gmail / Tên công ty / Địa chỉ → Gửi. Đổi người dùng sang **Đỗ Thị Thu (Kế toán)** → Phiếu thu, lọc Hóa đơn = YÊU CẦU XHD → mở phiếu → nhập số HĐ → **Đã xuất hóa đơn**. Dữ liệu test: phiếu của `MSKU1000011` đang YÊU CẦU XHD, `MSKU1000022` ĐÃ XHD.
 
 ## H. BÀN GIAO AGENT (2026-10-24 — Claude Code)
 - **Nhánh:** `agent/claude/p4-prep-xlsx`. Commit hôm nay: `7adcfd1` Tồn vỏ → `de14560` mã hồ sơ → `1d3745e` nghiệp vụ tàu → `f83fbfa` giao diện tàu → commit tài liệu. Đã push 2026-10-24.
@@ -283,4 +284,5 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-25 — Claude Code: DEC-109 Hạ kệ giám định (Giám định tích → Xe nâng chỉ hạ kệ → Đảo chuyển). 106/106 • build PASS.
 - 2026-10-25 — Claude Code: DEC-110 Trả chứng từ — nút Xem trước. 107/107 • build PASS.
 
+- 2026-10-25 — Claude Code: DEC-111 mã bảo mật phiếu thu + trang khách yêu cầu xuất hóa đơn + vai trò Kế toán. 115/115 • build PASS.
 - 2026-10-25 — Claude Code: quyết định tạm hoãn GĐ 4 (người dùng test Demo trước); cập nhật tiến độ, F3, bàn giao I.3; kiểm tra + push đầy đủ (DEC-050 → DEC-110).
