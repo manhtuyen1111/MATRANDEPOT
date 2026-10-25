@@ -60,8 +60,6 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
         </div>
         <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
 
-        <InvoiceGuide state={state} />
-
         <form onSubmit={lookup} className="space-y-2 rounded-lg border border-slate-200 bg-white p-4">
           <label className="block">
             <span className={labelCls}>Mã bảo mật trên phiếu thu ({INVOICE_SECRET_LENGTH} ký tự)</span>
@@ -81,6 +79,8 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
             Tra cứu phiếu thu
           </button>
         </form>
+
+        <InvoiceGuide state={state} />
 
         {view && (
           <div className="space-y-3 rounded-lg border border-blue-600 bg-white p-4 text-xs">
@@ -120,47 +120,25 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
   );
 };
 
-// DEC-113: HƯỚNG DẪN TỪNG BƯỚC cho khách — viết ngắn, dễ hiểu; mở sẵn, bấm để thu gọn
-const Step: React.FC<{ no: number; title: string; children: React.ReactNode }> = ({ no, title, children }) => (
-  <li className="flex gap-2.5">
-    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-black text-white">{no}</span>
-    <span>
-      <span className="block font-bold text-slate-900">{title}</span>
-      <span className="block text-slate-600">{children}</span>
-    </span>
-  </li>
-);
-
+// DEC-113, DEC-114: HƯỚNG DẪN NGẮN cho khách — 3 bước + 2 trường hợp sai thông tin
 export const InvoiceGuide: React.FC<{ state: DepotState }> = ({ state }) => {
-  const c = state.companyProfile;
-  const contact = [c.phone && `ĐT ${c.phone}`, c.email].filter(Boolean).join(' • ');
+  const phone = state.companyProfile.phone;
+  const steps = ['Nhập mã bảo mật trên phiếu thu → Tra cứu', 'Điền Mã số thuế, Tên công ty, Địa chỉ, Gmail → Gửi', 'Nhận hóa đơn qua Gmail'];
   return (
-    <details open className="rounded-lg border border-slate-200 bg-white p-4 text-xs" data-testid="invoice-guide">
-      <summary className="cursor-pointer text-sm font-bold text-slate-900">Hướng dẫn xuất hóa đơn</summary>
-      <ol className="mt-3 space-y-3">
-        <Step no={1} title="Tìm mã bảo mật trên phiếu thu">
-          Ở khung <strong>"Yêu cầu xuất hóa đơn"</strong> phía dưới phiếu thu có <strong>Mã bảo mật gồm 12 ký tự</strong> (chữ và số).
-        </Step>
-        <Step no={2} title="Nhập mã và bấm Tra cứu">
-          Gõ hoặc dán <strong>đúng từng ký tự</strong>, phân biệt chữ HOA và chữ thường, không có dấu cách. Kiểm tra <strong>số phiếu thu và số tiền</strong> hiện ra có khớp với phiếu bạn đang cầm.
-        </Step>
-        <Step no={3} title="Điền thông tin xuất hóa đơn">
-          Ghi <strong>đúng như trên Giấy đăng ký kinh doanh</strong> của công ty: Mã số thuế (10 số; chi nhánh thêm "-" và 3 số, VD 0101234567-001), Tên công ty đầy đủ, Địa chỉ đầy đủ, Gmail nhận hóa đơn. Bấm <strong>Gửi yêu cầu</strong> → trạng thái chuyển thành <strong>YÊU CẦU XHD</strong>.
-        </Step>
-        <Step no={4} title="Nhận hóa đơn qua Gmail">
-          Kế toán xuất hóa đơn điện tử và gửi về Gmail bạn đã nhập. Muốn xem tiến độ: nhập lại mã → trạng thái <strong>ĐÃ XHD</strong> kèm số hóa đơn là đã xuất xong.
-        </Step>
+    <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-4 text-xs" data-testid="invoice-guide">
+      <p className="font-bold text-slate-900">Hướng dẫn</p>
+      <ol className="space-y-1.5">
+        {steps.map((s, i) => (
+          <li key={s} className="flex items-center gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[10px] font-black text-white">{i + 1}</span>
+            <span>{s}</span>
+          </li>
+        ))}
       </ol>
-      <div className="mt-4 space-y-2">
-        <p className="rounded-md bg-amber-50 p-2.5 text-amber-900">
-          <strong>Nhập sai thông tin, CHƯA xuất hóa đơn</strong> (trạng thái YÊU CẦU XHD): nhập lại mã → sửa thông tin → bấm <strong>Cập nhật yêu cầu</strong>. Kế toán luôn dùng thông tin mới nhất.
-        </p>
-        <p className="rounded-md bg-rose-50 p-2.5 text-rose-900">
-          <strong>Hóa đơn ĐÃ xuất</strong> (trạng thái ĐÃ XHD): trang này khóa, không sửa được nữa. Nếu thông tin trên hóa đơn sai, vui lòng <strong>liên hệ Kế toán</strong>{contact ? ` (${contact})` : ''} và báo số phiếu thu để được hướng dẫn điều chỉnh hóa đơn.
-        </p>
-        <p className="text-slate-500">Giữ kín mã bảo mật — ai có mã đều gửi được yêu cầu cho phiếu thu này.</p>
-      </div>
-    </details>
+      <p className="border-t border-slate-100 pt-2 text-slate-600">
+        <strong>Ghi sai?</strong> Chưa xuất: tra cứu lại → sửa → <strong>Cập nhật yêu cầu</strong>. Đã xuất: liên hệ Kế toán{phone ? ` ${phone}` : ''}.
+      </p>
+    </div>
   );
 };
 

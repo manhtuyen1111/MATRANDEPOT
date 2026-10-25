@@ -572,6 +572,8 @@ describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
     expect(html).toContain('data-testid="invoice-guide"');
     expect(html).toContain('Cập nhật yêu cầu');
     expect(html).toContain('liên hệ Kế toán');
+    // DEC-114: hướng dẫn nằm dưới ô mã bảo mật
+    expect(html.indexOf('aria-label="Mã bảo mật"')).toBeLessThan(html.indexOf('data-testid="invoice-guide"'));
   });
   it('phiếu thu in kèm đường link + mã bảo mật', () => {
     const r = demo.paymentReceipts.find((x) => x.invoiceSecret)!;
