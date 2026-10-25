@@ -165,14 +165,15 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Hình thức thanh toán (Hạ vỏ / Cấp vỏ): TTTT — Trực tiếp đứng đầu, chọn sẵn + Tiền mặt. Kiểm thử: 97/97 pass.
 
 ### Changed (2026-10-25, DEC-098 → DEC-101)
-- Mã phiếu thu mới: `PT-TL-YYMMDD-NNNN` (trả ngay) và `PT-TR-YYMMDD-NNNN` (nạp trước), duy nhất, đánh số theo ngày. Mã cũ giữ nguyên (DEC-098).
+- Mã phiếu thu mới: `PT-TT-YYMMDD-NNNN` (trực tiếp) và `PT-TTR-YYMMDD-NNNN` (nạp trước), duy nhất, đánh số theo ngày. Mã cũ giữ nguyên (DEC-098).
 - Tồn vỏ: thêm cột Hình thức TT và Phiếu thu, cả trên màn và trong Excel (DEC-099).
-- Ký hiệu hình thức thanh toán đổi thành TL / TTS / TR (DEC-100).
+- Ký hiệu hình thức thanh toán đổi thành TT / TTR / TTS (DEC-100).
 - Menu Báo cáo: "Sửa chữa chi tiết" → "Sửa chữa" (DEC-101).
 - Đề xuất xuất hóa đơn từ phiếu thu: Q-041. Kiểm thử: 99/99 pass, build PASS.
 
 ### Added (2026-10-25, DEC-102)
-- Ô lọc nhanh thời gian cho mọi bộ lọc: Hôm nay / Hôm qua / Tuần này / Tuần trước / Tháng này / Tháng trước / Năm nay / Tùy chọn. Mặc định Hôm nay, tuần tính từ Thứ Hai; chọn Tùy chọn mới hiện ô Từ - Đến. Đổi nốt nhãn TTT → TR. Kiểm thử: 100/100 pass, build PASS.
+- Ô lọc nhanh thời gian cho mọi bộ lọc: Hôm nay / Hôm qua / Tuần này / Tuần trước / Tháng này / Tháng trước / Năm nay / Tùy chọn. Mặc định Hôm nay, tuần tính từ Thứ Hai; chọn Tùy chọn mới hiện ô Từ - Đến. Đổi nốt nhãn TTT → TTR. Kiểm thử: 100/100 pass, build PASS.
+- Sửa DEC-100 trong ngày: hình thức thanh toán là TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU, ký hiệu TT / TTR / TTS. Mã phiếu thu `PT-TT-…` / `PT-TTR-…` (bỏ TL / TR).
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

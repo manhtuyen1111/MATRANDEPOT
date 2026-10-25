@@ -37,7 +37,7 @@ Kiểm thử mới nhất: `npm test` **97/97 pass** (3 file test) • `npm run 
 | User | Danh mục chung → User - Phân quyền (Admin): thêm, sửa vai trò, khóa; luôn còn ≥ 1 Admin | 045 |
 | Hạ vỏ | Giám định (mobile; được xóa hồ sơ khi Văn phòng chưa thao tác) → Văn phòng (số cont trùng Tồn vỏ bị chặn ngay khi nhập; SĐT lái xe, khách hàng, chi phí từ biểu giá, TTT/TTS/TTTT) → GATE IN OK → (Vệ sinh nếu có) → Xe nâng hạ vỏ → **Văn phòng trả chứng từ** (in EEIR + phiếu thu) | 020–025, 052, 059, 060 |
 | Phiếu K80 | Thông tin chung ở đầu → LỘ TRÌNH các bước (ô ☐ tích tay) → QR; lái xe đi theo thứ tự, quét mã tại từng bộ phận; Văn phòng → Trả chứng từ: 1 ô quét chung, danh sách chờ chia **2 cột HẠ VỎ / CẤP VỎ** (có số lượt) | 052, 064 |
-| Thanh toán | Ký hiệu **TL** trả ngay (đứng đầu, chọn sẵn) / **TTS** thanh toán sau / **TR** trả trước (DEC-097, 100). Chỉ TL mới phát hành phiếu thu `PT-TL-YYMMDD-NNNN`; nạp trước dùng `PT-TR-…`; TTS chỉ có `CT-`. Tồn vỏ có cột Hình thức TT + Phiếu thu (098, 099) | 031, 032, 098–100 |
+| Thanh toán | **TT — TRỰC TIẾP** (đứng đầu, chọn sẵn) / **TTR — TRẢ TRƯỚC** / **TTS — THANH TOÁN SAU** (DEC-097, 100). Chỉ TT mới phát hành phiếu thu `PT-TT-YYMMDD-NNNN`; nạp trước dùng `PT-TTR-…`; TTS chỉ có `CT-`. Tồn vỏ có cột Hình thức TT + Phiếu thu (098, 099) | 031, 032, 098–100 |
 | Phiếu thu | Văn phòng tạo phiếu thu TTT và xác nhận tiền mặt; phiếu thu ghi rõ **tác nghiệp** (Hạ vỏ / Cấp vỏ / Thu trước); hồ sơ container link thẳng về Phiếu thu; **mẫu in thống nhất** (thông tin công ty + tác nghiệp); **đếm số lần in**, in lại phải xác nhận + nhãn BẢN IN LẠI ; **EEIR cùng khung với phiếu thu**, in từ hồ sơ (In EEIR / In EEIR + phiếu thu) ; nút **Tạo phiếu thu TTT** cùng hàng Tra cứu; **in EEIR + phiếu thu = 1 tờ A4** (mỗi phiếu A5), EEIR ghi tình trạng vỏ Giám định ; danh sách full chiều ngang; **phiếu thu trước**: Khách hàng → Chi phí (**biểu giá × số lượng**) → Hình thức; in **PHIẾU THU TRƯỚC (TTT)** có khung PTT- nổi bật ; phiếu thu mẹ hiện **số lượt đã dùng / còn lại** + bảng từng lần trừ (chứng từ, hồ sơ) | 032, 047, 051, 062, 063, 072, 076, 077, 079 |
 | DAMAGE | Báo giá (**cập nhật tình trạng sửa chữa + giờ công → xác nhận chờ sửa chữa**, DEC-086) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → **AV** (không có QC) | 040–043, 049 |
 | Tổ sửa chữa | Danh mục chung → Sửa chữa: thêm tổ; thêm **user Sửa chữa có sẵn** hoặc nhập tên; ngưng thay vì xóa | 042, 048 |
@@ -112,7 +112,7 @@ Kiểm thử mới nhất: `npm test` **97/97 pass** (3 file test) • `npm run 
 | P7-24 | Đảo chuyển: tiến độ bên phải vị trí, dòng 2 ghi chú | 2026-10-24 | DEC-095 | **96/96 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-25 | Đảo chuyển: ô AV / DAMAGE đồng bộ kích thước ô tác nghiệp | 2026-10-24 | DEC-096 | **96/96 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-26 | Hình thức thanh toán: TTTT đứng đầu, chọn sẵn | 2026-10-25 | DEC-097 | **97/97 • build PASS** | agent/claude/p4-prep-xlsx |
-| P7-27 | Mã phiếu thu PT-TL / PT-TR; Tồn vỏ có cột thanh toán; ký hiệu TL / TTS / TR; menu "Sửa chữa" | 2026-10-25 | DEC-098 → 101 | **99/99 • build PASS** | agent/claude/p4-prep-xlsx |
+| P7-27 | Mã phiếu thu PT-TT / PT-TTR; Tồn vỏ có cột thanh toán; ký hiệu TT / TTR / TTS; menu "Sửa chữa" | 2026-10-25 | DEC-098 → 101 | **99/99 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-28 | Ô lọc nhanh thời gian cho mọi bộ lọc (mặc định Hôm nay, tuần từ Thứ Hai) | 2026-10-25 | DEC-102 | **100/100 • build PASS** | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
@@ -251,5 +251,5 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 6. **Database:** đọc `DATABASE_CONTRACT.md` mục 8–10 + `DATABASE_PLATFORM_ADVICE.md` mục 5 (11 tình huống: mất mạng hiện trường, thao tác đồng thời, webhook lặp, chuyển Demo → thật…) trước khi viết P4-01. **Chỉ viết migration, không apply.**
 - 2026-10-24 (phiên 2, tối) — Claude Code: tư vấn nền tảng database (docs/DATABASE_PLATFORM_ADVICE.md, Q-040); cập nhật tiến độ, bàn giao, mục I.2; kiểm tra + push đầy đủ (DEC-050 → DEC-096).
 - 2026-10-25 — Claude Code: P7-26 (DEC-097) TTTT đứng đầu. 97/97 • build PASS.
-- 2026-10-25 — Claude Code: P7-27 (DEC-098 → 101) mã phiếu thu, Tồn vỏ thanh toán, ký hiệu TL/TTS/TR, menu Sửa chữa; Q-041 hóa đơn. 99/99 • build PASS.
+- 2026-10-25 — Claude Code: P7-27 (DEC-098 → 101) mã phiếu thu, Tồn vỏ thanh toán, ký hiệu TT/TTR/TTS, menu Sửa chữa; Q-041 hóa đơn. 99/99 • build PASS.
 - 2026-10-25 — Claude Code: P7-28 (DEC-102) lọc nhanh thời gian. 100/100 • build PASS.

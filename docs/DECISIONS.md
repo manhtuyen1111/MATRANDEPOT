@@ -731,26 +731,26 @@ Quy ước trạng thái:
 ### DEC-098 — Mã phiếu thu theo hình thức + ngày, duy nhất
 
 - Trạng thái: CONFIRMED (2026-10-25)
-- Quyết định: Mã phiếu thu mới có dạng `PT-<hình thức>-YYMMDD-NNNN`, đánh số lại từ 0001 mỗi ngày và cấp duy nhất qua `codes.ts`. **`PT-TL-…`** là phiếu thu trả ngay (tiền mặt hoặc chuyển khoản). **`PT-TR-…`** là phiếu nạp tiền trước (TTT; phiếu thu mẹ vẫn là `PTT-`). Nhìn mã là biết hình thức và ngày thu. TTS **không** có phiếu thu, chỉ có chứng từ `CT-` (công nợ, DEC-031). Mã cũ `PT-YYYY-NNNNNN` giữ nguyên, không đổi.
+- Quyết định: Mã phiếu thu mới có dạng `PT-<hình thức>-YYMMDD-NNNN`, đánh số lại từ 0001 mỗi ngày và cấp duy nhất qua `codes.ts`. **`PT-TT-…`** là phiếu thu trực tiếp (tiền mặt hoặc chuyển khoản). **`PT-TTR-…`** là phiếu nạp tiền trước (TTT; phiếu thu mẹ vẫn là `PTT-`). Nhìn mã là biết hình thức và ngày thu. TTS **không** có phiếu thu, chỉ có chứng từ `CT-` (công nợ, DEC-031). Mã cũ `PT-YYYY-NNNNNN` giữ nguyên, không đổi.
 
 ### DEC-099 — Tồn vỏ: thông tin thanh toán của lượt vào bãi
 
 - Trạng thái: CONFIRMED (2026-10-25)
 - Quyết định: Tồn vỏ (màn và Excel) có thêm cột **Hình thức TT** và **Phiếu thu** (`containerPaymentInfo`, `payments.ts`). Bên trong hệ thống vẫn giữ 2 mã: chứng từ `CT-` là khoản phải thu, phiếu thu `PT-` là tiền đã thu. Giao diện **chỉ hiện 1 ô Phiếu thu**:
-  - TL: hiện `PT-TL-…`.
-  - TR: hiện phiếu thu mẹ `PTT-…`.
+  - TT: hiện `PT-TT-…`.
+  - TTR: hiện phiếu thu mẹ `PTT-…`.
   - TTS: hiện `Công nợ (CT-…)`.
   - Nhập tàu: hiện "Không thu phí".
   - Chưa thanh toán: hiện đúng chữ "Chưa thanh toán".
 
-### DEC-100 — Ký hiệu hình thức thanh toán: TL / TTS / TR
+### DEC-100 — Hình thức thanh toán: TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU (ký hiệu TT / TTR / TTS)
 
-- Trạng thái: CONFIRMED (2026-10-25)
-- Quyết định: Thay ký hiệu hiển thị TTTT / TTS / TTT (dễ nhầm) bằng:
-  - **TL** — Trả ngay (tiền mặt hoặc chuyển khoản).
-  - **TTS** — Thanh toán sau.
-  - **TR** — Trả trước, dùng tiền khách đã nạp trước.
-- Mã nội bộ trong code / dữ liệu vẫn là TTTT / TTS / TTT, chỉ đổi phần hiển thị và tiền tố mã phiếu thu.
+- Trạng thái: CONFIRMED (2026-10-25; sửa trong ngày — bỏ ký hiệu TL / TR)
+- Quyết định: Hình thức thanh toán hiển thị và ký hiệu như sau:
+  - **TT — TRỰC TIẾP**: tiền mặt hoặc chuyển khoản. Mã phiếu thu `PT-TT-YYMMDD-NNNN`.
+  - **TTR — TRẢ TRƯỚC**: dùng tiền khách đã nạp trước. Phiếu nạp tiền có mã `PT-TTR-YYMMDD-NNNN`; lượt cont trừ vào phiếu thu mẹ `PTT-`.
+  - **TTS — THANH TOÁN SAU**: công nợ. Không có phiếu thu, chỉ có chứng từ `CT-` (DEC-031).
+- Mã nội bộ trong code / dữ liệu vẫn là TTTT / TTT / TTS, chỉ đổi phần hiển thị và tiền tố mã phiếu thu.
 
 ### DEC-101 — Menu Báo cáo: "Sửa chữa chi tiết" → "Sửa chữa"
 
