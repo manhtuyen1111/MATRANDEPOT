@@ -50,3 +50,8 @@ Thứ tự từ trên xuống:
 - [ ] Nút tác nghiệp cùng hàng nút Tra cứu.
 - [ ] Có nút Xuất Excel theo bộ lọc.
 - [ ] Smoke test trong `tests/ui-smoke.test.tsx`.
+
+## Link dữ liệu (DEC-117)
+
+- Mã bấm được để mở dữ liệu liên quan (mã hồ sơ, mã phiếu thu, CV-, NT- / XT-…) dùng chung `linkCls` (`src/components/shared.tsx`): chữ đều nét, xanh, gạch chân khi rê chuột — giống Mã hồ sơ ở Tồn vỏ.
+- Trong bảng, ô chứa link dùng cùng định dạng ô Mã hồ sơ (`whitespace-nowrap font-mono text-blue-700`).

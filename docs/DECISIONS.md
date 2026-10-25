@@ -929,6 +929,14 @@ Quy ước trạng thái:
   - **Không** chặn người dùng tự phóng to bằng hai ngón tay.
 - **Xe nâng → Đảo chuyển:** bỏ ô "Ghi chú tác nghiệp". Xe nâng chỉ chọn vị trí mới rồi xác nhận. Lịch sử đảo chuyển vẫn ghi đủ vị trí trước / sau, người làm và thời gian.
 
+### DEC-117 — Kiểu hiển thị thống nhất cho mọi link dữ liệu
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Mọi mã bấm được để mở dữ liệu liên quan dùng **cùng một kiểu, giống Mã hồ sơ ở Tồn vỏ**: chữ đều nét, màu xanh, gạch chân khi rê chuột, không in đậm. Khai báo duy nhất: hằng `linkCls` trong `src/components/shared.tsx`.
+- Áp dụng cho: mã hồ sơ HV- / CV- / NT- / XT-, mã phiếu thu, phiếu thu trả trước.
+- Đã áp ở: Tồn vỏ (cột MÃ PHIẾU THU, cùng định dạng ô Mã hồ sơ), hồ sơ container (link phiếu thu), Văn phòng Hạ vỏ / Cấp vỏ, Phiếu thu (hồ sơ nghiệp vụ, bảng sử dụng phiếu thu trả trước), Báo cáo (Hạ vỏ, Cấp vỏ, Sửa chữa, Nhập / Xuất tàu), Nhập / Xuất tàu (Văn phòng, mobile), Xe nâng (hồ sơ sau khi quét).
+- Không áp cho nút thao tác (Tìm hàng loạt, Xem thêm, Chọn tất cả…) và số điện thoại gọi được.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1018,6 +1026,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-116 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-117 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

@@ -188,6 +188,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Trang yêu cầu xuất hóa đơn: hướng dẫn rút gọn 3 bước + 1 dòng "Ghi sai?", đặt dưới ô Mã bảo mật (DEC-114).
 - Xe nâng → Đảo chuyển: mỗi cont đúng 2 dòng trên mobile — dòng 1 số cont | size/type | tiến độ; dòng 2 vị trí | ghi chú (DEC-115). Kiểm thử: 116/116 pass, build PASS.
 - Mobile: ô nhập / chọn dùng chữ 16px trên màn nhỏ để điện thoại không tự phóng to làm vỡ khung; Đảo chuyển bỏ ô Ghi chú tác nghiệp (DEC-116). Kiểm thử: 117/117 pass, build PASS.
+- Link dữ liệu thống nhất kiểu Mã hồ sơ toàn app (`linkCls`); Tồn vỏ cột MÃ PHIẾU THU cùng định dạng Mã hồ sơ (DEC-117). Kiểm thử: 117/117 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
