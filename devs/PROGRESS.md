@@ -4,9 +4,9 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-25 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-118**), **đã push đầy đủ lên GitHub 2026-10-25**, chưa merge vào `main`. Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110); **xuất hóa đơn từ phiếu thu**: mã bảo mật 12 ký tự, trang khách `#/hoa-don`, trạng thái CHƯA / YÊU CẦU / ĐÃ XHD, **thêm lại vai trò Kế toán**, người thu tiền luôn là nhân viên (111 → 114). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-118**), **đã push đầy đủ lên GitHub 2026-10-25**, chưa merge vào `main`. Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110); **xuất hóa đơn từ phiếu thu**: mã bảo mật 12 ký tự, trang khách `#/hoa-don`, trạng thái CHƯA / YÊU CẦU / ĐÃ XHD, **thêm lại vai trò Kế toán**, người thu tiền luôn là nhân viên (111 → 114); **Đảo chuyển mobile 2 dòng**, bỏ ghi chú tác nghiệp (115, 116); **ô nhập mobile chữ 16px** (không tự phóng to vỡ khung — 116); **mọi mã có hồ sơ đều là link, cùng kiểu Mã hồ sơ** (117, 118). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
-**Điểm dừng 2026-10-25 (tối):** đã kiểm tra (116/116 test, build, quét khóa bí mật) + **push đầy đủ lên GitHub** (DEC-050 → DEC-114). **Đọc mục I (I.3) trước khi làm việc tiếp theo.**
+**Điểm dừng 2026-10-25 (khuya):** đã kiểm tra (117/117 test, build, quét khóa bí mật) + **push đầy đủ lên GitHub** (DEC-050 → DEC-118). **Đọc mục I (I.3) trước khi làm việc tiếp theo.**
 
 **Quyết định 2026-10-25: TẠM HOÃN GĐ 4 Database** — người dùng test kỹ bản Demo trước (dữ liệu test đầy đủ đã có), khi thấy các luồng ổn định mới xây database. Lý do: sau khi có database, mỗi thay đổi nghiệp vụ phải sửa cả migration / RPC / pgTAP, tốn công hơn nhiều. API ngân hàng (GĐ 6) phụ thuộc GĐ 4. Khi mở lại cần chốt Q-037 → Q-040.
 Kiểm thử mới nhất: `npm test` **97/97 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
@@ -14,7 +14,7 @@ Kiểm thử mới nhất: `npm test` **97/97 pass** (3 file test) • `npm run 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
 |---|---|---|
-| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push đầy đủ** (DEC-050 → DEC-114, 2026-10-25). **Thử trên trình duyệt + in giấy thật** (mục F, F2, F3) rồi tạo Pull Request merge vào `main` | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
+| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push đầy đủ** (DEC-050 → DEC-118, 2026-10-25). **Thử trên trình duyệt + in giấy thật** (mục F, F2, F3) rồi tạo Pull Request merge vào `main` | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
 | 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |
 | 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
 | 4 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
@@ -183,6 +183,8 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 17. **Hạ kệ giám định**: Giám định → Hạ vỏ tích **HẠ KỆ GIÁM ĐỊNH** → Văn phòng thu phí → Xe nâng → Chờ hạ vỏ thấy dải vàng, chỉ chọn được Kệ giám định (BLOCK-DAMAGE; Admin đổi ở Danh mục → Vị trí) → Đảo chuyển về bay. Cont mẫu: `MSKU1000111` (đã lên kệ), `MSKU1000122` (chờ vệ sinh rồi hạ kệ).
 18. **Văn phòng → Trả chứng từ**: nút **Xem trước** (bên trái Trả chứng từ) — chỉ xem EEIR + phiếu thu, không in, không trả.
 19. **Báo cáo → Sửa chữa** (đổi tên từ "Sửa chữa chi tiết").
+21. **Mobile (DEC-115, 116)**: Xe nâng → Đảo chuyển trên điện thoại — mỗi cont 2 dòng; chọn cont → không còn ô Ghi chú tác nghiệp. Chạm vào các ô nhập (tìm cont, chọn Block, quét mã) — **màn hình không được tự phóng to**.
+22. **Link mã (DEC-117, 118)**: Tồn vỏ bấm Mã hồ sơ / Mã phiếu thu; Phiếu thu bấm Mã phiếu thu, Mã hồ sơ, mã phiếu thu trả trước; Báo giá, Trả chứng từ bấm mã hồ sơ — tất cả cùng kiểu chữ xanh, gạch chân khi rê chuột.
 20. **Xuất hóa đơn (DEC-111 → 114)**: Văn phòng → Phiếu thu → mở 1 phiếu → khối **Xuất hóa đơn** có đường link + mã bảo mật; in phiếu → khung "Yêu cầu xuất hóa đơn" + ô ký **Người thu tiền = nhân viên** (kể cả chuyển khoản). Mở link `…/#/hoa-don` (cùng trình duyệt), dán mã → nhập MST / Gmail / Tên công ty / Địa chỉ → Gửi. Đổi người dùng sang **Đỗ Thị Thu (Kế toán)** → Phiếu thu, lọc Hóa đơn = YÊU CẦU XHD → mở phiếu → nhập số HĐ → **Đã xuất hóa đơn**. Dữ liệu test: phiếu của `MSKU1000011` đang YÊU CẦU XHD, `MSKU1000022` ĐÃ XHD.
 
 ## H. BÀN GIAO AGENT (2026-10-24 — Claude Code)
@@ -249,7 +251,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 **Cho bạn:** test theo mục F3 với dữ liệu test; ghi lại lỗi / chỗ chưa hợp lý; khi thấy ổn thì báo để mở GĐ 4 (trả lời Q-037 → Q-040) và tạo PR merge vào `main`.
 
 **Cho agent:**
-1. Hiện tới **DEC-114**; mỗi yêu cầu mới → 1 DEC, 2 commit (code / tài liệu). **GĐ 4 đang tạm hoãn theo người dùng — không tự viết migration.**
+1. Hiện tới **DEC-118**; mỗi yêu cầu mới → 1 DEC, 2 commit (code / tài liệu). **GĐ 4 đang tạm hoãn theo người dùng — không tự viết migration.**
 2. **Thanh toán:** hiển thị TT / TTR / TTS, mã nội bộ vẫn TTTT / TTT / TTS (DEC-100). Mã phiếu thu `PT-TT-YYMMDD-NNNN` / `PT-TTR-YYMMDD-NNNN` (DEC-098); TTS không cấp phiếu thu. Không hiển thị chứng từ `CT-` ở Tồn vỏ / Phiếu thu (DEC-104, 107). Viết **"Phiếu thu trả trước"**, không viết "phiếu thu mẹ" (DEC-103).
 3. **Dữ liệu test:** `src/services/demoData.ts` (`createDemoState`) tạo bằng hàm service thật; thêm trường hợp mới → thêm vào đây + `tests/demo-data.test.ts`. Đổi cấu trúc dữ liệu → tăng `STORAGE_KEY` (hiện v9) để máy người dùng nạp lại dữ liệu test.
 4. **Hạ kệ giám định (DEC-109):** cờ `forkliftShiftTask = 'HA_KE_GIAM_DINH'`; kiểm tra ở `updateContainerLocation`; `SlotPicker onlyBlocks`; Đảo chuyển xóa cờ.
@@ -257,6 +259,9 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 6. **Shell trên máy này làm mất dấu gạch chéo ngược và đổi ký tự xuống dòng** khi chèn qua node -e / sed → viết script vào file scratchpad bằng heredoc, hoặc dùng Edit; regex có chữ d / dấu / thoát thì sửa bằng Edit. Máy không có Python.
 7. **Xuất hóa đơn (DEC-111 → 114):** nghiệp vụ ở `src/services/invoice.ts` (`generateInvoiceSecret`, `lookupInvoicePortal`, `submitInvoiceRequest`, `markInvoiceIssued`); trang khách `src/features/invoice/InvoicePortal.tsx`, mở bằng hash `#/hoa-don` (định tuyến ở `src/main.tsx`, không qua `App`). Mã bảo mật: in trên phiếu + hiện ở khối Xuất hóa đơn, **không** vào Excel. Vai trò **ACCOUNTANT** (Kế toán) đã thêm lại: chỉ menu Phiếu thu + `INVOICE_ISSUE`. Người thu tiền trên phiếu: `receiptCollectorName`. Khi lên database: trang khách phải là RPC công khai có **giới hạn số lần thử** (chống dò mã) + email báo Kế toán; điều chỉnh / thay thế hóa đơn đã xuất chưa có quy trình (Kế toán xử lý trên MISA).
 8. `STORAGE_KEY` hiện **v10** (tăng mỗi khi dữ liệu test đổi cấu trúc).
+10. **Link dữ liệu (DEC-117, 118):** mã nào có hồ sơ / phiếu lưu trữ thì phải là link, dùng `linkCls` (`shared.tsx`); trong dòng bảng có `onClick` thì nút link gọi `e.stopPropagation()`. Phiếu thu có hàm `openMaster(code)` mở phiếu nạp của phiếu thu trả trước.
+11. **Mobile (DEC-115, 116):** ô nhập / chọn chữ 16px trên màn < 640px (`src/index.css`) — đừng ghi đè. Danh sách Đảo chuyển đúng 2 dòng (`overflow-hidden whitespace-nowrap`); đã bỏ ghi chú tác nghiệp khi đảo chuyển. Test không nạp được CSS (Vite trả rỗng) — quy tắc CSS kiểm bằng tay trên điện thoại.
+12. **Không cài được `@types/node`** (không tự cài package) → test không dùng `node:fs`.
 9. Tư vấn API ngân hàng (2026-10-25, chưa ghi tài liệu riêng): cần GĐ 4 trước; đề xuất cổng trung gian (payOS / Casso / SePay) + VietQR nội dung = mã tham chiếu + webhook trên Edge Function có kiểm chữ ký + chống trùng + danh sách chờ đối soát; người dùng chưa chốt (Q-032).
 
 ### I.2 — Bổ sung sau phiên 2 (2026-10-24)
@@ -296,3 +301,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-25 (tối) — Claude Code: DEC-116 ô nhập mobile không phóng to; Đảo chuyển bỏ ghi chú. 117/117 • build PASS.
 - 2026-10-25 (tối) — Claude Code: DEC-115 Đảo chuyển mobile 2 dòng. 116/116 • build PASS.
 - 2026-10-25 (tối) — Claude Code: cập nhật tiến độ, F3.20, bàn giao I.3 (xuất hóa đơn, Kế toán, STORAGE_KEY v10); kiểm tra + push đầy đủ (DEC-050 → DEC-114).
+- 2026-10-25 (khuya) — Claude Code: cập nhật tiến độ, F3.21–22, bàn giao I.3 (mục 10–12); kiểm tra + push đầy đủ (DEC-050 → DEC-118).
