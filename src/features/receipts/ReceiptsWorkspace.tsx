@@ -534,7 +534,7 @@ export const InvoiceBadge: React.FC<{ status: InvoiceStatus }> = ({ status }) =>
   <span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-semibold ${INVOICE_STYLE[status]}`}>{INVOICE_STATUS_LABELS[status]}</span>
 );
 
-// Thông tin khách gửi + Kế toán cập nhật ĐÃ XHD (số hóa đơn MISA không bắt buộc). Mã bảo mật không hiển thị ở đây — chỉ in trên phiếu.
+// Thông tin khách gửi + Kế toán cập nhật ĐÃ XHD (số hóa đơn MISA không bắt buộc). Hiện mã bảo mật để đối soát (DEC-112); không có trong Excel.
 export const InvoicePanel: React.FC<{ receipt: PaymentReceipt; canIssue: boolean; onIssue: (invoiceNo: string) => void }> = ({ receipt: r, canIssue, onIssue }) => {
   const [invoiceNo, setInvoiceNo] = useState('');
   const status = r.invoiceStatus || 'CHUA_XHD';
@@ -545,6 +545,13 @@ export const InvoicePanel: React.FC<{ receipt: PaymentReceipt; canIssue: boolean
         <span className="font-bold uppercase text-slate-700">Xuất hóa đơn</span>
         <InvoiceBadge status={status} />
       </div>
+      {/* DEC-112: hiện mã bảo mật để Văn phòng / Kế toán đối soát với phiếu khách mang tới */}
+      {r.invoiceSecret && (
+        <p className="flex items-center justify-between rounded bg-slate-50 px-2 py-1.5" data-testid="invoice-secret-panel">
+          <span className="text-slate-500">Mã bảo mật</span>
+          <span className="font-mono text-sm font-black tracking-widest">{r.invoiceSecret}</span>
+        </p>
+      )}
       {req ? (
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
           <dt className="text-slate-500">Mã số thuế</dt><dd className="font-mono font-bold">{req.taxCode}</dd>

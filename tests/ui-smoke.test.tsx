@@ -584,7 +584,7 @@ describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
     const panel = renderToString(<InvoicePanel receipt={req} canIssue onIssue={noop} />);
     expect(panel).toContain('Đã xuất hóa đơn');
     expect(panel).toContain(req.invoiceRequest!.taxCode);
-    expect(panel).not.toContain(req.invoiceSecret!); // mã bảo mật không hiện trong màn nội bộ
+    expect(panel).toContain(req.invoiceSecret!); // DEC-112: hiện mã bảo mật để đối soát
     expect(renderToString(<InvoicePanel receipt={req} canIssue={false} onIssue={noop} />)).not.toContain('Đã xuất hóa đơn</button>');
   });
 });
