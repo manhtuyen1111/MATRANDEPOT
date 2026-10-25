@@ -728,6 +728,35 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-25)
 - Quyết định: Khối Hình thức thanh toán (Văn phòng → Hạ vỏ; dùng chung với Cấp vỏ) xếp **TTTT — Trực tiếp đầu tiên** → TTT → TTS, và **mặc định chọn sẵn TTTT + Tiền mặt** (hình thức dùng nhiều nhất). Quy tắc thanh toán không đổi (DEC-031, DEC-093).
 
+### DEC-098 — Mã phiếu thu theo hình thức + ngày, duy nhất
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Mã phiếu thu mới có dạng `PT-<hình thức>-YYMMDD-NNNN`, đánh số lại từ 0001 mỗi ngày và cấp duy nhất qua `codes.ts`. **`PT-TL-…`** là phiếu thu trả ngay (tiền mặt hoặc chuyển khoản). **`PT-TR-…`** là phiếu nạp tiền trước (TTT; phiếu thu mẹ vẫn là `PTT-`). Nhìn mã là biết hình thức và ngày thu. TTS **không** có phiếu thu, chỉ có chứng từ `CT-` (công nợ, DEC-031). Mã cũ `PT-YYYY-NNNNNN` giữ nguyên, không đổi.
+
+### DEC-099 — Tồn vỏ: thông tin thanh toán của lượt vào bãi
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Tồn vỏ (màn và Excel) có thêm cột **Hình thức TT** và **Phiếu thu** (`containerPaymentInfo`, `payments.ts`). Bên trong hệ thống vẫn giữ 2 mã: chứng từ `CT-` là khoản phải thu, phiếu thu `PT-` là tiền đã thu. Giao diện **chỉ hiện 1 ô Phiếu thu**:
+  - TL: hiện `PT-TL-…`.
+  - TR: hiện phiếu thu mẹ `PTT-…`.
+  - TTS: hiện `Công nợ (CT-…)`.
+  - Nhập tàu: hiện "Không thu phí".
+  - Chưa thanh toán: hiện đúng chữ "Chưa thanh toán".
+
+### DEC-100 — Ký hiệu hình thức thanh toán: TL / TTS / TR
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Thay ký hiệu hiển thị TTTT / TTS / TTT (dễ nhầm) bằng:
+  - **TL** — Trả ngay (tiền mặt hoặc chuyển khoản).
+  - **TTS** — Thanh toán sau.
+  - **TR** — Trả trước, dùng tiền khách đã nạp trước.
+- Mã nội bộ trong code / dữ liệu vẫn là TTTT / TTS / TTT, chỉ đổi phần hiển thị và tiền tố mã phiếu thu.
+
+### DEC-101 — Menu Báo cáo: "Sửa chữa chi tiết" → "Sửa chữa"
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Mục menu Báo cáo đổi tên thành **Sửa chữa**, tiêu đề màn là "Báo cáo Sửa chữa". Nội dung báo cáo không đổi (DEC-044).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -817,6 +846,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-097 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-101 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

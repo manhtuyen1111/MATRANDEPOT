@@ -164,6 +164,13 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-25, DEC-097)
 - Hình thức thanh toán (Hạ vỏ / Cấp vỏ): TTTT — Trực tiếp đứng đầu, chọn sẵn + Tiền mặt. Kiểm thử: 97/97 pass.
 
+### Changed (2026-10-25, DEC-098 → DEC-101)
+- Mã phiếu thu mới: `PT-TL-YYMMDD-NNNN` (trả ngay) và `PT-TR-YYMMDD-NNNN` (nạp trước), duy nhất, đánh số theo ngày. Mã cũ giữ nguyên (DEC-098).
+- Tồn vỏ: thêm cột Hình thức TT và Phiếu thu, cả trên màn và trong Excel (DEC-099).
+- Ký hiệu hình thức thanh toán đổi thành TL / TTS / TR (DEC-100).
+- Menu Báo cáo: "Sửa chữa chi tiết" → "Sửa chữa" (DEC-101).
+- Đề xuất xuất hóa đơn từ phiếu thu: Q-041. Kiểm thử: 99/99 pass, build PASS.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

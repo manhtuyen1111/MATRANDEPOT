@@ -67,6 +67,14 @@ Cập nhật lần cuối: 2026-10-22.
 - [ ] Q-038: Số người dùng đồng thời giờ cao điểm (chọn gói Supabase).
 - [ ] Q-039: Chính sách sao lưu — khôi phục về bao lâu trước, có cần bản sao ngoài Supabase. **Đề xuất:** PITR 7 ngày (mất tối đa ~5 phút dữ liệu) + dump mã hóa hằng đêm ra kho ngoài (30 ngày / 12 tháng / 10 năm) + diễn tập khôi phục mỗi quý — `docs/DATABASE_PLATFORM_ADVICE.md` mục 4.
 - [ ] Q-040: Nơi đặt database và ngân sách tháng — **đề xuất** Supabase vùng Singapore, gói Pro + PITR, 3 môi trường dev / staging / production; cần xác nhận có yêu cầu lưu dữ liệu tại Việt Nam không (Nghị định 53/2022) — `docs/DATABASE_PLATFORM_ADVICE.md` mục 1–3.
+- [ ] Q-041: Xuất hóa đơn từ phiếu thu (công ty đang viết phiếu thu giấy). Kế toán xuất hóa đơn khi khách mang phiếu thu đến, tổng hóa đơn phải đủ tiền phiếu thu.
+  - **Đề xuất:**
+    - Mỗi phiếu thu có mục "Hóa đơn đã xuất" (số, ngày, số tiền).
+    - Chặn tổng hóa đơn vượt số tiền phiếu thu.
+    - Tra cứu phiếu thu bằng mã / QR in trên phiếu.
+    - Phiếu đã xuất đủ thì ghi rõ "ĐÃ XUẤT HĐ" để tránh xuất trùng.
+    - Kết nối API MISA làm sau.
+  - Chưa làm, chờ xác nhận.
 
 ## 9. Quy tắc quản lý câu hỏi
 
