@@ -937,6 +937,20 @@ Quy ước trạng thái:
 - Đã áp ở: Tồn vỏ (cột MÃ PHIẾU THU, cùng định dạng ô Mã hồ sơ), hồ sơ container (link phiếu thu), Văn phòng Hạ vỏ / Cấp vỏ, Phiếu thu (hồ sơ nghiệp vụ, bảng sử dụng phiếu thu trả trước), Báo cáo (Hạ vỏ, Cấp vỏ, Sửa chữa, Nhập / Xuất tàu), Nhập / Xuất tàu (Văn phòng, mobile), Xe nâng (hồ sơ sau khi quét).
 - Không áp cho nút thao tác (Tìm hàng loạt, Xem thêm, Chọn tất cả…) và số điện thoại gọi được.
 
+### DEC-118 — Mọi MÃ có hồ sơ lưu trữ đều hiển thị dạng link
+
+- Trạng thái: CONFIRMED (2026-10-25). Bổ sung DEC-117.
+- Quyết định: Mã nào có hồ sơ / phiếu để mở thì **luôn bấm được** và dùng kiểu `linkCls`. Đã chuyển các mã đang là chữ thường:
+  - **Phiếu thu:** cột Mã phiếu thu (mở chi tiết phiếu); cột Mã hồ sơ / Phiếu thu trả trước (mở hồ sơ container, hoặc mở phiếu nạp tiền của phiếu thu trả trước); mã phiếu thu trả trước trong cửa sổ chi tiết.
+  - **Tồn vỏ:** cột Mã hồ sơ.
+  - **Báo giá:** mã hồ sơ trong bảng và trong cửa sổ chi tiết.
+  - **Trả chứng từ:** mã hồ sơ HV- / CV- của lái xe đang chờ.
+- Không chuyển:
+  - Mã đang là **tiêu đề của chính hồ sơ / phiếu** đang mở.
+  - Giấy tờ in (phiếu thu, EEIR, K80) và trang khách hàng.
+  - Danh sách chờ ở Văn phòng Hạ vỏ (bấm dòng để chọn; khung chi tiết bên phải đã có link hồ sơ).
+  - Màn Giám định Hạ vỏ mobile (hồ sơ chưa qua Văn phòng).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1026,6 +1040,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-117 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-118 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
