@@ -14,9 +14,9 @@ import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceip
 import { collectAllPages, queryReceipts, ReceiptQueryFilter, ReceiptRow, receiptsSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
 import { PrintPortal, PrintReceiptButton, ReceiptPrintSheet } from '../../components/ReceiptPrint';
-import { defaultLastDayRange, fileStamp } from '../../services/datetime';
+import { quickRange, fileStamp } from '../../services/datetime';
 import {
-  DateTimeField,
+  DateRangeFilter,
   DetailDrawer,
   ExportExcelButton,
   FeeLinesEditor,
@@ -47,7 +47,7 @@ export const ReceiptsWorkspace: React.FC<{
   // Mở thẳng 1 phiếu thu (mã PT- hoặc id giao dịch) khi bấm từ hồ sơ container (DEC-051); nonce để mở lại cùng phiếu
   focus?: { key: string; nonce: number } | null;
 }> = ({ state, onUpdateState, onOpenDossier, focus }) => {
-  const [draft, setDraft] = useState<ReceiptQueryFilter>(() => ({ ...defaultLastDayRange(), keyword: '', method: 'ALL', status: 'ALL', operation: 'ALL' }));
+  const [draft, setDraft] = useState<ReceiptQueryFilter>(() => ({ ...quickRange('TODAY'), keyword: '', method: 'ALL', status: 'ALL', operation: 'ALL' }));
   const [applied, setApplied] = useState<ReceiptQueryFilter | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = usePageSize("receipts", 20); // DEC-080
@@ -113,7 +113,7 @@ export const ReceiptsWorkspace: React.FC<{
       const next = createMasterPrepaidReceipt(state, { ...create, feeItems: feeIds.map((catalogId, i) => ({ catalogId, quantity: qtys[i] })) });
       onUpdateState(next);
       setSelectedTxId(next.paymentTransactions[0].id);
-      setSuccess(`Đã tạo phiếu thu TTT ${next.masterReceipts[0].receiptCode} — đang chờ thanh toán.`);
+      setSuccess(`Đã tạo phiếu thu TR ${next.masterReceipts[0].receiptCode} — đang chờ thanh toán.`);
       setCreate({ customerCode: '', lotDescription: '', method: 'CASH' });
       setFeeIds([]);
       setQtys([]);
@@ -132,8 +132,7 @@ export const ReceiptsWorkspace: React.FC<{
           onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); setSelectedTxId(''); }}
           className="grid grid-cols-2 gap-2 sm:grid-cols-6"
         >
-          <DateTimeField label="Từ (dd/mm/yyyy hh:mm:ss)" value={draft.dateFrom || ''} onChange={(v) => setDraft({ ...draft, dateFrom: v })} />
-          <DateTimeField label="Đến (dd/mm/yyyy hh:mm:ss)" value={draft.dateTo || ''} onChange={(v) => setDraft({ ...draft, dateTo: v })} fallback="end" />
+          <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <label className="col-span-2">
             <span className={labelCls}>Mã phiếu thu / Số cont / Mã hồ sơ</span>
             <input value={draft.keyword} onChange={(e) => setDraft({ ...draft, keyword: e.target.value })} className={`${inputCls} font-mono uppercase`} />
@@ -178,7 +177,7 @@ export const ReceiptsWorkspace: React.FC<{
             {canCreate && (
               <button type="button" onClick={() => setCreateOpen(!createOpen)} className={`${secondaryBtn} ${createOpen ? "border-blue-600 text-blue-700" : ""}`}>
                 <FilePlus2 className="h-4 w-4" />
-                Tạo phiếu thu TTT (thanh toán trước)
+                Tạo phiếu thu TR (trả trước)
               </button>
             )}
           </div>

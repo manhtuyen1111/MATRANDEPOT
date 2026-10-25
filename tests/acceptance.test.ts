@@ -1126,3 +1126,20 @@ describe('DEC-099: Tồn vỏ — hình thức thanh toán + phiếu thu của l
     for (const row of sheet.rows) expect(row.length).toBe(sheet.columns.length);
   });
 });
+
+describe('DEC-102: lọc nhanh thời gian', () => {
+  it('Hôm nay / Hôm qua / Tuần (từ Thứ Hai) / Tháng / Năm tính đúng mốc', async () => {
+    const { quickRange } = await import('../src/services/datetime');
+    const now = new Date(2026, 9, 25, 10, 20, 30); // Chủ nhật 25/10/2026
+    expect(quickRange('TODAY', now)).toEqual({ dateFrom: '25/10/2026 00:00:00', dateTo: '25/10/2026 10:20:30' });
+    expect(quickRange('YESTERDAY', now)).toEqual({ dateFrom: '24/10/2026 00:00:00', dateTo: '24/10/2026 23:59:59' });
+    expect(quickRange('THIS_WEEK', now).dateFrom).toBe('19/10/2026 00:00:00');
+    expect(quickRange('LAST_WEEK', now)).toEqual({ dateFrom: '12/10/2026 00:00:00', dateTo: '18/10/2026 23:59:59' });
+    expect(quickRange('THIS_MONTH', now).dateFrom).toBe('01/10/2026 00:00:00');
+    expect(quickRange('LAST_MONTH', now)).toEqual({ dateFrom: '01/09/2026 00:00:00', dateTo: '30/09/2026 23:59:59' });
+    expect(quickRange('THIS_YEAR', now).dateFrom).toBe('01/01/2026 00:00:00');
+    // Thứ Hai là ngày đầu tuần; tháng 1 → tháng trước là tháng 12 năm trước
+    expect(quickRange('THIS_WEEK', new Date(2026, 9, 19, 8)).dateFrom).toBe('19/10/2026 00:00:00');
+    expect(quickRange('LAST_MONTH', new Date(2026, 0, 5)).dateFrom).toBe('01/12/2025 00:00:00');
+  });
+});

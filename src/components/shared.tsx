@@ -22,7 +22,7 @@ import {
 import { DepotState, formatVnd } from '../services/depotStore';
 import { can } from '../services/permissions';
 import { isSupabaseConfigured } from '../lib/env';
-import { DATETIME_PLACEHOLDER, formatDateTime, maskDateTimeInput, parseDateTime } from '../services/datetime';
+import { DATETIME_PLACEHOLDER, formatDateTime, maskDateTimeInput, parseDateTime, QUICK_RANGE_OPTIONS, quickRange, QuickRangeKey } from '../services/datetime';
 import { PAGE_SIZE_OPTIONS, SheetData, toXlsxBuffer, XLSX_MIME } from '../services/reports';
 import { blockDimensions, SLOT_DIMENSION_LABELS } from '../services/core';
 
@@ -544,6 +544,43 @@ export const DateTimeField: React.FC<{
         className={`${inputCls} font-mono ${invalid ? 'border-red-500 focus:border-red-600 focus:ring-red-600' : ''}`}
       />
     </label>
+  );
+};
+
+// DEC-102: ô lọc nhanh thời gian (Hôm nay … Năm nay / Tùy chọn) — dùng cho MỌI bộ lọc thời gian.
+// Chỉ khi chọn Tùy chọn mới hiện 2 ô Từ - Đến. Trả về các ô liền nhau để đặt thẳng vào lưới bộ lọc.
+export const DateRangeFilter: React.FC<{
+  value: { dateFrom?: string; dateTo?: string };
+  onChange: (next: { dateFrom: string; dateTo: string }) => void;
+  label?: string;
+  required?: boolean;
+}> = ({ value, onChange, label = 'Thời gian', required }) => {
+  const [preset, setPreset] = React.useState<QuickRangeKey>('TODAY');
+  const mark = required ? ' *' : '';
+  return (
+    <>
+      <label className="block">
+        <span className={labelCls}>{label}{mark}</span>
+        <select
+          value={preset}
+          aria-label="Lọc nhanh thời gian"
+          onChange={(e) => {
+            const key = e.target.value as QuickRangeKey;
+            setPreset(key);
+            if (key !== 'CUSTOM') onChange(quickRange(key));
+          }}
+          className={inputCls}
+        >
+          {QUICK_RANGE_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+        </select>
+      </label>
+      {preset === 'CUSTOM' && (
+        <>
+          <DateTimeField label={`Từ (dd/mm/yyyy hh:mm:ss)${mark}`} value={value.dateFrom || ''} onChange={(v) => onChange({ dateFrom: v, dateTo: value.dateTo || '' })} />
+          <DateTimeField label={`Đến (dd/mm/yyyy hh:mm:ss)${mark}`} value={value.dateTo || ''} onChange={(v) => onChange({ dateFrom: value.dateFrom || '', dateTo: v })} fallback="end" />
+        </>
+      )}
+    </>
   );
 };
 

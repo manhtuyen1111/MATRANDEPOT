@@ -147,15 +147,15 @@ describe('DEC-052: phiếu K80 có lộ trình; màn Trả chứng từ', () => 
   });
 });
 
-describe('DEC-056: màn Phiếu thu / Báo cáo mở lần đầu đã điền sẵn 24 giờ gần nhất', () => {
-  it('ô Đến có giá trị dd/MM/yyyy HH:mm:ss', () => {
+describe('DEC-102 (thay DEC-056): màn Phiếu thu / Báo cáo có ô lọc nhanh, mặc định Hôm nay', () => {
+  it('mọi màn có bộ lọc thời gian đều có ô Lọc nhanh, chọn sẵn Hôm nay', () => {
     for (const el of [
       <ReceiptsWorkspace state={as(base, 'usr-office')} onUpdateState={noop} />,
       <ReportsWorkspace state={base} section="BC_HA_VO" onOpenDossier={noop} />,
       <ReportsWorkspace state={base} section="BC_SUA_CHUA" onOpenDossier={noop} />,
       <ReportsWorkspace state={base} section="BC_TONG_HOP" onOpenDossier={noop} />,
     ]) {
-      expect(renderToString(el)).toMatch(/value="\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}"/);
+      expect(renderToString(el)).toMatch(/aria-label="Lọc nhanh thời gian"[^>]*><option value="TODAY" selected/);
     }
   });
 });
@@ -294,8 +294,12 @@ describe('DEC-073: Lập danh sách XUẤT TÀU có Tìm hàng loạt như Tồn
 describe('DEC-076: Phiếu thu — nút Tạo phiếu thu TTT cùng hàng Tra cứu', () => {
   it('Nút Tạo phiếu thu TTT nằm trong hàng nút tra cứu; form chưa mở sẵn', () => {
     const html = renderToString(<ReceiptsWorkspace state={as(base, 'usr-office')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
-    expect(html).toMatch(/Tra cứu<\/button>.*Tạo phiếu thu TTT \(thanh toán trước\)<\/button>/s);
+    expect(html).toMatch(/Tra cứu<\/button>.*Tạo phiếu thu TR \(trả trước\)<\/button>/s);
     expect(html).not.toContain('Tạo phiếu thu (chờ thanh toán)');
+    // DEC-102: ô lọc nhanh thời gian, mặc định Hôm nay; chưa chọn Tùy chọn thì chưa hiện ô Từ - Đến
+    expect(html).toContain('aria-label="Lọc nhanh thời gian"');
+    for (const t of ['Hôm nay', 'Hôm qua', 'Tuần này', 'Tuần trước', 'Tháng này', 'Tháng trước', 'Năm nay', 'Tùy chọn']) expect(html).toContain(t);
+    expect(html).not.toContain('Từ (dd/mm/yyyy hh:mm:ss)');
   });
 });
 
@@ -309,7 +313,7 @@ describe('DEC-077: phiếu thu trước — biểu giá × số lượng, bản 
     s = confirmPrepaidCash(s, { transactionId: s.paymentTransactions[0].id });
     const receipt = s.paymentReceipts.find((r) => r.masterReceiptId === master.id)!;
     const html = renderToString(<ReceiptPrintSheet state={s} receipt={receipt} />).replace(/<!-- -->/g, '');
-    expect(html).toContain('PHIẾU THU TRƯỚC (TTT)');
+    expect(html).toContain('PHIẾU THU TRƯỚC (TR)');
     expect(html).toContain(master.receiptCode);
     expect(html).toContain('SỐ TIỀN NẠP TRƯỚC');
     expect(html).toContain('Lô tháng 11');

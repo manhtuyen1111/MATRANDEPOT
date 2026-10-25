@@ -83,3 +83,40 @@ export function fileStamp(text?: string): string {
 export function defaultLastDayRange(now = new Date()): { dateFrom: string; dateTo: string } {
   return { dateFrom: formatDateTime(new Date(now.getTime() - 86_400_000)), dateTo: formatDateTime(now) };
 }
+
+// DEC-102: lọc nhanh thời gian cho mọi bộ lọc — mặc định Hôm nay; tuần bắt đầu Thứ Hai.
+// Kỳ hiện tại (Hôm nay / Tuần này / Tháng này / Năm nay) = đầu kỳ 00:00:00 → thời điểm hiện tại;
+// kỳ trước (Hôm qua / Tuần trước / Tháng trước) = trọn kỳ, đến 23:59:59 ngày cuối.
+export type QuickRangeKey = 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'LAST_WEEK' | 'THIS_MONTH' | 'LAST_MONTH' | 'THIS_YEAR' | 'CUSTOM';
+
+export const QUICK_RANGE_OPTIONS: { key: QuickRangeKey; label: string }[] = [
+  { key: 'TODAY', label: 'Hôm nay' },
+  { key: 'YESTERDAY', label: 'Hôm qua' },
+  { key: 'THIS_WEEK', label: 'Tuần này' },
+  { key: 'LAST_WEEK', label: 'Tuần trước' },
+  { key: 'THIS_MONTH', label: 'Tháng này' },
+  { key: 'LAST_MONTH', label: 'Tháng trước' },
+  { key: 'THIS_YEAR', label: 'Năm nay' },
+  { key: 'CUSTOM', label: 'Tùy chọn' },
+];
+
+export function quickRange(key: Exclude<QuickRangeKey, 'CUSTOM'>, now = new Date()): { dateFrom: string; dateTo: string } {
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const d = now.getDate();
+  const endOfDay = (dt: Date) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 23, 59, 59);
+  const monday = new Date(y, m, d - ((now.getDay() + 6) % 7));
+  const range = (from: Date, to: Date) => ({ dateFrom: formatDateTime(from), dateTo: formatDateTime(to) });
+  switch (key) {
+    case 'TODAY': return range(new Date(y, m, d), now);
+    case 'YESTERDAY': return range(new Date(y, m, d - 1), endOfDay(new Date(y, m, d - 1)));
+    case 'THIS_WEEK': return range(monday, now);
+    case 'LAST_WEEK': {
+      const start = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() - 7);
+      return range(start, endOfDay(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6)));
+    }
+    case 'THIS_MONTH': return range(new Date(y, m, 1), now);
+    case 'LAST_MONTH': return range(new Date(y, m - 1, 1), endOfDay(new Date(y, m, 0)));
+    case 'THIS_YEAR': return range(new Date(y, 0, 1), now);
+  }
+}

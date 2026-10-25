@@ -17,9 +17,9 @@ import {
 } from '../../services/reports';
 import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
-import { defaultLastDayRange, fileStamp } from '../../services/datetime';
+import { quickRange, fileStamp } from '../../services/datetime';
 import { VesselReport } from './VesselReport';
-import { DateTimeField, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
+import { DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
 
 export type ReportSection = 'BC_HA_VO' | 'BC_CAP_VO' | 'BC_NHAP_TAU' | 'BC_XUAT_TAU' | 'BC_SUA_CHUA' | 'BC_TONG_HOP';
 
@@ -86,7 +86,7 @@ export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossie
 };
 
 const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => {
-  const [draft, setDraft] = useState<OperationReportFilter>(() => ({ containerNo: '', ...defaultLastDayRange(), shippingLineCode: '', size: '' }));
+  const [draft, setDraft] = useState<OperationReportFilter>(() => ({ containerNo: '', ...quickRange('TODAY'), shippingLineCode: '', size: '' }));
   const [applied, setApplied] = useState<OperationReportFilter | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = usePageSize(`report-${section}`, 50); // DEC-080
@@ -115,8 +115,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
             <span className={labelCls}>Số container</span>
             <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
           </label>
-          <DateTimeField label="Từ (dd/mm/yyyy hh:mm:ss)" value={draft.dateFrom || ''} onChange={(v) => setDraft({ ...draft, dateFrom: v })} />
-          <DateTimeField label="Đến (dd/mm/yyyy hh:mm:ss)" value={draft.dateTo || ''} onChange={(v) => setDraft({ ...draft, dateTo: v })} fallback="end" />
+          <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <label>
             <span className={labelCls}>Hãng tàu</span>
             <select value={draft.shippingLineCode} onChange={(e) => setDraft({ ...draft, shippingLineCode: e.target.value })} className={inputCls}>
@@ -236,7 +235,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
 };
 
 const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
-  const [range, setRange] = useState(() => defaultLastDayRange());
+  const [range, setRange] = useState(() => quickRange('TODAY'));
   const [sheets, setSheets] = useState<SheetData[] | null>(null);
   const [generatedAt, setGeneratedAt] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -257,8 +256,7 @@ const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
     <div className="space-y-4">
       <SectionCard title="Báo cáo Tổng hợp" icon={<FileSpreadsheet className="h-4 w-4 text-slate-500" />}>
         <form onSubmit={generate} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <DateTimeField label="Từ (dd/mm/yyyy hh:mm:ss) *" value={range.dateFrom || ''} onChange={(v) => setRange({ ...range, dateFrom: v })} />
-          <DateTimeField label="Đến (dd/mm/yyyy hh:mm:ss) *" value={range.dateTo || ''} onChange={(v) => setRange({ ...range, dateTo: v })} fallback="end" />
+          <DateRangeFilter value={range} onChange={(r) => setRange(r)} required />
           <button type="submit" className={primaryBtn}>Tạo báo cáo</button>
         </form>
         <p className="mt-2 text-[11px] text-slate-500">
@@ -300,7 +298,7 @@ const REPAIR_STATUS: Record<string, string> = {
 
 // BÁO CÁO SỬA CHỮA CHI TIẾT (DEC-044): bắt buộc lọc, phân trang, xuất Excel kết quả lọc
 const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) => void }> = ({ state, onOpenDossier }) => {
-  const [draft, setDraft] = useState<RepairReportFilter>(() => ({ containerNo: '', ...defaultLastDayRange(), teamCode: '', shippingLineCode: '', status: 'ALL' }));
+  const [draft, setDraft] = useState<RepairReportFilter>(() => ({ containerNo: '', ...quickRange('TODAY'), teamCode: '', shippingLineCode: '', status: 'ALL' }));
   const [applied, setApplied] = useState<RepairReportFilter | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = usePageSize('report-BC_SUA_CHUA', 50); // DEC-080
@@ -328,8 +326,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
             <span className={labelCls}>Số container</span>
             <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
           </label>
-          <DateTimeField label="Từ (dd/mm/yyyy hh:mm:ss)" value={draft.dateFrom || ''} onChange={(v) => setDraft({ ...draft, dateFrom: v })} />
-          <DateTimeField label="Đến (dd/mm/yyyy hh:mm:ss)" value={draft.dateTo || ''} onChange={(v) => setDraft({ ...draft, dateTo: v })} fallback="end" />
+          <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <label>
             <span className={labelCls}>Tổ sửa chữa</span>
             <select value={draft.teamCode} onChange={(e) => setDraft({ ...draft, teamCode: e.target.value })} className={inputCls}>
