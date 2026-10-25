@@ -9,10 +9,10 @@ Trạng thái chi tiết từng việc: `devs/PROGRESS.md`.
 | 1 | Nền nghiệp vụ & tài liệu | Ghi đủ quy tắc vào DECISIONS | Không còn quy tắc trong code thiếu mã DEC | ✅ Xong (DEC-018 → 049) |
 | 2 | Harness AI | AGENTS/CLAUDE, settings, skills, quy trình 2 agent | Chặn `.env`/db push; 6 skill; docs/agents | ✅ Xong |
 | 3 | Change Request (Demo) | CR-01 → CR-09 + bổ sung: giờ công, tổ sửa chữa, user - phân quyền, báo cáo Hạ vỏ / Sửa chữa, tối ưu mobile (DEC-040 → 049) | 42 test pass, build pass | ✅ Xong — chờ bạn thử trên trình duyệt & commit / merge |
-| 4 | Database Supabase | Viết lại schema, RPC, RLS, pgTAP; hiệu năng dữ liệu lớn theo DEC-066 (DATABASE_CONTRACT mục 10) | `supabase db reset` + `test db` xanh trên máy local | 🔄 Chuẩn bị xong tài liệu (DEC-050 → 066) — ⏸ chờ danh mục trạng thái (OPEN-003) |
+| 4 | Database Supabase | Viết lại schema, RPC, RLS, pgTAP; hiệu năng dữ liệu lớn theo DEC-066; nền tảng / sao lưu theo DATABASE_PLATFORM_ADVICE | `supabase db reset` + `test db` xanh trên máy local | 🔄 Chuẩn bị xong tài liệu + tư vấn nền tảng (2026-10-24) — ⏸ **Tạm hoãn 2026-10-25**: người dùng test kỹ bản Demo trước; khi mở lại chờ OPEN-003 + Q-037 → Q-040 |
 | 5 | Nối Supabase | Lớp gateway Demo/Supabase, đăng nhập, ảnh lên Storage | Luồng Hạ vỏ → Cấp vỏ chạy trên project test | ⏳ |
 | 6 | Thanh toán thật | Webhook ngân hàng (Edge Function), đối soát, hoàn tiền (OPEN-008) | PAY-003 → 007 đạt ở database | ⏳ |
-| 7 | Nhập tàu / Xuất tàu | Đặc tả + làm phân hệ (DEC-069) | Quy trình được xác nhận + test | 🔄 Xong bản Demo (2026-10-24) — chờ bạn thử trên trình duyệt; phần database làm cùng GĐ 4 |
+| 7 | Nhập tàu / Xuất tàu | Đặc tả + làm phân hệ (DEC-069 → 073, 075) | Quy trình được xác nhận + test | 🔄 Xong bản Demo + hoàn thiện màn (2026-10-24) — chờ bạn thử trên trình duyệt / điện thoại; phần database làm cùng GĐ 4 (P7-DB) |
 | 8 | Nghiệm thu người dùng | Chạy thử với nhân viên thật trên môi trường test | Bạn ký nghiệm thu từng phân hệ | ⏳ |
 | 9 | Vận hành | Production, sao lưu/khôi phục, CI GitHub Actions | Diễn tập khôi phục thành công | ⏳ |
 

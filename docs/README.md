@@ -9,6 +9,8 @@ Dành cho AI agent (Claude Code, Antigravity). Người giao việc xem `devs/RE
 | `agents/WORKFLOW.md` | Vòng đời việc, chia việc Claude / Antigravity, mẫu bàn giao |
 | `agents/SKILLS.md` | Danh sách skill, khi nào dùng, chuỗi chuẩn |
 | `agents/TOKEN_BUDGET.md` | Đọc gì cho từng loại việc |
+| `UI_DATA_LIST_STANDARD.md` | Quy chuẩn trang nhiều dữ liệu: danh sách, chi tiết trượt phải, phân trang (DEC-080) |
+| `DATABASE_PLATFORM_ADVICE.md` | Tư vấn nơi đặt database, gói, sao lưu 3-2-1, tình huống vận hành (đề xuất — chờ chốt Q-037 → Q-040) |
 
 ## Nghiệp vụ & kỹ thuật
 | File | Nội dung |

@@ -15,8 +15,10 @@ import {
 } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { formatLocation, getContainerProgress, PROGRESS_LABELS, storageDays } from './core';
-import { receiptOperationOf } from './payments';
+import { containerPaymentInfo, masterReceiptUsage, PAYMENT_CATEGORY_FULL_LABELS, receiptOperationOf } from './payments';
 import { formatDateTime, parseDateTime } from './datetime';
+import { INVOICE_STATUS_LABELS } from './invoice';
+import type { InvoiceStatus } from '../types/depot';
 
 // ============================================================================
 // BÁO CÁO & TRA CỨU (CR-08, CR-04 PHIẾU THU)
@@ -26,6 +28,8 @@ import { formatDateTime, parseDateTime } from './datetime';
 
 export const REPORT_PAGE_SIZE = 50;
 export const RECEIPT_PAGE_SIZE = 20;
+// DEC-080: người dùng chọn số dòng / trang ở mọi danh sách nhiều dữ liệu
+export const PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
 export const MAX_RANGE_DAYS = 366;
 
 export interface DateRange {
@@ -62,7 +66,8 @@ function inRange(iso: string | undefined, range: { from: number; to: number } | 
   return t >= range.from && t <= range.to;
 }
 
-function paginate<T>(rows: T[], page: number, pageSize: number): PagedResult<T> {
+function paginate<T>(rows: T[], page: number, requested: number): PagedResult<T> {
+  const pageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(requested) ? requested : REPORT_PAGE_SIZE;
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const safePage = Math.min(Math.max(1, page), pageCount);
   return {
@@ -92,7 +97,8 @@ export function queryGateOutReport(
   state: DepotState,
   types: GateOutType[],
   filter: OperationReportFilter,
-  page = 1
+  page = 1,
+  pageSize = REPORT_PAGE_SIZE
 ): PagedResult<GateOutOrder> {
   const range = requireFilter(filter);
   const no = filter.containerNo?.trim().toUpperCase();
@@ -108,7 +114,7 @@ export function queryGateOutReport(
       return true;
     })
     .sort((a, b) => (b.confirmedAt || b.createdAt).localeCompare(a.confirmedAt || a.createdAt));
-  return paginate(rows, page, REPORT_PAGE_SIZE);
+  return paginate(rows, page, pageSize);
 }
 
 // Báo cáo HẠ VỎ / NHẬP TÀU (hồ sơ gate-in)
@@ -116,7 +122,8 @@ export function queryGateInReport(
   state: DepotState,
   type: GateInOrder['gateInType'],
   filter: OperationReportFilter,
-  page = 1
+  page = 1,
+  pageSize = REPORT_PAGE_SIZE
 ): PagedResult<GateInOrder> {
   const range = requireFilter(filter);
   const no = filter.containerNo?.trim().toUpperCase();
@@ -127,7 +134,7 @@ export function queryGateInReport(
     .filter((o) => !filter.shippingLineCode || o.shippingLineCode === filter.shippingLineCode)
     .filter((o) => !filter.size || o.size === filter.size)
     .sort((a, b) => (b.gateInOkAt || b.fieldRecordedAt).localeCompare(a.gateInOkAt || a.fieldRecordedAt));
-  return paginate(rows, page, REPORT_PAGE_SIZE);
+  return paginate(rows, page, pageSize);
 }
 
 // ---------------------------------------------------------------------------
@@ -139,6 +146,7 @@ export interface ReceiptQueryFilter extends DateRange {
   status?: PaymentTransactionStatus | 'ALL';
   operation?: ReceiptOperation | 'ALL';
   receiptNo?: string; // Mở thẳng 1 phiếu thu từ hồ sơ (DEC-051)
+  invoiceStatus?: InvoiceStatus | 'ALL'; // DEC-111
 }
 
 export interface ReceiptRow {
@@ -146,7 +154,7 @@ export interface ReceiptRow {
   receipt?: PaymentReceipt;
 }
 
-export function queryReceipts(state: DepotState, filter: ReceiptQueryFilter, page = 1): PagedResult<ReceiptRow> {
+export function queryReceipts(state: DepotState, filter: ReceiptQueryFilter, page = 1, pageSize = RECEIPT_PAGE_SIZE): PagedResult<ReceiptRow> {
   const range = toRange(filter);
   const keyword = filter.keyword?.trim().toUpperCase();
   if (!range && !keyword && !filter.receiptNo) {
@@ -159,6 +167,7 @@ export function queryReceipts(state: DepotState, filter: ReceiptQueryFilter, pag
     .filter(({ transaction }) => !filter.method || filter.method === 'ALL' || transaction.method === filter.method)
     .filter(({ transaction }) => !filter.status || filter.status === 'ALL' || transaction.status === filter.status)
     .filter(({ transaction, receipt }) => !filter.receiptNo || receipt?.receiptNo === filter.receiptNo || transaction.id === filter.receiptNo)
+    .filter(({ receipt }) => !filter.invoiceStatus || filter.invoiceStatus === 'ALL' || (receipt && (receipt.invoiceStatus || 'CHUA_XHD') === filter.invoiceStatus))
     .filter(
       ({ transaction, receipt }) =>
         !filter.operation || filter.operation === 'ALL' || receiptOperationOf(state, { ...transaction, operation: receipt?.operation }) === filter.operation
@@ -170,7 +179,7 @@ export function queryReceipts(state: DepotState, filter: ReceiptQueryFilter, pag
         .some((v) => v!.toUpperCase().includes(keyword));
     })
     .sort((a, b) => b.transaction.createdAt.localeCompare(a.transaction.createdAt));
-  return paginate(rows, page, RECEIPT_PAGE_SIZE);
+  return paginate(rows, page, pageSize);
 }
 
 // ---------------------------------------------------------------------------
@@ -312,7 +321,7 @@ export interface RepairReportRow {
   container?: ContainerRecord;
 }
 
-export function queryRepairReport(state: DepotState, filter: RepairReportFilter, page = 1): PagedResult<RepairReportRow> {
+export function queryRepairReport(state: DepotState, filter: RepairReportFilter, page = 1, pageSize = REPORT_PAGE_SIZE): PagedResult<RepairReportRow> {
   const range = toRange(filter);
   const no = filter.containerNo?.trim().toUpperCase();
   if (!range && !no) throw new Error('Nhập số container hoặc chọn khoảng thời gian trước khi tra cứu.');
@@ -328,7 +337,7 @@ export function queryRepairReport(state: DepotState, filter: RepairReportFilter,
     .filter(({ container }) => !filter.shippingLineCode || container?.shippingLineCode === filter.shippingLineCode)
     .filter(({ workOrder: w }) => !filter.status || filter.status === 'ALL' || w.workStatus === filter.status)
     .sort((a, b) => (b.workOrder.completedAt || b.workOrder.createdAt).localeCompare(a.workOrder.completedAt || a.workOrder.createdAt));
-  return paginate(rows, page, REPORT_PAGE_SIZE);
+  return paginate(rows, page, pageSize);
 }
 
 export function repairReportSheet(rows: RepairReportRow[]): SheetData {
@@ -394,38 +403,56 @@ export function collectAllPages<T>(query: (page: number) => PagedResult<T>): T[]
 // Sheet PHIẾU THU (DEC-055) — đủ cột tra cứu / đối soát
 export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData {
   const STATUS: Record<string, string> = { PENDING: 'Chờ thanh toán', SUCCEEDED: 'Thành công', FAILED: 'Thất bại', CANCELLED: 'Đã hủy' };
-  const OP: Record<string, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP VỎ', THU_TRUOC: 'THU TRƯỚC (TTT)', KHAC: 'KHÁC' };
+  const OP: Record<string, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP VỎ', THU_TRUOC: 'THU TRƯỚC (TTR)', KHAC: 'KHÁC' };
   return {
     name: 'PHIẾU THU',
     columns: [
-      'MÃ PHIẾU THU', 'TÁC NGHIỆP', 'TRẠNG THÁI', 'SỐ TIỀN', 'TRƯỜNG HỢP', 'HÌNH THỨC', 'BÊN THANH TOÁN', 'MÃ HỒ SƠ',
-      'SỐ CONTAINER', 'CHỨNG TỪ', 'PHIẾU THU MẸ', 'MÃ THAM CHIẾU', 'MÃ GD NGÂN HÀNG', 'TẠO LÚC', 'NGƯỜI TẠO',
+      'MÃ PHIẾU THU', 'TÁC NGHIỆP', 'SỐ CONTAINER', 'TRẠNG THÁI', 'SỐ TIỀN', 'HÌNH THỨC TT', 'PHƯƠNG THỨC TT', 'BÊN THANH TOÁN', 'MÃ HỒ SƠ',
+      'PHIẾU THU TRẢ TRƯỚC', 'MÃ THAM CHIẾU', 'MÃ GD NGÂN HÀNG', 'TẠO LÚC', 'NGƯỜI TẠO',
       'XÁC NHẬN THU LÚC', 'NGƯỜI XÁC NHẬN', 'LÝ DO HỦY', 'SỐ LẦN IN', 'IN GẦN NHẤT',
+      // DEC-111: xuất hóa đơn
+      'TRẠNG THÁI HĐ', 'MÃ SỐ THUẾ', 'GMAIL NHẬN HĐ', 'TÊN CÔNG TY', 'ĐỊA CHỈ', 'GHI CHÚ HĐ', 'SỐ HÓA ĐƠN', 'CẬP NHẬT XHD',
+      'SỐ LƯỢT ĐÃ DÙNG (TTR)', 'CÒN LẠI (TTR)',
     ],
     rows: rows.map(({ transaction: t, receipt: r }) => [
-      r?.receiptNo || '', OP[receiptOperationOf(state, { ...t, operation: r?.operation })], STATUS[t.status] || t.status, t.amount,
-      t.paymentCategory, t.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản', t.payerName, t.dossierCode || '', t.containerNo || '',
-      r?.voucherNo || '', r?.masterReceiptCode || (t.purpose === 'PREPAID_TOPUP' ? t.paymentRef : ''), t.paymentRef,
+      r?.receiptNo || '', OP[receiptOperationOf(state, { ...t, operation: r?.operation })], t.containerNo || '', STATUS[t.status] || t.status, t.amount,
+      PAYMENT_CATEGORY_FULL_LABELS[t.paymentCategory] || t.paymentCategory, t.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản', t.payerName, t.dossierCode || '',
+      r?.masterReceiptCode || (t.purpose === 'PREPAID_TOPUP' ? t.paymentRef : ''), t.paymentRef,
       t.providerTxRef || '', fmt(t.createdAt), t.createdBy, fmt(t.confirmedAt), t.confirmedBy || '', t.cancelReason || '',
       r?.printLog?.length || 0, r?.printLog?.length ? `${fmt(r.printLog[r.printLog.length - 1].at)} • ${r.printLog[r.printLog.length - 1].by}` : '',
+      r ? INVOICE_STATUS_LABELS[r.invoiceStatus || 'CHUA_XHD'] : '', r?.invoiceRequest?.taxCode || '', r?.invoiceRequest?.email || '',
+      r?.invoiceRequest?.companyName || '', r?.invoiceRequest?.address || '', r?.invoiceRequest?.note || '', r?.invoiceIssued?.invoiceNo || '',
+      r?.invoiceIssued ? `${fmt(r.invoiceIssued.issuedAt)} • ${r.invoiceIssued.issuedBy}` : '',
+      // DEC-079: phiếu thu trước — số lượt tác nghiệp đã trừ, số tiền còn lại
+      ...(() => {
+        const u = t.purpose === 'PREPAID_TOPUP' ? masterReceiptUsage(state, r?.masterReceiptCode || t.paymentRef) : undefined;
+        return u ? [u.usedCount, u.remainingAmount] : ['', ''];
+      })(),
     ]),
   };
 }
 
 // Sheet TỒN VỎ (DEC-065)
-export function yardStockSheet(rows: ContainerRecord[]): SheetData {
+export function yardStockSheet(rows: ContainerRecord[], state?: DepotState): SheetData {
   return {
     name: 'TỒN VỎ',
     columns: [
-      'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'TRẠNG THÁI', 'LƯU BÃI (NGÀY)', 'ĐÓNG HÀNG', 'AGE', 'VỊ TRÍ', 'TIẾN ĐỘ',
-      'GATE IN', 'KHÁCH HÀNG', 'SỐ XE HẠ', 'KHÓA', 'NGƯỜI KHÓA', 'KHÓA LÚC', 'GHI CHÚ', 'GHI CHÚ BỞI', 'GHI CHÚ LÚC',
+      'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'DATE IN', 'VÀO BÃI BẰNG', 'TRẠNG THÁI', 'LƯU BÃI (NGÀY)', 'ĐÓNG HÀNG', 'AGE', 'VỊ TRÍ', 'TIẾN ĐỘ',
+      // DEC-099: thông tin thanh toán lượt vào bãi
+      'HÌNH THỨC TT', 'MÃ PHIẾU THU',
+      'KHÁCH HÀNG', 'SỐ XE HẠ', 'KHÓA', 'NGƯỜI KHÓA', 'KHÓA LÚC', 'GHI CHÚ', 'GHI CHÚ BỞI', 'GHI CHÚ LÚC',
     ],
-    rows: rows.map((c) => [
-      c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, c.conditionClass, storageDays(c.gateInAt), c.stuffingClass,
-      c.manufactureYear || '', formatLocation(c), getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', '),
-      fmt(c.gateInAt), c.customerRep || '', c.truckNo || '', c.isOnHold ? 'ĐANG KHÓA' : '', c.holdBy || '', fmt(c.holdAt),
-      c.officeNote || '', c.officeNoteUpdatedBy || '', fmt(c.officeNoteUpdatedAt),
-    ]),
+    rows: rows.map((c) => {
+      const pay = state ? containerPaymentInfo(state, c) : undefined;
+      return [
+        c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, fmt(c.gateInAt), c.masterDossierCode.startsWith('NT-') ? 'NHẬP TÀU' : 'HẠ VỎ',
+        c.conditionClass, storageDays(c.gateInAt), c.stuffingClass,
+        c.manufactureYear || '', formatLocation(c), getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', '),
+        pay?.label || '', pay?.receipt || '',
+        c.customerRep || '', c.truckNo || '', c.isOnHold ? 'ĐANG KHÓA' : '', c.holdBy || '', fmt(c.holdAt),
+        c.officeNote || '', c.officeNoteUpdatedBy || '', fmt(c.officeNoteUpdatedAt),
+      ];
+    }),
   };
 }
 
@@ -442,7 +469,7 @@ export interface VesselReportRow {
   item: VesselListItem;
 }
 
-export function queryVesselReport(state: DepotState, mode: VesselMode, filter: VesselReportFilter, page = 1): PagedResult<VesselReportRow> {
+export function queryVesselReport(state: DepotState, mode: VesselMode, filter: VesselReportFilter, page = 1, pageSize = REPORT_PAGE_SIZE): PagedResult<VesselReportRow> {
   const range = toRange(filter);
   const no = filter.containerNo?.trim().toUpperCase();
   const vessel = filter.vesselName?.trim().toUpperCase();
@@ -453,7 +480,7 @@ export function queryVesselReport(state: DepotState, mode: VesselMode, filter: V
     .filter((l) => inRange(l.plannedAt, range))
     .flatMap((list) => list.items.filter((i) => !no || i.containerNo.includes(no)).map((item) => ({ list, item })))
     .sort((a, b) => b.list.plannedAt.localeCompare(a.list.plannedAt) || a.item.containerNo.localeCompare(b.item.containerNo));
-  return paginate(rows, page, REPORT_PAGE_SIZE);
+  return paginate(rows, page, pageSize);
 }
 
 const VESSEL_ITEM_STATUS: Record<string, Record<string, string>> = {

@@ -18,6 +18,9 @@ import {
 } from '../../components/shared';
 
 const PAGE_SIZE = 20;
+// DEC-092: phần chi tiết vị trí "17-02-02" (bỏ chiều không có) — đi sau ô tên Block rộng cố định
+const slotDetail = (c: { currentBay: string | null; currentRow: string | null; currentTier: string | null }) =>
+  [c.currentBay, c.currentRow, c.currentTier].filter(Boolean).join("-");
 const PROGRESS_FILTERS: ContainerProgress[] = ['CHO_SUA_CHUA', 'CHO_BAO_GIA', 'CHO_VE_SINH', 'DA_LAP_LENH_CAP', 'SAN_SANG'];
 
 // BỘ PHẬN XE NÂNG — ĐẢO CHUYỂN (CR-01): tác nghiệp mobile (max-w-lg như các màn hiện trường), có lịch sử
@@ -30,9 +33,10 @@ export const YardShiftWorkspace: React.FC<{
   const [size, setSize] = useState('ALL');
   const [progress, setProgress] = useState<'ALL' | ContainerProgress>('ALL');
   const [shown, setShown] = useState(PAGE_SIZE);
+  // DEC-092: ô tên Block rộng đúng bằng mã Block dài nhất (đơn vị ch, chữ đều nét) → các phần Bay-Row-Tier thẳng cột
+  const blockCh = Math.max(5, ...state.yardBlocks.map((b) => b.blockCode.length));
   const [selectedId, setSelectedId] = useState('');
   const [slot, setSlot] = useState<SlotValue>(EMPTY_SLOT);
-  const [note, setNote] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -56,10 +60,9 @@ export const YardShiftWorkspace: React.FC<{
     setError(null);
     setSuccess(null);
     try {
-      onUpdateState(shiftContainer(state, { containerId: selected.id, ...slot, note }));
+      onUpdateState(shiftContainer(state, { containerId: selected.id, ...slot }));
       setSuccess(`Đã ĐẢO CHUYỂN ${selected.containerNo}: ${formatLocation(selected)} → ${slot.blockCode}${slot.bay ? ` / ${slot.bay}-${slot.row}-${slot.tier}` : ''}.`);
       setSlot(EMPTY_SLOT);
-      setNote('');
       setSelectedId('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lỗi đảo chuyển');
@@ -97,13 +100,10 @@ export const YardShiftWorkspace: React.FC<{
           </dl>
           <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
             <span className="block font-bold text-slate-800">Vị trí mới *</span>
+            {/* DEC-116: không nhập ghi chú tác nghiệp khi đảo chuyển */}
             <SlotPicker state={state} value={slot} onChange={setSlot} />
-            <label className="block">
-              <span className={labelCls}>Ghi chú tác nghiệp</span>
-              <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: Hạ khu sửa chữa" className={inputCls} />
-            </label>
           </div>
-          <button type="button" disabled={!isSlotComplete(slot)} onClick={handleShift} className={`${primaryBtn} w-full py-3`}>
+          <button type="button" disabled={!isSlotComplete(slot, state)} onClick={handleShift} className={`${primaryBtn} w-full py-3`}>
             <ArrowLeftRight className="h-4 w-4" />
             Xác nhận đảo chuyển
           </button>
@@ -143,13 +143,42 @@ export const YardShiftWorkspace: React.FC<{
                 onClick={() => { setSelectedId(c.id); setSlot(EMPTY_SLOT); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className={`w-full rounded-lg border px-3 py-2.5 text-left text-xs ${selectedId === c.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white active:bg-slate-50'}`}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
-                  <span className="font-mono font-bold text-slate-800">{formatLocation(c)}</span>
-                </div>
-                <div className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-slate-500">
-                  <span>{c.size}/{c.type} • <span className={c.conditionClass === 'DAMAGE' ? 'font-semibold text-rose-700' : 'font-semibold text-emerald-700'}>{c.conditionClass}</span></span>
-                  <span>{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</span>
+                {/* DEC-094: ô TRẠNG THÁI riêng bên trái (cùng kích thước ô tác nghiệp — DEC-096) */}
+                <div className="grid grid-cols-[5rem_1fr] items-center gap-2.5" data-testid="shift-row">
+                  <span
+                    data-testid="shift-status"
+                    className={`flex w-full flex-wrap items-center justify-center rounded px-1.5 py-1 text-center text-[10px] font-black uppercase ${c.conditionClass === 'DAMAGE' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`}
+                  >
+                    {c.conditionClass}
+                  </span>
+                  <span className="min-w-0">
+                    {/* DEC-115: tối ưu mobile — đúng 2 dòng, không xuống dòng:
+                        dòng 1 SỐ CONT | SIZE/TYPE | TIẾN ĐỘ (bên phải); dòng 2 VỊ TRÍ (ô Block rộng cố định, thẳng cột — DEC-092) | GHI CHÚ */}
+                    <span className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                      <span className="shrink-0"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" /></span>
+                      <span className="shrink-0 font-mono text-[11px] text-slate-600">{c.size}/{c.type}</span>
+                      <span className="ml-auto flex min-w-0 justify-end gap-1 overflow-hidden" data-testid="shift-progress">
+                        {getContainerProgress(c).map((p) => (
+                          <span key={p} className={`shrink-0 whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold ${p === 'SAN_SANG' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
+                            {PROGRESS_LABELS[p]}
+                          </span>
+                        ))}
+                      </span>
+                    </span>
+                    <span className="mt-1 flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                      <span className="flex shrink-0 font-mono text-[11px] font-bold text-slate-900" data-testid="shift-slot">
+                        <span className="shrink-0" style={{ width: `${blockCh}ch` }}>{c.currentBlock || ''}</span>
+                        <span className="truncate">{slotDetail(c) ? ` / ${slotDetail(c)}` : ''}</span>
+                      </span>
+                      <span
+                        data-testid="shift-note"
+                        className={`min-w-0 flex-1 truncate rounded px-1.5 py-0.5 text-[11px] ${c.officeNote ? 'bg-yellow-200 font-semibold text-slate-900' : 'text-slate-400'}`}
+                        title={c.officeNote || ''}
+                      >
+                        {c.officeNote ? `Ghi chú: ${c.officeNote}` : ''}
+                      </span>
+                    </span>
+                  </span>
                 </div>
               </button>
             </li>

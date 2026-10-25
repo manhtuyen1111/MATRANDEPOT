@@ -3,8 +3,8 @@ import { Search } from 'lucide-react';
 import { VesselMode, VESSEL_MODE_LABELS } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import { collectAllPages, queryVesselReport, VesselReportFilter, vesselReportSheet } from '../../services/reports';
-import { defaultLastDayRange, fileStamp, formatDateTime } from '../../services/datetime';
-import { ContainerNo, DateTimeField, ExportExcelButton, inputCls, labelCls, Pager, primaryBtn, SectionCard } from '../../components/shared';
+import { quickRange, fileStamp, formatDateTime } from '../../services/datetime';
+import { linkCls, ContainerNo, DateRangeFilter, ExportExcelButton, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
 
 const STATUS: Record<VesselMode, Record<string, string>> = {
   NHAP_TAU: { PENDING: 'Chờ xe về', INSPECTED: 'Đã giám định — chờ hạ', DONE: 'Đã hạ bãi' },
@@ -15,15 +15,16 @@ const STATUS: Record<VesselMode, Record<string, string>> = {
 export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpenDossier?: (code: string) => void }> = ({ state, mode, onOpenDossier }) => {
   const isImport = mode === 'NHAP_TAU';
   const label = VESSEL_MODE_LABELS[mode];
-  const [draft, setDraft] = useState<VesselReportFilter>(() => ({ containerNo: '', vesselName: '', ...defaultLastDayRange() }));
+  const [draft, setDraft] = useState<VesselReportFilter>(() => ({ containerNo: '', vesselName: '', ...quickRange('TODAY') }));
   const [applied, setApplied] = useState<VesselReportFilter | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = usePageSize(`report-${mode}`, 50); // DEC-080
 
   let result: ReturnType<typeof queryVesselReport> | null = null;
   let queryError: string | null = null;
   if (applied) {
     try {
-      result = queryVesselReport(state, mode, applied, page);
+      result = queryVesselReport(state, mode, applied, page, pageSize);
     } catch (err) {
       queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
     }
@@ -41,8 +42,7 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
             <span className={labelCls}>Tên tàu</span>
             <input value={draft.vesselName} onChange={(e) => setDraft({ ...draft, vesselName: e.target.value.toUpperCase() })} className={`${inputCls} uppercase`} />
           </label>
-          <DateTimeField label={`Thời gian ${label.toLowerCase()} từ`} value={draft.dateFrom || ''} onChange={(v) => setDraft({ ...draft, dateFrom: v })} />
-          <DateTimeField label="Đến" value={draft.dateTo || ''} onChange={(v) => setDraft({ ...draft, dateTo: v })} fallback="end" />
+          <DateRangeFilter label={`Thời gian ${label.toLowerCase()}`} value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <div className="col-span-2 flex flex-wrap items-end gap-2">
             <button type="submit" className={primaryBtn}>
               <Search className="h-4 w-4" />
@@ -89,7 +89,7 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
                     <td className="px-3 py-2 font-mono">{formatDateTime(l.plannedAt)}</td>
                     <td className="px-3 py-2 font-mono">
                       {i.dossierCode && i.status !== 'PENDING' ? (
-                        <button type="button" onClick={() => onOpenDossier?.(i.dossierCode!)} className="text-blue-700 hover:underline">{i.dossierCode}</button>
+                        <button type="button" onClick={() => onOpenDossier?.(i.dossierCode!)} className={linkCls}>{i.dossierCode}</button>
                       ) : (
                         i.dossierCode || '-'
                       )}
@@ -105,7 +105,7 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
                 ))}
               </tbody>
             </table>
-            {result.pageCount > 1 && <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} />}
+            <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} pageSize={pageSize} onPageSize={setPageSize} />
           </>
         )}
       </div>

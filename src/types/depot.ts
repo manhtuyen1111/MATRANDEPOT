@@ -11,7 +11,8 @@ export type AppRole =
   | 'CLEANING'
   | 'INSPECTOR'
   | 'QUOTATION'
-  | 'REPAIR_STAFF';
+  | 'REPAIR_STAFF'
+  | 'ACCOUNTANT'; // DEC-111: thêm lại Kế toán — chỉ cập nhật trạng thái hóa đơn từ phiếu thu
 
 export const ROLE_LABELS: Record<AppRole, string> = {
   ADMIN: 'Admin',
@@ -22,7 +23,11 @@ export const ROLE_LABELS: Record<AppRole, string> = {
   INSPECTOR: 'Giám định',
   QUOTATION: 'Báo giá',
   REPAIR_STAFF: 'Sửa chữa',
+  ACCOUNTANT: 'Kế toán',
 };
+
+// DEC-111: trạng thái xuất hóa đơn của phiếu thu
+export type InvoiceStatus = 'CHUA_XHD' | 'YEU_CAU_XHD' | 'DA_XHD';
 
 // Cấu trúc Menu tác nghiệp (CR-06, CR-09)
 export type WorkspaceMenuId =
@@ -36,7 +41,6 @@ export type WorkspaceMenuId =
   | 'VP_XUAT_TAU'
   | 'GD_NHAP_TAU'
   | 'GD_XUAT_TAU'
-  | 'VS_NHAP_TAU'
   | 'XN_NHAP_TAU'
   | 'XN_XUAT_TAU'
   | 'VS_CHO_VE_SINH'
@@ -131,12 +135,14 @@ export interface FeeLineItem {
   id: string;
   catalogCode: string;
   name: string;
-  amountInclVat: number;
+  amountInclVat: number; // Thành tiền dòng (= đơn giá × số lượng)
+  quantity?: number;          // DEC-077: số lượng (mặc định 1)
+  unitAmountInclVat?: number; // DEC-077: đơn giá biểu giá tại thời điểm lập
 }
 
 // 3 trường hợp thanh toán đã xác nhận (DEC-004, DEC-031)
 export type PaymentCategory =
-  | 'TTT'   // THANH TOÁN TRƯỚC (Phiếu thu mẹ + Quét mã QR trừ dần)
+  | 'TTT'   // THANH TOÁN TRƯỚC (Phiếu thu trả trước + Quét mã QR trừ dần)
   | 'TTS'   // THANH TOÁN SAU (Kiểm tra nguồn + Note ở chứng từ là TTS) -> công nợ, chưa thu tiền
   | 'TTTT'; // THANH TOÁN TRỰC TIẾP (Chuyển khoản API QR / Tiền mặt)
 
@@ -187,6 +193,7 @@ export interface YardBlock {
   maxTier: number;
   capacity: number;
   description: string;
+  isInspectionRack?: boolean; // DEC-109: KỆ GIÁM ĐỊNH — Admin đánh dấu; cont "Hạ kệ giám định" chỉ được hạ vào block này
 }
 
 // Dữ liệu in Phiếu TÁC NGHIỆP NỘI BỘ khổ K80 (80mm) kèm Mã QR
@@ -243,11 +250,14 @@ export interface ContainerRecord {
   needsCleaning: boolean;        // CHỜ VỆ SINH
   needsQuotation: boolean;       // CHỜ BÁO GIÁ (chỉ cont DAMAGE)
   needsRepair: boolean;          // CHỜ SỬA CHỮA (sau khi Báo giá)
-  // Cờ cũ của luồng đảo chuyển HẠ SỬA CHỮA / HẠ KỆ GIÁM ĐỊNH (menu đã gỡ theo CR-01; được xóa khi ĐẢO CHUYỂN)
+  // DEC-109: HA_KE_GIAM_DINH = cont phải hạ vào KỆ GIÁM ĐỊNH (đặt từ Giám định Hạ vỏ); xóa khi ĐẢO CHUYỂN về vị trí khác.
+  // HA_SUA_CHUA: cờ cũ (menu đã gỡ theo CR-01).
   forkliftShiftTask: 'NONE' | 'HA_SUA_CHUA' | 'HA_KE_GIAM_DINH';
   quotationAmount?: number;
   quotationItems?: string[];
   quotationLaborHours?: number; // GIỜ CÔNG SỬA CHỮA do Báo giá nhập (DEC-041)
+  quotationUpdatedBy?: string; // DEC-086: người / giờ cập nhật báo giá (trước khi chuyển sửa chữa)
+  quotationUpdatedAt?: string;
   // KHÓA CONTAINER = Tạm giữ / Khóa xuất (DEC-002, DEC-015, CR-02)
   isOnHold: boolean;
   holdReason?: string;
@@ -290,7 +300,7 @@ export interface LocationHistoryItem {
   performedAt: string;
 }
 
-// Phiếu thu mẹ (TTT): chỉ ACTIVE (dùng được để trừ dần) sau khi tiền nạp đã thu thực tế
+// Phiếu thu trả trước (TTT): chỉ ACTIVE (dùng được để trừ dần) sau khi tiền nạp đã thu thực tế
 export interface MasterPrepaidReceipt {
   id: string;
   receiptCode: string;
@@ -302,6 +312,7 @@ export interface MasterPrepaidReceipt {
   remainingAmount: number;
   status: 'PENDING_PAYMENT' | 'ACTIVE' | 'EXHAUSTED' | 'CANCELLED';
   paymentMethod?: DirectPaymentMethod;
+  feeLines?: FeeLineItem[]; // DEC-077: chi phí theo biểu giá × số lượng (tổng = totalAmount)
   createdBy: string;
   createdAt: string;
   activatedAt?: string;
@@ -366,7 +377,7 @@ export interface PaymentTransaction {
   containerNo?: string;
   payerName: string;
   method: DirectPaymentMethod;
-  paymentCategory: 'TTT' | 'TTTT'; // TTT = nạp Phiếu thu mẹ; TTTT = thu trực tiếp cho chứng từ
+  paymentCategory: 'TTT' | 'TTTT'; // TTT = nạp Phiếu thu trả trước; TTTT = thu trực tiếp cho chứng từ
   amount: number;
   status: PaymentTransactionStatus;
   qrPayload?: string;              // Nội dung QR chuyển khoản (chỉ là yêu cầu thanh toán, không phải bằng chứng đã thu)
@@ -386,13 +397,13 @@ export type ReceiptOperation = 'HA_VO' | 'CAP_VO' | 'THU_TRUOC' | 'KHAC';
 export const RECEIPT_OPERATION_LABELS: Record<ReceiptOperation, string> = {
   HA_VO: 'HẠ VỎ',
   CAP_VO: 'CẤP VỎ',
-  THU_TRUOC: 'THU TRƯỚC (TTT)',
+  THU_TRUOC: 'THU TRƯỚC (TTR)',
   KHAC: 'KHÁC',
 };
 
 export interface PaymentReceipt {
   id: string;
-  receiptNo: string; // PT-YYYY-NNNNNN
+  receiptNo: string; // PT-TT-YYMMDD-NNNN / PT-TTR-YYMMDD-NNNN (DEC-098); dữ liệu cũ PT-YYYY-NNNNNN
   transactionId: string;
   purpose: 'VOUCHER' | 'PREPAID_TOPUP';
   operation?: ReceiptOperation; // Tác nghiệp phát sinh khoản thu (DEC-051)
@@ -410,6 +421,11 @@ export interface PaymentReceipt {
   issuedAt: string;
   issuedBy: string;
   printLog?: { at: string; by: string }[]; // DEC-063: mỗi lần in phiếu thu
+  // DEC-111: xuất hóa đơn — mã bảo mật 12 ký tự in trên phiếu; khách dùng để gửi yêu cầu
+  invoiceSecret?: string;
+  invoiceStatus?: InvoiceStatus;
+  invoiceRequest?: { taxCode: string; email: string; companyName: string; address: string; note?: string; requestedAt: string; updatedAt: string };
+  invoiceIssued?: { invoiceNo?: string; issuedAt: string; issuedBy: string };
 }
 
 export interface GateInOrder {
@@ -425,6 +441,7 @@ export interface GateInOrder {
   stuffingClass: FieldStuffingClass;   // M | K | E
   cleaningItems: FieldCleaningItem[];  // KHÔNG VỆ SINH / WP / WW / CC / RM / ML
   manufactureYear: number;             // AGE: 2001, 2002...
+  toInspectionRack?: boolean;          // DEC-109: chưa giám định ngay được → Xe nâng HẠ KỆ GIÁM ĐỊNH
   fieldStaffName: string;
   fieldRecordedAt: string;
   // Bước 2: Văn phòng kiểm tra lệnh/chứng từ & bổ sung thông tin

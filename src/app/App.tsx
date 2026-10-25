@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { K80InternalTicket, ROLE_LABELS, WorkspaceMenuId } from '../types/depot';
 import { DepotState, loadDepotState, resetDepotState, saveDepotState } from '../services/depotStore';
+import { createDemoState } from '../services/demoData';
 import { canOpenMenu } from '../services/permissions';
 import { isSupabaseConfigured } from '../lib/env';
 import { K80TicketModal } from '../components/K80TicketModal';
@@ -27,6 +28,7 @@ import { InspectorHaVoMobile } from '../features/inspector/InspectorHaVoMobile';
 import { OfficeCapVoWorkspace, OfficeHaVoWorkspace } from '../features/office/OfficeWorkspaces';
 import { OfficeVesselWorkspace } from '../features/vessel/OfficeVesselWorkspace';
 import { VesselFieldMobile, VesselFieldMode } from '../features/vessel/VesselFieldMobile';
+import { openVesselLists, VesselFieldStep, vesselStepSummary } from '../services/vessel';
 import { FieldQueueMode, FieldQueueWorkspaces, getFieldQueue } from '../features/field-queues/FieldQueueWorkspaces';
 import { YardShiftWorkspace } from '../features/forklift/YardShiftWorkspace';
 import { YardFeature } from '../features/yard/YardFeature';
@@ -74,7 +76,6 @@ const MENU: MenuGroup[] = [
   },
   { key: 'VS', label: 'Vệ sinh', icon: SprayCan, items: [
     { id: 'VS_CHO_VE_SINH', label: 'Chờ vệ sinh', mobile: true },
-    { id: 'VS_NHAP_TAU', label: 'Nhập tàu', mobile: true },
   ] },
   {
     key: 'XN',
@@ -99,7 +100,7 @@ const MENU: MenuGroup[] = [
       { id: 'BC_CAP_VO', label: 'Cấp vỏ' },
       { id: 'BC_NHAP_TAU', label: 'Nhập tàu' },
       { id: 'BC_XUAT_TAU', label: 'Xuất tàu' },
-      { id: 'BC_SUA_CHUA', label: 'Sửa chữa chi tiết' },
+      { id: 'BC_SUA_CHUA', label: 'Sửa chữa' },
       { id: 'BC_TONG_HOP', label: 'Tổng hợp' },
     ],
   },
@@ -121,7 +122,8 @@ const MENU: MenuGroup[] = [
 ];
 
 const FIELD_QUEUE_MENUS: FieldQueueMode[] = ['VS_CHO_VE_SINH', 'XN_CHO_HA_VO', 'XN_CHO_CAP_VO', 'BG_CHO_BAO_GIA', 'SC_CHO_SUA_CHUA'];
-const VESSEL_FIELD_MENUS: VesselFieldMode[] = ['GD_NHAP_TAU', 'GD_XUAT_TAU', 'XN_XUAT_TAU'];
+const VESSEL_FIELD_MENUS: VesselFieldMode[] = ['GD_NHAP_TAU', 'GD_XUAT_TAU', 'XN_NHAP_TAU', 'XN_XUAT_TAU'];
+const MOBILE_MENU_IDS = new Set<WorkspaceMenuId>(MENU.flatMap((g) => g.items.filter((i) => i.mobile).map((i) => i.id)));
 const CATALOG_TABS: Partial<Record<WorkspaceMenuId, CatalogTab>> = {
   DM_KHACH_HANG: 'KHACH_HANG',
   DM_HANG_TAU: 'HANG_TAU',
@@ -150,12 +152,20 @@ function writePrefs(p: { collapsedGroups: string[]; railMode: boolean }) {
 }
 
 export const App: React.FC = () => {
-  const [state, setState] = useState<DepotState>(() => loadDepotState());
+  const [state, setState] = useState<DepotState>(() => loadDepotState(createDemoState));
   const [activeMenu, setActiveMenu] = useState<WorkspaceMenuId>('GD_HA_VO');
   const [activeK80Ticket, setActiveK80Ticket] = useState<K80InternalTicket | null>(null);
   const [activeDossierCode, setActiveDossierCode] = useState<string | null>(null);
   const [simulatedQr, setSimulatedQr] = useState('');
   const [receiptFocus, setReceiptFocus] = useState<{ key: string; nonce: number } | null>(null);
+  // DEC-051, DEC-105: mở thẳng Văn phòng → Phiếu thu (chỉ khi user được vào menu Phiếu thu)
+  const openReceipt = canOpenMenu(state.currentUser, 'VP_PHIEU_THU')
+    ? (key: string) => {
+        setActiveDossierCode(null);
+        setReceiptFocus({ key, nonce: Date.now() });
+        setActiveMenu('VP_PHIEU_THU');
+      }
+    : undefined;
   const [prefs, setPrefs] = useState(readPrefs);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -189,6 +199,16 @@ export const App: React.FC = () => {
     VP_TRA_CHUNG_TU: ticketsAwaitingReturn(state).length,
   };
   for (const m of FIELD_QUEUE_MENUS) badges[m] = getFieldQueue(state, m).length;
+  // DEC-075: số cont chờ làm của từng bước Nhập tàu / Xuất tàu (cộng các tàu đang mở)
+  const vesselTodo = (mode: "NHAP_TAU" | "XUAT_TAU", step: VesselFieldStep) =>
+    openVesselLists(state, mode).reduce((s, l) => s + vesselStepSummary(state, step, l).todo, 0);
+  badges.GD_NHAP_TAU = vesselTodo("NHAP_TAU", "NT_INSPECT");
+  badges.XN_NHAP_TAU = vesselTodo("NHAP_TAU", "NT_PLACE");
+  badges.GD_XUAT_TAU = badges.XN_XUAT_TAU = vesselTodo("XUAT_TAU", "XT_EXPORT");
+  badges.VP_NHAP_TAU = openVesselLists(state, "NHAP_TAU").length;
+  badges.VP_XUAT_TAU = openVesselLists(state, "XUAT_TAU").length;
+  // Việc hiện trường (mục mobile) đang chờ → nổi bật màu cam để bộ phận thấy ngay
+  const urgent = (id: WorkspaceMenuId) => Boolean(MOBILE_MENU_IDS.has(id) && (badges[id] || 0) > 0);
 
   const toggleGroup = (key: string) => {
     const collapsedGroups = prefs.collapsedGroups.includes(key)
@@ -219,6 +239,7 @@ export const App: React.FC = () => {
         const single = g.key === 'TON_VO';
         const collapsed = prefs.collapsedGroups.includes(g.key) && !containsActive;
         const groupBadge = g.items.reduce((s, i) => s + (badges[i.id] || 0), 0);
+        const groupUrgent = g.items.some((i) => urgent(i.id));
 
         if (rail) {
           return (
@@ -234,7 +255,7 @@ export const App: React.FC = () => {
             >
               <Icon className="h-[18px] w-[18px]" />
               {groupBadge > 0 && !single && (
-                <span className="absolute -right-0.5 -top-0.5 rounded-full bg-slate-900 px-1 text-[9px] font-bold text-white">{groupBadge}</span>
+                <span className={`absolute -right-0.5 -top-0.5 rounded-full px-1 text-[9px] font-bold text-white ${groupUrgent ? "animate-pulse bg-amber-500" : "bg-slate-900"}`}>{groupBadge}</span>
               )}
             </button>
           );
@@ -271,7 +292,7 @@ export const App: React.FC = () => {
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
               <span className="flex-1 text-left">{g.label}</span>
-              {collapsed && groupBadge > 0 && <span className="font-mono text-[11px] text-slate-500">{groupBadge}</span>}
+              {collapsed && groupBadge > 0 && <span className={`font-mono text-[11px] ${groupUrgent ? "rounded bg-amber-500 px-1.5 font-bold text-white" : "text-slate-500"}`}>{groupBadge}</span>}
               <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
             </button>
             {!collapsed && (
@@ -284,12 +305,13 @@ export const App: React.FC = () => {
                         type="button"
                         onClick={() => selectMenu(item.id)}
                         aria-current={active ? 'page' : undefined}
-                        className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 ${
+                        className={`flex w-full items-center gap-1.5 rounded-md px-2.5 py-1.5 text-left ${
                           active ? 'bg-blue-600 font-semibold text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                         }`}
                       >
-                        <span className="flex items-center gap-1.5">
-                          {item.label}
+                        {/* DEC-078: 3 cột cố định — tên | biểu tượng mobile | số đếm — để biểu tượng mobile thẳng hàng */}
+                        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                        <span className="flex w-6 shrink-0 justify-center">
                           {item.mobile && (
                             <span
                               title="Tác nghiệp mobile"
@@ -300,11 +322,19 @@ export const App: React.FC = () => {
                             </span>
                           )}
                         </span>
-                        {badges[item.id] !== undefined && (badges[item.id]! > 0 || active) && (
-                          <span className={`rounded px-1.5 font-mono text-[10px] font-bold ${active ? 'bg-white/20' : 'bg-slate-100 text-slate-700'}`}>
-                            {badges[item.id]}
-                          </span>
-                        )}
+                        <span className="flex w-9 shrink-0 justify-end">
+                          {badges[item.id] !== undefined && (badges[item.id]! > 0 || active) && (
+                            <span
+                              title={urgent(item.id) ? "Có việc đang chờ" : undefined}
+                              className={`inline-flex items-center gap-1 rounded px-1.5 font-mono text-[10px] font-bold ${
+                                urgent(item.id) ? "bg-amber-500 text-white" : active ? "bg-white/20" : "bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {urgent(item.id) && !active && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" aria-label="Có việc đang chờ" />}
+                              {badges[item.id]}
+                            </span>
+                          )}
+                        </span>
                       </button>
                     </li>
                   );
@@ -393,16 +423,20 @@ export const App: React.FC = () => {
                 ))}
               </select>
             </label>
-            <button type="button" onClick={() => setState(resetDepotState())} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
+            <button type="button" onClick={() => { if (window.confirm('Xóa toàn bộ dữ liệu tác nghiệp (container, lệnh, phiếu thu…)? Danh mục được giữ lại.')) setState(resetDepotState()); }} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
               <RefreshCw className="h-3 w-3" />
-              Reset demo
+              Xóa dữ liệu
+            </button>
+            <button type="button" onClick={() => { if (window.confirm('Thay toàn bộ dữ liệu hiện tại bằng DỮ LIỆU TEST (đủ các trường hợp)?')) setState(resetDepotState(createDemoState)); }} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
+              <RefreshCw className="h-3 w-3" />
+              Nạp dữ liệu test
             </button>
           </div>
         </header>
 
         <main className="flex-1 p-3 sm:p-4">
           {activeMenu === 'TON_VO' && (
-            <YardFeature state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} onOpenK80Ticket={setActiveK80Ticket} />
+            <YardFeature state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} onOpenK80Ticket={setActiveK80Ticket} onOpenReceipt={openReceipt} />
           )}
           {activeMenu === 'GD_HA_VO' && <InspectorHaVoMobile state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
           {activeMenu === 'VP_HA_VO' && (
@@ -411,18 +445,12 @@ export const App: React.FC = () => {
           {activeMenu === 'VP_CAP_VO' && (
             <OfficeCapVoWorkspace state={state} onUpdateState={handleUpdateState} onOpenK80Ticket={setActiveK80Ticket} onOpenDossier={setActiveDossierCode} />
           )}
-          {activeMenu === 'VP_TRA_CHUNG_TU' && <DocumentReturnWorkspace state={state} onUpdateState={handleUpdateState} />}
+          {activeMenu === 'VP_TRA_CHUNG_TU' && <DocumentReturnWorkspace state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
           {activeMenu === 'VP_PHIEU_THU' && <ReceiptsWorkspace state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} focus={receiptFocus} />}
           {activeMenu === 'VP_NHAP_TAU' && <OfficeVesselWorkspace mode="NHAP_TAU" state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
           {activeMenu === 'VP_XUAT_TAU' && <OfficeVesselWorkspace mode="XUAT_TAU" state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
           {VESSEL_FIELD_MENUS.includes(activeMenu as VesselFieldMode) && (
             <VesselFieldMobile key={activeMenu} kind={activeMenu as VesselFieldMode} state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />
-          )}
-          {activeMenu === 'VS_NHAP_TAU' && (
-            <FieldQueueWorkspaces key={activeMenu} mode="VS_CHO_VE_SINH" vesselOnly state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />
-          )}
-          {activeMenu === 'XN_NHAP_TAU' && (
-            <FieldQueueWorkspaces key={activeMenu} mode="XN_CHO_HA_VO" vesselOnly state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />
           )}
           {FIELD_QUEUE_MENUS.includes(activeMenu as FieldQueueMode) && (
             <FieldQueueWorkspaces
@@ -449,16 +477,8 @@ export const App: React.FC = () => {
         state={state}
         onClose={() => setActiveDossierCode(null)}
         onOpenK80Ticket={setActiveK80Ticket}
-        // DEC-051: link thẳng tới Văn phòng → Phiếu thu (chỉ khi user được vào menu Phiếu thu)
-        onOpenReceipt={
-          canOpenMenu(state.currentUser, 'VP_PHIEU_THU')
-            ? (key) => {
-                setActiveDossierCode(null);
-                setReceiptFocus({ key, nonce: Date.now() });
-                setActiveMenu('VP_PHIEU_THU');
-              }
-            : undefined
-        }
+        onUpdateState={handleUpdateState}
+        onOpenReceipt={openReceipt}
       />
 
       <K80TicketModal

@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, CheckCircle2, ChevronDown, ChevronUp, FileSpreadsheet, MapPin, QrCode, X } from 'lucide-react';
+import { Camera, CheckCircle2, ChevronDown, ChevronUp, MapPin, QrCode, X } from 'lucide-react';
 import { ContainerRecord } from '../../types/depot';
-import { DepotState, formatVnd } from '../../services/depotStore';
+import { DepotState } from '../../services/depotStore';
 import {
-  approveDamageQuotation,
   completeCleaningTask,
   completeRepairTask,
   executeGateOut,
@@ -11,9 +10,10 @@ import {
 } from '../../services/depotOperations';
 import { formatLocation } from '../../services/core';
 import { findTicketByQr, isTicketClosed } from '../../services/driverRoute';
-import { openVesselLists } from '../../services/vessel';
-import { VesselProgressPanel } from '../vessel/VesselShared';
-import {
+import { OperationBadge } from '../vessel/VesselShared';
+import { containerOperation } from '../../services/vessel';
+import { QuotationWorkspace } from '../quotation/QuotationWorkspace';
+import { linkCls,
   ContainerNo,
   EMPTY_SLOT,
   Feedback,
@@ -33,7 +33,6 @@ interface Props {
   onUpdateState: (next: DepotState) => void;
   initialScannedQr?: string;
   onOpenDossier?: (code: string) => void;
-  vesselOnly?: boolean; // DEC-069: menu NHẬP TÀU của Vệ sinh / Xe nâng — chỉ cont hồ sơ NT-
 }
 
 const sortFifo = (arr: ContainerRecord[]) => [...arr].sort((a, b) => a.gateInAt.localeCompare(b.gateInAt));
@@ -72,7 +71,7 @@ const TITLES: Record<FieldQueueMode, { dept: string; name: string }> = {
   SC_CHO_SUA_CHUA: { dept: 'Bộ phận Sửa chữa', name: 'Chờ sửa chữa' },
 };
 
-export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateState, initialScannedQr = '', onOpenDossier, vesselOnly }) => {
+export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateState, initialScannedQr = '', onOpenDossier }) => {
   const [scannedQr, setScannedQr] = useState(initialScannedQr);
   const [scanned, setScanned] = useState<ContainerRecord | null>(null);
   const [slot, setSlot] = useState<SlotValue>(EMPTY_SLOT);
@@ -80,7 +79,6 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
   const [cameraOpen, setCameraOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [quote, setQuote] = useState<Record<string, { hours: string; items: string }>>({});
   const [teamId, setTeamId] = useState('');
   const [memberIds, setMemberIds] = useState<string[]>([]);
   const activeTeams = state.repairTeams.filter((t) => t.isActive);
@@ -100,9 +98,8 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const allQueue = getFieldQueue(state, mode);
-  const queue = vesselOnly ? allQueue.filter((c) => c.masterDossierCode.startsWith('NT-')) : allQueue;
-  const title = vesselOnly ? { dept: TITLES[mode].dept, name: `Nhập tàu — ${TITLES[mode].name}` } : TITLES[mode];
+  const queue = getFieldQueue(state, mode);
+  const title = TITLES[mode];
 
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -209,71 +206,15 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
     }
   };
 
+  // DEC-084: Chờ báo giá hiển thị như Tồn vỏ (bảng + cửa sổ trượt nhập báo giá)
   if (mode === 'BG_CHO_BAO_GIA') {
-    return (
-      <div className="mx-auto w-full max-w-2xl space-y-3 pb-16">
-        <QueueHeader dept={title.dept} name={title.name} count={queue.length} />
-        <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
-        {queue.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-xs text-slate-500">
-            Không có container DAMAGE nào đang chờ báo giá.
-          </p>
-        ) : (
-          queue.map((c) => {
-            const q = quote[c.id] || { hours: '', items: c.damageRemarks.join(', ') };
-            const setQ = (patch: Partial<typeof q>) => setQuote((prev) => ({ ...prev, [c.id]: { ...q, ...patch } }));
-            return (
-              <div key={c.id} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="flex items-center gap-2">
-                    <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
-                    <span className="text-slate-500">{c.size}/{c.type} • AGE {c.manufactureYear} • {formatLocation(c)}</span>
-                  </span>
-                  <button type="button" onClick={() => onOpenDossier?.(c.masterDossierCode)} className="font-mono text-blue-700 hover:underline">
-                    {c.masterDossierCode}
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
-                  <label className="block sm:col-span-3">
-                    <span className={labelCls}>Remark sửa chữa * (phân cách bằng dấu phẩy)</span>
-                    <input value={q.items} onChange={(e) => setQ({ items: e.target.value })} placeholder="Móp vách, Hư sàn..." className={inputCls} />
-                  </label>
-                  <label className="block">
-                    <span className={labelCls}>Giờ công sửa chữa *</span>
-                    <input type="number" min={0} step={0.5} inputMode="decimal" value={q.hours} onChange={(e) => setQ({ hours: e.target.value })} placeholder="VD: 2.5" className={`${inputCls} font-mono`} />
-                  </label>
-                </div>
-                <button
-                  type="button"
-                  disabled={!q.items.trim() || !(Number(q.hours) > 0)}
-                  onClick={() =>
-                    run(
-                      () =>
-                        approveDamageQuotation(state, {
-                          containerNo: c.containerNo,
-                          quotationItems: q.items.split(','),
-                          laborHours: Number(q.hours),
-                        }),
-                      `Đã cập nhật ${c.containerNo} → Chờ sửa chữa.`
-                    )
-                  }
-                  className={`${primaryBtn} w-full`}
-                >
-                  <FileSpreadsheet className="h-4 w-4" />
-                  Cập nhật sang Chờ sửa chữa
-                </button>
-              </div>
-            );
-          })
-        )}
-      </div>
-    );
+    return <QuotationWorkspace state={state} queue={queue} onUpdateState={onUpdateState} onOpenDossier={onOpenDossier} />;
   }
 
   const needsSlot = mode === 'XN_CHO_HA_VO';
   const isForklift = mode === 'XN_CHO_HA_VO' || mode === 'XN_CHO_CAP_VO';
   const isRepair = mode === 'SC_CHO_SUA_CHUA';
-  const canConfirm = scanned && (!needsSlot || isSlotComplete(slot)) && (!isRepair || (selectedTeam && memberIds.length > 0));
+  const canConfirm = scanned && (!needsSlot || isSlotComplete(slot, state)) && (!isRepair || (selectedTeam && memberIds.length > 0));
 
   const scannedRepair = scanned && isRepair ? repairWoOf(scanned) : undefined;
 
@@ -314,9 +255,12 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
         <div className="space-y-3 rounded-lg border border-blue-600 bg-white p-4 text-xs">
           <div className="flex items-center justify-between">
             {isForklift ? (
-              <span className="text-[11px] font-bold uppercase text-blue-700">Container vừa quét</span>
+              <OperationBadge state={state} container={scanned} large />
             ) : (
-              <ContainerNo no={scanned.containerNo} locked={scanned.isOnHold} lockReason={scanned.holdReason} className="text-base" />
+              <span className="flex flex-wrap items-center gap-2">
+                <OperationBadge state={state} container={scanned} large />
+                <ContainerNo no={scanned.containerNo} locked={scanned.isOnHold} lockReason={scanned.holdReason} className="text-base" />
+              </span>
             )}
             <button type="button" onClick={() => setScanned(null)} aria-label="Bỏ chọn" className="text-slate-400 hover:text-slate-700">
               <X className="h-4 w-4" />
@@ -351,6 +295,11 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                   </div>
                 )}
               </div>
+              {mode === 'XN_CHO_HA_VO' && scanned.forkliftShiftTask === 'HA_KE_GIAM_DINH' && (
+                <div className="rounded bg-amber-400 px-2 py-1.5 text-center text-base font-black text-slate-900" data-testid="ha-ke-giam-dinh">
+                  HẠ KỆ GIÁM ĐỊNH — không hạ về bay
+                </div>
+              )}
             </div>
           )}
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
@@ -397,7 +346,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
             )}
             <dt className="text-slate-500">Hồ sơ</dt>
             <dd>
-              <button type="button" onClick={() => onOpenDossier?.(scanned.masterDossierCode)} className="font-mono text-blue-700 hover:underline">
+              <button type="button" onClick={() => onOpenDossier?.(scanned.masterDossierCode)} className={linkCls}>
                 {scanned.outDossierCode || scanned.masterDossierCode}
               </button>
             </dd>
@@ -408,7 +357,12 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                 <MapPin className="h-4 w-4 text-slate-500" />
                 Vị trí hạ vỏ *
               </span>
-              <SlotPicker state={state} value={slot} onChange={setSlot} />
+              <SlotPicker
+                state={state}
+                value={slot}
+                onChange={setSlot}
+                onlyBlocks={scanned.forkliftShiftTask === 'HA_KE_GIAM_DINH' ? state.yardBlocks.filter((b) => b.isInspectionRack).map((b) => b.blockCode) : undefined}
+              />
             </div>
           )}
           {isRepair && (
@@ -459,24 +413,26 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
             ) : (
               queue.map((c) => (
                 <li key={c.id}>
-                  <button type="button" onClick={() => lookup(c.activeQrCode)} className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left text-xs hover:bg-slate-50">
-                    <span className="flex items-center gap-2">
-                      <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} />
-                      <span className="text-slate-500">{c.size}/{c.type}</span>
-                    </span>
-                    {mode === 'XN_CHO_CAP_VO' && (
-                      <span className="text-[11px] text-slate-700">{c.allocatedTruckNo || '-'} • {c.allocatedDriverPhone || '-'}</span>
-                    )}
-                    {isRepair && <span className="text-[11px] text-slate-700">{repairWoOf(c)?.laborHours ?? c.quotationLaborHours ?? '-'} giờ công</span>}
-                    <span className="font-mono text-[11px] text-slate-500">{formatLocation(c)}</span>
-                  </button>
+                  <QueueListRow
+                    state={state}
+                    container={c}
+                    extra={
+                      mode === 'XN_CHO_CAP_VO'
+                        ? `${c.allocatedTruckNo || '-'} • ${c.allocatedDriverPhone || '-'}`
+                        : isRepair
+                        ? `${repairWoOf(c)?.laborHours ?? c.quotationLaborHours ?? '-'} giờ công`
+                        : mode === 'XN_CHO_HA_VO' && c.forkliftShiftTask === 'HA_KE_GIAM_DINH'
+                        ? 'HẠ KỆ GIÁM ĐỊNH'
+                        : undefined
+                    }
+                    onClick={() => lookup(c.activeQrCode)}
+                  />
                 </li>
               ))
             )}
           </ul>
         )}
       </div>
-      {vesselOnly && <VesselProgressPanel lists={openVesselLists(state, 'NHAP_TAU')} mode="NHAP_TAU" />}
     </div>
   );
 };
@@ -490,3 +446,25 @@ const QueueHeader: React.FC<{ dept: string; name: string; count: number }> = ({ 
     <span className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">{count}</span>
   </div>
 );
+
+// DEC-089: 1 dòng danh sách chờ Vệ sinh / Xe nâng — ô TÁC NGHIỆP riêng bên trái;
+//   bên phải: tầng 1 số cont (cột cố định, thẳng hàng) | size/type | vị trí; tầng 2 tên tàu | thông tin phụ
+export const QueueListRow: React.FC<{ state: DepotState; container: ContainerRecord; extra?: string; onClick: () => void }> = ({ state, container: c, extra, onClick }) => {
+  const op = containerOperation(state, c);
+  return (
+    <button type="button" onClick={onClick} className="grid w-full grid-cols-[5rem_1fr] items-center gap-2.5 px-3 py-2.5 text-left text-xs hover:bg-slate-50" data-testid="queue-row">
+      <OperationBadge state={state} container={c} hideVessel block />
+      <span className="min-w-0">
+        <span className="grid grid-cols-[8.5rem_3rem_1fr] items-center gap-2">
+          <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
+          <span className="font-mono text-slate-600">{c.size}/{c.type}</span>
+          <span className="truncate text-right font-mono text-[11px] text-slate-600">{formatLocation(c)}</span>
+        </span>
+        <span className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-slate-600">
+          <span className="min-w-0 truncate font-semibold">{op.vesselName ? `Tàu ${op.vesselName}` : ''}</span>
+          {extra && <span className="shrink-0">{extra}</span>}
+        </span>
+      </span>
+    </button>
+  );
+};

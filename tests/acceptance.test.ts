@@ -80,7 +80,7 @@ function gateInTts(state: DepotState, containerNo: string, overrides = {}) {
   return { state: s, order: s.gateInOrders.find((o) => o.id === order.id)! };
 }
 
-function placeInYard(state: DepotState, containerNo: string, slot = { blockCode: 'BLOCK-A' }) {
+function placeInYard(state: DepotState, containerNo: string, slot: { blockCode: string; bay?: string; row?: string; tier?: string } = { blockCode: 'BLOCK-B' }) {
   return updateContainerLocation(as(state, 'usr-forklift'), { containerNo, ...slot, reason: 'Hạ vỏ' });
 }
 
@@ -135,7 +135,7 @@ describe('HẠ VỎ — Giám định → Văn phòng → Thanh toán → GATE I
     expect(() => officeStep(s, b.id, 'MSKU1234567')).toThrow(/GIN-006/);
   });
 
-  it('TTT: trừ dần Phiếu thu mẹ, GATE IN OK, không phát hành phiếu thu mới', () => {
+  it('TTT: trừ dần Phiếu thu trả trước, GATE IN OK, không phát hành phiếu thu mới', () => {
     let s = fieldStep(createInitialState());
     const order = s.gateInOrders[0];
     s = officeStep(s, order.id, 'MSKU1234567');
@@ -156,14 +156,14 @@ describe('HẠ VỎ — Giám định → Văn phòng → Thanh toán → GATE I
     expect(state.k80Tickets[0].isPaid).toBe(false);
   });
 
-  it('TTTT tiền mặt: người có quyền xác nhận → giao dịch thành công → phát hành 1 PHIẾU THU PT-YYYY-NNNNNN', () => {
+  it('TTTT tiền mặt: người có quyền xác nhận → giao dịch thành công → phát hành 1 PHIẾU THU PT-TT-YYMMDD-NNNN (DEC-098)', () => {
     let s = fieldStep(createInitialState());
     const order = s.gateInOrders[0];
     s = officeStep(s, order.id, 'MSKU1234567');
     s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: order.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
     expect(s.gateInOrders.find((o) => o.id === order.id)!.status).toBe('GATE_IN_OK');
     expect(s.paymentReceipts).toHaveLength(1);
-    expect(s.paymentReceipts[0].receiptNo).toMatch(/^PT-\d{4}-000001$/);
+    expect(s.paymentReceipts[0].receiptNo).toMatch(/^PT-TT-\d{6}-0001$/);
     expect(s.paymentReceipts[0].dossierCode).toBe(order.masterDossierCode);
   });
 
@@ -282,11 +282,11 @@ describe('CR-01/CR-02: ĐẢO CHUYỂN, SỬA VỊ TRÍ, KHÓA CONTAINER', () =>
   it('YARD-002: ĐẢO CHUYỂN lưu lịch sử tác nghiệp (tên, thời gian, nhân sự, trước/sau)', () => {
     const s0 = createInitialState();
     const c = s0.containers.find((x) => x.containerNo === 'MSKU4089123')!;
-    const s = shiftContainer(as(s0, 'usr-forklift'), { containerId: c.id, blockCode: 'BLOCK-B', bay: '01', row: '01', tier: '01' });
+    const s = shiftContainer(as(s0, 'usr-forklift'), { containerId: c.id, blockCode: 'BLOCK-DAMAGE', bay: '01', row: '01', tier: '01' });
     const h = s.locationHistory[0];
     expect(h.actionType).toBe('YARD_SHIFT');
     expect(h.fromLocation).toBe('BLOCK-A / 04-02-01');
-    expect(h.toLocation).toBe('BLOCK-B / 01-01-01');
+    expect(h.toLocation).toBe('BLOCK-DAMAGE / 01-01-01');
     expect(h.performedBy).toBe('Phạm Hoàng Xe Nâng');
     expect(h.performedAt).toBeTruthy();
   });
@@ -296,7 +296,12 @@ describe('CR-01/CR-02: ĐẢO CHUYỂN, SỬA VỊ TRÍ, KHÓA CONTAINER', () =>
     const one = s0.containers.find((x) => x.containerNo === 'ONEU2291045')!;
     expect(() => shiftContainer(s0, { containerId: one.id, blockCode: 'BLOCK-A', bay: '04', row: '02', tier: '01' })).toThrow(/đang có container/);
     expect(() => shiftContainer(s0, { containerId: one.id, blockCode: 'BLOCK-A', bay: '99', row: '01', tier: '01' })).toThrow(/ngoài cấu hình/);
-    expect(() => shiftContainer(s0, { containerId: one.id, blockCode: 'BLOCK-A', bay: '01' })).toThrow(/đủ cả 3/);
+    expect(() => shiftContainer(s0, { containerId: one.id, blockCode: 'BLOCK-A', bay: '01' })).toThrow(/nhập đủ: Row, Tier/);
+    // DEC-082: Block có cấu hình → bắt buộc đủ; Block chỉ có tên Block → bỏ qua Bay/Row/Tier, nhiều cont chung 1 Block
+    expect(() => shiftContainer(s0, { containerId: one.id, blockCode: 'BLOCK-A' })).toThrow(/nhập đủ: Bay, Row, Tier/);
+    const a = s0.containers.find((x) => x.containerNo === 'MSKU4089123')!;
+    const moved = shiftContainer(s0, { containerId: a.id, blockCode: 'BLOCK-B', bay: '05', row: '01', tier: '01' });
+    expect(moved.containers.find((x) => x.id === a.id)).toMatchObject({ currentBlock: 'BLOCK-B', currentBay: null, currentRow: null, currentTier: null });
   });
 
   it('Không đảo chuyển / sửa vị trí container chưa có vị trí chính thức', () => {
@@ -329,7 +334,7 @@ describe('CR-01/CR-02: ĐẢO CHUYỂN, SỬA VỊ TRÍ, KHÓA CONTAINER', () =>
       })
     ).toThrow(/KHÓA/);
     s = shiftContainer(as(s, 'usr-forklift'), { containerId: c.id, blockCode: 'BLOCK-B' });
-    s = correctContainerLocation(as(s, 'usr-office'), { containerId: c.id, blockCode: 'BLOCK-A' });
+    s = correctContainerLocation(as(s, 'usr-office'), { containerId: c.id, blockCode: 'BLOCK-A', bay: '05', row: '01', tier: '01' });
     expect(s.containers.find((x) => x.id === c.id)!.currentBlock).toBe('BLOCK-A');
   });
 });
@@ -423,7 +428,7 @@ describe('CR-05 CẤP VỎ — booking tự đếm, thu phí tại Văn phòng n
 });
 
 describe('CR-04 PHIẾU THU — Văn phòng tạo phiếu thu TTT', () => {
-  it('DEC-047: Văn phòng tạo phiếu thu TTT (bỏ Kế toán); tạo xong là CHỜ THANH TOÁN, QR chưa dùng được; xác nhận tiền mặt → phiếu thu + Phiếu thu mẹ ACTIVE', () => {
+  it('DEC-047: Văn phòng tạo phiếu thu TTT (bỏ Kế toán); tạo xong là CHỜ THANH TOÁN, QR chưa dùng được; xác nhận tiền mặt → phiếu thu + Phiếu thu trả trước ACTIVE', () => {
     const s0 = createInitialState();
     const input = { customerCode: 'VIETLOG', lotDescription: 'Lô 10 cont', totalAmount: 5000000, method: 'CASH' as const };
     expect(() => createMasterPrepaidReceipt(as(s0, 'usr-forklift'), input)).toThrow(/Không đủ quyền/);
@@ -550,10 +555,10 @@ describe('DEC-045 USER - PHÂN QUYỀN & Báo cáo Hạ vỏ', () => {
 });
 
 describe('DEC-047 / DEC-048', () => {
-  it('Vai trò cũ trong dữ liệu đã lưu: cổng / hiện trường → Giám định, Kế toán → Văn phòng', () => {
+  it('Vai trò cũ trong dữ liệu đã lưu: cổng / hiện trường → Giám định, Kế toán giữ nguyên (DEC-111 thêm lại)', () => {
     const legacy = createInitialState() as Partial<DepotState>;
     legacy.staffUsers = [{ id: 'u1', staffCode: 'X', fullName: 'A', email: 'a@b.vn', isActive: true, roles: ['GATE_STAFF', 'YARD_STAFF', 'ACCOUNTANT'] as never }];
-    expect(normalizeDepotState(legacy).staffUsers.find((u) => u.id === 'u1')!.roles).toEqual(['INSPECTOR', 'OFFICE']);
+    expect(normalizeDepotState(legacy).staffUsers.find((u) => u.id === 'u1')!.roles).toEqual(['INSPECTOR', 'ACCOUNTANT']);
   });
 
   it('Thêm user Sửa chữa có sẵn vào tổ; không thêm trùng; user bị khóa không thêm được', () => {
@@ -582,7 +587,7 @@ describe('DEC-049: bỏ QC Sửa chữa', () => {
 });
 
 describe('Q-034: xuất Excel .xlsx chuẩn', () => {
-  it('Báo cáo Tổng hợp → file .xlsx đọc lại được, đủ 5 sheet, có dòng tiêu đề', async () => {
+  it('Báo cáo Tổng hợp → file .xlsx đọc lại được, đủ 5 sheet, có dòng tiêu đề', { timeout: 20000 }, async () => {
     const sheets = buildSummaryReport(createInitialState(), { dateFrom: '2026-10-01', dateTo: '2026-10-31' });
     const buf = await toXlsxBuffer(sheets);
     const { default: ExcelJS } = await import('exceljs');
@@ -694,6 +699,12 @@ describe('DEC-055: xuất Excel theo bộ lọc — Phiếu thu & mọi báo cá
     const sheet = receiptsSheet(s, collectAllPages((p) => queryReceipts(s, { keyword: 'MSKU1234567' }, p)));
     expect(sheet.columns).toContain('TÁC NGHIỆP');
     expect(sheet.rows[0][1]).toBe('HẠ VỎ');
+    // DEC-107: số cont ngay sau tác nghiệp; không còn cột chứng từ; hình thức TT ghi chữ
+    expect(sheet.columns.slice(0, 3)).toEqual(['MÃ PHIẾU THU', 'TÁC NGHIỆP', 'SỐ CONTAINER']);
+    expect(sheet.rows[0][2]).toBe('MSKU1234567');
+    expect(sheet.columns).not.toContain('CHỨNG TỪ');
+    expect(sheet.rows[0][sheet.columns.indexOf('HÌNH THỨC TT')]).toBe('TT — TRỰC TIẾP');
+    for (const row of sheet.rows) expect(row.length).toBe(sheet.columns.length);
     const inSheet = gateInSheet('HẠ VỎ', collectAllPages((p) => queryGateInReport(s, 'CUSTOMER_RETURN', { containerNo: 'MSKU1234567' }, p)));
     expect(inSheet.columns).toContain('SĐT LÁI XE');
 
@@ -866,6 +877,8 @@ describe('DEC-067: Tồn vỏ — lưu bãi, khóa / ghi chú hàng loạt', () 
     expect(() => bulkUpdateOfficeNote(as(s0, 'usr-forklift'), { containerIds: ids, officeNote: 'x' })).toThrow(/Không đủ quyền/);
     const sheet = yardStockSheet(noted.state.containers.filter((c) => ids.includes(c.id)));
     expect(sheet.columns.indexOf('LƯU BÃI (NGÀY)')).toBe(sheet.columns.indexOf('TRẠNG THÁI') + 1);
+    expect(sheet.columns.slice(4, 7)).toEqual(['HÃNG TÀU', 'DATE IN', 'VÀO BÃI BẰNG']);
+    expect(sheet.rows[0][6]).toBe('HẠ VỎ');
     expect(sheet.columns).toContain('GHI CHÚ');
   });
 });
@@ -884,5 +897,334 @@ describe('DEC-068: tiền tố mã theo tác nghiệp; đổi mã cũ khi nạp 
     });
     const s = normalizeDepotState({ ...createInitialState(), containers: [{ ...createInitialState().containers[0], masterDossierCode: 'IN-261023-009' }] });
     expect(s.containers[0].masterDossierCode).toBe('HV-261023-009');
+  });
+});
+
+describe('DEC-077: phiếu thu trước chọn biểu giá kèm số lượng', () => {
+  it('Tổng = đơn giá × số lượng do hệ thống tính; lưu dòng chi phí; chặn số lượng sai / biểu giá không có', () => {
+    const s0 = as(createInitialState(), 'usr-office');
+    const fee = s0.feeCatalog[0];
+    const customer = s0.partners.find((p) => p.isCustomer)!.code;
+    const s = createMasterPrepaidReceipt(s0, { customerCode: customer, lotDescription: 'Lô 20 cont', method: 'CASH', feeItems: [{ catalogId: fee.id, quantity: 20 }] });
+    const m = s.masterReceipts[0];
+    expect(m.receiptCode).toMatch(/^PTT-\d{4}-\d{3}$/);
+    expect(m.totalAmount).toBe(fee.defaultAmountInclVat * 20);
+    expect(m.feeLines![0]).toMatchObject({ quantity: 20, unitAmountInclVat: fee.defaultAmountInclVat, amountInclVat: fee.defaultAmountInclVat * 20 });
+    expect(s.paymentTransactions[0]).toMatchObject({ amount: fee.defaultAmountInclVat * 20, status: 'PENDING', purpose: 'PREPAID_TOPUP' });
+    expect(() => createMasterPrepaidReceipt(s0, { customerCode: customer, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: fee.id, quantity: 0 }] })).toThrow(/Số lượng/);
+    expect(() => createMasterPrepaidReceipt(s0, { customerCode: customer, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: fee.id, quantity: 1.5 }] })).toThrow(/Số lượng/);
+    expect(() => createMasterPrepaidReceipt(s0, { customerCode: customer, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: 'x', quantity: 1 }] })).toThrow(/Biểu giá/);
+    expect(() => createMasterPrepaidReceipt(as(s0, 'usr-inspector'), { customerCode: customer, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: fee.id, quantity: 1 }] })).toThrow(/Không đủ quyền/);
+  });
+});
+
+describe('DEC-079: phiếu thu trả trước liên kết từng lần trừ tiền — chứng từ, hồ sơ, số lượt, số tiền', () => {
+  it('Tổng hợp sử dụng: số lượt, đã trừ, còn lại; mỗi lượt gắn chứng từ + hồ sơ + tác nghiệp', async () => {
+    const { masterReceiptUsage } = await import('../src/services/payments');
+    let s = createInitialState();
+    const before = masterReceiptUsage(s, 'PTT-2026-001')!;
+    expect(before.usedCount).toBe(1);
+    expect(before.rows[0]).toMatchObject({ voucherNo: 'CT-GIN-261019-01', dossierCode: 'HV-261019-001', operation: 'HẠ VỎ', amount: 1200000 });
+    s = fieldStep(s);
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTT', scannedQrCode: 'QR-TTT-VIETLOG-001' });
+    const after = masterReceiptUsage(s, 'PTT-2026-001')!;
+    expect(after.usedCount).toBe(2);
+    expect(after.rows[0]).toMatchObject({ dossierCode: gi.masterDossierCode, containerNo: 'MSKU1234567', operation: 'HẠ VỎ' });
+    expect(after.usedAmount).toBe(before.usedAmount + after.rows[0].amount);
+    expect(after.remainingAmount).toBe(before.remainingAmount - after.rows[0].amount);
+    expect(masterReceiptUsage(s, 'PTT-9999-999')).toBeUndefined();
+  });
+});
+
+describe('DEC-079: Excel phiếu thu', () => {
+  it('Cột PHƯƠNG THỨC TT, số lượt / còn lại TTT; số cột tiêu đề = số ô mỗi dòng', async () => {
+    const { receiptsSheet, queryReceipts, collectAllPages } = await import('../src/services/reports');
+    const { createMasterPrepaidReceipt: create, confirmPrepaidCash } = await import('../src/services/payments');
+    const office = as(createInitialState(), 'usr-office');
+    let s = create(office, { customerCode: office.partners.find((p) => p.isCustomer)!.code, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: office.feeCatalog[0].id, quantity: 2 }] });
+    s = confirmPrepaidCash(s, { transactionId: s.paymentTransactions[0].id });
+    const receiptNo = s.paymentReceipts[0].receiptNo;
+    const rows = collectAllPages((p) => queryReceipts(s, { receiptNo }, p));
+    const sheet = receiptsSheet(s, rows);
+    expect(sheet.columns).toContain('PHƯƠNG THỨC TT');
+    expect(sheet.columns.slice(-2)).toEqual(['SỐ LƯỢT ĐÃ DÙNG (TTR)', 'CÒN LẠI (TTR)']);
+    expect(sheet.rows.length).toBeGreaterThan(0);
+    for (const row of sheet.rows) expect(row.length).toBe(sheet.columns.length);
+    expect(sheet.rows[0].slice(-2)).toEqual([0, office.feeCatalog[0].defaultAmountInclVat * 2]);
+    expect(sheet.rows[0][sheet.columns.indexOf('PHƯƠNG THỨC TT')]).toBe('Tiền mặt');
+  });
+});
+
+describe('DEC-080: số dòng / trang do người dùng chọn', () => {
+  it('Nhận 20 / 50 / 100; giá trị khác về mặc định 50', async () => {
+    const { queryGateInReport } = await import('../src/services/reports');
+    let s = createInitialState();
+    for (let i = 0; i < 3; i++) s = fieldStep(s);
+    const f = { containerNo: '', dateFrom: '', dateTo: '' };
+    const all = { ...f, ...{ dateFrom: '01/01/2026 00:00:00', dateTo: '31/12/2026 23:59:59' } };
+    expect(queryGateInReport(s, 'CUSTOMER_RETURN', all, 1, 20).rows.length).toBeLessThanOrEqual(20);
+    const total = queryGateInReport(s, 'CUSTOMER_RETURN', all, 1, 100).total;
+    expect(queryGateInReport(s, 'CUSTOMER_RETURN', all, 1, 100).pageCount).toBe(Math.max(1, Math.ceil(total / 100)));
+    expect(queryGateInReport(s, 'CUSTOMER_RETURN', all, 1, 7).pageCount).toBe(Math.max(1, Math.ceil(total / 50)));
+  });
+});
+
+describe('DEC-082: vị trí theo cấu hình thực tế của Block', () => {
+  it('Mã tự thêm BLOCK-; chiều để trống = không dùng; chỉ bắt buộc chiều đã cấu hình', async () => {
+    const { addYardBlockCatalogItem, shiftContainer: shift } = await import('../src/services/depotOperations');
+    const { formatLocation, blockDimensions } = await import('../src/services/core');
+    let s = as(createInitialState(), 'usr-admin');
+    expect(() => addYardBlockCatalogItem(as(s, 'usr-office'), { blockCode: 'C' })).toThrow(/ADMIN/);
+    expect(() => addYardBlockCatalogItem(s, { blockCode: ' ' })).toThrow(/BLOCK-/);
+    expect(() => addYardBlockCatalogItem(s, { blockCode: 'C', maxBay: 2.5 })).toThrow(/số nguyên/);
+    expect(() => addYardBlockCatalogItem(s, { blockCode: 'block-a' })).toThrow(/đã tồn tại/);
+    s = addYardBlockCatalogItem(s, { blockCode: 'c', description: 'Khu C' });
+    const c = s.yardBlocks.find((b) => b.blockCode === 'BLOCK-C')!;
+    expect(c).toMatchObject({ blockName: 'Khu C', maxBay: 0, maxRow: 0, maxTier: 0, capacity: 0 });
+    expect(blockDimensions(c)).toEqual([]);
+    s = addYardBlockCatalogItem(s, { blockCode: 'BLOCK-D', maxBay: 5 });
+    const d = s.yardBlocks.find((b) => b.blockCode === 'BLOCK-D')!;
+    expect(d).toMatchObject({ maxBay: 5, maxRow: 0, maxTier: 0, capacity: 5 });
+
+    const cont = s.containers.find((x) => x.containerNo === 'MSKU4089123')!;
+    const fk = as(s, 'usr-forklift');
+    expect(() => shift(fk, { containerId: cont.id, blockCode: 'BLOCK-D' })).toThrow(/nhập đủ: Bay/);
+    expect(() => shift(fk, { containerId: cont.id, blockCode: 'BLOCK-D', bay: '06' })).toThrow(/ngoài cấu hình/);
+    const moved = shift(fk, { containerId: cont.id, blockCode: 'BLOCK-D', bay: '03', row: '09', tier: '09' });
+    const m = moved.containers.find((x) => x.id === cont.id)!;
+    expect(m).toMatchObject({ currentBlock: 'BLOCK-D', currentBay: '03', currentRow: null, currentTier: null });
+    expect(formatLocation(m)).toBe('BLOCK-D / Bay 03');
+    // DEC-087: vị trí chưa đủ 4 phần (chỉ Bay) → nhiều cont đặt chung 1 Bay được
+    const other = moved.containers.find((x) => x.containerNo === 'ONEU2291045')!;
+    const both = shift(as(moved, 'usr-forklift'), { containerId: other.id, blockCode: 'BLOCK-D', bay: '03' });
+    expect(both.containers.filter((x) => x.currentBlock === 'BLOCK-D' && x.currentBay === '03' && x.status !== 'GATED_OUT')).toHaveLength(2);
+  });
+});
+
+describe('DEC-086: Báo giá 2 bước — cập nhật tình trạng sửa chữa + giờ công, rồi xác nhận chờ sửa chữa', () => {
+  it('Lưu nháp vẫn ở Chờ báo giá; xác nhận cần đã cập nhật; chuyển Sửa chữa đúng nội dung đã lưu', async () => {
+    const { saveQuotationDraft, confirmQuotationToRepair } = await import('../src/services/depotOperations');
+    const s0 = createInitialState();
+    const c = s0.containers.find((x) => x.needsQuotation && x.status !== 'GATED_OUT')!;
+    expect(c).toBeTruthy();
+    const q = as(s0, 'usr-quotation');
+    expect(() => saveQuotationDraft(as(s0, 'usr-office'), { containerNo: c.containerNo, quotationItems: ['x'], laborHours: 1 })).toThrow(/Không đủ quyền/);
+    expect(() => saveQuotationDraft(q, { containerNo: c.containerNo, quotationItems: [' '], laborHours: 1 })).toThrow(/TÌNH TRẠNG SỬA CHỮA/);
+    expect(() => saveQuotationDraft(q, { containerNo: c.containerNo, quotationItems: ['Hàn sàn'], laborHours: 0 })).toThrow(/GIỜ CÔNG/);
+    expect(() => confirmQuotationToRepair(q, { containerNo: c.containerNo })).toThrow(/Chưa cập nhật/);
+
+    let s = saveQuotationDraft(q, { containerNo: c.containerNo, quotationItems: ['Thay tôn vách', 'Hàn sàn'], laborHours: 3.5 });
+    const draft = s.containers.find((x) => x.id === c.id)!;
+    expect(draft).toMatchObject({ needsQuotation: true, needsRepair: false, quotationItems: ['Thay tôn vách', 'Hàn sàn'], quotationLaborHours: 3.5, quotationUpdatedBy: expect.any(String) });
+    expect(s.auditLogs[0].actionCode).toBe('SAVE_QUOTATION');
+
+    s = confirmQuotationToRepair(s, { containerNo: c.containerNo });
+    const done = s.containers.find((x) => x.id === c.id)!;
+    expect(done).toMatchObject({ needsQuotation: false, needsRepair: true });
+    const wo = s.workOrders.find((w) => w.masterDossierCode === c.masterDossierCode && w.category === 'REPAIR')!;
+    expect(wo).toMatchObject({ items: ['Thay tôn vách', 'Hàn sàn'], laborHours: 3.5, workStatus: 'OPEN' });
+    expect(() => confirmQuotationToRepair(s, { containerNo: c.containerNo })).toThrow(/không nằm trong hàng chờ/);
+  });
+});
+
+describe('DEC-088: Báo giá xác nhận chờ sửa chữa hàng loạt', () => {
+  it('Đúng quyền; bỏ qua cont chưa cập nhật; xác nhận cont đã cập nhật', async () => {
+    const { saveQuotationDraft, bulkConfirmQuotationToRepair } = await import('../src/services/depotOperations');
+    let s = fieldStep(createInitialState(), { conditionClass: 'DAMAGE', damageRemarks: ['Móp vách'] });
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const q = as(s, 'usr-quotation');
+    const waiting = q.containers.filter((c) => c.needsQuotation && c.status !== 'GATED_OUT');
+    expect(waiting.length).toBeGreaterThanOrEqual(2);
+    const [a, b] = waiting;
+    expect(() => bulkConfirmQuotationToRepair(as(s, 'usr-office'), { containerIds: [a.id] })).toThrow(/Không đủ quyền/);
+    expect(() => bulkConfirmQuotationToRepair(q, { containerIds: [] })).toThrow(/Chưa chọn/);
+    let next = saveQuotationDraft(q, { containerNo: a.containerNo, quotationItems: ['Hàn vách'], laborHours: 2 });
+    const res = bulkConfirmQuotationToRepair(next, { containerIds: [a.id, b.id] });
+    expect(res.done).toEqual([a.containerNo]);
+    expect(res.skipped).toEqual([{ containerNo: b.containerNo, reason: 'Chưa cập nhật tình trạng sửa chữa / giờ công' }]);
+    next = res.state;
+    expect(next.containers.find((c) => c.id === a.id)).toMatchObject({ needsQuotation: false, needsRepair: true });
+    expect(next.containers.find((c) => c.id === b.id)).toMatchObject({ needsQuotation: true });
+  });
+});
+
+describe('DEC-093: khách hàng gõ tay hoặc chọn; khách ngoài Danh mục chỉ thanh toán trực tiếp', () => {
+  it('Chuẩn hóa tên Danh mục; lưu tên tự do; chặn TTS / TTT với khách ngoài Danh mục, cho Tiền mặt', async () => {
+    const { normalizeCustomer, isCatalogCustomer } = await import('../src/services/depotOperations');
+    const s0 = createInitialState();
+    expect(normalizeCustomer(s0, '  công ty tiếp vận việt (vietlog) ')).toBe(VIETLOG);
+    expect(normalizeCustomer(s0, 'Anh  Ba   Vận Tải')).toBe('Anh Ba Vận Tải');
+    expect(() => normalizeCustomer(s0, '  ')).toThrow(/KHÁCH HÀNG/);
+    expect(isCatalogCustomer(s0, VIETLOG)).toBe(true);
+    expect(isCatalogCustomer(s0, 'Anh Ba Vận Tải')).toBe(false);
+
+    // Hạ vỏ với khách tự do: lưu được; TTS / TTT bị chặn; Tiền mặt OK
+    let s = fieldStep(s0);
+    const gi = s.gateInOrders[0];
+    s = verifyGateInOfficeAndCreatePayment(as(s, 'usr-office'), {
+      gateInId: gi.id, containerNo: 'MSKU1234567', size: '40', type: 'HC', shippingLineCode: 'MAERSK',
+      customerName: 'Anh Ba Vận Tải', truckNo: '15C-1', driverPhone: '0912345678', orderDocNo: 'EIR-9', feeCatalogIds: [FEE_LOLO_40HC_MSK],
+    } as never);
+    expect(s.gateInOrders.find((o) => o.id === gi.id)!.customerRep).toBe('Anh Ba Vận Tải');
+    expect(() => confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTS', ttsNote: 'x' })).toThrow(/chưa có trong Danh mục/);
+    expect(() => confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTT', scannedQrCode: 'QR-TTT-VIETLOG-001' })).toThrow(/chưa có trong Danh mục/);
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    expect(s.gateInOrders.find((o) => o.id === gi.id)!.status).toBe('GATE_IN_OK');
+  });
+});
+
+describe('DEC-098: mã phiếu thu theo hình thức + ngày, duy nhất', () => {
+  it('Trực tiếp PT-TT-YYMMDD-NNNN tăng dần trong ngày; nạp quỹ thu trước PT-TTR-YYMMDD-NNNN; không trùng', async () => {
+    const { createMasterPrepaidReceipt, confirmPrepaidCash } = await import('../src/services/payments');
+    let s = fieldStep(fieldStep(createInitialState()));
+    const [g2, g1] = s.gateInOrders;
+    s = officeStep(s, g1.id, 'MSKU1234567');
+    s = officeStep(s, g2.id, 'MSKU7654321');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: g1.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: g2.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const day = s.paymentReceipts[0].receiptNo.slice(6, 12);
+    expect(s.paymentReceipts.map((r) => r.receiptNo).sort()).toEqual([`PT-TT-${day}-0001`, `PT-TT-${day}-0002`]);
+
+    const office = as(s, 'usr-office');
+    s = createMasterPrepaidReceipt(office, { customerCode: office.partners.find((p) => p.isCustomer)!.code, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: office.feeCatalog[0].id, quantity: 1 }] });
+    s = confirmPrepaidCash(s, { transactionId: s.paymentTransactions[0].id });
+    const topup = s.paymentReceipts.find((r) => r.purpose === 'PREPAID_TOPUP')!;
+    expect(topup.receiptNo).toMatch(/^PT-TTR-\d{6}-0001$/);
+    const all = s.paymentReceipts.map((r) => r.receiptNo);
+    expect(new Set(all).size).toBe(all.length);
+  });
+});
+
+describe('DEC-099: Tồn vỏ — hình thức thanh toán + phiếu thu của lượt vào bãi', () => {
+  it('TT (mã PT-TT), TTS (công nợ CT-), TTR (phiếu thu trả trước PTT-), chưa thanh toán; Excel đủ cột', async () => {
+    const { containerPaymentInfo } = await import('../src/services/payments');
+    const { yardStockSheet } = await import('../src/services/reports');
+    // TTT — dữ liệu mẫu HV-261019-001 trừ phiếu thu trả trước PTT-2026-001
+    const s0 = createInitialState();
+    expect(containerPaymentInfo(s0, { masterDossierCode: 'HV-261019-001' })).toMatchObject({ category: 'TTT', label: 'TTR — TRẢ TRƯỚC', receipt: 'PTT-2026-001' });
+    // TTTT tiền mặt
+    let s = fieldStep(s0);
+    const g = s.gateInOrders[0];
+    s = officeStep(s, g.id, 'MSKU1234567');
+    expect(containerPaymentInfo(s, { masterDossierCode: g.masterDossierCode }).label).toBe('Chưa thanh toán');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: g.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const tttt = containerPaymentInfo(s, { masterDossierCode: g.masterDossierCode });
+    expect(tttt).toMatchObject({ category: 'TTTT', label: 'TT — TRỰC TIẾP' });
+    expect(tttt.receipt).toMatch(/^PT-TT-\d{6}-\d{4}$/);
+    expect(tttt.receiptTarget).toBe(tttt.receipt); // DEC-105: link mở đúng phiếu thu
+    // TTS
+    const t = gateInTts(createInitialState(), 'MSKU7654321');
+    const tts = containerPaymentInfo(t.state, { masterDossierCode: t.order.masterDossierCode });
+    expect(tts).toMatchObject({ category: 'TTS', label: 'TTS — THANH TOÁN SAU' });
+    expect(tts.receipt).toBe(''); // DEC-104: TTS không có phiếu thu → để trống, không hiện chứng từ
+    // Nhập tàu
+    expect(containerPaymentInfo(s, { masterDossierCode: 'NT-261025-001' })).toEqual({ label: 'Không thu phí', receipt: '' });
+    // Excel
+    const c = s.containers.find((x) => x.masterDossierCode === g.masterDossierCode)!;
+    const sheet = yardStockSheet([c], s);
+    const i = sheet.columns.indexOf('HÌNH THỨC TT');
+    expect(sheet.columns.slice(i, i + 2)).toEqual(['HÌNH THỨC TT', 'MÃ PHIẾU THU']);
+    expect(sheet.rows[0][i]).toBe('TT — TRỰC TIẾP');
+    expect(String(sheet.rows[0][i + 1])).toMatch(/^PT-TT-/);
+    for (const row of sheet.rows) expect(row.length).toBe(sheet.columns.length);
+  });
+});
+
+describe('DEC-102: lọc nhanh thời gian', () => {
+  it('Hôm nay / Hôm qua / Tuần (từ Thứ Hai) / Tháng / Năm tính đúng mốc', async () => {
+    const { quickRange } = await import('../src/services/datetime');
+    const now = new Date(2026, 9, 25, 10, 20, 30); // Chủ nhật 25/10/2026
+    expect(quickRange('TODAY', now)).toEqual({ dateFrom: '25/10/2026 00:00:00', dateTo: '25/10/2026 10:20:30' });
+    expect(quickRange('YESTERDAY', now)).toEqual({ dateFrom: '24/10/2026 00:00:00', dateTo: '24/10/2026 23:59:59' });
+    expect(quickRange('THIS_WEEK', now).dateFrom).toBe('19/10/2026 00:00:00');
+    expect(quickRange('LAST_WEEK', now)).toEqual({ dateFrom: '12/10/2026 00:00:00', dateTo: '18/10/2026 23:59:59' });
+    expect(quickRange('THIS_MONTH', now).dateFrom).toBe('01/10/2026 00:00:00');
+    expect(quickRange('LAST_MONTH', now)).toEqual({ dateFrom: '01/09/2026 00:00:00', dateTo: '30/09/2026 23:59:59' });
+    expect(quickRange('THIS_YEAR', now).dateFrom).toBe('01/01/2026 00:00:00');
+    // Thứ Hai là ngày đầu tuần; tháng 1 → tháng trước là tháng 12 năm trước
+    expect(quickRange('THIS_WEEK', new Date(2026, 9, 19, 8)).dateFrom).toBe('19/10/2026 00:00:00');
+    expect(quickRange('LAST_MONTH', new Date(2026, 0, 5)).dateFrom).toBe('01/12/2025 00:00:00');
+  });
+});
+
+
+describe('DEC-106: dữ liệu sạch để test lại từ đầu', () => {
+  it('giữ danh mục, xóa toàn bộ dữ liệu tác nghiệp và bộ đếm mã', async () => {
+    const { createCleanState } = await import('../src/services/depotStore');
+    const seed = createInitialState();
+    const s = createCleanState();
+    expect(s.staffUsers.length).toBe(seed.staffUsers.length);
+    expect(s.partners.length).toBe(seed.partners.length);
+    expect(s.yardBlocks.length).toBe(seed.yardBlocks.length);
+    expect(s.feeCatalog.length).toBe(seed.feeCatalog.length);
+    for (const k of ['containers', 'gateInOrders', 'gateOutOrders', 'bookings', 'vouchers', 'paymentTransactions', 'paymentReceipts', 'masterReceipts', 'receiptDeductions', 'workOrders', 'k80Tickets', 'vesselLists', 'auditLogs', 'locationHistory'] as const) {
+      expect(s[k]).toEqual([]);
+    }
+    expect(s.codeCounters).toEqual({});
+    // Bắt đầu lại: mã hồ sơ / phiếu thu đầu tiên là 001 / 0001
+    let x = fieldStep(s);
+    const g = x.gateInOrders[0];
+    expect(g.masterDossierCode).toMatch(/^HV-[0-9]{6}-001$/);
+    x = officeStep(x, g.id, 'MSKU1234567');
+    x = confirmGateInPaymentAndComplete(as(x, 'usr-office'), { gateInId: g.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    expect(x.paymentReceipts[0].receiptNo).toMatch(/^PT-TT-[0-9]{6}-0001$/);
+  });
+});
+
+describe('DEC-109: HẠ KỆ GIÁM ĐỊNH', () => {
+  it('Giám định đánh dấu → Xe nâng chỉ hạ vào Kệ giám định → Đảo chuyển về bay thì xóa cờ', async () => {
+    const { getDriverRoute } = await import('../src/services/driverRoute');
+    let { state: s } = gateInTts(createInitialState(), 'MSKU1234567', { toInspectionRack: true });
+    expect(s.gateInOrders[0].toInspectionRack).toBe(true);
+    const c = s.containers.find((x) => x.containerNo === 'MSKU1234567' && x.status === 'WAITING_PLACEMENT')!;
+    expect(c.forkliftShiftTask).toBe('HA_KE_GIAM_DINH');
+    const ticket = s.k80Tickets.find((t) => t.masterDossierCode === c.masterDossierCode)!;
+    expect(getDriverRoute(s, ticket).find((x) => x.key === 'FORKLIFT_PLACE')!.action).toMatch(/HẠ KỆ GIÁM ĐỊNH/);
+    // Không hạ về bay / block thường
+    expect(() => placeInYard(s, 'MSKU1234567', { blockCode: 'BLOCK-A', bay: '01', row: '01', tier: '01' })).toThrow(/HẠ KỆ GIÁM ĐỊNH/);
+    // Chưa có kệ trong danh mục → báo Admin cấu hình
+    const noRack = { ...s, yardBlocks: s.yardBlocks.map((b) => ({ ...b, isInspectionRack: false })) };
+    expect(() => placeInYard(noRack, 'MSKU1234567', { blockCode: 'BLOCK-DAMAGE', bay: '01', row: '01', tier: '01' })).toThrow(/Chưa có KỆ GIÁM ĐỊNH/);
+    s = placeInYard(s, 'MSKU1234567', { blockCode: 'BLOCK-DAMAGE', bay: '01', row: '01', tier: '01' });
+    expect(s.containers.find((x) => x.id === c.id)!).toMatchObject({ status: 'IN_YARD', currentBlock: 'BLOCK-DAMAGE', forkliftShiftTask: 'HA_KE_GIAM_DINH' });
+    // Giám định xong (thông báo ngoài) → Xe nâng ĐẢO CHUYỂN về vị trí phù hợp
+    s = shiftContainer(as(s, 'usr-forklift'), { containerId: c.id, blockCode: 'BLOCK-A', bay: '05', row: '01', tier: '01' });
+    expect(s.containers.find((x) => x.id === c.id)!).toMatchObject({ currentBlock: 'BLOCK-A', forkliftShiftTask: 'NONE' });
+  });
+
+  it('Cont không đánh dấu vẫn hạ bình thường; chỉ Admin đánh dấu Kệ giám định', async () => {
+    const { setYardBlockInspectionRack } = await import('../src/services/depotOperations');
+    let { state: s } = gateInTts(createInitialState(), 'MSKU1234567');
+    expect(s.containers.find((x) => x.containerNo === 'MSKU1234567' && x.status === 'WAITING_PLACEMENT')!.forkliftShiftTask).toBe('NONE');
+    s = placeInYard(s, 'MSKU1234567', { blockCode: 'BLOCK-B' });
+    expect(() => setYardBlockInspectionRack(as(s, 'usr-office'), 'BLOCK-B', true)).toThrow();
+    s = setYardBlockInspectionRack(as(s, 'usr-admin'), 'BLOCK-B', true);
+    expect(s.yardBlocks.find((b) => b.blockCode === 'BLOCK-B')!.isInspectionRack).toBe(true);
+    expect(s.auditLogs[0].actionCode).toBe('ADMIN_SET_INSPECTION_RACK');
+  });
+});
+
+describe('DEC-110: Trả chứng từ — Xem trước', () => {
+  it('xem được EEIR + phiếu thu mà không ghi trả chứng từ, không tăng lần in; sai quyền / sai mã bị từ chối', async () => {
+    const { previewDocumentPack, getDriverRoute } = await import('../src/services/driverRoute');
+    let s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const ticket = s.k80Tickets[0];
+    const before = JSON.stringify(s);
+    // Xem trước được cả khi lái xe chưa đi hết lộ trình
+    const pack = previewDocumentPack(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode });
+    expect(pack.dossierCode).toBe(gi.masterDossierCode);
+    expect(pack.receipts).toHaveLength(1);
+    expect(JSON.stringify(s)).toBe(before);
+    expect(s.paymentReceipts[0].printLog?.length || 0).toBe(0);
+    expect(getDriverRoute(s, ticket).at(-1)!.done).toBe(false);
+    expect(() => previewDocumentPack(as(s, 'usr-forklift'), { scannedQrCode: ticket.qrCode })).toThrow(/Không đủ quyền/);
+    expect(() => previewDocumentPack(as(s, 'usr-office'), { scannedQrCode: 'QR-KHONG-CO' })).toThrow(/Không tìm thấy/);
   });
 });

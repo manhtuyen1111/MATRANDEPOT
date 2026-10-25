@@ -22,8 +22,9 @@ import {
 } from '../../services/depotOperations';
 import { cancelPendingTransaction, pendingTransactionOf } from '../../services/payments';
 import { formatLocation } from '../../services/core';
-import {
+import { linkCls,
   ContainerNo,
+  CustomerInput,
   EMPTY_PAYMENT,
   FeeLinesEditor,
   Feedback,
@@ -56,7 +57,6 @@ function errMsg(err: unknown, fallback: string): string {
 // BỘ PHẬN VĂN PHÒNG — HẠ VỎ
 // ============================================================================
 export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateState, onOpenK80Ticket, onOpenDossier }) => {
-  const customers = state.partners.filter((p) => p.isCustomer);
   const shippingLines = state.partners.filter((p) => p.isShippingLine);
 
   const pendingOrders = [...state.gateInOrders]
@@ -200,6 +200,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                       <span className={`block font-bold ${o.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>
                         {o.conditionClass}
                       </span>
+                      {o.toInspectionRack && <span className="block text-[10px] font-bold text-amber-700">HẠ KỆ GĐ</span>}
                       {o.status === 'PAYMENT_PENDING' && <span className="text-[10px] text-amber-700">Chờ thanh toán</span>}
                     </span>
                   </button>
@@ -218,7 +219,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
             <form onSubmit={handleSubmit} className="space-y-4">
               <SectionCard
                 title={
-                  <button type="button" onClick={() => onOpenDossier?.(order.masterDossierCode)} className="font-mono text-blue-700 hover:underline">
+                  <button type="button" onClick={() => onOpenDossier?.(order.masterDossierCode)} className={linkCls}>
                     Hồ sơ {order.masterDossierCode}
                   </button>
                 }
@@ -232,6 +233,12 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                       {order.conditionClass}
                       {order.damageRemarks.length > 0 && <span className="font-normal text-slate-600"> — {order.damageRemarks.join(', ')}</span>}
                     </dd>
+                    {order.toInspectionRack && (
+                      <>
+                        <dt className="text-slate-500">Xe nâng</dt>
+                        <dd className="font-black text-amber-700">HẠ KỆ GIÁM ĐỊNH</dd>
+                      </>
+                    )}
                     <dt className="text-slate-500">Phân loại đóng hàng</dt>
                     <dd className="font-bold">{order.stuffingClass}</dd>
                     <dt className="text-slate-500">Vệ sinh</dt>
@@ -272,10 +279,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                   </label>
                   <label>
                     <span className={labelCls}>Khách hàng *</span>
-                    <select value={form.customerName} onChange={(e) => set({ customerName: e.target.value })} className={inputCls}>
-                      <option value="">-- Chọn --</option>
-                      {customers.map((c) => <option key={c.id} value={c.name}>[{c.code}] {c.name}</option>)}
-                    </select>
+                    <CustomerInput id="havo-customer" state={state} value={form.customerName} onChange={(v) => set({ customerName: v })} />
                   </label>
                   <label>
                     <span className={labelCls}>Số lệnh / chứng từ</span>
@@ -322,7 +326,6 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
 type ConditionFilter = 'ALL' | FieldConditionClass;
 
 export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateState, onOpenK80Ticket, onOpenDossier }) => {
-  const customers = state.partners.filter((p) => p.isCustomer);
   const shippingLines = state.partners.filter((p) => p.isShippingLine);
 
   const [filters, setFilters] = useState({ search: '', line: 'ALL', size: 'ALL', type: 'ALL', condition: 'AV' as ConditionFilter });
@@ -453,7 +456,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
               <li key={o.id} className="rounded-md border border-slate-200 p-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span>
-                    <button type="button" onClick={() => onOpenDossier?.(o.gateOutCode)} className="font-mono font-bold text-blue-700 hover:underline">
+                    <button type="button" onClick={() => onOpenDossier?.(o.gateOutCode)} className={linkCls}>
                       {o.gateOutCode}
                     </button>{' '}
                     • <span className="font-mono">{o.containerNo}</span> • {o.bookingNo} • {formatVnd(o.feeAmount)}
@@ -602,10 +605,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
               </label>
               <label>
                 <span className={labelCls}>Khách hàng nhận vỏ *</span>
-                <select value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={inputCls}>
-                  <option value="">-- Chọn --</option>
-                  {customers.map((c) => <option key={c.id} value={c.name}>[{c.code}] {c.name}</option>)}
-                </select>
+                <CustomerInput id="capvo-customer" state={state} value={customerName} onChange={setCustomerName} />
               </label>
             </div>
 
@@ -633,7 +633,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                       {summary.orders.map((o) => (
                         <tr key={o.id}>
                           <td className="py-1 pr-2 font-mono">
-                            <button type="button" onClick={() => onOpenDossier?.(o.gateOutCode)} className="text-blue-700 hover:underline">{o.gateOutCode}</button>
+                            <button type="button" onClick={() => onOpenDossier?.(o.gateOutCode)} className={linkCls}>{o.gateOutCode}</button>
                           </td>
                           <td className="py-1 pr-2 font-mono">{o.containerNo}</td>
                           <td className="py-1 pr-2">{statusLabel[o.status]}</td>

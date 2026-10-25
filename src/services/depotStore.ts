@@ -1,4 +1,5 @@
 import { renameLegacyCodes } from './codes';
+import { ensureInvoiceFields } from './invoice';
 import {
   AppRole,
   AuditLogEntry,
@@ -25,7 +26,9 @@ import {
   VesselList,
 } from '../types/depot';
 
-const STORAGE_KEY = 'matran_depot_erp_state_v7';
+// DEC-106, DEC-108, DEC-111: đổi khóa để mọi máy nạp lại dữ liệu test mới; khóa cũ bị xóa khi nạp
+const STORAGE_KEY = 'matran_depot_erp_state_v10';
+const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7', 'matran_depot_erp_state_v8', 'matran_depot_erp_state_v9'];
 
 export interface DepotState {
   currentUser: StaffUser;
@@ -125,9 +128,9 @@ export const INITIAL_STAFF: StaffUser[] = [
   {
     id: 'usr-acc',
     staffCode: 'NV-007',
-    fullName: 'Đỗ Thị Thu (Văn phòng)',
+    fullName: 'Đỗ Thị Thu (Kế toán)',
     email: 'accounting@matrandepot.vn',
-    roles: ['OFFICE'],
+    roles: ['ACCOUNTANT'], // DEC-111
     isActive: true,
   },
 ];
@@ -187,12 +190,13 @@ export const INITIAL_YARD_BLOCKS: YardBlock[] = [
   },
   {
     blockCode: 'BLOCK-B',
-    blockName: 'Khu B — Container Lưu bãi chung (Hạ nhanh cấp Block)',
-    maxBay: 16,
-    maxRow: 6,
-    maxTier: 5,
-    capacity: 240,
-    description: 'Cho phép gán nhanh cấp Block trước khi xếp Bay/Row/Tier',
+    blockName: 'Khu B — Container Lưu bãi chung (chỉ Block)',
+    // DEC-082: không cấu hình Bay / Row / Tier → cont chỉ cần chọn Block, không giới hạn số cont
+    maxBay: 0,
+    maxRow: 0,
+    maxTier: 0,
+    capacity: 0,
+    description: 'Khu vực chỉ quản lý theo Block — không cần Bay / Row / Tier',
   },
   {
     blockCode: 'BLOCK-CLEAN',
@@ -211,6 +215,7 @@ export const INITIAL_YARD_BLOCKS: YardBlock[] = [
     maxTier: 3,
     capacity: 80,
     description: 'Khu vực container DAMAGE chờ Báo giá và Sửa chữa',
+    isInspectionRack: true, // DEC-109: mặc định là Kệ giám định, Admin đổi được
   },
 ];
 
@@ -512,7 +517,7 @@ export function createInitialState(): DepotState {
         receiptCode: 'PTT-2026-002',
         qrCode: 'QR-TTT-NAMHAI-002',
         customerName: 'Vận Tải Nam Hải',
-        lotDescription: 'Phiếu thu mẹ trả trước lô 10 cont',
+        lotDescription: 'Phiếu thu trả trước lô 10 cont',
         totalAmount: 5000000,
         remainingAmount: 5000000,
         status: 'ACTIVE',
@@ -727,7 +732,7 @@ export function createInitialState(): DepotState {
         qrCode: 'QR-K80-MSKU9102388',
         operationMode: 'HA_VO',
         isPaid: true,
-        paymentLabel: 'TTT (Đã trừ Phiếu thu mẹ)',
+        paymentLabel: 'TTT (Đã trừ Phiếu thu trả trước)',
         containerNo: 'MSKU9102388',
         size: '40',
         type: 'HC',
@@ -787,9 +792,9 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
   // DEC-068: đổi mã cũ IN-/HS- → HV-, OUT-/GO- → CV-, PTM- → PTT-
   const raw = renameLegacyCodes(input);
   const base = createInitialState();
-  // DEC-047: nhân viên cổng / hiện trường → Giám định; Kế toán → Văn phòng
+  // DEC-047: nhân viên cổng / hiện trường → Giám định; DEC-111: Kế toán (ACCOUNTANT) được dùng lại, không đổi nữa
   // DEC-049: bỏ QC Sửa chữa → Sửa chữa
-  const LEGACY_ROLE: Record<string, AppRole> = { GATE_STAFF: 'INSPECTOR', YARD_STAFF: 'INSPECTOR', ACCOUNTANT: 'OFFICE', REPAIR_QC: 'REPAIR_STAFF' };
+  const LEGACY_ROLE: Record<string, AppRole> = { GATE_STAFF: 'INSPECTOR', YARD_STAFF: 'INSPECTOR', REPAIR_QC: 'REPAIR_STAFF' };
   const staffUsers = (raw.staffUsers || base.staffUsers).map((u) => ({
     ...u,
     roles: Array.from(new Set(u.roles.map((r) => LEGACY_ROLE[r as string] || r))) as AppRole[],
@@ -824,7 +829,7 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
     staffUsers,
     vouchers,
     paymentTransactions: raw.paymentTransactions || [],
-    paymentReceipts: raw.paymentReceipts || [],
+    paymentReceipts: ensureInvoiceFields(raw.paymentReceipts || []), // DEC-111
     repairTeams: raw.repairTeams || base.repairTeams,
     companyProfile: { ...base.companyProfile, ...(raw.companyProfile || {}) },
     vesselLists: raw.vesselLists || [],
@@ -832,13 +837,39 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
   } as DepotState;
 }
 
-export function loadDepotState(): DepotState {
+// DEC-106: DỮ LIỆU SẠCH — giữ danh mục (nhân viên, khách hàng / hãng tàu, block, size / type, biểu phí, tổ sửa chữa, công ty),
+// xóa toàn bộ dữ liệu tác nghiệp (container, lệnh, chứng từ, giao dịch, phiếu thu, phiếu thu trả trước, K80, tàu, nhật ký, bộ đếm mã).
+// createInitialState() (có dữ liệu mẫu) chỉ còn dùng cho test.
+export function createCleanState(): DepotState {
+  return {
+    ...createInitialState(),
+    containers: [],
+    locationHistory: [],
+    masterReceipts: [],
+    receiptDeductions: [],
+    vouchers: [],
+    paymentTransactions: [],
+    paymentReceipts: [],
+    gateInOrders: [],
+    workOrders: [],
+    bookings: [],
+    gateOutOrders: [],
+    k80Tickets: [],
+    auditLogs: [],
+    vesselLists: [],
+    codeCounters: {},
+  };
+}
+
+// DEC-108: chưa có dữ liệu lưu → dùng fallback (App truyền dữ liệu test); mặc định dữ liệu sạch
+export function loadDepotState(fallback: () => DepotState = createCleanState): DepotState {
   try {
+    for (const key of LEGACY_STORAGE_KEYS) localStorage.removeItem(key);
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createInitialState();
+    if (!raw) return fallback();
     return normalizeDepotState(JSON.parse(raw) as Partial<DepotState>);
   } catch {
-    return createInitialState();
+    return fallback();
   }
 }
 
@@ -850,8 +881,9 @@ export function saveDepotState(state: DepotState): void {
   }
 }
 
-export function resetDepotState(): DepotState {
-  const initial = createInitialState();
+// DEC-106: Xóa dữ liệu → dữ liệu sạch; DEC-108: Nạp dữ liệu test → truyền createDemoState
+export function resetDepotState(build: () => DepotState = createCleanState): DepotState {
+  const initial = build();
   saveDepotState(initial);
   return initial;
 }

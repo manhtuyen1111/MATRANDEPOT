@@ -30,8 +30,10 @@ import {
   deleteDepotFeeCatalogItem,
   deletePartnerCatalogItem,
   deleteYardBlockCatalogItem,
+  setYardBlockInspectionRack,
 } from '../../services/depotOperations';
 import { FeeTariffCategory } from '../../types/depot';
+import { blockDimensions, SLOT_DIMENSION_LABELS } from '../../services/core';
 
 export type CatalogTab =
   | 'KHACH_HANG'
@@ -88,10 +90,12 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
   // State form VỊ TRÍ
   const [blockCode, setBlockCode] = useState('');
   const [blockName, setBlockName] = useState('');
-  const [maxBay, setMaxBay] = useState(16);
-  const [maxRow, setMaxRow] = useState(6);
-  const [maxTier, setMaxTier] = useState(5);
+  // DEC-082: để trống = chiều đó không dùng
+  const [maxBay, setMaxBay] = useState('');
+  const [maxRow, setMaxRow] = useState('');
+  const [maxTier, setMaxTier] = useState('');
   const [blockDesc, setBlockDesc] = useState('');
+  const [blockIsRack, setBlockIsRack] = useState(false); // DEC-109
 
   // State form CONTAINER (SIZE - TYPE)
   const [newSize, setNewSize] = useState('');
@@ -175,16 +179,21 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
       const next = addYardBlockCatalogItem(state, {
         blockCode,
         blockName,
-        maxBay,
-        maxRow,
-        maxTier,
+        maxBay: maxBay ? Number(maxBay) : null,
+        maxRow: maxRow ? Number(maxRow) : null,
+        maxTier: maxTier ? Number(maxTier) : null,
         description: blockDesc,
+        isInspectionRack: blockIsRack,
       });
       onUpdateState(next);
+      setBlockIsRack(false);
       setBlockCode('');
       setBlockName('');
       setBlockDesc('');
-      setSuccessMsg(`Đã thêm VỊ TRÍ [${blockCode.toUpperCase()}] vào Danh mục chung.`);
+      setMaxBay('');
+      setMaxRow('');
+      setMaxTier('');
+      setSuccessMsg(`Đã thêm VỊ TRÍ [BLOCK-${blockCode.toUpperCase()}] vào Danh mục chung.`);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Lỗi thêm Vị trí');
     }
@@ -483,88 +492,66 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
               Thêm Vị Trí / Khu Vực Bãi (Admin)
             </h3>
             <form onSubmit={handleAddBlock} className="space-y-3">
+              {/* DEC-082: mã luôn bắt đầu bằng BLOCK- — chỉ cần gõ A, B, C... */}
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
-                  Mã Vị Trí (Block) *
-                </label>
-                <input
-                  type="text"
-                  value={blockCode}
-                  onChange={(e) => setBlockCode(e.target.value.toUpperCase())}
-                  placeholder="VD: BLOCK-C, BLOCK-REEFER..."
-                  disabled={!isAdmin}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono font-bold uppercase disabled:bg-slate-100"
-                  required
-                />
-              </div>
-              <div>
-                <label className="mb-1 block font-bold text-slate-700">
-                  Tên Khu Vực *
-                </label>
-                <input
-                  type="text"
-                  value={blockName}
-                  onChange={(e) => setBlockName(e.target.value)}
-                  placeholder="VD: Khu C — Lưu bãi container 40'HC"
-                  disabled={!isAdmin}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 disabled:bg-slate-100"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="mb-1 block font-bold text-slate-700">
-                    Số Bay tối đa
-                  </label>
+                <label className="mb-1 block font-bold text-slate-700">Mã Vị Trí *</label>
+                <div className="flex items-stretch overflow-hidden rounded-lg border border-slate-300">
+                  <span className="flex items-center bg-slate-100 px-3 font-mono font-bold text-slate-600">BLOCK-</span>
                   <input
-                    type="number"
-                    min={1}
-                    value={maxBay}
-                    onChange={(e) => setMaxBay(Number(e.target.value))}
+                    type="text"
+                    value={blockCode}
+                    onChange={(e) => setBlockCode(e.target.value.toUpperCase().replace(/^BLOCK[-\s]*/, ''))}
+                    placeholder="A, B, C..."
                     disabled={!isAdmin}
-                    className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono font-bold disabled:bg-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block font-bold text-slate-700">
-                    Số Row tối đa
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={maxRow}
-                    onChange={(e) => setMaxRow(Number(e.target.value))}
-                    disabled={!isAdmin}
-                    className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono font-bold disabled:bg-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block font-bold text-slate-700">
-                    Số Tier tối đa
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={maxTier}
-                    onChange={(e) => setMaxTier(Number(e.target.value))}
-                    disabled={!isAdmin}
-                    className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono font-bold disabled:bg-slate-100"
+                    className="w-full px-3 py-2 font-mono font-bold uppercase outline-none disabled:bg-slate-100"
+                    required
                   />
                 </div>
               </div>
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
-                  Mô tả công năng
-                </label>
-                <input
-                  type="text"
+                <label className="mb-1 block font-bold text-slate-700">Mô tả thông tin</label>
+                <textarea
                   value={blockDesc}
                   onChange={(e) => setBlockDesc(e.target.value)}
-                  placeholder="Mô tả khu vực bãi..."
+                  rows={2}
+                  placeholder="VD: Khu lưu cont 40'HC AV sẵn sàng cấp vỏ..."
                   disabled={!isAdmin}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 disabled:bg-slate-100"
                 />
               </div>
+              <div>
+                <p className="mb-1 font-bold text-slate-700">Vị trí chi tiết (để trống = không dùng)</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    ['Số Bay tối đa', maxBay, setMaxBay],
+                    ['Số Row tối đa', maxRow, setMaxRow],
+                    ['Số Tier tối đa', maxTier, setMaxTier],
+                  ] as [string, string, (v: string) => void][]).map(([label, val, setVal]) => (
+                    <label key={label}>
+                      <span className="mb-1 block text-[11px] font-semibold text-slate-600">{label}</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={val}
+                        onChange={(e) => setVal(e.target.value)}
+                        placeholder="Không dùng"
+                        disabled={!isAdmin}
+                        className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono font-bold disabled:bg-slate-100"
+                      />
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Chiều nào để trống thì khi đặt cont ở khu này sẽ không hiện và không yêu cầu nhập. Không nhập cả 3 → chỉ cần chọn Block, không giới hạn số cont.
+                </p>
+              </div>
+              <label className="flex items-start gap-2 rounded-lg border border-slate-200 p-2.5">
+                <input type="checkbox" checked={blockIsRack} onChange={(e) => setBlockIsRack(e.target.checked)} className="mt-0.5" />
+                <span>
+                  <span className="block font-bold text-slate-700">Đây là KỆ GIÁM ĐỊNH</span>
+                  <span className="block text-[11px] text-slate-500">Cont Giám định đánh dấu "Hạ kệ giám định" chỉ được Xe nâng hạ vào các khu này.</span>
+                </span>
+              </label>
               <button
                 type="submit"
                 disabled={!isAdmin}
@@ -586,6 +573,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                   <th className="px-4 py-2.5">Mã Vị Trí</th>
                   <th className="px-4 py-2.5">Tên Khu Vực</th>
                   <th className="px-4 py-2.5">Cấu hình Ô (Bay / Row / Tier)</th>
+                  <th className="px-4 py-2.5 text-center">Kệ giám định</th>
                   <th className="px-4 py-2.5 text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -600,9 +588,26 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                       <p className="text-[11px] text-slate-500">{b.description}</p>
                     </td>
                     <td className="px-4 py-2.5 font-mono text-slate-700">
-                      Bay: 01..{String(b.maxBay).padStart(2, '0')} • Row: 01..
-                      {String(b.maxRow).padStart(2, '0')} • Tier: 01..
-                      {String(b.maxTier).padStart(2, '0')} ({b.capacity} vị trí)
+                      {/* DEC-082: chỉ hiện chiều có cấu hình */}
+                      {blockDimensions(b).length === 0
+                        ? 'Chỉ Block — không giới hạn số cont'
+                        : `${blockDimensions(b).map((d) => `${SLOT_DIMENSION_LABELS[d.key]}: 01..${String(d.max).padStart(2, '0')}`).join(' • ')} (${b.capacity} vị trí)`}
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      <input
+                        type="checkbox"
+                        aria-label={`Kệ giám định ${b.blockCode}`}
+                        checked={Boolean(b.isInspectionRack)}
+                        disabled={!isAdmin}
+                        onChange={(e) => {
+                          clearFeedback();
+                          try {
+                            onUpdateState(setYardBlockInspectionRack(state, b.blockCode, e.target.checked));
+                          } catch (err) {
+                            setErrorMsg(err instanceof Error ? err.message : 'Lỗi cập nhật Kệ giám định');
+                          }
+                        }}
+                      />
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       <button

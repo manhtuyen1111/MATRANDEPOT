@@ -22,8 +22,9 @@ import {
 import { DepotState, formatVnd } from '../services/depotStore';
 import { can } from '../services/permissions';
 import { isSupabaseConfigured } from '../lib/env';
-import { DATETIME_PLACEHOLDER, formatDateTime, maskDateTimeInput, parseDateTime } from '../services/datetime';
-import { SheetData, toXlsxBuffer, XLSX_MIME } from '../services/reports';
+import { DATETIME_PLACEHOLDER, formatDateTime, maskDateTimeInput, parseDateTime, QUICK_RANGE_OPTIONS, quickRange, QuickRangeKey } from '../services/datetime';
+import { PAGE_SIZE_OPTIONS, SheetData, toXlsxBuffer, XLSX_MIME } from '../services/reports';
+import { blockDimensions, SLOT_DIMENSION_LABELS } from '../services/core';
 
 // ---------------------------------------------------------------------------
 // Thông báo lỗi / thành công thống nhất
@@ -99,6 +100,8 @@ export const ContainerNo: React.FC<{ no: string; locked?: boolean; lockReason?: 
 export const inputCls =
   'w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-hidden focus:ring-1 focus:ring-blue-600';
 export const labelCls = 'mb-1 block text-[11px] font-semibold uppercase text-slate-600';
+// DEC-117: KIỂU LINK DỮ LIỆU THỐNG NHẤT toàn app (mã hồ sơ, mã phiếu thu, mã cấp vỏ, NT- / XT-…) — giống Mã hồ sơ ở Tồn vỏ
+export const linkCls = 'font-mono text-blue-700 hover:underline';
 export const primaryBtn =
   'inline-flex items-center justify-center gap-1.5 rounded-md bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
 export const secondaryBtn =
@@ -126,7 +129,12 @@ export const FeeLinesEditor: React.FC<{
   onChange: (ids: string[]) => void;
   suggestedId?: string;
   disabled?: boolean;
-}> = ({ catalog, selectedIds, onChange, suggestedId, disabled }) => {
+  // DEC-077: có truyền thì hiện cột SỐ LƯỢNG (VD phiếu thu trước theo lô); không truyền = mỗi dòng 1
+  quantities?: number[];
+  onQuantitiesChange?: (q: number[]) => void;
+}> = ({ catalog, selectedIds, onChange, suggestedId, disabled, quantities = [], onQuantitiesChange }) => {
+  const withQty = Boolean(onQuantitiesChange);
+  const qtyAt = (i: number) => (withQty ? quantities[i] ?? 1 : 1);
   const [pickId, setPickId] = React.useState<string>(suggestedId || '');
   React.useEffect(() => {
     if (suggestedId) setPickId(suggestedId);
@@ -140,7 +148,7 @@ export const FeeLinesEditor: React.FC<{
   const lines = selectedIds
     .map((id, index) => ({ index, item: catalog.find((c) => c.id === id) }))
     .filter((l): l is { index: number; item: DepotFeeCatalogItem } => Boolean(l.item));
-  const total = lines.reduce((s, l) => s + l.item.defaultAmountInclVat, 0);
+  const total = lines.reduce((s, l) => s + l.item.defaultAmountInclVat * (Number(qtyAt(l.index)) || 0), 0);
 
   return (
     <SectionCard
@@ -172,7 +180,11 @@ export const FeeLinesEditor: React.FC<{
         <button
           type="button"
           disabled={disabled || !pickId}
-          onClick={() => pickId && onChange([...selectedIds, pickId])}
+          onClick={() => {
+            if (!pickId) return;
+            onChange([...selectedIds, pickId]);
+            if (withQty) onQuantitiesChange!([...selectedIds.map((_, i) => qtyAt(i)), 1]);
+          }}
           className={`${primaryBtn} shrink-0`}
         >
           <Plus className="h-4 w-4" />
@@ -187,12 +199,33 @@ export const FeeLinesEditor: React.FC<{
               <tr key={`${item.id}-${index}`}>
                 <td className="py-1.5 pr-2 font-mono text-[11px] text-slate-500">{item.code}</td>
                 <td className="py-1.5 pr-2 text-slate-900">{item.name}</td>
-                <td className="py-1.5 pr-2 text-right font-mono font-semibold">{formatVnd(item.defaultAmountInclVat)}</td>
+                {withQty && (
+                  <>
+                    <td className="py-1.5 pr-2 text-right font-mono text-[11px] text-slate-500">{formatVnd(item.defaultAmountInclVat)} ×</td>
+                    <td className="w-20 py-1.5 pr-2">
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        inputMode="numeric"
+                        aria-label={`Số lượng ${item.name}`}
+                        value={qtyAt(index)}
+                        disabled={disabled}
+                        onChange={(e) => onQuantitiesChange!(selectedIds.map((_, i) => (i === index ? Number(e.target.value) : qtyAt(i))))}
+                        className={`${inputCls} py-1 text-right font-mono`}
+                      />
+                    </td>
+                  </>
+                )}
+                <td className="py-1.5 pr-2 text-right font-mono font-semibold">{formatVnd(item.defaultAmountInclVat * (Number(qtyAt(index)) || 0))}</td>
                 <td className="w-8 py-1.5 text-right">
                   {!disabled && (
                     <button
                       type="button"
-                      onClick={() => onChange(selectedIds.filter((_, i) => i !== index))}
+                      onClick={() => {
+                        onChange(selectedIds.filter((_, i) => i !== index));
+                        if (withQty) onQuantitiesChange!(selectedIds.map((_, i) => qtyAt(i)).filter((_, i) => i !== index));
+                      }}
                       className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                       aria-label={`Xóa ${item.name}`}
                     >
@@ -219,21 +252,23 @@ export interface PaymentChoice {
   directMethod: DirectPaymentMethod;
 }
 
+// DEC-097: mặc định TTTT — Trực tiếp (hình thức dùng nhiều nhất)
 export const EMPTY_PAYMENT: PaymentChoice = {
-  paymentCategory: 'TTT',
+  paymentCategory: 'TTTT',
   scannedQrCode: '',
   ttsNote: '',
   directMethod: 'CASH',
 };
 
+// DEC-097: trả ngay đứng đầu; DEC-100: ký hiệu TT / TTR / TTS
 const PAYMENT_OPTIONS: { code: PaymentCategory; title: string; sub: string }[] = [
-  { code: 'TTT', title: 'TTT — Thanh toán trước', sub: 'Quét QR Phiếu thu mẹ, trừ dần' },
+  { code: 'TTTT', title: 'TT — Trực tiếp', sub: 'Tiền mặt hoặc chuyển khoản (API QR)' },
+  { code: 'TTT', title: 'TTR — Trả trước', sub: 'Dùng tiền khách đã nạp trước (QR Phiếu thu trả trước)' },
   { code: 'TTS', title: 'TTS — Thanh toán sau', sub: 'Ghi chú TTS trên chứng từ (công nợ)' },
-  { code: 'TTTT', title: 'TTTT — Trực tiếp', sub: 'Chuyển khoản API QR / Tiền mặt' },
 ];
 
 export function paymentSubmitLabel(p: PaymentChoice): string {
-  if (p.paymentCategory === 'TTT') return 'Trừ Phiếu thu mẹ & hoàn tất';
+  if (p.paymentCategory === 'TTT') return 'Trừ Phiếu thu trả trước & hoàn tất';
   if (p.paymentCategory === 'TTS') return 'Xác nhận TTS & hoàn tất';
   return p.directMethod === 'CASH' ? 'Xác nhận đã thu tiền mặt & hoàn tất' : 'Tạo QR chuyển khoản';
 }
@@ -277,7 +312,7 @@ export const PaymentPanel: React.FC<{
       <div className="mt-3">
         {value.paymentCategory === 'TTT' && (
           <label className="block">
-            <span className={labelCls}>Mã QR Phiếu thu mẹ</span>
+            <span className={labelCls}>Mã QR Phiếu thu trả trước</span>
             <div className="flex items-center gap-2">
               <QrCode className="h-4 w-4 shrink-0 text-slate-500" />
               <input
@@ -404,16 +439,22 @@ export interface SlotValue {
 
 export const EMPTY_SLOT: SlotValue = { blockCode: '', bay: '', row: '', tier: '' };
 
-export function isSlotComplete(v: SlotValue): boolean {
-  return Boolean(v.blockCode) && (!v.bay || Boolean(v.row && v.tier));
+// DEC-082: đủ khi đã chọn Block và nhập đủ các chiều Block có cấu hình (service kiểm tra lại)
+export function isSlotComplete(v: SlotValue, state: DepotState): boolean {
+  const block = state.yardBlocks.find((b) => b.blockCode === v.blockCode);
+  if (!block) return false;
+  return blockDimensions(block).every((d) => Boolean(v[d.key]));
 }
 
+// Chọn vị trí: chỉ hiện Bay / Row / Tier mà Block có cấu hình (DEC-082)
 export const SlotPicker: React.FC<{
   state: DepotState;
   value: SlotValue;
   onChange: (next: SlotValue) => void;
-}> = ({ state, value, onChange }) => {
+  onlyBlocks?: string[]; // DEC-109: giới hạn block được chọn (VD: chỉ Kệ giám định)
+}> = ({ state, value, onChange, onlyBlocks }) => {
   const block = state.yardBlocks.find((b) => b.blockCode === value.blockCode);
+  const dims = block ? blockDimensions(block) : [];
   const range = (n: number) => Array.from({ length: n }, (_, i) => String(i + 1).padStart(2, '0'));
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -425,52 +466,48 @@ export const SlotPicker: React.FC<{
           className={inputCls}
         >
           <option value="">-- Chọn --</option>
-          {state.yardBlocks.map((b) => (
+          {state.yardBlocks.filter((b) => !onlyBlocks || onlyBlocks.includes(b.blockCode)).map((b) => (
             <option key={b.blockCode} value={b.blockCode}>
               {b.blockCode}
             </option>
           ))}
         </select>
       </label>
-      <label>
-        <span className={labelCls}>Bay</span>
-        <select
-          value={value.bay}
-          disabled={!block}
-          onChange={(e) => onChange({ ...value, bay: e.target.value, row: e.target.value ? value.row : '', tier: e.target.value ? value.tier : '' })}
-          className={inputCls}
-        >
-          <option value="">Cấp Block</option>
-          {block && range(block.maxBay).map((v) => <option key={v} value={v}>{v}</option>)}
-        </select>
-      </label>
-      <label>
-        <span className={labelCls}>Row</span>
-        <select value={value.row} disabled={!value.bay} onChange={(e) => onChange({ ...value, row: e.target.value })} className={inputCls}>
-          <option value="">--</option>
-          {block && range(block.maxRow).map((v) => <option key={v} value={v}>{v}</option>)}
-        </select>
-      </label>
-      <label>
-        <span className={labelCls}>Tier</span>
-        <select value={value.tier} disabled={!value.bay} onChange={(e) => onChange({ ...value, tier: e.target.value })} className={inputCls}>
-          <option value="">--</option>
-          {block && range(block.maxTier).map((v) => <option key={v} value={v}>{v}</option>)}
-        </select>
-      </label>
+      {dims.map((d) => (
+        <label key={d.key}>
+          <span className={labelCls}>{SLOT_DIMENSION_LABELS[d.key]} *</span>
+          <select value={value[d.key]} onChange={(e) => onChange({ ...value, [d.key]: e.target.value })} className={inputCls}>
+            <option value="">--</option>
+            {range(d.max).map((v) => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </label>
+      ))}
+      {block && dims.length === 0 && (
+        <p className="col-span-2 self-end pb-2 text-[11px] text-slate-500 sm:col-span-3">{block.blockCode} chỉ quản lý theo Block — không cần Bay / Row / Tier.</p>
+      )}
     </div>
   );
 };
 
 // Phân trang gọn cho báo cáo / phiếu thu
-export const Pager: React.FC<{ page: number; pageCount: number; total: number; onPage: (p: number) => void }> = ({
-  page,
-  pageCount,
-  total,
-  onPage,
-}) => (
-  <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-3 py-2 text-[11px] text-slate-600">
-    <span>{total} bản ghi</span>
+export const Pager: React.FC<{
+  page: number;
+  pageCount: number;
+  total: number;
+  onPage: (p: number) => void;
+  // DEC-080: người dùng chọn số dòng / trang
+  pageSize?: number;
+  onPageSize?: (n: number) => void;
+}> = ({ page, pageCount, total, onPage, pageSize, onPageSize }) => (
+  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-3 py-2 text-[11px] text-slate-600">
+    <span className="flex items-center gap-2">
+      {total} bản ghi
+      {onPageSize && (
+        <select value={pageSize} onChange={(e) => { onPageSize(Number(e.target.value)); onPage(1); }} aria-label="Số dòng mỗi trang" className="rounded border border-slate-300 bg-white px-1.5 py-1 text-[11px]">
+          {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n} dòng / trang</option>)}
+        </select>
+      )}
+    </span>
     <div className="flex items-center gap-1">
       <button type="button" disabled={page <= 1} onClick={() => onPage(page - 1)} className={secondaryBtn}>
         Trước
@@ -513,6 +550,43 @@ export const DateTimeField: React.FC<{
   );
 };
 
+// DEC-102: ô lọc nhanh thời gian (Hôm nay … Năm nay / Tùy chọn) — dùng cho MỌI bộ lọc thời gian.
+// Chỉ khi chọn Tùy chọn mới hiện 2 ô Từ - Đến. Trả về các ô liền nhau để đặt thẳng vào lưới bộ lọc.
+export const DateRangeFilter: React.FC<{
+  value: { dateFrom?: string; dateTo?: string };
+  onChange: (next: { dateFrom: string; dateTo: string }) => void;
+  label?: string;
+  required?: boolean;
+}> = ({ value, onChange, label = 'Thời gian', required }) => {
+  const [preset, setPreset] = React.useState<QuickRangeKey>('TODAY');
+  const mark = required ? ' *' : '';
+  return (
+    <>
+      <label className="block">
+        <span className={labelCls}>{label}{mark}</span>
+        <select
+          value={preset}
+          aria-label="Lọc nhanh thời gian"
+          onChange={(e) => {
+            const key = e.target.value as QuickRangeKey;
+            setPreset(key);
+            if (key !== 'CUSTOM') onChange(quickRange(key));
+          }}
+          className={inputCls}
+        >
+          {QUICK_RANGE_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+        </select>
+      </label>
+      {preset === 'CUSTOM' && (
+        <>
+          <DateTimeField label={`Từ (dd/mm/yyyy hh:mm:ss)${mark}`} value={value.dateFrom || ''} onChange={(v) => onChange({ dateFrom: v, dateTo: value.dateTo || '' })} />
+          <DateTimeField label={`Đến (dd/mm/yyyy hh:mm:ss)${mark}`} value={value.dateTo || ''} onChange={(v) => onChange({ dateFrom: value.dateFrom || '', dateTo: v })} fallback="end" />
+        </>
+      )}
+    </>
+  );
+};
+
 // Tải file Excel .xlsx (DEC-050, DEC-055) — dùng chung cho Phiếu thu và mọi báo cáo
 export const ExportExcelButton: React.FC<{
   getSheets: () => SheetData[];
@@ -546,5 +620,101 @@ export const ExportExcelButton: React.FC<{
       </button>
       {err && <span className="text-[11px] text-red-700">{err}</span>}
     </span>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// DEC-080: TRANG NHIỀU DỮ LIỆU — số dòng / trang do người dùng chọn (nhớ theo từng màn, trên trình duyệt này)
+// ---------------------------------------------------------------------------
+export function usePageSize(screenKey: string, fallback = 50): [number, (n: number) => void] {
+  const storageKey = `matran.pageSize.${screenKey}`;
+  const [size, setSize] = React.useState<number>(() => {
+    try {
+      const saved = Number(window.localStorage.getItem(storageKey));
+      return (PAGE_SIZE_OPTIONS as readonly number[]).includes(saved) ? saved : fallback;
+    } catch {
+      return fallback;
+    }
+  });
+  const update = (n: number) => {
+    setSize(n);
+    try {
+      window.localStorage.setItem(storageKey, String(n));
+    } catch {
+      /* trình duyệt chặn lưu — vẫn dùng được trong phiên */
+    }
+  };
+  return [size, update];
+}
+
+// DEC-080: CHI TIẾT 1 DÒNG — cửa sổ trượt bên phải; danh sách vẫn thấy phía sau; đóng bằng X / Esc / bấm ra ngoài
+export const DetailDrawer: React.FC<{
+  open: boolean;
+  title: React.ReactNode;
+  onClose: () => void;
+  actions?: React.ReactNode;
+  wide?: boolean;
+  children: React.ReactNode;
+}> = ({ open, title, onClose, actions, wide, children }) => {
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-label="Chi tiết">
+      <button type="button" aria-label="Đóng chi tiết" onClick={onClose} className="absolute inset-0 cursor-default bg-slate-900/30" />
+      <aside className={`relative flex h-full w-full flex-col bg-white shadow-2xl ${wide ? 'sm:w-[min(960px,75vw)]' : 'sm:w-[min(760px,60vw)]'}`}>
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
+          <h3 className="min-w-0 flex-1 text-sm font-black text-slate-900">{title}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            {actions}
+            <button type="button" onClick={onClose} aria-label="Đóng" className={secondaryBtn}>
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </header>
+        <div className="flex-1 overflow-y-auto p-4 text-xs">{children}</div>
+      </aside>
+    </div>
+  );
+};
+
+// DEC-093: Ô KHÁCH HÀNG — gõ tay hoặc chọn; gõ thì hiện gợi ý khách trong Danh mục.
+//   Khách ngoài Danh mục vẫn lưu được nhưng chỉ thanh toán Tiền mặt / Chuyển khoản (service kiểm tra).
+export const CustomerInput: React.FC<{
+  state: DepotState;
+  value: string;
+  onChange: (name: string) => void;
+  id: string;
+  placeholder?: string;
+}> = ({ state, value, onChange, id, placeholder = 'Gõ tên hoặc mã khách hàng...' }) => {
+  const customers = state.partners.filter((p) => p.isCustomer);
+  const typed = value.trim().toLowerCase();
+  // Gõ đúng MÃ khách (VD VIETLOG) → điền tên khách trong Danh mục
+  const byCode = customers.find((c) => c.code.toLowerCase() === typed);
+  const known = customers.some((c) => c.name.toLowerCase() === typed);
+  return (
+    <>
+      <input
+        list={`${id}-list`}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={() => byCode && onChange(byCode.name)}
+        placeholder={placeholder}
+        className={inputCls}
+        autoComplete="off"
+      />
+      <datalist id={`${id}-list`}>
+        {customers.map((c) => (
+          <option key={c.id} value={c.name}>{c.code}</option>
+        ))}
+      </datalist>
+      {typed && !known && !byCode && (
+        <span className="mt-1 block text-[11px] font-semibold text-amber-700">Khách ngoài Danh mục — chỉ thanh toán Tiền mặt / Chuyển khoản (không TTS / TTT).</span>
+      )}
+    </>
   );
 };

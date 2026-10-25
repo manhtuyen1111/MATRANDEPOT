@@ -99,12 +99,19 @@ function sumFees(lines: FeeLineItem[]): number {
   return lines.reduce((sum, l) => sum + Number(l.amountInclVat || 0), 0);
 }
 
-function assertCustomer(state: DepotState, customerName: string): string {
-  const name = customerName.trim();
-  if (!state.partners.some((p) => p.isCustomer && p.name === name)) {
-    throw new Error('Vui lòng chọn KHÁCH HÀNG theo Danh mục chung.');
-  }
-  return name;
+// DEC-093: khách hàng gõ tay hoặc chọn từ Danh mục. Trùng tên Danh mục (không phân biệt hoa thường) → lấy đúng tên Danh mục;
+// không có trong Danh mục → vẫn lưu tên tự do (chỉ thanh toán Tiền mặt / Chuyển khoản — xem settleVoucher).
+export function normalizeCustomer(state: DepotState, customerName: string): string {
+  const name = customerName.trim().replace(/\s+/g, ' ');
+  if (!name) throw new Error('Vui lòng nhập hoặc chọn KHÁCH HÀNG.');
+  if (name.length > 120) throw new Error('Tên KHÁCH HÀNG tối đa 120 ký tự.');
+  const known = state.partners.find((p) => p.isCustomer && p.name.toLowerCase() === name.toLowerCase());
+  return known ? known.name : name;
+}
+
+export function isCatalogCustomer(state: DepotState, name?: string): boolean {
+  const n = (name || '').trim().toLowerCase();
+  return Boolean(n) && state.partners.some((p) => p.isCustomer && p.name.toLowerCase() === n);
 }
 
 // ============================================================================
@@ -121,6 +128,7 @@ export function recordGateInFieldStep(
     stuffingClass: FieldStuffingClass;
     cleaningItems: (FieldCleaningItem | string)[];
     manufactureYear: number;
+    toInspectionRack?: boolean; // DEC-109
   }
 ): DepotState {
   assertPermission(
@@ -155,6 +163,7 @@ export function recordGateInFieldStep(
     stuffingClass: input.stuffingClass,
     cleaningItems: normalizedCleaning,
     manufactureYear: year,
+    toInspectionRack: Boolean(input.toInspectionRack),
     fieldStaffName: state.currentUser.fullName,
     fieldRecordedAt: nowIso(),
     feeAmount: 0,
@@ -169,7 +178,9 @@ export function recordGateInFieldStep(
     code,
     `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: Trạng thái ${input.conditionClass}${
       remarks.length ? ` (${remarks.join(', ')})` : ''
-    }, Đóng hàng ${input.stuffingClass}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}`,
+    }, Đóng hàng ${input.stuffingClass}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}${
+      input.toInspectionRack ? ' — HẠ KỆ GIÁM ĐỊNH' : ''
+    }`,
     code
   );
 }
@@ -213,7 +224,7 @@ export function verifyGateInOfficeAndCreatePayment(
   if (!state.partners.some((p) => p.isShippingLine && p.code === input.shippingLineCode)) {
     throw new Error('Vui lòng chọn HÃNG TÀU theo Danh mục chung.');
   }
-  const customerName = assertCustomer(state, input.customerName);
+  const customerName = normalizeCustomer(state, input.customerName);
   const truckNo = input.truckNo.trim().toUpperCase();
   if (!truckNo) throw new Error('Văn phòng bắt buộc nhập SỐ XE.');
   const driverPhone = normalizeDriverPhone(input.driverPhone);
@@ -421,7 +432,7 @@ function completeGateIn(state: DepotState, gateInId: string, actor?: Actor): Dep
     needsCleaning: requiresCleaning,
     needsQuotation: isDamage,
     needsRepair: false,
-    forkliftShiftTask: 'NONE',
+    forkliftShiftTask: order.toInspectionRack ? 'HA_KE_GIAM_DINH' : 'NONE', // DEC-109
     isOnHold: false,
     gateInAt: now,
   };
@@ -476,6 +487,14 @@ export function updateContainerLocation(
     throw new Error(
       `Container ${container.containerNo} có yêu cầu vệ sinh — Bộ phận Vệ sinh phải xác nhận hoàn tất trước khi Xe nâng hạ vỏ (CR-03).`
     );
+  }
+  // DEC-109: cont HẠ KỆ GIÁM ĐỊNH chỉ được hạ vào block Admin đánh dấu là Kệ giám định
+  if (container.forkliftShiftTask === 'HA_KE_GIAM_DINH') {
+    const racks = state.yardBlocks.filter((b) => b.isInspectionRack);
+    if (!racks.length) throw new Error('Chưa có KỆ GIÁM ĐỊNH trong Danh mục Vị trí — Admin cần đánh dấu block Kệ giám định.');
+    if (!racks.some((b) => b.blockCode === input.blockCode)) {
+      throw new Error(`Container ${container.containerNo} phải HẠ KỆ GIÁM ĐỊNH (${racks.map((b) => b.blockCode).join(' / ')}), không hạ về bay.`);
+    }
   }
   const slot = validateTargetSlot(state, container, input);
   const toLabel = formatLocation({
@@ -718,6 +737,51 @@ export function approveDamageQuotation(
   );
 }
 
+// DEC-086: BÁO GIÁ 2 bước — (1) cập nhật TÌNH TRẠNG SỬA CHỮA thực tế + GIỜ CÔNG (lưu, vẫn ở Chờ báo giá)
+//   (2) XÁC NHẬN CHỜ SỬA CHỮA → chuyển bộ phận Sửa chữa (dùng đúng nội dung đã lưu)
+export function saveQuotationDraft(
+  state: DepotState,
+  input: { containerNo: string; quotationItems: string[]; laborHours: number }
+): DepotState {
+  assertPermission(state, 'QUOTATION', 'chỉ Bộ phận Báo giá được cập nhật báo giá.');
+  const container = findActiveContainer(state, input.containerNo);
+  if (!container || !container.needsQuotation) throw new Error('Container không nằm trong hàng chờ Báo giá.');
+  const items = input.quotationItems.map((i) => i.trim()).filter(Boolean);
+  if (items.length === 0) throw new Error('Vui lòng nhập TÌNH TRẠNG SỬA CHỮA.');
+  const laborHours = Number(input.laborHours);
+  if (!Number.isFinite(laborHours) || laborHours <= 0 || laborHours > 1000) {
+    throw new Error('Vui lòng nhập GIỜ CÔNG SỬA CHỮA lớn hơn 0.');
+  }
+  const next = updateContainerById(state, container.id, {
+    quotationItems: items,
+    quotationLaborHours: laborHours,
+    quotationUpdatedBy: state.currentUser.fullName,
+    quotationUpdatedAt: nowIso(),
+  });
+  return appendAudit(
+    next,
+    'SAVE_QUOTATION',
+    'QUOTATION',
+    container.masterDossierCode,
+    `[Hồ sơ ${container.masterDossierCode}] Báo giá cập nhật ${container.containerNo}: TÌNH TRẠNG SỬA CHỮA [${items.join(', ')}] • ${laborHours} giờ công (chưa chuyển sửa chữa)`,
+    container.masterDossierCode
+  );
+}
+
+export function confirmQuotationToRepair(state: DepotState, input: { containerNo: string }): DepotState {
+  assertPermission(state, 'QUOTATION', 'chỉ Bộ phận Báo giá được xác nhận báo giá.');
+  const container = findActiveContainer(state, input.containerNo);
+  if (!container || !container.needsQuotation) throw new Error('Container không nằm trong hàng chờ Báo giá.');
+  if (!container.quotationItems?.length || !(Number(container.quotationLaborHours) > 0)) {
+    throw new Error(`Chưa cập nhật TÌNH TRẠNG SỬA CHỮA / GIỜ CÔNG cho ${container.containerNo} — bấm "Cập nhật" trước.`);
+  }
+  return approveDamageQuotation(state, {
+    containerNo: container.containerNo,
+    quotationItems: container.quotationItems,
+    laborHours: Number(container.quotationLaborHours),
+  });
+}
+
 // ============================================================================
 // 9. BỘ PHẬN SỬA CHỮA — CHỜ SỬA CHỮA: hoàn tất -> AV
 // ============================================================================
@@ -867,7 +931,7 @@ export function createReleaseOrder(
   assertPermission(state, 'RELEASE_ORDER', 'chỉ Văn phòng / Quản lý được lập lệnh CẤP VỎ.');
   const bookingNo = input.bookingNo.trim().toUpperCase();
   if (!bookingNo) throw new Error('Vui lòng nhập SỐ BOOKING.');
-  const customerName = assertCustomer(state, input.customerName);
+  const customerName = normalizeCustomer(state, input.customerName);
   const container = findActiveContainer(state, input.containerNo);
   if (!container) throw new Error('Không tìm thấy container đang tồn bãi.');
   const blocker = releaseBlocker(container);
@@ -1363,27 +1427,36 @@ export function deletePartnerCatalogItem(
 export function addYardBlockCatalogItem(
   state: DepotState,
   input: {
-    blockCode: string;
-    blockName: string;
-    maxBay: number;
-    maxRow: number;
-    maxTier: number;
+    blockCode: string;        // DEC-082: nhập "A" → "BLOCK-A" (có hoặc không gõ tiền tố BLOCK-)
+    blockName?: string;       // để trống → "Khu A"
+    maxBay?: number | null;   // để trống / 0 = không dùng chiều Bay
+    maxRow?: number | null;
+    maxTier?: number | null;
     description?: string;
+    isInspectionRack?: boolean; // DEC-109
   }
 ): DepotState {
   assertAdmin(state);
-  const cleanCode = input.blockCode.trim().toUpperCase();
-  const cleanName = input.blockName.trim();
-  if (!cleanCode || !cleanName) {
-    throw new Error('Vui lòng nhập đầy đủ Mã Vị trí (Block) và Tên khu vực.');
-  }
+  const suffix = input.blockCode.trim().toUpperCase().replace(/^BLOCK[-\s]*/, '').replace(/\s+/g, '-');
+  if (!suffix) throw new Error('Vui lòng nhập Mã Vị trí sau chữ BLOCK- (VD: A, B, C).');
+  if (!/^[A-Z0-9-]{1,20}$/.test(suffix)) throw new Error('Mã Vị trí chỉ gồm chữ, số, dấu gạch ngang (VD: A, B1, KHO-2).');
+  const cleanCode = `BLOCK-${suffix}`;
   if (state.yardBlocks.some((b) => b.blockCode.toUpperCase() === cleanCode)) {
     throw new Error(`Mã Vị trí "${cleanCode}" đã tồn tại trong Danh mục chung.`);
   }
-  const maxBay = Math.max(1, Number(input.maxBay) || 10);
-  const maxRow = Math.max(1, Number(input.maxRow) || 4);
-  const maxTier = Math.max(1, Number(input.maxTier) || 4);
-  const capacity = maxBay * maxRow * maxTier;
+  // DEC-082: chiều nào để trống thì không dùng (0); có nhập thì phải là số nguyên 1 → 999
+  const dim = (label: string, v?: number | null): number => {
+    if (v === null || v === undefined || String(v).trim() === '' || Number(v) === 0) return 0;
+    const n = Number(v);
+    if (!Number.isInteger(n) || n < 1 || n > 999) throw new Error(`Số ${label} tối đa phải là số nguyên 1 → 999, hoặc để trống nếu không dùng.`);
+    return n;
+  };
+  const maxBay = dim('Bay', input.maxBay);
+  const maxRow = dim('Row', input.maxRow);
+  const maxTier = dim('Tier', input.maxTier);
+  const used = [maxBay, maxRow, maxTier].filter((n) => n > 0);
+  const capacity = used.length ? used.reduce((a, b) => a * b, 1) : 0; // 0 = chỉ Block, không giới hạn số cont
+  const cleanName = input.blockName?.trim() || `Khu ${suffix}`;
 
   const newBlock = {
     blockCode: cleanCode,
@@ -1392,8 +1465,10 @@ export function addYardBlockCatalogItem(
     maxRow,
     maxTier,
     capacity,
-    description: input.description?.trim() || 'Khu vực lưu bãi theo cấu hình Danh mục chung',
+    description: input.description?.trim() || '',
+    isInspectionRack: Boolean(input.isInspectionRack),
   };
+  const dimsLabel = [maxBay && `Bay:${maxBay}`, maxRow && `Row:${maxRow}`, maxTier && `Tier:${maxTier}`].filter(Boolean).join(' / ') || 'chỉ Block';
 
   return appendAudit(
     {
@@ -1403,7 +1478,21 @@ export function addYardBlockCatalogItem(
     'ADMIN_ADD_YARD_BLOCK',
     'CATALOG',
     cleanCode,
-    `[Admin Danh mục chung] Thêm VỊ TRÍ [${cleanCode}] ${cleanName} (Bay:${maxBay} / Row:${maxRow} / Tier:${maxTier})`
+    `[Admin Danh mục chung] Thêm VỊ TRÍ [${cleanCode}] ${cleanName} (${dimsLabel})`
+  );
+}
+
+// DEC-109: Admin đánh dấu / bỏ đánh dấu block là KỆ GIÁM ĐỊNH
+export function setYardBlockInspectionRack(state: DepotState, blockCode: string, isInspectionRack: boolean): DepotState {
+  assertAdmin(state);
+  const block = state.yardBlocks.find((b) => b.blockCode === blockCode);
+  if (!block) throw new Error(`Không tìm thấy Vị trí ${blockCode}.`);
+  return appendAudit(
+    { ...state, yardBlocks: state.yardBlocks.map((b) => (b.blockCode === blockCode ? { ...b, isInspectionRack } : b)) },
+    'ADMIN_SET_INSPECTION_RACK',
+    'CATALOG',
+    blockCode,
+    `[Admin Danh mục chung] ${isInspectionRack ? 'Đánh dấu' : 'Bỏ đánh dấu'} [${blockCode}] là KỆ GIÁM ĐỊNH`
   );
 }
 
@@ -1902,6 +1991,30 @@ export function bulkUpdateOfficeNote(state: DepotState, input: { containerIds: s
     const c = next.containers.find((x) => x.id === id);
     if (!c || c.status === 'GATED_OUT') { skipped.push({ containerNo: c?.containerNo || id, reason: 'Không còn tồn bãi' }); continue; }
     next = updateContainerOfficeNote(next, { containerId: id, officeNote: input.officeNote });
+    done.push(c.containerNo);
+  }
+  return { state: next, done, skipped };
+}
+
+// DEC-088: BÁO GIÁ — XÁC NHẬN CHỜ SỬA CHỮA HÀNG LOẠT (gọi lại confirmQuotationToRepair cho từng cont;
+//   cont chưa cập nhật tình trạng sửa chữa / giờ công được bỏ qua và báo lại)
+export function bulkConfirmQuotationToRepair(state: DepotState, input: { containerIds: string[] }): BulkResult {
+  assertPermission(state, 'QUOTATION', 'chỉ Bộ phận Báo giá được xác nhận báo giá.');
+  if (input.containerIds.length === 0) throw new Error('Chưa chọn container nào.');
+  let next = state;
+  const done: string[] = [];
+  const skipped: BulkResult['skipped'] = [];
+  for (const id of input.containerIds) {
+    const c = next.containers.find((x) => x.id === id);
+    if (!c || c.status === 'GATED_OUT' || !c.needsQuotation) {
+      skipped.push({ containerNo: c?.containerNo || id, reason: 'Không còn chờ báo giá' });
+      continue;
+    }
+    if (!c.quotationItems?.length || !(Number(c.quotationLaborHours) > 0)) {
+      skipped.push({ containerNo: c.containerNo, reason: 'Chưa cập nhật tình trạng sửa chữa / giờ công' });
+      continue;
+    }
+    next = confirmQuotationToRepair(next, { containerNo: c.containerNo });
     done.push(c.containerNo);
   }
   return { state: next, done, skipped };

@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { FileCheck2, Printer, QrCode, X } from 'lucide-react';
-import { K80InternalTicket } from '../../types/depot';
+import { Eye, FileCheck2, Printer, QrCode, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
 import { recordReceiptPrint } from '../../services/depotOperations';
-import { confirmDocumentsReturn, DocumentPack, getDriverRoute, ticketsAwaitingReturn } from '../../services/driverRoute';
-import { formatDateTime } from '../../services/datetime';
-import { ContainerNo, Feedback, inputCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
-import { CompanyHeader, ReceiptPrintSheet } from '../../components/ReceiptPrint';
+import { confirmDocumentsReturn, DocumentPack, previewDocumentPack, ticketsAwaitingReturn } from '../../services/driverRoute';
+import { linkCls, ContainerNo, Feedback, inputCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
+import { EeirPrintSheet, PrintPortal, ReceiptPrintSheet } from '../../components/ReceiptPrint';
 
 type Mode = 'HA_VO' | 'CAP_VO';
 const MODE_LABEL: Record<Mode, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP VỎ' };
@@ -15,9 +13,11 @@ const MODE_LABEL: Record<Mode, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP V�
 export const DocumentReturnWorkspace: React.FC<{
   state: DepotState;
   onUpdateState: (next: DepotState) => void;
-}> = ({ state, onUpdateState }) => {
+  onOpenDossier?: (code: string) => void;
+}> = ({ state, onUpdateState, onOpenDossier }) => {
   const [code, setCode] = useState('');
   const [pack, setPack] = useState<DocumentPack | null>(null);
+  const [preview, setPreview] = useState<DocumentPack | null>(null); // DEC-110: xem trước, không in
   const [error, setError] = useState<string | null>(null);
   const allWaiting = ticketsAwaitingReturn(state);
 
@@ -37,12 +37,22 @@ export const DocumentReturnWorkspace: React.FC<{
     }
   };
 
+  const showPreview = (raw: string) => {
+    setError(null);
+    try {
+      setPreview(previewDocumentPack(state, { scannedQrCode: raw }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Lỗi xem chứng từ');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Feedback error={error} onClose={() => setError(null)} />
       <SectionCard title="Trả chứng từ — quét mã QR phiếu K80" icon={<QrCode className="h-4 w-4 text-slate-500" />}>
         <form onSubmit={(e) => { e.preventDefault(); confirm(code); }} className="flex gap-2">
           <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} autoFocus placeholder="Quét mã QR K80 / mã hồ sơ..." className={`${inputCls} py-2.5 font-mono text-sm uppercase`} />
+          <button type="button" disabled={!code.trim()} onClick={() => showPreview(code)} className={`${secondaryBtn} shrink-0`}><Eye className="h-3.5 w-3.5" />Xem trước</button>
           <button type="submit" disabled={!code.trim()} className={`${primaryBtn} shrink-0`}>Xác nhận & in</button>
         </form>
         <p className="mt-2 text-[11px] text-slate-500">Quét được cả phiếu Hạ vỏ và Cấp vỏ. Chỉ trả được khi lái xe đã đi đủ các bộ phận trên lộ trình. Hệ thống tự in EEIR và phiếu thu (nếu có); mỗi lần in phiếu thu được ghi nhận.</p>
@@ -66,10 +76,13 @@ export const DocumentReturnWorkspace: React.FC<{
                     <li key={t.ticketCode} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="flex flex-wrap items-center gap-2">
                         <ContainerNo no={t.containerNo} />
-                        <span className="font-mono text-slate-600">{t.outDossierCode || t.masterDossierCode}</span>
+                        <button type="button" onClick={() => onOpenDossier?.(t.outDossierCode || t.masterDossierCode)} className={linkCls}>{t.outDossierCode || t.masterDossierCode}</button>
                         <span className="text-slate-600">Xe {t.truckNo || '-'} • {t.driverPhone || '-'}</span>
                       </span>
-                      <button type="button" onClick={() => confirm(t.qrCode)} className={secondaryBtn}>Trả chứng từ</button>
+                      <span className="flex gap-2">
+                        <button type="button" onClick={() => showPreview(t.qrCode)} className={secondaryBtn}><Eye className="h-3.5 w-3.5" />Xem trước</button>
+                        <button type="button" onClick={() => confirm(t.qrCode)} className={secondaryBtn}>Trả chứng từ</button>
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -80,74 +93,54 @@ export const DocumentReturnWorkspace: React.FC<{
       </div>
 
       {pack && <DocumentPackPrint state={state} pack={pack} onClose={() => setPack(null)} />}
+      {preview && <DocumentPackPrint state={state} pack={preview} preview onClose={() => setPreview(null)} />}
     </div>
   );
 };
 
-const EeirSheet: React.FC<{ state: DepotState; ticket: K80InternalTicket; dossierCode: string }> = ({ state, ticket: t, dossierCode }) => {
-  const steps = getDriverRoute(state, t);
-  return (
-    <section className="border-2 border-slate-800 bg-white p-4">
-      <CompanyHeader
-        company={state.companyProfile}
-        title={`EEIR — PHIẾU GIAO NHẬN CONTAINER`}
-        subtitle={<p className="mt-1 inline-block bg-slate-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {t.operationMode === 'CAP_VO' ? 'CẤP VỎ' : 'HẠ VỎ'}</p>}
-      />
-      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
-        <dt className="text-slate-500">Mã hồ sơ</dt><dd className="font-mono font-bold">{dossierCode}</dd>
-        <dt className="text-slate-500">Số container</dt><dd className="font-mono font-bold">{t.containerNo}</dd>
-        <dt className="text-slate-500">Size / Type</dt><dd>{t.size} / {t.type}</dd>
-        <dt className="text-slate-500">Trạng thái</dt><dd>{t.conditionClass} • {t.stuffingClass}</dd>
-        <dt className="text-slate-500">Số xe</dt><dd className="font-bold">{t.truckNo || '-'}</dd>
-        <dt className="text-slate-500">SĐT lái xe</dt><dd>{t.driverPhone || '-'}</dd>
-        <dt className="text-slate-500">Khách hàng</dt><dd className="sm:col-span-3">{t.customerRep || '-'}</dd>
-        {t.damageRemarks && t.damageRemarks.length > 0 && (<><dt className="text-slate-500">Hư hỏng</dt><dd className="sm:col-span-3">{t.damageRemarks.join(', ')}</dd></>)}
-      </dl>
-      <table className="mt-3 w-full border-collapse text-left">
-        <thead><tr className="border-b border-slate-400"><th className="py-1">Bước</th><th className="py-1">Bộ phận</th><th className="py-1">Xác nhận</th></tr></thead>
-        <tbody>
-          {steps.map((s, i) => (
-            <tr key={s.key} className="border-b border-slate-200">
-              <td className="py-1">{i + 1}. {s.action}</td>
-              <td className="py-1 font-semibold">{s.dept}</td>
-              <td className="py-1">{s.done ? `✓ ${s.doneBy || ''} • ${formatDateTime(s.doneAt)}` : '—'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="mt-6 grid grid-cols-2 text-center">
-        <span>Lái xe<br /><br /><br />(Ký, ghi rõ họ tên)</span>
-        <span>Đại diện {state.companyProfile.shortName}<br /><br /><br />(Ký, ghi rõ họ tên)</span>
-      </div>
-    </section>
-  );
-};
-
 // Bộ chứng từ trả lái xe: EEIR + phiếu thu (cùng mẫu với Văn phòng → Phiếu thu)
-const DocumentPackPrint: React.FC<{ state: DepotState; pack: DocumentPack; onClose: () => void }> = ({ state, pack, onClose }) => {
+// preview (DEC-110): chỉ xem trên màn hình — không tự in, không có vùng in, không nút in
+const DocumentPackPrint: React.FC<{ state: DepotState; pack: DocumentPack; preview?: boolean; onClose: () => void }> = ({ state, pack, preview, onClose }) => {
+  // Lần in tự động = EEIR + phiếu thu (đã ghi nhận 1 lần in); bấm "In lại EEIR" chỉ in EEIR (phiếu thu in lại ở Văn phòng → Phiếu thu)
+  const [eeirOnly, setEeirOnly] = useState(false);
   useEffect(() => {
+    if (preview) return;
     const id = setTimeout(() => window.print(), 300);
     return () => clearTimeout(id);
   }, [pack]);
+  const printEeir = () => {
+    setEeirOnly(true);
+    setTimeout(() => window.print(), 100);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Bộ chứng từ">
       <div className="my-4 w-full max-w-2xl space-y-4 rounded-lg bg-white p-5 text-xs shadow-xl">
         <div className="no-print flex items-center justify-between">
-          <h2 className="text-sm font-bold">Bộ chứng từ trả lái xe — {pack.dossierCode}</h2>
+          <h2 className="text-sm font-bold">{preview ? 'XEM TRƯỚC chứng từ (chưa trả, chưa in)' : 'Bộ chứng từ trả lái xe'} — {pack.dossierCode}</h2>
           <div className="flex gap-2">
-            <button type="button" onClick={() => window.print()} className={secondaryBtn}><Printer className="h-3.5 w-3.5" />In EEIR</button>
+            {!preview && <button type="button" onClick={printEeir} className={secondaryBtn}><Printer className="h-3.5 w-3.5" />In lại EEIR</button>}
             <button type="button" onClick={onClose} aria-label="Đóng" className={secondaryBtn}><X className="h-3.5 w-3.5" /></button>
           </div>
         </div>
-        <div className="print-area space-y-4">
-          <EeirSheet state={state} ticket={pack.ticket} dossierCode={pack.dossierCode} />
+        <div className="space-y-4">
+          <EeirPrintSheet state={state} ticket={pack.ticket} />
           {pack.receipts.map((r) => (
-            <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={r.printLog?.length || 1} />
+            <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={preview ? (r.printLog?.length || 0) + 1 : r.printLog?.length || 1} />
           ))}
-          {pack.receipts.length === 0 && <p className="text-center text-slate-500">Không có phiếu thu (TTT trừ Phiếu thu mẹ / TTS công nợ).</p>}
+          {pack.receipts.length === 0 && <p className="text-center text-slate-500">Không có phiếu thu (TTT trừ Phiếu thu trả trước / TTS công nợ).</p>}
         </div>
-        <p className="no-print text-[11px] text-slate-500">In lại phiếu thu sau này tại Văn phòng → Phiếu thu (hệ thống hỏi xác nhận và đánh dấu BẢN IN LẠI).</p>
+        {!preview && (
+          <PrintPortal>
+            <EeirPrintSheet state={state} ticket={pack.ticket} />
+            {!eeirOnly && pack.receipts.map((r) => <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={r.printLog?.length || 1} />)}
+          </PrintPortal>
+        )}
+        <p className="no-print text-[11px] text-slate-500">
+          {preview
+            ? 'Chỉ xem — chưa ghi nhận trả chứng từ, không in, không tính lần in. Bấm Trả chứng từ để trả và in.'
+            : 'In lại phiếu thu sau này tại Văn phòng → Phiếu thu (hệ thống hỏi xác nhận và đánh dấu BẢN IN LẠI).'}
+        </p>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FilePlus2, Printer, ReceiptText, Search } from 'lucide-react';
+import { CreditCard, FilePlus2, Printer, ReceiptText, Search, X } from 'lucide-react';
 import {
   DirectPaymentMethod,
   PAYMENT_METHOD_LABELS,
@@ -10,19 +10,24 @@ import {
 } from '../../types/depot';
 import { DepotState, formatVnd } from '../../services/depotStore';
 import { simulateDemoBankTransfer } from '../../services/depotOperations';
-import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, receiptOperationOf } from '../../services/payments';
+import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, masterReceiptUsage, receiptOperationOf } from '../../services/payments';
 import { collectAllPages, queryReceipts, ReceiptQueryFilter, ReceiptRow, receiptsSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
-import { PrintReceiptButton, ReceiptPrintSheet } from '../../components/ReceiptPrint';
-import { defaultLastDayRange, fileStamp } from '../../services/datetime';
-import {
-  DateTimeField,
+import { INVOICE_STATUS_LABELS, invoicePortalUrl, markInvoiceIssued } from '../../services/invoice';
+import type { InvoiceStatus, PaymentReceipt } from '../../types/depot';
+import { PrintPortal, PrintReceiptButton, ReceiptPrintSheet } from '../../components/ReceiptPrint';
+import { quickRange, fileStamp } from '../../services/datetime';
+import { linkCls,
+  DateRangeFilter,
+  DetailDrawer,
   ExportExcelButton,
+  FeeLinesEditor,
   Feedback,
   formatViTime,
   inputCls,
   labelCls,
   Pager,
+  usePageSize,
   PendingTransferPanel,
   primaryBtn,
   secondaryBtn,
@@ -44,11 +49,17 @@ export const ReceiptsWorkspace: React.FC<{
   // Mở thẳng 1 phiếu thu (mã PT- hoặc id giao dịch) khi bấm từ hồ sơ container (DEC-051); nonce để mở lại cùng phiếu
   focus?: { key: string; nonce: number } | null;
 }> = ({ state, onUpdateState, onOpenDossier, focus }) => {
-  const [draft, setDraft] = useState<ReceiptQueryFilter>(() => ({ ...defaultLastDayRange(), keyword: '', method: 'ALL', status: 'ALL', operation: 'ALL' }));
+  const [draft, setDraft] = useState<ReceiptQueryFilter>(() => ({ ...quickRange('TODAY'), keyword: '', method: 'ALL', status: 'ALL', operation: 'ALL', invoiceStatus: 'ALL' }));
   const [applied, setApplied] = useState<ReceiptQueryFilter | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = usePageSize("receipts", 20); // DEC-080
   const [selectedTxId, setSelectedTxId] = useState('');
-  const [create, setCreate] = useState({ customerCode: '', totalAmount: '', lotDescription: '', method: 'CASH' as DirectPaymentMethod });
+  const [create, setCreate] = useState({ customerCode: '', lotDescription: '', method: 'CASH' as DirectPaymentMethod });
+  const [feeIds, setFeeIds] = useState<string[]>([]);
+  const [qtys, setQtys] = useState<number[]>([]);
+  // Chỉ để xem trước — tổng thật do service tính (DEC-077)
+  const previewTotal = feeIds.reduce((s, id, i) => s + (state.feeCatalog.find((f) => f.id === id)?.defaultAmountInclVat || 0) * (qtys[i] || 0), 0);
+  const [createOpen, setCreateOpen] = useState(false); // DEC-076: nút Tạo phiếu thu TTT cùng hàng Tra cứu
   const [cancelReason, setCancelReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -73,7 +84,7 @@ export const ReceiptsWorkspace: React.FC<{
   let queryError: string | null = null;
   if (applied) {
     try {
-      result = queryReceipts(state, applied, page);
+      result = queryReceipts(state, applied, page, pageSize);
     } catch (err) {
       queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
     }
@@ -84,6 +95,13 @@ export const ReceiptsWorkspace: React.FC<{
         return transaction ? { transaction, receipt: state.paymentReceipts.find((r) => r.transactionId === transaction.id) } : undefined;
       })()
     : undefined;
+
+  // DEC-118: bấm mã phiếu thu trả trước → mở phiếu nạp tiền (PT-TTR-) của nó trên cùng màn
+  const openMaster = (code: string) => {
+    const m = state.masterReceipts.find((x) => x.receiptCode === code);
+    const tx = m && state.paymentTransactions.find((x) => x.purpose === 'PREPAID_TOPUP' && x.masterReceiptId === m.id);
+    if (tx) setSelectedTxId(tx.id);
+  };
 
   const run = (fn: () => DepotState, message: string) => {
     setError(null);
@@ -101,11 +119,14 @@ export const ReceiptsWorkspace: React.FC<{
     setError(null);
     setSuccess(null);
     try {
-      const next = createMasterPrepaidReceipt(state, { ...create, totalAmount: Number(create.totalAmount) });
+      const next = createMasterPrepaidReceipt(state, { ...create, feeItems: feeIds.map((catalogId, i) => ({ catalogId, quantity: qtys[i] })) });
       onUpdateState(next);
       setSelectedTxId(next.paymentTransactions[0].id);
-      setSuccess(`Đã tạo phiếu thu TTT ${next.masterReceipts[0].receiptCode} — đang chờ thanh toán.`);
-      setCreate({ customerCode: '', totalAmount: '', lotDescription: '', method: 'CASH' });
+      setSuccess(`Đã tạo phiếu thu TTR ${next.masterReceipts[0].receiptCode} — đang chờ thanh toán.`);
+      setCreate({ customerCode: '', lotDescription: '', method: 'CASH' });
+      setFeeIds([]);
+      setQtys([]);
+      setCreateOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lỗi tạo phiếu thu');
     }
@@ -120,8 +141,7 @@ export const ReceiptsWorkspace: React.FC<{
           onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); setSelectedTxId(''); }}
           className="grid grid-cols-2 gap-2 sm:grid-cols-6"
         >
-          <DateTimeField label="Từ (dd/mm/yyyy hh:mm:ss)" value={draft.dateFrom || ''} onChange={(v) => setDraft({ ...draft, dateFrom: v })} />
-          <DateTimeField label="Đến (dd/mm/yyyy hh:mm:ss)" value={draft.dateTo || ''} onChange={(v) => setDraft({ ...draft, dateTo: v })} fallback="end" />
+          <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <label className="col-span-2">
             <span className={labelCls}>Mã phiếu thu / Số cont / Mã hồ sơ</span>
             <input value={draft.keyword} onChange={(e) => setDraft({ ...draft, keyword: e.target.value })} className={`${inputCls} font-mono uppercase`} />
@@ -152,6 +172,13 @@ export const ReceiptsWorkspace: React.FC<{
               ))}
             </select>
           </label>
+          <label>
+            <span className={labelCls}>Hóa đơn</span>
+            <select value={draft.invoiceStatus || 'ALL'} onChange={(e) => setDraft({ ...draft, invoiceStatus: e.target.value as ReceiptQueryFilter['invoiceStatus'] })} className={inputCls}>
+              <option value="ALL">Tất cả</option>
+              {(Object.keys(INVOICE_STATUS_LABELS) as InvoiceStatus[]).map((s) => <option key={s} value={s}>{INVOICE_STATUS_LABELS[s]}</option>)}
+            </select>
+          </label>
           <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-6">
             <button type="submit" className={primaryBtn}>
               <Search className="h-4 w-4" />
@@ -163,12 +190,73 @@ export const ReceiptsWorkspace: React.FC<{
                 getSheets={() => [receiptsSheet(state, collectAllPages((p) => queryReceipts(state, applied, p)))]}
               />
             )}
+            {canCreate && (
+              <button type="button" onClick={() => setCreateOpen(!createOpen)} className={`${secondaryBtn} ${createOpen ? "border-blue-600 text-blue-700" : ""}`}>
+                <FilePlus2 className="h-4 w-4" />
+                Tạo phiếu thu TTR (trả trước)
+              </button>
+            )}
           </div>
         </form>
       </SectionCard>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-7">
+      {/* TẠO PHIẾU THU TRƯỚC — cùng bố cục màn thanh toán Hạ vỏ / Cấp vỏ (DEC-077) */}
+      {canCreate && createOpen && (
+        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border-2 border-blue-200 bg-blue-50/30 p-3 text-xs">
+          <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-black text-slate-900">
+              <FilePlus2 className="h-4 w-4 text-blue-600" />
+              Tạo phiếu thu TRƯỚC (TTR — trả trước)
+            </h3>
+            <button type="button" onClick={() => setCreateOpen(false)} aria-label="Đóng" className={secondaryBtn}><X className="h-3.5 w-3.5" /></button>
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <SectionCard title="1. Khách hàng thanh toán trước">
+              <div className="space-y-3">
+                <label className="block">
+                  <span className={labelCls}>Khách hàng / đối tác *</span>
+                  <select value={create.customerCode} onChange={(e) => setCreate({ ...create, customerCode: e.target.value })} className={inputCls}>
+                    <option value="">-- Chọn --</option>
+                    {state.partners.map((p) => <option key={p.id} value={p.code}>[{p.code}] {p.name}</option>)}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className={labelCls}>Diễn giải lô</span>
+                  <input value={create.lotDescription} onChange={(e) => setCreate({ ...create, lotDescription: e.target.value })} placeholder="VD: Thanh toán trước lô 20 cont tháng 11" className={inputCls} />
+                </label>
+              </div>
+            </SectionCard>
+            <FeeLinesEditor catalog={state.feeCatalog} selectedIds={feeIds} onChange={setFeeIds} quantities={qtys} onQuantitiesChange={setQtys} />
+          </div>
+          <SectionCard title="3. Hình thức thanh toán" icon={<CreditCard className="h-4 w-4 text-slate-500" />}>
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Hình thức thanh toán trước">
+              {(['BANK_TRANSFER_API', 'CASH'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="radio"
+                  aria-checked={create.method === m}
+                  onClick={() => setCreate({ ...create, method: m })}
+                  className={`rounded-md border py-2.5 text-xs font-semibold ${create.method === m ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}
+                >
+                  {m === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản (API QR)'}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-slate-500">Chỉ ghi nhận đã thu khi Văn phòng xác nhận tiền mặt hoặc ngân hàng xác nhận chuyển khoản; khi đó Phiếu thu trả trước mới dùng được để trừ dần.</p>
+          </SectionCard>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <span className="text-sm">Tổng thu trước: <strong className="font-mono text-base">{formatVnd(previewTotal)}</strong></span>
+            <button type="submit" disabled={!create.customerCode || feeIds.length === 0 || qtys.some((q) => !(q >= 1))} className={primaryBtn}>
+              Tạo phiếu thu trước (chờ thanh toán)
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* DEC-077: danh sách full chiều ngang; chi tiết phiếu ở dưới */}
+      <div className="space-y-4">
+        <div>
           <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
             {!applied ? (
               <p className="p-8 text-center text-xs text-slate-500">Chọn điều kiện và bấm Tra cứu để xem phiếu thu.</p>
@@ -179,49 +267,76 @@ export const ReceiptsWorkspace: React.FC<{
             ) : (
               result && (
                 <>
-                  <table className="w-full min-w-[640px] text-left text-xs">
+                  <table className="w-full min-w-[1180px] text-left text-xs">
                     <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                       <tr>
-                        <th className="px-3 py-2">Mã phiếu thu</th>
-                        <th className="px-3 py-2">Tác nghiệp</th>
-                        <th className="px-3 py-2">Thời gian</th>
-                        <th className="px-3 py-2 text-right">Số tiền</th>
-                        <th className="px-3 py-2">Hình thức</th>
-                        <th className="px-3 py-2">Trạng thái</th>
-                        <th className="px-3 py-2">Hồ sơ / Cont</th>
-                        <th className="px-3 py-2 text-center">Đã in</th>
+                        <th className="whitespace-nowrap px-2 py-2">Mã phiếu thu</th>
+                        <th className="whitespace-nowrap px-2 py-2">Tác nghiệp</th>
+                        <th className="whitespace-nowrap px-2 py-2">Số cont</th>
+                        <th className="whitespace-nowrap px-2 py-2 text-right">Số tiền</th>
+                        <th className="whitespace-nowrap px-2 py-2">Phương thức TT</th>
+                        <th className="px-2 py-2">Bên thanh toán</th>
+                        <th className="whitespace-nowrap px-2 py-2">Mã hồ sơ / Phiếu thu trả trước</th>
+                        <th className="whitespace-nowrap px-2 py-2">Thời gian</th>
+                        <th className="whitespace-nowrap px-2 py-2">Nhân viên</th>
+                        <th className="whitespace-nowrap px-2 py-2">Trạng thái</th>
+                        <th className="whitespace-nowrap px-2 py-2">Hóa đơn</th>
+                        <th className="whitespace-nowrap px-2 py-2 text-center">Đã in</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {result.rows.map((row) => {
                         const { transaction: t, receipt: r } = row;
+                        // DEC-079: phiếu thu trước → hiện luôn số lượt đã dùng / số tiền còn lại của Phiếu thu trả trước
+                        const usage = t.purpose === 'PREPAID_TOPUP' ? masterReceiptUsage(state, r?.masterReceiptCode || t.paymentRef) : undefined;
                         return (
                         <tr key={t.id} onClick={() => setSelectedTxId(t.id)} className={`cursor-pointer ${selectedTxId === t.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
-                          <td className="px-3 py-2 font-mono font-bold">{r?.receiptNo || '—'}</td>
-                          <td className="px-3 py-2 font-bold">{RECEIPT_OPERATION_LABELS[operationOf(row)]}</td>
-                          <td className="px-3 py-2">{formatViTime(t.confirmedAt || t.createdAt)}</td>
-                          <td className="px-3 py-2 text-right font-mono">{formatVnd(t.amount)}</td>
-                          <td className="px-3 py-2">{t.paymentCategory === 'TTT' ? 'TTT (nạp trước)' : 'TTTT'} • {PAYMENT_METHOD_LABELS[t.method]}</td>
-                          <td className="px-3 py-2"><span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[t.status]}`}>{PAYMENT_TX_STATUS_LABELS[t.status]}</span></td>
-                          <td className="px-3 py-2 font-mono">{t.dossierCode || t.paymentRef}{t.containerNo ? ` • ${t.containerNo}` : ''}</td>
-                          <td className={`px-3 py-2 text-center font-bold ${(r?.printLog?.length || 0) > 1 ? "text-rose-700" : "text-slate-600"}`}>{r ? r.printLog?.length || 0 : "—"}</td>
+                          <td className="whitespace-nowrap px-2 py-2">{r ? <button type="button" onClick={() => setSelectedTxId(t.id)} className={linkCls}>{r.receiptNo}</button> : '—'}</td>
+                          <td className="whitespace-nowrap px-2 py-2 font-bold">{RECEIPT_OPERATION_LABELS[operationOf(row)]}</td>
+                          <td className="whitespace-nowrap px-2 py-2 font-mono font-bold">{t.containerNo || '-'}</td>
+                          <td className="whitespace-nowrap px-2 py-2 text-right font-mono font-bold">{formatVnd(t.amount)}</td>
+                          <td className="whitespace-nowrap px-2 py-2">{PAYMENT_METHOD_LABELS[t.method]}</td>
+                          <td className="px-2 py-2">{t.payerName}</td>
+                          <td className="whitespace-nowrap px-2 py-2 font-mono">
+                            {usage ? (
+                              <>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); openMaster(usage.master.receiptCode); }} className={`block ${linkCls}`}>{usage.master.receiptCode}</button>
+                                <span className="block font-sans text-[11px] text-slate-600">
+                                  Dùng <strong className="text-blue-700">{usage.usedCount} lượt</strong> • còn <strong className="text-emerald-700">{formatVnd(usage.remainingAmount)}</strong>
+                                </span>
+                              </>
+                            ) : (
+                              t.dossierCode ? (
+                                <button type="button" onClick={(e) => { e.stopPropagation(); onOpenDossier?.(t.dossierCode!); }} className={linkCls}>{t.dossierCode}</button>
+                              ) : r?.masterReceiptCode ? (
+                                <button type="button" onClick={(e) => { e.stopPropagation(); openMaster(r.masterReceiptCode!); }} className={linkCls}>{r.masterReceiptCode}</button>
+                              ) : '-'
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-2 py-2 font-mono text-[11px]">{formatViTime(t.createdAt)}</td>
+                          <td className="px-2 py-2 text-[11px]">{t.createdBy}</td>
+                          <td className="px-2 py-2"><span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[t.status]}`}>{PAYMENT_TX_STATUS_LABELS[t.status]}</span></td>
+                          <td className="px-2 py-2">{r ? <InvoiceBadge status={r.invoiceStatus || 'CHUA_XHD'} /> : '—'}</td>
+                          <td className={`px-2 py-2 text-center font-bold ${(r?.printLog?.length || 0) > 1 ? "text-rose-700" : "text-slate-600"}`}>{r ? r.printLog?.length || 0 : "—"}</td>
                         </tr>
                         );
                       })}
                     </tbody>
                   </table>
-                  <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} />
+                  <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} pageSize={pageSize} onPageSize={setPageSize} />
                 </>
               )
             )}
           </div>
         </div>
 
-        <div className="space-y-4 lg:col-span-5">
+        <div className="space-y-4">
           {selected && (
-            <SectionCard
+            <DetailDrawer
+              open
+              onClose={() => setSelectedTxId("")}
               title={selected.receipt ? `Phiếu thu ${selected.receipt.receiptNo}` : 'Yêu cầu thanh toán (chưa phát hành phiếu thu)'}
-              right={
+              actions={
                 selected.receipt && (
                   <PrintReceiptButton state={state} receipt={selected.receipt} onUpdateState={onUpdateState} onError={setError} />
                 )
@@ -229,9 +344,9 @@ export const ReceiptsWorkspace: React.FC<{
             >
               {/* Mẫu in thống nhất (DEC-062) — chỉ hiện khi in */}
               {selected.receipt && (
-                <div className="print-area hidden print:block">
+                <PrintPortal>
                   <ReceiptPrintSheet state={state} receipt={selected.receipt} printNo={selected.receipt.printLog?.length || 1} />
-                </div>
+                </PrintPortal>
               )}
               {selected.receipt && (selected.receipt.printLog?.length || 0) > 0 && (
                 <div className="mb-3 rounded-md border border-slate-200 px-3 py-2 text-[11px]">
@@ -253,8 +368,8 @@ export const ReceiptsWorkspace: React.FC<{
                 <dd><span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[selected.transaction.status]}`}>{PAYMENT_TX_STATUS_LABELS[selected.transaction.status]}</span></dd>
                 <dt className="text-slate-500">Số tiền</dt>
                 <dd className="font-mono font-bold">{formatVnd(selected.transaction.amount)}</dd>
-                <dt className="text-slate-500">Trường hợp / Phương thức</dt>
-                <dd>{selected.transaction.paymentCategory} • {PAYMENT_METHOD_LABELS[selected.transaction.method]}</dd>
+                <dt className="text-slate-500">Phương thức TT</dt>
+                <dd>{PAYMENT_METHOD_LABELS[selected.transaction.method]}</dd>
                 <dt className="text-slate-500">Bên thanh toán</dt>
                 <dd>{selected.transaction.payerName}</dd>
                 <dt className="text-slate-500">Mã tham chiếu</dt>
@@ -283,24 +398,20 @@ export const ReceiptsWorkspace: React.FC<{
                   <>
                     <dt className="text-slate-500">Hồ sơ nghiệp vụ</dt>
                     <dd>
-                      <button type="button" onClick={() => onOpenDossier?.(selected.transaction.dossierCode!)} className="font-mono text-blue-700 hover:underline">
+                      <button type="button" onClick={() => onOpenDossier?.(selected.transaction.dossierCode!)} className={linkCls}>
                         {selected.transaction.dossierCode}
                       </button>
                       {selected.transaction.containerNo && <span className="font-mono"> • {selected.transaction.containerNo}</span>}
                     </dd>
                   </>
                 )}
-                {selected.receipt?.voucherNo && (
-                  <>
-                    <dt className="text-slate-500">Chứng từ</dt>
-                    <dd className="font-mono">{selected.receipt.voucherNo}</dd>
-                  </>
-                )}
                 {(selected.receipt?.masterReceiptCode || selected.transaction.purpose === 'PREPAID_TOPUP') && (
                   <>
-                    <dt className="text-slate-500">Phiếu thu mẹ (TTT)</dt>
+                    <dt className="text-slate-500">Phiếu thu trả trước (TTR)</dt>
                     <dd className="font-mono">
-                      {selected.receipt?.masterReceiptCode || selected.transaction.paymentRef}
+                      <button type="button" onClick={() => openMaster(selected.receipt?.masterReceiptCode || selected.transaction.paymentRef)} className={linkCls}>
+                        {selected.receipt?.masterReceiptCode || selected.transaction.paymentRef}
+                      </button>
                       {(() => {
                         const m = state.masterReceipts.find((x) => x.id === selected.transaction.masterReceiptId);
                         return m ? ` • QR ${m.qrCode} • Dư ${formatVnd(m.remainingAmount)}` : '';
@@ -309,6 +420,16 @@ export const ReceiptsWorkspace: React.FC<{
                   </>
                 )}
               </dl>
+              {selected.receipt && (
+                <InvoicePanel
+                  receipt={selected.receipt}
+                  canIssue={can(state.currentUser, 'INVOICE_ISSUE')}
+                  onIssue={(invoiceNo) => run(() => markInvoiceIssued(state, { receiptNo: selected.receipt!.receiptNo, invoiceNo }), 'Đã cập nhật ĐÃ XHD.')}
+                />
+              )}
+              {selected.transaction.purpose === "PREPAID_TOPUP" && (
+                <MasterUsagePanel state={state} code={selected.receipt?.masterReceiptCode || selected.transaction.paymentRef} onOpenDossier={onOpenDossier} />
+              )}
 
               {selected.transaction.status === 'PENDING' && (
                 <div className="mt-3 space-y-2">
@@ -345,47 +466,131 @@ export const ReceiptsWorkspace: React.FC<{
                   )}
                 </div>
               )}
-            </SectionCard>
+            </DetailDrawer>
           )}
 
-          {canCreate && (
-            <SectionCard title="Tạo phiếu thu TTT (thanh toán trước)" icon={<FilePlus2 className="h-4 w-4 text-slate-500" />}>
-              <form onSubmit={handleCreate} className="space-y-3 text-xs">
-                <label className="block">
-                  <span className={labelCls}>Khách hàng / đối tác *</span>
-                  <select value={create.customerCode} onChange={(e) => setCreate({ ...create, customerCode: e.target.value })} className={inputCls}>
-                    <option value="">-- Chọn --</option>
-                    {state.partners.map((p) => <option key={p.id} value={p.code}>[{p.code}] {p.name}</option>)}
-                  </select>
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <label>
-                    <span className={labelCls}>Số tiền (VNĐ) *</span>
-                    <input type="number" min={0} inputMode="numeric" value={create.totalAmount} onChange={(e) => setCreate({ ...create, totalAmount: e.target.value })} className={`${inputCls} font-mono`} />
-                  </label>
-                  <label>
-                    <span className={labelCls}>Hình thức *</span>
-                    <select value={create.method} onChange={(e) => setCreate({ ...create, method: e.target.value as DirectPaymentMethod })} className={inputCls}>
-                      <option value="CASH">Tiền mặt</option>
-                      <option value="BANK_TRANSFER_API">Chuyển khoản (API QR)</option>
-                    </select>
-                  </label>
-                </div>
-                <label className="block">
-                  <span className={labelCls}>Diễn giải lô</span>
-                  <input value={create.lotDescription} onChange={(e) => setCreate({ ...create, lotDescription: e.target.value })} placeholder="VD: Thanh toán trước lô 20 cont tháng 11" className={inputCls} />
-                </label>
-                <button type="submit" disabled={!create.customerCode || !Number(create.totalAmount)} className={`${primaryBtn} w-full`}>
-                  Tạo phiếu thu (chờ thanh toán)
-                </button>
-                <p className="text-[11px] text-slate-500">
-                  Phiếu chỉ được ghi nhận đã thu khi Văn phòng xác nhận tiền mặt hoặc ngân hàng xác nhận chuyển khoản. Khi đó Phiếu thu mẹ mới dùng được để trừ dần.
-                </p>
-              </form>
-            </SectionCard>
-          )}
         </div>
       </div>
+    </div>
+  );
+};
+
+// DEC-079: SỬ DỤNG PHIẾU THU TRẢ TRƯỚC — mỗi lần trừ tiền gắn chứng từ, hồ sơ; tổng nạp / số lượt / đã dùng / còn lại
+export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpenDossier?: (code: string) => void }> = ({ state, code, onOpenDossier }) => {
+  const usage = masterReceiptUsage(state, code);
+  if (!usage) return null;
+  const tile = (label: string, value: React.ReactNode, tone: string) => (
+    <div className={`rounded-md border px-2.5 py-1.5 ${tone}`}>
+      <p className="text-[10px] font-semibold uppercase">{label}</p>
+      <p className="font-mono text-sm font-black">{value}</p>
+    </div>
+  );
+  return (
+    <div className="mt-3 space-y-2 rounded-md border-2 border-blue-200 p-3 text-xs">
+      <p className="font-black uppercase text-slate-800">Sử dụng phiếu thu trả trước {usage.master.receiptCode}</p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {tile('Tổng nạp', formatVnd(usage.master.totalAmount), 'border-slate-200 text-slate-800')}
+        {tile('Số lượt đã dùng', `${usage.usedCount} lượt`, 'border-blue-200 bg-blue-50 text-blue-800')}
+        {tile('Đã trừ', formatVnd(usage.usedAmount), 'border-amber-200 bg-amber-50 text-amber-800')}
+        {tile('Còn lại', formatVnd(usage.remainingAmount), 'border-emerald-200 bg-emerald-50 text-emerald-800')}
+      </div>
+      {usage.rows.length === 0 ? (
+        <p className="text-slate-500">{usage.master.status === 'PENDING_PAYMENT' ? 'Chưa thu tiền nạp — chưa dùng được để trừ.' : 'Chưa có lượt tác nghiệp nào trừ vào phiếu thu trả trước này.'}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left">
+            <thead className="border-b border-slate-200 text-[11px] uppercase text-slate-500">
+              <tr>
+                <th className="py-1.5 pr-2">#</th>
+                <th className="py-1.5 pr-2">Thời gian</th>
+                <th className="py-1.5 pr-2">Tác nghiệp</th>
+                <th className="py-1.5 pr-2">Mã hồ sơ</th>
+                <th className="py-1.5 pr-2">Số cont</th>
+                <th className="py-1.5 pr-2 text-right">Số tiền trừ</th>
+                <th className="py-1.5 pr-2 text-right">Số dư sau</th>
+                <th className="py-1.5">Nhân viên</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {usage.rows.map((u, i) => (
+                <tr key={u.deductionId}>
+                  <td className="py-1.5 pr-2 text-slate-400">{usage.rows.length - i}</td>
+                  <td className="whitespace-nowrap py-1.5 pr-2 font-mono text-[11px]">{formatViTime(u.performedAt)}</td>
+                  <td className="py-1.5 pr-2 font-bold">{u.operation}</td>
+                  <td className="py-1.5 pr-2 font-mono">
+                    {u.dossierCode ? (
+                      <button type="button" onClick={() => onOpenDossier?.(u.dossierCode)} className={linkCls}>{u.dossierCode}</button>
+                    ) : '-'}
+                  </td>
+                  <td className="py-1.5 pr-2 font-mono">{u.containerNo}</td>
+                  <td className="py-1.5 pr-2 text-right font-mono font-bold">{formatVnd(u.amount)}</td>
+                  <td className="py-1.5 pr-2 text-right font-mono">{formatVnd(u.balanceAfter)}</td>
+                  <td className="py-1.5 text-[11px]">{u.performedBy}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// DEC-111: trạng thái xuất hóa đơn của phiếu thu
+const INVOICE_STYLE: Record<InvoiceStatus, string> = {
+  CHUA_XHD: 'bg-slate-100 text-slate-600',
+  YEU_CAU_XHD: 'bg-amber-100 text-amber-800',
+  DA_XHD: 'bg-emerald-100 text-emerald-800',
+};
+
+export const InvoiceBadge: React.FC<{ status: InvoiceStatus }> = ({ status }) => (
+  <span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-semibold ${INVOICE_STYLE[status]}`}>{INVOICE_STATUS_LABELS[status]}</span>
+);
+
+// Thông tin khách gửi + Kế toán cập nhật ĐÃ XHD (số hóa đơn MISA không bắt buộc). Hiện mã bảo mật để đối soát (DEC-112); không có trong Excel.
+export const InvoicePanel: React.FC<{ receipt: PaymentReceipt; canIssue: boolean; onIssue: (invoiceNo: string) => void }> = ({ receipt: r, canIssue, onIssue }) => {
+  const [invoiceNo, setInvoiceNo] = useState('');
+  const status = r.invoiceStatus || 'CHUA_XHD';
+  const req = r.invoiceRequest;
+  return (
+    <div className="mt-3 space-y-2 rounded-md border border-slate-200 p-3 text-xs" data-testid="invoice-panel">
+      <div className="flex items-center justify-between">
+        <span className="font-bold uppercase text-slate-700">Xuất hóa đơn</span>
+        <InvoiceBadge status={status} />
+      </div>
+      {/* DEC-112: hiện mã bảo mật để Văn phòng / Kế toán đối soát với phiếu khách mang tới */}
+      {r.invoiceSecret && (
+        <dl className="grid grid-cols-[6rem_1fr] gap-x-2 gap-y-1 rounded bg-slate-50 px-2 py-1.5" data-testid="invoice-secret-panel">
+          <dt className="text-slate-500">Đường link</dt>
+          <dd className="break-all font-mono text-[11px]">{invoicePortalUrl()}</dd>
+          <dt className="text-slate-500">Mã bảo mật</dt>
+          <dd className="font-mono text-sm font-black tracking-widest">{r.invoiceSecret}</dd>
+        </dl>
+      )}
+      {req ? (
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
+          <dt className="text-slate-500">Mã số thuế</dt><dd className="font-mono font-bold">{req.taxCode}</dd>
+          <dt className="text-slate-500">Gmail nhận HĐ</dt><dd className="break-all">{req.email}</dd>
+          <dt className="text-slate-500">Tên công ty</dt><dd>{req.companyName}</dd>
+          <dt className="text-slate-500">Địa chỉ</dt><dd>{req.address}</dd>
+          {req.note && (<><dt className="text-slate-500">Ghi chú</dt><dd>{req.note}</dd></>)}
+          <dt className="text-slate-500">Khách gửi lúc</dt><dd className="font-mono">{formatViTime(req.updatedAt)}</dd>
+          {r.invoiceIssued && (
+            <>
+              <dt className="text-slate-500">Số hóa đơn</dt><dd className="font-mono font-bold">{r.invoiceIssued.invoiceNo || '-'}</dd>
+              <dt className="text-slate-500">Cập nhật XHD</dt><dd>{r.invoiceIssued.issuedBy} • {formatViTime(r.invoiceIssued.issuedAt)}</dd>
+            </>
+          )}
+        </dl>
+      ) : (
+        <p className="text-slate-500">Khách hàng chưa gửi yêu cầu (dùng mã bảo mật in trên phiếu thu).</p>
+      )}
+      {status === 'YEU_CAU_XHD' && canIssue && (
+        <div className="flex gap-2 border-t border-slate-200 pt-2">
+          <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Số hóa đơn MISA (không bắt buộc)" className={`${inputCls} font-mono`} />
+          <button type="button" onClick={() => onIssue(invoiceNo)} className={`${primaryBtn} shrink-0`}>Đã xuất hóa đơn</button>
+        </div>
+      )}
     </div>
   );
 };

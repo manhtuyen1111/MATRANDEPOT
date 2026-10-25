@@ -176,9 +176,9 @@ Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 Không thu phí, không phiếu thu, không phiếu K80, không Trả chứng từ. Mỗi container 1 hồ sơ `NT-` / `XT-`. Mọi bộ phận theo dõi tiến độ danh sách; hết danh sách → Văn phòng / Quản lý **Duyệt thành công**.
 
 ### 9A.1. NHẬP TÀU
-1. **Văn phòng → Nhập tàu**: lập danh sách — tên tàu, thời gian nhập tàu, hãng tàu (bắt buộc), danh sách số xe, container (số cont – size – type, dán từ Excel được).
+1. **Văn phòng → Nhập tàu**: màn chính là danh sách đang thực hiện; nút **Lập danh sách** bên phải tiêu đề; bấm dòng để xem chi tiết (sửa thông tin, thêm / bỏ cont, xóa — khi chưa duyệt, DEC-070). Lập danh sách — tên tàu, thời gian nhập tàu, hãng tàu (bắt buộc), danh sách số xe, container (số cont – size – type, dán từ Excel được).
 2. **Giám định → Nhập tàu** (mobile): xe chở cont vào bãi → nhập số cont thực tế (phải khớp danh sách) → chọn số xe → Trạng thái DAMAGE / AV → Đóng hàng M / K / E → Vệ sinh (1 hoặc nhiều) → AGE → xác nhận. Hệ thống cấp `NT-YYMMDD-NNN`, tạo lượt lưu bãi.
-3. **Vệ sinh → Nhập tàu** (nếu có yêu cầu vệ sinh): vệ sinh và xác nhận.
+3. **Vệ sinh → Chờ vệ sinh** (nếu có yêu cầu vệ sinh): cont nhập tàu nằm chung hàng chờ với Hạ vỏ — vệ sinh và xác nhận (DEC-070).
 4. **Xe nâng → Nhập tàu**: hạ cont, cập nhật vị trí → cont **có trong Tồn vỏ ngay**, Văn phòng cấp vỏ được.
 5. DAMAGE: đồng thời vào Báo giá → Sửa chữa → AV (như Hạ vỏ).
 6. Hết danh sách → **Văn phòng → Nhập tàu: Duyệt nhập tàu thành công**.

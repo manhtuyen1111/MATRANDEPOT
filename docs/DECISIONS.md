@@ -391,7 +391,7 @@ Quy ước trạng thái:
 ### DEC-056 — Mặc định khoảng thời gian bộ lọc
 
 - Trạng thái: CONFIRMED (2026-10-23)
-- Quyết định: Phiếu thu và mọi báo cáo, khi mở lần đầu, bộ lọc thời gian **mặc định = 1 ngày trước → thời điểm hiện tại** (ví dụ `22/10/2026 10:10:10` → `23/10/2026 10:10:10`). Người dùng sửa được; thay cho mặc định "hôm nay 00:00:00 → 23:59:59" của DEC-054. Kỹ thuật: `defaultLastDayRange()` trong `src/services/datetime.ts`.
+- Quyết định: Phiếu thu và mọi báo cáo, khi mở lần đầu, bộ lọc thời gian **mặc định = 1 ngày trước → thời điểm hiện tại** (ví dụ `22/10/2026 10:10:10` → `23/10/2026 10:10:10`). Người dùng sửa được; thay cho mặc định "hôm nay 00:00:00 → 23:59:59" của DEC-054. Kỹ thuật: `defaultLastDayRange()` trong `src/services/datetime.ts`. **Đã thay bằng DEC-102 (2026-10-25): mặc định Hôm nay.**
 
 ### DEC-057 — Mã QR phiếu K80 duy nhất; đóng mã sau khi trả chứng từ
 
@@ -517,6 +517,440 @@ Quy ước trạng thái:
 - Báo cáo: **Báo cáo → Nhập tàu / Xuất tàu** (lọc theo thời gian nhập / xuất tàu, tên tàu, số cont; phân trang; Excel). Báo cáo Tổng hợp: sheet NHẬP VỎ / XUẤT VỎ lấy từ dữ liệu này.
 - Code: `src/services/vessel.ts`; quyền `VESSEL_LIST_MANAGE`, `VESSEL_IMPORT_INSPECT`, `VESSEL_EXPORT_EXECUTE`.
 
+### DEC-070 — Hoàn thiện Nhập tàu / Xuất tàu: menu, màn Văn phòng, sửa danh sách, sắp xếp, tìm kiếm
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-069
+- Quyết định:
+  - **Bỏ menu Vệ sinh → Nhập tàu.** Cont nhập tàu có yêu cầu vệ sinh nằm chung trong **Vệ sinh → Chờ vệ sinh** (cùng mục đích, tác nghiệp, kết quả). Còn **10** màn mobile.
+  - **Văn phòng → Nhập tàu / Xuất tàu**: màn chính là **danh sách đang thực hiện** (bảng: tên tàu, thời gian, hãng tàu, số cont, tiến độ, số xe, người lập); **nút Lập danh sách ở bên phải tiêu đề**; bấm một dòng → **chi tiết**.
+  - **Khi chưa DUYỆT thành công**, Văn phòng / Quản lý được:
+    - **Sửa thông tin**: tên tàu, thời gian, danh sách số xe; **hãng tàu** chỉ đổi được khi chưa có cont nào được giám định.
+    - **Thêm cont**: nhập tàu dán từ Excel, xuất tàu chọn từ tồn vỏ (cùng kiểm tra như lúc lập; xuất tàu cấp mã XT- mới).
+    - **Bỏ cont** còn chờ.
+    - **Xóa cả danh sách**: chỉ khi **chưa có cont nào được tác nghiệp** (tránh mất hồ sơ NT- / cont đã OUT); xóa danh sách xuất tàu thì cont mở lại cho cấp vỏ.
+    - Danh sách đã duyệt: chỉ xem.
+  - **Sắp xếp**: danh sách container luôn theo **size 20 → 40 → 45, cùng size thì số cont A→Z** (`sortVesselItems`) — ở màn Giám định / Xe nâng, chi tiết Văn phòng, chọn từ tồn vỏ.
+  - **Tìm kiếm** ở màn Giám định / Xe nâng giống Tồn vỏ: **lọc ngay khi gõ** (số cont chứa chuỗi đã nhập); bấm tìm khi chỉ còn 1 cont khớp thì chọn luôn.
+
+### DEC-071 — Màn hiện trường Nhập tàu / Xuất tàu: theo dõi đã làm / chờ làm
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-069, DEC-070
+- Bối cảnh: màn cũ chỉ hiện cont đang chờ; cont làm xong biến mất → người tác nghiệp không biết đã làm những cont nào, khó kiểm soát.
+- Quyết định — **một mẫu màn chung** cho Giám định → Nhập tàu, Xe nâng → Nhập tàu, Giám định → Xuất tàu, Xe nâng → Xuất tàu:
+  - **Khung tiến độ luôn ở trên**: tàu (chọn tàu nếu có nhiều, kèm xong/tổng), **ĐÃ XONG / TỔNG** chữ lớn + thanh tiến độ, số **chờ làm**, số **chưa tới lượt**, **"Bạn đã làm"**, và **số cont theo từng xe**.
+  - **Tab Chờ làm / Đã xong / Tất cả.** Mỗi thẻ có biểu tượng trạng thái: ○ chờ làm, ⏱ chưa tới lượt (xám), ✓ đã xong (xanh, kèm **số xe, người làm — "Bạn" nếu là mình, giờ**). Thẻ đã xong bấm vào mở hồ sơ, không làm lại được.
+  - **Chống làm trùng**: tìm / gõ trúng cont đã làm → báo **"ĐÃ <bước> — người, giờ, xe. Không làm lại."**; cont chưa tới lượt → báo lý do; cont không có trong danh sách → báo rõ "KHÔNG có trong danh sách tàu".
+  - Dải **"Vừa <bước>"**: 5 cont vừa xác nhận gần nhất (số cont, xe, giờ, link hồ sơ).
+  - Trạng thái từng bước do service tính (`vesselStepInfo`, `vesselStepSummary`):
+    - Giám định Nhập tàu: chờ làm = chưa giám định; xong = đã giám định.
+    - Xe nâng Nhập tàu: **chưa tới lượt** = chưa giám định hoặc còn chờ Vệ sinh; chờ làm = đã giám định, xong vệ sinh (nếu có); xong = đã hạ bãi. Hạ cont dùng chung hàm và bộ chọn vị trí của Hạ vỏ.
+    - Xuất tàu (Giám định / Xe nâng dùng chung tiến độ): chờ làm = chưa xuất; xong = đã xuất.
+  - Xe nâng → Nhập tàu chuyển sang mẫu màn này (bỏ màn hàng chờ lọc `vesselOnly`).
+
+### DEC-072 — In EEIR từ hồ sơ; mẫu EEIR và Phiếu thu đồng bộ
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-052, DEC-062, DEC-063
+- Lỗi đã sửa: nút "In hồ sơ" ở Tồn vỏ → hồ sơ container in ra **trang trắng** (CSS in chỉ in vùng `print-area`, hồ sơ không có vùng này).
+- Quyết định:
+  - Giấy in từ hồ sơ là **EEIR** (thông tin Hạ vỏ / Cấp vỏ chi tiết gửi khách hàng **kèm phiếu thu**). Hồ sơ có thanh in cho **từng lượt**: **In EEIR HẠ VỎ / CẤP VỎ** và **In EEIR + phiếu thu**. Bỏ nút "In hồ sơ".
+  - **EEIR và Phiếu thu dùng chung một khung in** (`src/components/ReceiptPrint.tsx`): đầu CÔNG TY → tiêu đề + **Số** (mã hồ sơ / số phiếu) → nhãn **TÁC NGHIỆP** → bảng thông tin → bảng chi tiết → chữ ký 2 bên → "In lúc …". Cùng cỡ chữ, viền, bố cục.
+  - EEIR gồm: số cont, size/type, hãng tàu, trạng thái • đóng hàng, AGE, hư hỏng, vệ sinh, khách hàng, booking (Cấp vỏ) / số lệnh (Hạ vỏ), số xe • SĐT, thời gian GATE IN / OUT, vị trí hạ / lấy, thanh toán, lộ trình các bộ phận đã xác nhận.
+  - In kèm phiếu thu **vẫn đếm số lần in**: đã in trước đó → hỏi xác nhận "In lại", bản in có nhãn BẢN IN LẠI (DEC-063). Văn phòng → Trả chứng từ: lần in tự động = EEIR + phiếu thu; nút "In lại EEIR" chỉ in EEIR.
+  - Kỹ thuật: lệnh in đi qua `PrintPortal` (gắn vào `<body>`, không bị cửa sổ đang mở cắt); khi có lệnh in này, các vùng in khác trên trang bị ẩn — mỗi lần in đúng 1 bộ giấy tờ.
+
+### DEC-073 — Lập danh sách XUẤT TÀU: Tìm hàng loạt như Tồn vỏ
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-069, DEC-070
+- Quyết định: Bộ chọn container từ tồn vỏ (Văn phòng → Xuất tàu: **Lập danh sách** và **Thêm cont**) có nút **Tìm hàng loạt** giống Tồn vỏ (DEC-067): dán danh sách số cont (mỗi dòng / dấu phẩy / khoảng trắng) → lọc đúng các cont đó, báo số tìm thấy / chọn được, nút **Chọn tất cả cont tìm được**, báo các số **không có trong tồn vỏ**. Cont không đưa vào xuất tàu được (khóa, đã lập lệnh cấp, đã trong danh sách khác) vẫn hiện lý do, không chọn được.
+
+### DEC-074 — Tồn vỏ: cột DATE IN, sắp lại độ rộng cột
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-067
+- Quyết định:
+  - Thêm cột **DATE IN** = thời gian container vào bãi (Hạ vỏ hoặc Nhập tàu — `gateInAt`), đặt **giữa HÃNG TÀU và TRẠNG THÁI**. Hiển thị 2 dòng: ngày `dd/MM/yyyy`, giờ `HH:mm:ss` chữ nhỏ.
+  - Excel Tồn vỏ: **DATE IN** ngay sau HÃNG TÀU (thay cột GATE IN cũ ở cuối) và thêm cột **VÀO BÃI BẰNG** (HẠ VỎ / NHẬP TÀU).
+  - Độ rộng cột: Mã hồ sơ, Số cont không xuống dòng; Size, Type, Trạng thái hẹp và căn giữa; Lưu bãi căn phải; Vị trí, Tiến độ vừa; **Ghi chú rộng nhất**; khoảng đệm ô gọn hơn.
+
+### DEC-075 — Menu báo việc đang chờ cho Nhập tàu / Xuất tàu và mọi việc hiện trường
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-071
+- Bối cảnh: có việc Nhập tàu / Xuất tàu đang chờ nhưng menu Giám định / Xe nâng không có số đếm, ô đếm của các mục khác màu xám nhạt → bộ phận không thấy việc.
+- Quyết định:
+  - Menu có **số đếm việc chờ** cho: Giám định → Nhập tàu (cont chờ giám định), Xe nâng → Nhập tàu (cont chờ hạ bãi, đã xong vệ sinh), Giám định / Xe nâng → Xuất tàu (cont chờ xuất) — cộng mọi tàu đang mở, cùng cách tính với tab "Chờ làm" (`vesselStepSummary`). Văn phòng → Nhập tàu / Xuất tàu: số danh sách đang thực hiện.
+  - **Mọi mục tác nghiệp hiện trường (mục có biểu tượng điện thoại) đang có việc chờ**: ô đếm **màu cam + chấm nhấp nháy** ("Có việc đang chờ"); nhóm menu chứa mục đó cũng hiện số **màu cam** (cả khi thu gọn / thanh biểu tượng). Không có việc thì không hiện số.
+
+### DEC-076 — Phiếu thu: nút Tạo phiếu thu TTT; in EEIR + Phiếu thu trên 1 tờ A4 (mỗi phiếu A5)
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-062, DEC-072
+- Quyết định:
+  - Văn phòng → Phiếu thu: **"Tạo phiếu thu TTT (thanh toán trước)" là nút tác nghiệp cùng hàng với TRA CỨU – XUẤT EXCEL**; bấm nút mở form tạo phiếu (1 hàng ngang) ngay dưới khung tra cứu, tạo xong tự đóng. Bỏ khung tạo phiếu ở cột phải.
+  - **Khổ in**: mỗi phiếu (EEIR, Phiếu thu) chiếm **nửa tờ A4 = khổ A5 (210 × 148 mm)**; **EEIR + Phiếu thu = 1 tờ A4** (đường cắt giữa 2 nửa), 2 phiếu thì sang trang mới. Khổ giấy dùng tên riêng (`@page a4sheet`) — **không ảnh hưởng phiếu K80 in nhiệt 80mm**.
+  - **EEIR không in các bộ phận / lộ trình**; thay bằng khối **TÌNH TRẠNG VỎ (GIÁM ĐỊNH)**: trạng thái DAMAGE / AV, đóng hàng, hư hỏng, vệ sinh, AGE, người giám định + giờ.
+  - Nội dung quá dài so với nửa tờ (VD rất nhiều dòng chi phí) sẽ bị cắt — cần thử in thực tế để chỉnh nếu gặp.
+
+### DEC-077 — Phiếu thu: danh sách full màn hình; Phiếu thu trước theo bố cục thanh toán, biểu giá × số lượng, bản in riêng
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-032, DEC-076
+- Quyết định:
+  - **Danh sách phiếu thu chiếm toàn bộ chiều ngang** khi tra cứu, đủ cột: mã phiếu thu, tác nghiệp, trạng thái, số tiền, trường hợp • hình thức, bên thanh toán, mã hồ sơ, số cont, chứng từ, tạo lúc • bởi, xác nhận thu, đã in. Chi tiết phiếu hiện **bên dưới** danh sách.
+  - **Tạo phiếu thu TRƯỚC (TTT)** theo bố cục màn thanh toán Hạ vỏ / Cấp vỏ: **1. Khách hàng** (+ diễn giải lô) → **2. Chi phí** (chọn từ BIỂU GIÁ) → **3. Hình thức thanh toán** (Tiền mặt / Chuyển khoản API QR) → tổng thu trước → tạo (chờ thanh toán).
+  - **Chọn biểu giá có SỐ LƯỢNG** (số nguyên 1–9999). **Tổng tiền do hệ thống tính** = Σ đơn giá × số lượng; lưu dòng chi phí (đơn giá, số lượng, thành tiền) vào Phiếu thu mẹ. Hạ vỏ / Cấp vỏ giữ như cũ (mỗi dòng 1).
+  - **Bản in Phiếu thu trước**: cùng khung với phiếu thu Hạ vỏ / Cấp vỏ nhưng **tên "PHIẾU THU TRƯỚC (TTT)"** và **khung viền đôi nổi bật**: mã Phiếu thu mẹ PTT-, mã QR trừ dần, diễn giải lô, **SỐ TIỀN NẠP TRƯỚC**; bảng chi phí có **SL / Đơn giá / Thành tiền**; dòng tổng "TỔNG THU TRƯỚC".
+
+### DEC-078 — Menu: biểu tượng tác nghiệp mobile thẳng hàng
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-012, DEC-075
+- Quyết định: Mỗi dòng menu chia **3 cột cố định**: **tên mục** (giãn, quá dài thì "…") | **cột biểu tượng điện thoại** (rộng cố định; mục không phải mobile để trống) | **cột số đếm** (rộng cố định, canh phải). Nhờ vậy biểu tượng mobile của mọi mục **thẳng hàng** theo chiều dọc, số đếm cũng thẳng hàng.
+
+### DEC-079 — Phiếu thu: sắp lại cột; Phiếu thu mẹ (TTT) liên kết từng lần trừ tiền
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-077
+- Quyết định:
+  - Danh sách phiếu thu: **bỏ cột Xác nhận thu**; cột **Trạng thái** đặt **ngay bên trái cột Đã in**; "Trường hợp • Hình thức" đổi thành **PHƯƠNG THỨC TT** (chỉ **Tiền mặt / Chuyển khoản**); "Tạo lúc • bởi" tách thành **Thời gian** và **Nhân viên**. Thứ tự: Mã phiếu thu | Tác nghiệp | Số tiền | Phương thức TT | Bên thanh toán | Mã hồ sơ / Phiếu thu mẹ | Số cont | Chứng từ | Thời gian | Nhân viên | Trạng thái | Đã in.
+  - **Phiếu thu trước (TTT)**: dòng danh sách hiện mã Phiếu thu mẹ **PTT-** kèm **"Dùng N lượt • còn X đ"**. Chi tiết có khối **Sử dụng phiếu thu mẹ**: Tổng nạp, **Số lượt đã dùng**, Đã trừ, **Còn lại** + bảng **từng lần trừ tiền**: thời gian, tác nghiệp (Hạ vỏ / Cấp vỏ), **mã hồ sơ (bấm mở hồ sơ)**, số cont, **chứng từ**, số tiền trừ, số dư sau, nhân viên (`masterReceiptUsage` trong `payments.ts`).
+  - Excel Phiếu thu: cột **PHƯƠNG THỨC TT**, thêm **SỐ LƯỢT ĐÃ DÙNG (TTT)**, **CÒN LẠI (TTT)**.
+
+### DEC-080 — Quy chuẩn trang nhiều dữ liệu: danh sách full màn hình, chi tiết mở cửa sổ trượt bên phải, người dùng chọn số dòng
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Quyết định (chi tiết: `docs/UI_DATA_LIST_STANDARD.md` — mọi trang nhiều dữ liệu phải theo):
+  - Danh sách **chiếm toàn bộ chiều ngang**, đủ cột; thời gian / nhân viên tách cột; trạng thái gần cuối.
+  - **Bấm một dòng → chi tiết mở trong CỬA SỔ TRƯỢT BÊN PHẢI** (`DetailDrawer`), danh sách vẫn thấy phía sau; đóng bằng X / Esc / bấm ra ngoài. **Không** hiện chi tiết bên dưới / bên cạnh, không thay cả trang. Hồ sơ container cũng mở dạng trượt bên phải.
+  - **Người dùng chọn số dòng / trang: 20 / 50 / 100**, nhớ theo từng màn trên trình duyệt (`usePageSize`); hàm tra cứu nhận `pageSize`.
+  - Nút tác nghiệp cùng hàng nút Tra cứu; form tác nghiệp mở dưới khung lọc khi bấm.
+  - Áp dụng ngay: Phiếu thu, Tồn vỏ, Văn phòng → Nhập tàu / Xuất tàu, mọi Báo cáo, Hồ sơ container.
+
+### DEC-081 — EEIR cho hồ sơ Nhập tàu / Xuất tàu; xác nhận các điểm A.5 (2026-10-24)
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-069, DEC-072, DEC-076
+- Quyết định:
+  - Hồ sơ **NT-** và **XT-** có **EEIR đầy đủ**, cùng khung với EEIR Hạ vỏ / Cấp vỏ (khổ A5): đầu công ty, **Số = mã NT- / XT-**, **TÁC NGHIỆP: NHẬP TÀU / XUẤT TÀU**; số cont, size/type, hãng tàu, **tên tàu**, thời gian nhập / xuất tàu, **số xe**, thời gian vào bãi (NT) / thời gian OUT + Date in (XT), vị trí hạ / lấy, "Không thu phí (tác nghiệp tàu)"; khối **TÌNH TRẠNG VỎ (GIÁM ĐỊNH)** — NT: kết quả Giám định lượt này; XT: tình trạng hiện tại + Giám định lúc cont vào bãi; chữ ký Lái xe / Đại diện công ty (`VesselEeirPrintSheet`).
+  - In từ hồ sơ container: nút **In EEIR NHẬP TÀU** (từ khi Giám định xác nhận) / **In EEIR XUẤT TÀU** (khi cont đã OUT).
+  - Người dùng **xác nhận** các điểm agent đặt ở DEC-070 / DEC-077: (a) xóa danh sách tàu chỉ khi chưa tác nghiệp cont nào; (b) đổi hãng tàu Nhập tàu chỉ khi chưa giám định; (d) Giám định Nhập tàu không bắt buộc chụp ảnh; (e) cột số lượng chỉ ở phiếu thu trước. Điểm (c) sắp xếp size → số cont: **chưa có ý kiến**, đang giữ như DEC-070.
+
+### DEC-082 — Vị trí theo cấu hình thực tế của Block (thay phần "đặt cấp Block trước" của DEC-005 / DEC-036)
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Quyết định:
+  - Danh mục chung → Vị trí: **Mã vị trí luôn bắt đầu bằng `BLOCK-`** — Admin chỉ gõ phần sau (A, B, C…); bên dưới là **Mô tả thông tin**. Tên khu vực không bắt buộc (mặc định "Khu A").
+  - **Số Bay / Row / Tier tối đa** để trống = **không dùng chiều đó** (lưu 0). Mỗi chiều độc lập (VD chỉ có Bay).
+  - **Mọi tác vụ vị trí** (Xe nâng hạ vỏ, Nhập tàu, Đảo chuyển, Sửa vị trí…): chỉ **hiện và bắt buộc nhập đúng các chiều Block có cấu hình**; chiều không cấu hình không hiện, không yêu cầu, không lưu.
+  - Block **có cấu hình** chiều nào thì **bắt buộc nhập đủ** các chiều đó — **bỏ cách đặt cấp Block trước rồi cập nhật sau** (người dùng chọn).
+  - Block **chỉ có BLOCK** (không Bay / Row / Tier): nhiều cont đặt chung, **không giới hạn** số cont.
+  - Chống trùng ô **chỉ khi đủ 4 phần Block – Bay – Row – Tier (DEC-087)**; hiển thị vị trí: đủ 3 chiều `BLOCK-A / 04-02-01`, thiếu chiều thì ghi nhãn (VD `BLOCK-D / Bay 03`).
+  - Dữ liệu mẫu: BLOCK-B chuyển thành Block chỉ có BLOCK. Dữ liệu đã lưu trên trình duyệt giữ cấu hình cũ tới khi Reset demo.
+  - Code: `blockDimensions`, `validateTargetSlot`, `formatLocation` (`src/services/core.ts`); `SlotPicker` / `isSlotComplete(slot, state)` (`shared.tsx`); `addYardBlockCatalogItem`.
+
+### DEC-083 — Vệ sinh / Xe nâng: hiện rõ tác nghiệp đang làm (kèm tên tàu)
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Quyết định: Mọi cont đến Vệ sinh / Xe nâng có **nhãn TÁC NGHIỆP** (mỗi loại 1 màu): **HẠ VỎ**, **CẤP VỎ**, **NHẬP TÀU • Tàu …**, **XUẤT TÀU • Tàu …** — ở khung cont vừa quét (nhãn lớn, đầu khung) và từng dòng danh sách chờ (Chờ vệ sinh, Chờ hạ vỏ, Chờ cấp vỏ). 4 màn Nhập / Xuất tàu ghi "Đang tác nghiệp: NHẬP TÀU / XUẤT TÀU • Tàu …".
+  - Xác định trong service `containerOperation` (`vessel.ts`): đang trong danh sách xuất tàu → XUẤT TÀU; đã lập lệnh cấp → CẤP VỎ; mã NT- → NHẬP TÀU; còn lại → HẠ VỎ.
+
+### DEC-084 — Báo giá → Chờ báo giá hiển thị như Tồn vỏ
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-040, DEC-041, DEC-080
+- Quyết định: Danh sách cont CHỜ BÁO GIÁ là **bảng full chiều ngang giống Tồn vỏ**: Mã hồ sơ (mở hồ sơ), Số container (icon khóa), Size, Type, Hãng tàu, Date in, Trạng thái, Lưu bãi, Vị trí, **Hư hỏng (giám định)**, Ghi chú (nền vàng). Có lọc số cont / size / type, chọn 20 / 50 / 100 dòng, Xuất Excel. **Bấm dòng → cửa sổ trượt bên phải** nhập **Remark sửa chữa + Giờ công** → "Cập nhật sang Chờ sửa chữa" (cùng hàm `approveDamageQuotation`, quy tắc DEC-040 / 041 không đổi).
+
+### DEC-085 — Danh sách chờ Vệ sinh / Xe nâng: số cont thẳng cột
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-083
+- Quyết định: Mỗi dòng danh sách chờ (Chờ vệ sinh, Chờ hạ vỏ, Chờ cấp vỏ, Chờ sửa chữa) gồm **2 tầng**: tầng 1 các **cột cố định** — **Số container** (cột rộng cố định bên trái, luôn thẳng hàng dọc) | Size / Type | Vị trí (canh phải); tầng 2 chữ nhỏ — **nhãn tác nghiệp + tên tàu** | thông tin phụ (số xe • SĐT, giờ công). Tên tàu dài / ngắn không làm lệch cột số cont.
+
+### DEC-086 — Báo giá 2 bước: cập nhật tình trạng sửa chữa + giờ công → xác nhận chờ sửa chữa
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-040, DEC-041, DEC-084
+- Quyết định:
+  - Danh sách Chờ báo giá: **bỏ cột Hư hỏng (giám định)**, thay bằng **TÌNH TRẠNG SỬA CHỮA** (Báo giá nhập tình trạng sửa chữa thực tế) + cột **Giờ công**; thêm cột **TÁC NGHIỆP** ở cuối. Hư hỏng do Giám định ghi vẫn xem được trong cửa sổ chi tiết.
+  - Bước 1 — **Cập nhật** (cửa sổ trượt): nhập Tình trạng sửa chữa * + Giờ công * → **Lưu cập nhật báo giá** — cont **vẫn ở Chờ báo giá**, lưu người / giờ cập nhật, sửa lại được nhiều lần.
+  - Bước 2 — **Xác nhận chờ sửa chữa** (nút ở cột Tác nghiệp hoặc trong cửa sổ): chỉ bấm được khi đã cập nhật đủ; chuyển cont sang **bộ phận Sửa chữa** với đúng tình trạng + giờ công đã lưu.
+  - Code: `saveQuotationDraft`, `confirmQuotationToRepair` (`depotOperations.ts`, gọi lại `approveDamageQuotation`).
+
+### DEC-087 — Chặn trùng vị trí chỉ khi đủ BLOCK – BAY – ROW – TIER (sửa DEC-082)
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Quyết định: **Chỉ khi vị trí đầy đủ 4 phần BLOCK – BAY – ROW – TIER** mới chặn 2 cont trùng 1 ô. Vị trí **không đủ 4 phần** (Block chỉ có tên, chỉ Bay, Bay + Row…) → **1 vị trí gán được cho nhiều cont** (1 Block / 1 Bay / 1 Row chứa được nhiều đơn vị cont). Quy tắc bắt buộc nhập đủ các chiều đã cấu hình (DEC-082) không đổi.
+
+### DEC-088 — Chờ báo giá: tìm hàng loạt + xác nhận chờ sửa chữa hàng loạt
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-086
+- Quyết định: Chờ báo giá có **Tìm hàng loạt** giống Tồn vỏ (dán danh sách số cont, báo số không có trong Chờ báo giá) và **ô chọn từng dòng / chọn tất cả theo bộ lọc** → **Xác nhận chờ sửa chữa hàng loạt**. Áp dụng từng cont qua `confirmQuotationToRepair` (`bulkConfirmQuotationToRepair`); cont **chưa cập nhật tình trạng sửa chữa / giờ công được bỏ qua và báo lại**, không chặn cả lô.
+
+### DEC-089 — Danh sách chờ Vệ sinh / Xe nâng: ô tác nghiệp riêng bên trái, tên tàu tách riêng
+
+- Trạng thái: CONFIRMED (2026-10-24) — thay bố cục DEC-085
+- Quyết định: Mỗi dòng danh sách chờ (`QueueListRow`):
+  - **Bên trái**: 1 **ô TÁC NGHIỆP** cố định (HẠ VỎ / CẤP VỎ / NHẬP TÀU / XUẤT TÀU — chỉ tên tác nghiệp, mỗi loại 1 màu).
+  - **Bên phải** — thông tin của tác nghiệp: tầng 1 **Số container** (cột cố định, thẳng hàng) | Size / Type | Vị trí; tầng 2 **Tàu …** (tách khỏi nhãn tác nghiệp) | thông tin phụ (số xe • SĐT, giờ công).
+
+### DEC-090 — Xe nâng → Đảo chuyển: vị trí thẳng cột
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-089
+- Quyết định: Mỗi thẻ danh sách Đảo chuyển dùng **cột cố định** như danh sách chờ: tầng 1 **Số container** | Size / Type | **VỊ TRÍ canh trái** (mọi dòng bắt đầu cùng 1 cột dọc, không còn canh phải theo độ dài vị trí); tầng 2 Trạng thái | Tiến độ.
+
+### DEC-091 — Đảo chuyển: vị trí tách cột BLOCK | BAY | ROW | TIER
+
+- Trạng thái: CONFIRMED (2026-10-24) — thay bố cục vị trí của DEC-090
+- Quyết định: Danh sách Đảo chuyển có **hàng tiêu đề cột cố định** BLOCK | BAY | ROW | TIER; mỗi thẻ tầng 1 Số container | Size / Type | Trạng thái • Tiến độ, tầng 2 **4 ô vị trí** cùng lưới với tiêu đề → **Block thẳng Block, Bay thẳng Bay, Row thẳng Row, Tier thẳng Tier** từ trên xuống; chiều nào không có (Block chỉ có tên, chưa có vị trí) thì **để trống ô đó**.
+
+### DEC-092 — Đảo chuyển: số cont, size/type và vị trí trên 1 dòng (thay bố cục DEC-091)
+
+- Trạng thái: CONFIRMED (2026-10-24)
+- Quyết định: Mỗi thẻ Đảo chuyển: **1 dòng SỐ CONT | SIZE / TYPE | VỊ TRÍ** dạng `BLOCK-A / 17-02-02` (người dùng xác nhận); dòng 2 Trạng thái | Tiến độ. Bỏ hàng tiêu đề BLOCK | BAY | ROW | TIER. Để vẫn **Block thẳng Block, Bay thẳng Bay**: ô tên Block rộng cố định bằng mã Block dài nhất trong danh mục (chữ đều nét), phần `/ Bay-Row-Tier` đi sau; chiều không có thì bỏ (Block chỉ có tên → chỉ hiện tên Block).
+- Lưu ý: máy rất hẹp (~360px) với mã Block dài (VD BLOCK-DAMAGE) có thể cắt "…" ở cuối vị trí.
+
+### DEC-093 — Khách hàng (Hạ vỏ / Cấp vỏ): gõ tay hoặc chọn, có gợi ý từ Danh mục
+
+- Trạng thái: CONFIRMED (2026-10-24) — sửa DEC-016 / DEC-033 phần "chọn khách theo Danh mục"
+- Quyết định:
+  - Ô **Khách hàng** ở Văn phòng → Hạ vỏ và → Cấp vỏ: **gõ tay hoặc chọn**; khi gõ hiện **gợi ý khách trong Danh mục** (theo tên; gõ đúng mã khách → tự điền tên).
+  - Tên trùng khách Danh mục (không phân biệt hoa thường) → lưu đúng tên Danh mục. **Tên không có trong Danh mục vẫn lưu được** (người dùng chọn).
+  - **Khách ngoài Danh mục chỉ được thanh toán TRỰC TIẾP (Tiền mặt / Chuyển khoản)** — **không TTS, không TTT** (TTS / TTT dựa trên khách trong Danh mục). Ô nhập hiện cảnh báo khi gõ tên mới; service chặn khi thanh toán.
+  - Code: `normalizeCustomer`, `isCatalogCustomer` (`depotOperations.ts`); kiểm tra trong `settleVoucher` (`payments.ts`); ô `CustomerInput` (`shared.tsx`).
+
+### DEC-094 — Đảo chuyển: cấu trúc như danh sách Xe nâng — ô TRẠNG THÁI đầu, Tiến độ cuối
+
+- Trạng thái: CONFIRMED (2026-10-24) — thay bố cục thẻ của DEC-092 (giữ vị trí thẳng cột)
+- Quyết định: Mỗi thẻ Đảo chuyển giống dòng danh sách Xe nâng (DEC-089), nhưng **ô đầu bên trái là TRẠNG THÁI** (AV xanh / DAMAGE đỏ) thay cho tác nghiệp. Bên phải: dòng 1 **Số container | Vị trí** (`BLOCK-A / 17-02-02`, ô Block rộng cố định → thẳng cột); dòng cuối **Size / Type** (thẳng dưới số cont) | **Tiến độ** dạng nhãn nhỏ (Sẵn sàng xanh, các việc chờ màu vàng).
+
+### DEC-095 — Đảo chuyển: tiến độ bên phải vị trí; dòng 2 là GHI CHÚ
+
+- Trạng thái: CONFIRMED (2026-10-24) — sửa bố cục DEC-094
+- Quyết định: Thẻ Đảo chuyển: ô TRẠNG THÁI bên trái (giữ); **dòng 1 Số container | Vị trí (ô rộng cố định → thẳng cột) | Tiến độ** (bên phải vị trí; máy hẹp thiếu chỗ thì tiến độ xuống ngay dưới, vẫn canh phải); **dòng 2 Size / Type | GHI CHÚ** (Remark Văn phòng — nền vàng khi có, "-" khi không).
+
+### DEC-096 — Đảo chuyển: ô AV / DAMAGE cùng kích thước ô tác nghiệp danh sách Xe nâng
+
+- Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-094
+- Quyết định: Ô TRẠNG THÁI (AV / DAMAGE) ở Đảo chuyển dùng **đúng kích thước UI của ô tác nghiệp** ở Xe nâng → Chờ hạ vỏ (`QueueListRow`): cột 5rem, chữ 10px đậm in hoa, đệm px-1.5 py-1, bo góc, không kéo dài hết chiều cao thẻ.
+
+### DEC-097 — Hình thức thanh toán: TTTT — Trực tiếp đứng đầu và chọn sẵn
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Khối Hình thức thanh toán (Văn phòng → Hạ vỏ; dùng chung với Cấp vỏ) xếp **TTTT — Trực tiếp đầu tiên** → TTT → TTS, và **mặc định chọn sẵn TTTT + Tiền mặt** (hình thức dùng nhiều nhất). Quy tắc thanh toán không đổi (DEC-031, DEC-093).
+
+### DEC-098 — Mã phiếu thu theo hình thức + ngày, duy nhất
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Mã phiếu thu mới có dạng `PT-<hình thức>-YYMMDD-NNNN`, đánh số lại từ 0001 mỗi ngày và cấp duy nhất qua `codes.ts`. **`PT-TT-…`** là phiếu thu trực tiếp (tiền mặt hoặc chuyển khoản). **`PT-TTR-…`** là phiếu nạp tiền trước (TTT; phiếu thu mẹ vẫn là `PTT-`). Nhìn mã là biết hình thức và ngày thu. TTS **không** có phiếu thu, chỉ có chứng từ `CT-` (công nợ, DEC-031). Mã cũ `PT-YYYY-NNNNNN` giữ nguyên, không đổi.
+
+### DEC-099 — Tồn vỏ: thông tin thanh toán của lượt vào bãi
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Tồn vỏ (màn và Excel) có thêm cột **Hình thức TT** và **Phiếu thu** (`containerPaymentInfo`, `payments.ts`). Bên trong hệ thống vẫn giữ 2 mã: chứng từ `CT-` là khoản phải thu, phiếu thu `PT-` là tiền đã thu. Giao diện **chỉ hiện 1 ô Phiếu thu**:
+  - TT: hiện `PT-TT-…`.
+  - TTR: hiện phiếu thu mẹ `PTT-…`.
+  - TTS: hiện `Công nợ (CT-…)`.
+  - Nhập tàu: hiện "Không thu phí".
+  - Chưa thanh toán: hiện đúng chữ "Chưa thanh toán".
+
+### DEC-100 — Hình thức thanh toán: TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU (ký hiệu TT / TTR / TTS)
+
+- Trạng thái: CONFIRMED (2026-10-25; sửa trong ngày — bỏ ký hiệu TL / TR)
+- Quyết định: Hình thức thanh toán hiển thị và ký hiệu như sau:
+  - **TT — TRỰC TIẾP**: tiền mặt hoặc chuyển khoản. Mã phiếu thu `PT-TT-YYMMDD-NNNN`.
+  - **TTR — TRẢ TRƯỚC**: dùng tiền khách đã nạp trước. Phiếu nạp tiền có mã `PT-TTR-YYMMDD-NNNN`; lượt cont trừ vào phiếu thu mẹ `PTT-`.
+  - **TTS — THANH TOÁN SAU**: công nợ. **Không cấp mã phiếu thu** (người dùng xác nhận lại 2026-10-25), chỉ có chứng từ `CT-` (DEC-031).
+- Mã nội bộ trong code / dữ liệu vẫn là TTTT / TTT / TTS, chỉ đổi phần hiển thị và tiền tố mã phiếu thu.
+
+### DEC-101 — Menu Báo cáo: "Sửa chữa chi tiết" → "Sửa chữa"
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Mục menu Báo cáo đổi tên thành **Sửa chữa**, tiêu đề màn là "Báo cáo Sửa chữa". Nội dung báo cáo không đổi (DEC-044).
+
+### DEC-102 — Lọc nhanh thời gian cho mọi bộ lọc
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Mọi bộ lọc thời gian (Phiếu thu, các báo cáo, báo cáo Nhập / Xuất tàu) dùng chung ô **Lọc nhanh** (`DateRangeFilter`, `shared.tsx`; mốc tính bằng `quickRange`, `datetime.ts`). Các mục chọn:
+  - Hôm nay / Tuần này / Tháng này / Năm nay: từ 00:00:00 đầu kỳ → hiện tại.
+  - Hôm qua / Tuần trước / Tháng trước: trọn kỳ, đến 23:59:59 ngày cuối.
+  - Tùy chọn: chỉ khi chọn mục này mới hiện 2 ô Từ - Đến (`dd/mm/yyyy hh:mm:ss`).
+- **Tuần bắt đầu Thứ Hai.** Khi mở màn lần đầu chọn sẵn **Hôm nay** (thay mặc định 24 giờ của DEC-056).
+
+### DEC-103 — Gọi tên "PHIẾU THU TRẢ TRƯỚC" thay cho "Phiếu thu mẹ"
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Mọi chữ hiển thị (màn hình, giấy in, Excel, thông báo) dùng **PHIẾU THU TRẢ TRƯỚC** thay cho "Phiếu thu mẹ". Mã `PTT-`, cách trừ dần và quy tắc thanh toán không đổi. Các mục DEC cũ còn chữ "Phiếu thu mẹ" được hiểu là Phiếu thu trả trước.
+
+### DEC-104 — Tồn vỏ: cột MÃ PHIẾU THU, không hiện chứng từ
+
+- Trạng thái: CONFIRMED (2026-10-25) — thay phần hiển thị của DEC-099
+- Quyết định: Cột "Phiếu thu" ở Tồn vỏ (màn và Excel) đổi thành **MÃ PHIẾU THU**, chỉ hiện mã phiếu thu tương ứng với tác nghiệp đó:
+  - TT: hiện `PT-TT-…`.
+  - TTR: hiện mã phiếu thu trả trước `PTT-…`.
+  - TTS, chưa thanh toán, Nhập tàu: **để trống**.
+- **Không hiện chứng từ `CT-`** ở Tồn vỏ. Chứng từ vẫn tồn tại bên trong hệ thống (công nợ, đối soát), chỉ không hiển thị ở đây.
+
+### DEC-105 — Tồn vỏ: MÃ PHIẾU THU là link sang phiếu thu thực tế
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Bấm mã phiếu thu ở Tồn vỏ sẽ mở **Văn phòng → Phiếu thu** đúng phiếu đó, giống link trong hồ sơ container (DEC-051).
+  - TT: mở phiếu `PT-TT-…` của lượt.
+  - TTR: mở phiếu nạp tiền `PT-TTR-…` của phiếu thu trả trước.
+  - Chỉ hiện link khi người dùng được vào menu Phiếu thu; người không có quyền chỉ thấy mã, không bấm được.
+
+### DEC-106 — Xóa dữ liệu tác nghiệp để test lại từ đầu
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Ứng dụng Demo mở với **dữ liệu sạch** (`createCleanState`):
+  - **Giữ danh mục:** nhân viên, khách hàng / hãng tàu, block, size / type, biểu phí, tổ sửa chữa, thông tin công ty.
+  - **Xóa toàn bộ:** container, lệnh Hạ vỏ / Cấp vỏ, booking, chứng từ, giao dịch, phiếu thu, phiếu thu trả trước, K80, danh sách tàu, nhật ký và bộ đếm mã (mã bắt đầu lại từ 001 / 0001).
+- Đổi khóa lưu trình duyệt (v7 → v8), nên mọi máy tự bắt đầu lại từ dữ liệu sạch; dữ liệu cũ bị xóa khi mở app.
+- Nút đầu trang đổi thành **"Xóa dữ liệu"**, có hỏi xác nhận trước khi xóa.
+- Dữ liệu mẫu (`createInitialState`) chỉ còn dùng trong test.
+
+### DEC-107 — Văn phòng → Phiếu thu: bỏ thông tin chứng từ, số container cạnh tác nghiệp
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định:
+  - **Bỏ hẳn thông tin chứng từ `CT-`** ở màn Phiếu thu (bảng, cửa sổ chi tiết, bảng sử dụng phiếu thu trả trước) và ở Excel phiếu thu.
+  - **Số container đứng ngay sau Tác nghiệp**, cả trên bảng và trong Excel.
+  - Cột Excel "TRƯỜNG HỢP" đổi thành **HÌNH THỨC TT** và ghi chữ (TT — TRỰC TIẾP / TTR — TRẢ TRƯỚC).
+  - Cột "PHIẾU THU MẸ" đổi thành **PHIẾU THU TRẢ TRƯỚC**; "(TTT)" đổi thành "(TTR)".
+
+### DEC-108 — Dữ liệu test đầy đủ trường hợp
+
+- Trạng thái: CONFIRMED (2026-10-25) — bổ sung DEC-106
+- Quyết định: Bản Demo có bộ **dữ liệu test** (`createDemoState`, `src/services/demoData.ts`). Dữ liệu được tạo bằng cách chạy đúng các hàm nghiệp vụ theo đúng vai trò, nên mã hồ sơ, phiếu thu, chứng từ và K80 đều khớp quy tắc. Bộ dữ liệu gồm:
+  - **Chung:** hãng tàu MAERSK (MSK); size 20 / 40 / 45.
+  - **Hạ vỏ / Tồn vỏ:**
+    - Hình thức thanh toán: TT tiền mặt, TT chuyển khoản, TTR, TTS, và 1 lượt chờ thanh toán.
+    - Vị trí: Block có Bay / Row / Tier và Block chỉ quản lý theo Block.
+    - Có 1 cont bị khóa.
+    - DAMAGE: chờ báo giá, chờ sửa chữa, đã sửa xong.
+    - Cont đang chờ vệ sinh, cont chờ Xe nâng hạ.
+  - **Phiếu thu:** `PT-TT-…`, phiếu thu trả trước đã thu (`PT-TTR-…`), phiếu thu trả trước chờ chuyển khoản.
+  - **Cấp vỏ:** 1 lượt đã xuất bãi, 1 lượt chờ Xe nâng.
+  - **Nhập tàu:** đã hạ / chờ vệ sinh / chưa giám định.
+  - **Xuất tàu:** đã xuất / chờ xuất.
+- Lần đầu mở app, dữ liệu cũ trên trình duyệt được thay bằng dữ liệu test (đổi khóa lưu trình duyệt lên v9).
+- Đầu trang có 2 nút: **Xóa dữ liệu** (dữ liệu sạch, giữ danh mục) và **Nạp dữ liệu test**, cả hai đều hỏi xác nhận.
+
+### DEC-109 — Hạ vỏ: HẠ KỆ GIÁM ĐỊNH khi chưa giám định được ngay
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Tình huống: Giám định kiểm tra cont, chụp ảnh và gửi thông tin vào Văn phòng, nhưng chưa thể giám định ngay.
+- Quyết định:
+  1. **Giám định:** chọn AV / DAMAGE như thường (tình trạng mô phỏng ban đầu), rồi tích ô **HẠ KỆ GIÁM ĐỊNH**.
+  2. **Văn phòng:** làm thủ tục, thu phí, in EEIR / K80 như bình thường, dùng tình trạng ban đầu. Màn Văn phòng hiện nhãn "HẠ KỆ GIÁM ĐỊNH".
+  3. **Phiếu K80:** bước Xe nâng ghi "Quét mã • HẠ KỆ GIÁM ĐỊNH".
+  4. **Vệ sinh:** làm như thường (nếu có). Xe nâng chỉ hạ sau khi vệ sinh xong.
+  5. **Xe nâng – Chờ hạ vỏ:** cont có nhãn **HẠ KỆ GIÁM ĐỊNH — không hạ về bay**; ô Block chỉ cho chọn các block là Kệ giám định. Service chặn mọi vị trí khác. Nếu chưa có block nào là Kệ giám định, hệ thống báo Admin cấu hình.
+  6. **Giám định xong:** Giám định thông báo ngoài hệ thống; Xe nâng dùng **ĐẢO CHUYỂN** để đưa cont về vị trí phù hợp, khi đó cờ Hạ kệ được xóa. Không có bước giám định lại trong hệ thống.
+- **Danh mục Vị trí:** Admin đánh dấu block nào là **Kệ giám định** (ô tích khi thêm mới và trong danh sách). Mặc định BLOCK-DAMAGE là Kệ giám định.
+- Kỹ thuật:
+  - `GateInOrder.toInspectionRack`.
+  - `ContainerRecord.forkliftShiftTask = 'HA_KE_GIAM_DINH'` (dùng lại cờ cũ, xóa khi Đảo chuyển).
+  - `YardBlock.isInspectionRack`, `setYardBlockInspectionRack`.
+
+### DEC-110 — Trả chứng từ: nút XEM TRƯỚC
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Ở Văn phòng → Trả chứng từ có nút **Xem trước** nằm **bên trái** nút "Trả chứng từ" (từng dòng chờ) và nút "Xác nhận & in" (ô quét).
+- Bấm Xem trước sẽ mở bộ chứng từ (EEIR + phiếu thu) để xem trên màn hình, và:
+  - **không** ghi nhận trả chứng từ;
+  - **không** in;
+  - **không** tăng số lần in phiếu thu.
+- Xem được cả khi lái xe chưa đi hết lộ trình. Chỉ Văn phòng / Quản lý được xem (`previewDocumentPack`, `driverRoute.ts`).
+
+### DEC-111 — Phiếu thu: mã bảo mật + khách yêu cầu xuất hóa đơn; thêm lại vai trò Kế toán
+
+- Trạng thái: CONFIRMED (2026-10-25). Giải quyết Q-041. **Thay một phần DEC-047:** thêm lại vai trò **Kế toán**, nay là vai trò thứ 9 (DEC-047 đã bỏ vai trò này).
+- **Mã bảo mật:**
+  - Mỗi phiếu thu (`PT-TT-…`, `PT-TTR-…`) có mã bảo mật **12 ký tự** gồm chữ hoa, chữ thường và số.
+  - Mã sinh ngẫu nhiên bằng nguồn ngẫu nhiên mật mã (`crypto.getRandomValues`), có khoảng 3,2 × 10^21 khả năng nên không đoán được, và không trùng.
+  - Mã **in trên phiếu thu** kèm đường link trang yêu cầu hóa đơn. Mã không có trong Excel. *(Phần "không hiện trên màn nội bộ" đã được DEC-112 thay.)*
+  - Phiếu thu cũ được tự bổ sung mã khi nạp dữ liệu.
+- **Trang khách hàng** (`#/hoa-don`, không cần đăng nhập):
+  - Khách dán mã (phân biệt chữ hoa / thường) và thấy thông tin tối thiểu: số phiếu, ngày, số tiền, bên thanh toán, số cont, trạng thái.
+  - Khách nhập **MÃ SỐ THUẾ** (10 số, hoặc 10 số + "-" + 3 số), **GMAIL NHẬN HÓA ĐƠN**, **TÊN CÔNG TY**, **ĐỊA CHỈ** (đều bắt buộc) và **GHI CHÚ** (không bắt buộc).
+  - Sửa được khi chưa xuất hóa đơn.
+- **Trạng thái phiếu thu:**
+  - **CHƯA XHD:** mặc định.
+  - **YÊU CẦU XHD:** khách đã gửi.
+  - **ĐÃ XHD:** **Kế toán** cập nhật sau khi xuất trên MISA, kèm số hóa đơn (không bắt buộc). Chỉ chuyển được khi đã có yêu cầu. Sau khi ĐÃ XHD, khách không sửa được.
+- **Kế toán (ACCOUNTANT):** chỉ thấy menu Văn phòng → Phiếu thu (xem, lọc, xuất Excel) và cập nhật ĐÃ XHD.
+- **Màn Phiếu thu:** thêm cột / bộ lọc **Hóa đơn**; cửa sổ chi tiết có khối "Xuất hóa đơn". Excel thêm các cột TRẠNG THÁI HĐ, MÃ SỐ THUẾ, GMAIL NHẬN HĐ, TÊN CÔNG TY, ĐỊA CHỈ, GHI CHÚ HĐ, SỐ HÓA ĐƠN, CẬP NHẬT XHD.
+- **Giới hạn bản Demo:**
+  - Trang khách hàng chỉ dùng chung dữ liệu với **cùng trình duyệt** (localStorage).
+  - Khi có database, trang này phải gọi RPC công khai có **giới hạn số lần thử** theo IP / thiết bị (chống dò mã), và gửi email thông báo cho Kế toán.
+  - Kết nối API MISA làm sau.
+
+### DEC-112 — Phiếu thu: hiện mã bảo mật ở khối "Xuất hóa đơn"
+
+- Trạng thái: CONFIRMED (2026-10-25). Thay một phần DEC-111.
+- Quyết định: Ở Văn phòng → Phiếu thu, cửa sổ chi tiết phiếu, khối **Xuất hóa đơn** luôn hiện **mã bảo mật** của phiếu, ở mọi trạng thái, để Văn phòng / Kế toán dễ theo dõi và đối soát.
+- Người thấy mã: những ai được xem Phiếu thu (Văn phòng, Quản lý, Kế toán, Admin).
+- Mã vẫn **không** có trong Excel.
+
+### DEC-113 — Người thu tiền trên phiếu là nhân viên; hướng dẫn xuất hóa đơn cho khách; khối Xuất hóa đơn có link
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- **Người thu tiền:** ô ký "Người thu tiền" trên phiếu thu luôn là **nhân viên Văn phòng tác nghiệp**. Ngân hàng / hệ thống chỉ là công cụ xác nhận tiền về.
+  - Khi chuyển khoản được ngân hàng báo có, phiếu thu ghi nhân viên đã lập yêu cầu thu (`tx.createdBy`), không ghi "HỆ THỐNG (Ngân hàng)".
+  - Phiếu cũ đã ghi "HỆ THỐNG" vẫn in tên nhân viên (`receiptCollectorName`).
+  - Mã giao dịch ngân hàng vẫn in ở dòng Hình thức.
+- **Trang yêu cầu xuất hóa đơn** có khung **Hướng dẫn xuất hóa đơn**, mở sẵn và thu gọn được:
+  1. Tìm mã 12 ký tự trên phiếu.
+  2. Nhập đúng mã (phân biệt hoa / thường) và kiểm tra số phiếu, số tiền.
+  3. Điền thông tin đúng như Giấy đăng ký kinh doanh.
+  4. Nhận hóa đơn qua Gmail; tra cứu lại bằng mã để xem trạng thái.
+- Nội dung hướng dẫn cho các trường hợp:
+  - **Sai thông tin khi chưa xuất:** nhập lại mã → sửa → Cập nhật yêu cầu.
+  - **Đã xuất:** trang khóa; khách liên hệ Kế toán (SĐT / email lấy từ Danh mục → Công ty) và báo số phiếu thu để được hướng dẫn điều chỉnh hóa đơn.
+  - Nhắc khách giữ kín mã.
+- **Văn phòng → Phiếu thu → khối Xuất hóa đơn:** hiện cả **Đường link** và **Mã bảo mật**.
+- Chưa có trong hệ thống: quy trình điều chỉnh / thay thế hóa đơn đã xuất. Kế toán xử lý trên MISA theo quy định.
+
+### DEC-114 — Trang yêu cầu xuất hóa đơn: hướng dẫn ngắn, đặt dưới ô Mã bảo mật
+
+- Trạng thái: CONFIRMED (2026-10-25). Thay phần trình bày hướng dẫn của DEC-113.
+- Quyết định: Hướng dẫn rút gọn còn **3 bước**:
+  1. Nhập mã bảo mật trên phiếu thu → Tra cứu.
+  2. Điền Mã số thuế, Tên công ty, Địa chỉ, Gmail → Gửi.
+  3. Nhận hóa đơn qua Gmail.
+- Thêm 1 dòng **"Ghi sai?"**: chưa xuất thì tra cứu lại → sửa → Cập nhật yêu cầu; đã xuất thì liên hệ Kế toán (SĐT công ty).
+- Khung hướng dẫn đặt **ngay dưới ô "Mã bảo mật trên phiếu thu (12 ký tự)"**.
+
+### DEC-115 — Xe nâng → Đảo chuyển: mỗi cont đúng 2 dòng trên mobile
+
+- Trạng thái: CONFIRMED (2026-10-25). Thay bố cục dòng của DEC-095. Giữ ô trạng thái của DEC-094 / DEC-096 và vị trí thẳng cột của DEC-092.
+- Vấn đề: trên điện thoại, 1 cont chiếm 3 dòng, vì dòng 1 (số cont + vị trí + tiến độ) rộng hơn màn hình.
+- Quyết định:
+  - **Dòng 1:** SỐ CONT | SIZE/TYPE | TIẾN ĐỘ (bên phải).
+  - **Dòng 2:** VỊ TRÍ `BLOCK-A / 17-02-02` (ô Block rộng cố định, thẳng cột) | GHI CHÚ (nền vàng khi có, cắt bớt nếu dài, để trống khi không có).
+  - Hai dòng **không xuống dòng**: phần dư bị cắt, không đẩy sang dòng thứ 3.
+
+### DEC-116 — Mobile: chạm ô nhập không phóng to vỡ khung; Đảo chuyển bỏ ô ghi chú
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- **Ô nhập trên điện thoại:**
+  - Vấn đề: iPhone / Safari tự phóng to màn hình khi chạm vào ô nhập có chữ nhỏ hơn 16px, làm vỡ khung.
+  - Quyết định: trên màn hình < 640px, mọi `input` / `select` / `textarea` dùng chữ **16px** (`src/index.css`). Màn máy tính giữ cỡ chữ cũ.
+  - **Không** chặn người dùng tự phóng to bằng hai ngón tay.
+- **Xe nâng → Đảo chuyển:** bỏ ô "Ghi chú tác nghiệp". Xe nâng chỉ chọn vị trí mới rồi xác nhận. Lịch sử đảo chuyển vẫn ghi đủ vị trí trước / sau, người làm và thời gian.
+
+### DEC-117 — Kiểu hiển thị thống nhất cho mọi link dữ liệu
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Mọi mã bấm được để mở dữ liệu liên quan dùng **cùng một kiểu, giống Mã hồ sơ ở Tồn vỏ**: chữ đều nét, màu xanh, gạch chân khi rê chuột, không in đậm. Khai báo duy nhất: hằng `linkCls` trong `src/components/shared.tsx`.
+- Áp dụng cho: mã hồ sơ HV- / CV- / NT- / XT-, mã phiếu thu, phiếu thu trả trước.
+- Đã áp ở: Tồn vỏ (cột MÃ PHIẾU THU, cùng định dạng ô Mã hồ sơ), hồ sơ container (link phiếu thu), Văn phòng Hạ vỏ / Cấp vỏ, Phiếu thu (hồ sơ nghiệp vụ, bảng sử dụng phiếu thu trả trước), Báo cáo (Hạ vỏ, Cấp vỏ, Sửa chữa, Nhập / Xuất tàu), Nhập / Xuất tàu (Văn phòng, mobile), Xe nâng (hồ sơ sau khi quét).
+- Không áp cho nút thao tác (Tìm hàng loạt, Xem thêm, Chọn tất cả…) và số điện thoại gọi được.
+
+### DEC-118 — Mọi MÃ có hồ sơ lưu trữ đều hiển thị dạng link
+
+- Trạng thái: CONFIRMED (2026-10-25). Bổ sung DEC-117.
+- Quyết định: Mã nào có hồ sơ / phiếu để mở thì **luôn bấm được** và dùng kiểu `linkCls`. Đã chuyển các mã đang là chữ thường:
+  - **Phiếu thu:** cột Mã phiếu thu (mở chi tiết phiếu); cột Mã hồ sơ / Phiếu thu trả trước (mở hồ sơ container, hoặc mở phiếu nạp tiền của phiếu thu trả trước); mã phiếu thu trả trước trong cửa sổ chi tiết.
+  - **Tồn vỏ:** cột Mã hồ sơ.
+  - **Báo giá:** mã hồ sơ trong bảng và trong cửa sổ chi tiết.
+  - **Trả chứng từ:** mã hồ sơ HV- / CV- của lái xe đang chờ.
+- Không chuyển:
+  - Mã đang là **tiêu đề của chính hồ sơ / phiếu** đang mở.
+  - Giấy tờ in (phiếu thu, EEIR, K80) và trang khách hàng.
+  - Danh sách chờ ở Văn phòng Hạ vỏ (bấm dòng để chọn; khung chi tiết bên phải đã có link hồ sơ).
+  - Màn Giám định Hạ vỏ mobile (hồ sơ chưa qua Văn phòng).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -606,6 +1040,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-069 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-118 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

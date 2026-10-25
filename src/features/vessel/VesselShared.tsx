@@ -1,7 +1,8 @@
 import React from 'react';
 import { Ship } from 'lucide-react';
-import { VesselList, VesselMode, VESSEL_MODE_LABELS } from '../../types/depot';
-import { vesselListProgress } from '../../services/vessel';
+import { ContainerRecord, VesselList } from '../../types/depot';
+import type { DepotState } from '../../services/depotStore';
+import { ContainerOperationCode, containerOperation, vesselListProgress } from '../../services/vessel';
 import { formatDateTime } from '../../services/datetime';
 
 // Thanh tiến độ 1 danh sách tàu — mọi bộ phận cùng theo dõi (DEC-069)
@@ -30,34 +31,6 @@ export const VesselListTitle: React.FC<{ list: VesselList }> = ({ list }) => (
     {list.shippingLineCode && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">{list.shippingLineCode}</span>}
     {list.status === 'APPROVED' && <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">ĐÃ DUYỆT</span>}
   </span>
-);
-
-// Tiến độ các danh sách đang mở (dùng ở màn mobile các bộ phận)
-export const VesselProgressPanel: React.FC<{ lists: VesselList[]; mode: VesselMode; selectedId?: string; onSelect?: (id: string) => void }> = ({
-  lists,
-  mode,
-  selectedId,
-  onSelect,
-}) => (
-  <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
-    <p className="text-[11px] font-bold uppercase text-slate-600">Tiến độ {VESSEL_MODE_LABELS[mode]} ({lists.length} danh sách)</p>
-    {lists.length === 0 ? (
-      <p className="text-xs text-slate-500">Chưa có danh sách {VESSEL_MODE_LABELS[mode].toLowerCase()} nào đang mở.</p>
-    ) : (
-      lists.map((l) => (
-        <button
-          key={l.id}
-          type="button"
-          onClick={() => onSelect?.(l.id)}
-          disabled={!onSelect}
-          className={`block w-full space-y-1.5 rounded-md border p-2.5 text-left text-xs ${selectedId === l.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'} disabled:cursor-default`}
-        >
-          <VesselListTitle list={l} />
-          <VesselProgressBar list={l} />
-        </button>
-      ))
-    )}
-  </div>
 );
 
 // Nút chọn lớn cho màn mobile (một lựa chọn)
@@ -91,3 +64,24 @@ export function ChoiceButtons<T extends string>({
     </div>
   );
 }
+
+// DEC-083: nhãn TÁC NGHIỆP (Hạ vỏ / Cấp vỏ / Nhập tàu + tàu / Xuất tàu + tàu) cho màn Vệ sinh / Xe nâng
+const OP_TONE: Record<ContainerOperationCode, string> = {
+  HA_VO: 'bg-blue-600 text-white',
+  CAP_VO: 'bg-violet-600 text-white',
+  NHAP_TAU: 'bg-emerald-600 text-white',
+  XUAT_TAU: 'bg-amber-500 text-slate-900',
+};
+
+export const OperationBadge: React.FC<{ state: DepotState; container: ContainerRecord; large?: boolean; hideVessel?: boolean; block?: boolean }> = ({ state, container, large, hideVessel, block }) => {
+  const op = containerOperation(state, container);
+  return (
+    <span
+      data-testid="operation-badge"
+      className={`${block ? "flex w-full justify-center text-center" : "inline-flex"} flex-wrap items-center gap-x-1.5 rounded font-black uppercase ${OP_TONE[op.code]} ${large ? "px-2.5 py-1 text-sm" : "px-1.5 py-1 text-[10px]"}`}
+    >
+      {op.label}
+      {!hideVessel && op.vesselName && <span className={`font-semibold normal-case ${large ? 'text-xs' : ''}`}>• Tàu {op.vesselName}</span>}
+    </span>
+  );
+};

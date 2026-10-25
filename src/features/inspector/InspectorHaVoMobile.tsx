@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { InspectionFields } from '../../components/InspectionFields';
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,8 +15,6 @@ import {
   X,
 } from 'lucide-react';
 import {
-  CLEANING_ITEM_OPTIONS,
-  DAMAGE_QUICK_SUGGESTIONS,
   FieldCleaningItem,
   FieldConditionClass,
   FieldStuffingClass,
@@ -23,7 +22,6 @@ import {
 } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import {
-  normalizeCleaningItems,
   deleteGateInFieldRecord,
   recordGateInFieldStep,
 } from '../../services/depotOperations';
@@ -36,9 +34,6 @@ interface Props {
   onOpenDossier?: (masterDossierCode: string) => void;
 }
 
-const QUICK_YEARS = [
-  2001, 2002, 2005, 2008, 2010, 2012, 2015, 2017, 2018, 2019, 2020, 2022,
-];
 
 
 export const InspectorHaVoMobile: React.FC<Props> = ({
@@ -80,6 +75,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     useState<FieldStuffingClass | null>(null);
   const [cleaningItems, setCleaningItems] = useState<FieldCleaningItem[]>([]);
   const [manufactureYear, setManufactureYear] = useState<string>('');
+  const [toInspectionRack, setToInspectionRack] = useState(false); // DEC-109
 
   // Bước xác nhận cuối sau khi đã nhập đủ và bấm NEXT
   const [isReadyToConfirmStep, setIsReadyToConfirmStep] =
@@ -140,6 +136,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     setStuffingClass(null);
     setCleaningItems([]);
     setManufactureYear('');
+    setToInspectionRack(false);
     setIsReadyToConfirmStep(false);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -171,28 +168,6 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
       }
     };
     reader.readAsDataURL(file);
-  };
-
-  const toggleDamageSuggestion = (remark: string) => {
-    setSelectedDamageRemarks((prev) =>
-      prev.includes(remark)
-        ? prev.filter((r) => r !== remark)
-        : [...prev, remark]
-    );
-  };
-
-  const toggleCleaningOption = (item: FieldCleaningItem) => {
-    if (item === 'KHÔNG VỆ SINH') {
-      setCleaningItems(['KHÔNG VỆ SINH']);
-      return;
-    }
-    const withoutNone = cleaningItems.filter((x) => x !== 'KHÔNG VỆ SINH');
-    if (withoutNone.includes(item)) {
-      const next = withoutNone.filter((x) => x !== item);
-      setCleaningItems(next);
-    } else {
-      setCleaningItems(normalizeCleaningItems([...withoutNone, item]));
-    }
   };
 
   // Kiểm tra đã nhập đủ tất cả các trường bắt buộc chưa
@@ -266,6 +241,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
         stuffingClass,
         cleaningItems,
         manufactureYear: parsedYear,
+        toInspectionRack,
       });
 
       onUpdateState(next);
@@ -718,159 +694,36 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   </button>
                 </div>
 
-                {/* 1. TRẠNG THÁI: DAMAGE / AV */}
-                <div className="space-y-1.5 rounded-lg border border-slate-200 bg-white p-3">
-                  <label className="block text-xs font-bold text-slate-800">
-                    1. TRẠNG THÁI : DAMAGE / AV *
+                {/* UI-02: form Giám định dùng chung (hiện lần lượt từng mục) */}
+                <InspectionFields
+                  progressive
+                  value={{
+                    condition: conditionClass || '',
+                    damage: selectedDamageRemarks,
+                    damageNote: customDamageNote,
+                    stuffing: stuffingClass || '',
+                    cleaning: cleaningItems,
+                    year: manufactureYear,
+                  }}
+                  onChange={(x) => {
+                    setConditionClass(x.condition || null);
+                    setSelectedDamageRemarks(x.condition === 'DAMAGE' ? x.damage : []);
+                    setCustomDamageNote(x.condition === 'DAMAGE' ? x.damageNote : '');
+                    setStuffingClass(x.stuffing || null);
+                    setCleaningItems(x.cleaning);
+                    setManufactureYear(x.year);
+                  }}
+                />
+
+                {/* DEC-109: chưa giám định ngay được → Xe nâng HẠ KỆ GIÁM ĐỊNH (tình trạng trên là mô phỏng ban đầu) */}
+                {isAllFieldsValid && (
+                  <label className={`flex items-start gap-2 rounded-lg border p-3 text-xs ${toInspectionRack ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-white'}`}>
+                    <input type="checkbox" checked={toInspectionRack} onChange={(e) => setToInspectionRack(e.target.checked)} className="mt-0.5 h-4 w-4" />
+                    <span>
+                      <span className="block font-bold text-slate-900">HẠ KỆ GIÁM ĐỊNH</span>
+                      <span className="block text-[11px] text-slate-600">Chưa giám định được ngay — Xe nâng hạ cont lên kệ giám định, không hạ về bay.</span>
+                    </span>
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['AV', 'DAMAGE'] as FieldConditionClass[]).map((cls) => (
-                      <button
-                        key={cls}
-                        type="button"
-                        onClick={() => setConditionClass(cls)}
-                        className={`rounded-lg border py-2.5 text-sm font-bold transition ${
-                          conditionClass === cls
-                            ? cls === 'DAMAGE'
-                              ? 'border-rose-600 bg-rose-600 text-white'
-                              : 'border-emerald-600 bg-emerald-600 text-white'
-                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        {cls}
-                      </button>
-                    ))}
-                  </div>
-
-                  {conditionClass === 'DAMAGE' && (
-                    <div className="rounded-lg border border-rose-200 bg-rose-50/40 p-2.5 space-y-2 mt-2">
-                      <p className="text-xs font-semibold text-rose-900">
-                        Chọn lỗi hư hỏng (Bắt buộc chọn xong mới mở phần tiếp theo) *:
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {DAMAGE_QUICK_SUGGESTIONS.map((item) => {
-                          const active = selectedDamageRemarks.includes(item);
-                          return (
-                            <button
-                              key={item}
-                              type="button"
-                              onClick={() => toggleDamageSuggestion(item)}
-                              className={`rounded border px-2 py-1 text-xs font-medium ${
-                                active
-                                  ? 'border-rose-600 bg-rose-600 text-white'
-                                  : 'border-slate-300 bg-white text-slate-700'
-                              }`}
-                            >
-                              {item}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <input
-                        type="text"
-                        value={customDamageNote}
-                        onChange={(e) => setCustomDamageNote(e.target.value)}
-                        placeholder="Ghi chú thêm hư hỏng..."
-                        className="w-full rounded border border-slate-300 bg-white px-2.5 py-1.5 text-xs"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* 2. PHÂN LOẠI ĐÓNG HÀNG: M / K / E (CHỈ HIỂN THỊ KHI ĐÃ XONG MỤC 1) */}
-                {Boolean(conditionClass && isDamageValid) && (
-                  <div className="space-y-1.5 rounded-lg border border-slate-200 bg-white p-3">
-                    <label className="block text-xs font-bold text-slate-800">
-                      2. PHÂN LOẠI ĐÓNG HÀNG : M / K / E *
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(['M', 'K', 'E'] as FieldStuffingClass[]).map((stf) => (
-                        <button
-                          key={stf}
-                          type="button"
-                          onClick={() => setStuffingClass(stf)}
-                          className={`rounded-lg border py-2.5 text-sm font-bold transition ${
-                            stuffingClass === stf
-                              ? 'border-blue-600 bg-blue-600 text-white'
-                              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          {stf}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 3. TÌNH TRẠNG VỆ SINH (CHỈ HIỂN THỊ KHI ĐÃ XONG MỤC 1 & MỤC 2) */}
-                {Boolean(conditionClass && isDamageValid && stuffingClass) && (
-                  <div className="space-y-1.5 rounded-lg border border-slate-200 bg-white p-3">
-                    <label className="block text-xs font-bold text-slate-800">
-                      3. TÌNH TRẠNG VỆ SINH (Chọn 1 hoặc nhiều phương án) *
-                    </label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {CLEANING_ITEM_OPTIONS.map((item) => {
-                        const active = cleaningItems.includes(item);
-                        return (
-                          <button
-                            key={item}
-                            type="button"
-                            onClick={() => toggleCleaningOption(item)}
-                            className={`flex items-center justify-between rounded-lg border px-2.5 py-2 text-left text-xs font-semibold transition ${
-                              active
-                                ? 'border-blue-600 bg-blue-50 text-blue-900'
-                                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                            }`}
-                          >
-                            <span>{item}</span>
-                            {active && (
-                              <span className="font-bold text-blue-600">✓</span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* 4. AGE: NĂM SINH CONT (CHỈ HIỂN THỊ KHI ĐÃ XONG MỤC 1, 2 & 3) */}
-                {Boolean(
-                  conditionClass &&
-                    isDamageValid &&
-                    stuffingClass &&
-                    cleaningItems.length > 0
-                ) && (
-                  <div className="space-y-1.5 rounded-lg border border-slate-200 bg-white p-3">
-                    <label className="block text-xs font-bold text-slate-800">
-                      4. AGE (Năm sản xuất Cont: 2001, 2002...) *
-                    </label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={1980}
-                      max={2030}
-                      value={manufactureYear}
-                      onChange={(e) => setManufactureYear(e.target.value)}
-                      placeholder="Chọn nhanh bên dưới hoặc nhập 4 chữ số..."
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm font-bold text-slate-900"
-                    />
-                    <div className="grid grid-cols-6 gap-1">
-                      {QUICK_YEARS.map((yr) => (
-                        <button
-                          key={yr}
-                          type="button"
-                          onClick={() => setManufactureYear(String(yr))}
-                          className={`rounded border py-1.5 text-xs font-semibold ${
-                            Number(manufactureYear) === yr
-                              ? 'border-slate-900 bg-slate-900 text-white'
-                              : 'border-slate-200 bg-slate-50 text-slate-700'
-                          }`}
-                        >
-                          {yr}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 )}
 
                 {/* NÚT TIẾP TỤC (NEXT) -> CHỈ HIỂN THỊ KHI ĐÃ NHẬP XONG ĐỦ CẢ 4 MỤC */}
@@ -937,6 +790,11 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                         {cleaningItems.join(', ')}
                       </span>
                     </div>
+                    {toInspectionRack && (
+                      <div className="col-span-2 rounded border border-amber-500 bg-amber-50 p-2 text-center text-sm font-black text-amber-800">
+                        HẠ KỆ GIÁM ĐỊNH
+                      </div>
+                    )}
                   </div>
                 </div>
 

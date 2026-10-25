@@ -218,6 +218,7 @@ Các quan hệ một-nhiều, nhiều-nhiều và điều kiện bắt buộc ph
 - **Hồ sơ cấp vỏ** (`gate_out_orders`): thêm `PAYMENT_PENDING`, SĐT lái xe, dòng chi phí; một container chỉ có tối đa 1 hồ sơ cấp vỏ đang hiệu lực.
 - **Booking**: `requested_qty` có thể rỗng; số đã cấp đếm từ hồ sơ cấp vỏ.
 - **Vai trò** thêm `QUOTATION`. **Gate In** thêm `driver_phone`.
+- **Vị trí bãi (DEC-082)**: `yard_blocks.max_bay / max_row / max_tier` cho phép 0 hoặc NULL = không dùng chiều đó; mã `BLOCK-…`; ràng buộc chống trùng ô **chỉ khi đủ Block + Bay + Row + Tier** (DEC-087), thiếu chiều thì nhiều cont chung 1 vị trí; Block không có chiều nào không giới hạn số cont.
 - **Lịch sử vị trí**: thêm loại `YARD_SHIFT` (ĐẢO CHUYỂN). SỬA VỊ TRÍ hành chính không ghi lịch sử vị trí, chỉ ghi `audit_logs`.
 - **Nhập tàu / Xuất tàu (DEC-069)**: bảng `vessel_lists` (mode `NHAP_TAU`/`XUAT_TAU`, tên tàu, `planned_at`, hãng tàu — bắt buộc với NHAP_TAU, danh sách số xe, `status` OPEN/APPROVED, người / giờ lập, duyệt) và `vessel_list_items` (số cont, size, type, `status` PENDING/INSPECTED/DONE, `dossier_code` `NT-`/`XT-` UNIQUE, `container_id`, số xe, kết quả giám định, ảnh chụp trạng thái / vị trí lúc lập, người / giờ thực hiện). Ràng buộc: 1 cont chỉ ở 1 danh sách XUẤT TÀU đang mở; cont NHẬP TÀU không trùng lượt đang tồn bãi. Duyệt chỉ khi mọi dòng DONE. Không có chứng từ / phiếu thu.
 - **Mã hồ sơ (DEC-068)**: tiền tố `HV-`, `CV-`, `NT-`, `XT-` (theo ngày), `PT-`, `PTT-` (theo năm). Migration dữ liệu cũ: `IN-`/`HS-` → `HV-`, `OUT-`/`GO-` → `CV-`, `PTM-` → `PTT-`.
@@ -230,6 +231,8 @@ Các quan hệ một-nhiều, nhiều-nhiều và điều kiện bắt buộc ph
 - Chính sách RLS: chưa triển khai.
 
 ## 10. Hiệu năng & lưu trữ dữ liệu lớn (DEC-066 — bắt buộc khi viết schema P4-01)
+
+> Nơi đặt database, gói, sao lưu 3-2-1, tình huống vận hành (mất mạng hiện trường, thao tác đồng thời, chuyển từ Demo sang thật…): xem `docs/DATABASE_PLATFORM_ADVICE.md` (đề xuất, chờ chốt Q-037 → Q-040).
 
 ### 10.1. Quy mô thiết kế
 | Bảng | Mỗi tháng | 10 năm |

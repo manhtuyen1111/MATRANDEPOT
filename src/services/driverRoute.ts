@@ -56,7 +56,7 @@ export function getDriverRoute(state: DepotState, ticket: K80InternalTicket): Ro
     steps.push({ key: 'CLEANING', dept: 'VỆ SINH', action: `Quét mã • ${ticket.cleaningItems.join(' + ')}`, done: cleaningWo.workStatus === 'COMPLETED', doneAt: cleaningWo.completedAt, doneBy: cleaningWo.completedBy });
   }
   steps.push(
-    { key: 'FORKLIFT_PLACE', dept: 'XE NÂNG', action: 'Quét mã • hạ vỏ', done: Boolean(placement), doneAt: placement?.performedAt, doneBy: placement?.performedBy },
+    { key: 'FORKLIFT_PLACE', dept: 'XE NÂNG', action: gateIn?.toInspectionRack ? 'Quét mã • HẠ KỆ GIÁM ĐỊNH' : 'Quét mã • hạ vỏ', done: Boolean(placement), doneAt: placement?.performedAt, doneBy: placement?.performedBy },
     { key: 'OFFICE_RETURN', dept: 'VĂN PHÒNG', action: 'Quét mã • nhận EEIR / phiếu thu', done: Boolean(gateIn?.documentsReturnedAt), doneAt: gateIn?.documentsReturnedAt, doneBy: gateIn?.documentsReturnedBy }
   );
   return steps;
@@ -86,6 +86,14 @@ export function documentPackOf(state: DepotState, ticket: K80InternalTicket): Do
     dossierCode: ticket.operationMode === 'CAP_VO' ? ticket.outDossierCode || ticket.masterDossierCode : ticket.masterDossierCode,
     receipts: state.paymentReceipts.filter((r) => txIds.includes(r.transactionId)),
   };
+}
+
+// DEC-110: XEM TRƯỚC bộ chứng từ (EEIR + phiếu thu) — chỉ xem, KHÔNG ghi trả chứng từ, KHÔNG in, KHÔNG tăng số lần in
+export function previewDocumentPack(state: DepotState, input: { scannedQrCode: string }): DocumentPack {
+  assertPermission(state, 'GATE_IN_OFFICE', 'chỉ Văn phòng / Quản lý được xem chứng từ.');
+  const ticket = findTicketByQr(state, input.scannedQrCode);
+  if (!ticket) throw new Error('Không tìm thấy phiếu K80 khớp mã vừa quét.');
+  return documentPackOf(state, ticket);
 }
 
 // Văn phòng quét QR lần cuối: chỉ khi các bước trước đã xong; mỗi phiếu trả chứng từ 1 lần

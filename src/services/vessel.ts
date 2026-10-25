@@ -82,8 +82,76 @@ export function vesselExportBlocker(c: ContainerRecord): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// 1. VĂN PHÒNG — LẬP DANH SÁCH
+// 1. VĂN PHÒNG / QUẢN LÝ — LẬP, SỬA, THÊM CONT, BỎ CONT, XÓA DANH SÁCH (chỉ khi chưa duyệt — DEC-070)
 // ---------------------------------------------------------------------------
+type ImportRow = { containerNo: string; size: ContainerSize; type: ContainerType };
+
+function validateHeader(mode: VesselMode, input: { vesselName: string; plannedAt: string; truckNos: string[] }) {
+  const vesselName = input.vesselName.trim().toUpperCase();
+  if (!vesselName) throw new Error('Bắt buộc nhập TÊN TÀU.');
+  if (!input.plannedAt || Number.isNaN(new Date(input.plannedAt).getTime())) {
+    throw new Error(`Bắt buộc nhập THỜI GIAN ${label(mode)} hợp lệ (dd/MM/yyyy HH:mm:ss).`);
+  }
+  const truckNos = normalizeTrucks(input.truckNos);
+  if (truckNos.length === 0) throw new Error(`Bắt buộc nhập DANH SÁCH SỐ XE ${label(mode)}.`);
+  return { vesselName, truckNos };
+}
+
+function assertShippingLine(state: DepotState, code?: string): string {
+  const line = state.partners.find((p) => p.isShippingLine && p.code === code);
+  if (!line) throw new Error('Bắt buộc chọn HÃNG TÀU theo Danh mục chung.');
+  return line.code;
+}
+
+// Dòng NHẬP TÀU mới: kiểm tra số cont, size / type, trùng tồn vỏ / hồ sơ Hạ vỏ / danh sách khác / chính danh sách
+function buildImportItems(state: DepotState, rows: ImportRow[], existing: VesselListItem[] = []): VesselListItem[] {
+  if (rows.length === 0) throw new Error('Danh sách nhập tàu chưa có container nào.');
+  const seen = new Set(existing.map((i) => i.containerNo));
+  return rows.map((r) => {
+    const no = normalizeContainerNo(r.containerNo);
+    if (seen.has(no)) throw new Error(`Container ${no} bị trùng trong danh sách.`);
+    seen.add(no);
+    if (!state.containerSizes.includes(r.size)) throw new Error(`Size "${r.size}" của ${no} không có trong Danh mục.`);
+    if (!state.containerTypes.includes(r.type)) throw new Error(`Type "${r.type}" của ${no} không có trong Danh mục.`);
+    const conflict = gateInContainerConflict(state, no);
+    if (conflict) throw new Error(conflict);
+    const other = pendingImportOf(state, no);
+    if (other) throw new Error(`Container ${no} đang chờ nhập ở danh sách tàu ${other.vesselName}.`);
+    return { id: newId('vsi'), containerNo: no, size: r.size, type: r.type, status: 'PENDING' as const };
+  });
+}
+
+// Dòng XUẤT TÀU mới: chọn từ tồn vỏ, cấp mã XT- và đánh dấu cont đang trong danh sách
+function buildExportItems(state: DepotState, containerIds: string[]): { state: DepotState; items: VesselListItem[] } {
+  const ids = Array.from(new Set(containerIds));
+  if (ids.length === 0) throw new Error('Danh sách xuất tàu chưa có container nào (chọn từ tồn vỏ).');
+  let next = state;
+  const items: VesselListItem[] = [];
+  for (const id of ids) {
+    const c = next.containers.find((x) => x.id === id);
+    if (!c || c.status === 'GATED_OUT') throw new Error('Có container không còn tồn bãi — tải lại danh sách.');
+    const blocker = vesselExportBlocker(c);
+    if (blocker) throw new Error(`Container ${c.containerNo} không đưa vào XUẤT TÀU được: ${blocker}.`);
+    const allocated = allocateCode(next, 'XT');
+    next = allocated.state;
+    const itemId = newId('vsi');
+    items.push({
+      id: itemId,
+      containerNo: c.containerNo,
+      size: c.size,
+      type: c.type,
+      status: 'PENDING',
+      dossierCode: allocated.code,
+      containerId: c.id,
+      conditionClass: c.conditionClass,
+      stuffingClass: c.stuffingClass,
+      locationAtList: formatLocation(c),
+    });
+    next = updateContainerById(next, c.id, { vesselExportItemId: itemId });
+  }
+  return { state: next, items };
+}
+
 export function createVesselList(
   state: DepotState,
   input: {
@@ -92,81 +160,94 @@ export function createVesselList(
     plannedAt: string;
     truckNos: string[];
     shippingLineCode?: string;
-    importItems?: { containerNo: string; size: ContainerSize; type: ContainerType }[];
+    importItems?: ImportRow[];
     exportContainerIds?: string[];
   }
 ): { state: DepotState; listId: string } {
   assertPermission(state, 'VESSEL_LIST_MANAGE', `chỉ Văn phòng / Quản lý được lập danh sách ${label(input.mode)}.`);
-  const vesselName = input.vesselName.trim().toUpperCase();
-  if (!vesselName) throw new Error('Bắt buộc nhập TÊN TÀU.');
-  if (!input.plannedAt || Number.isNaN(new Date(input.plannedAt).getTime())) {
-    throw new Error(`Bắt buộc nhập THỜI GIAN ${label(input.mode)} hợp lệ (dd/MM/yyyy HH:mm:ss).`);
-  }
-  const truckNos = normalizeTrucks(input.truckNos);
-  if (truckNos.length === 0) throw new Error(`Bắt buộc nhập DANH SÁCH SỐ XE ${label(input.mode)}.`);
-
-  const now = nowIso();
+  const { vesselName, truckNos } = validateHeader(input.mode, input);
   const listId = newId('vsl');
   let next = state;
-  const items: VesselListItem[] = [];
-
+  let items: VesselListItem[];
+  let shippingLineCode: string | undefined;
   if (input.mode === 'NHAP_TAU') {
-    const line = state.partners.find((p) => p.isShippingLine && p.code === input.shippingLineCode);
-    if (!line) throw new Error('Bắt buộc chọn HÃNG TÀU theo Danh mục chung.');
-    const rows = input.importItems || [];
-    if (rows.length === 0) throw new Error('Danh sách nhập tàu chưa có container nào.');
-    const seen = new Set<string>();
-    for (const r of rows) {
-      const no = normalizeContainerNo(r.containerNo);
-      if (seen.has(no)) throw new Error(`Container ${no} bị trùng trong danh sách.`);
-      seen.add(no);
-      if (!state.containerSizes.includes(r.size)) throw new Error(`Size "${r.size}" của ${no} không có trong Danh mục.`);
-      if (!state.containerTypes.includes(r.type)) throw new Error(`Type "${r.type}" của ${no} không có trong Danh mục.`);
-      const conflict = gateInContainerConflict(state, no);
-      if (conflict) throw new Error(conflict);
-      const other = pendingImportOf(state, no);
-      if (other) throw new Error(`Container ${no} đang chờ nhập ở danh sách tàu ${other.vesselName}.`);
-      items.push({ id: newId('vsi'), containerNo: no, size: r.size, type: r.type, status: 'PENDING' });
-    }
-    next = { ...next, vesselLists: [{ id: listId, mode: input.mode, vesselName, shippingLineCode: line.code, plannedAt: input.plannedAt, truckNos, items, status: 'OPEN', createdBy: state.currentUser.fullName, createdAt: now }, ...(next.vesselLists || [])] };
+    shippingLineCode = assertShippingLine(state, input.shippingLineCode);
+    items = buildImportItems(state, input.importItems || []);
   } else {
-    const ids = Array.from(new Set(input.exportContainerIds || []));
-    if (ids.length === 0) throw new Error('Danh sách xuất tàu chưa có container nào (chọn từ tồn vỏ).');
-    for (const id of ids) {
-      const c = next.containers.find((x) => x.id === id);
-      if (!c || c.status === 'GATED_OUT') throw new Error('Có container không còn tồn bãi — tải lại danh sách.');
-      const blocker = vesselExportBlocker(c);
-      if (blocker) throw new Error(`Container ${c.containerNo} không đưa vào XUẤT TÀU được: ${blocker}.`);
-      const allocated = allocateCode(next, 'XT');
-      next = allocated.state;
-      const itemId = newId('vsi');
-      items.push({
-        id: itemId,
-        containerNo: c.containerNo,
-        size: c.size,
-        type: c.type,
-        status: 'PENDING',
-        dossierCode: allocated.code,
-        containerId: c.id,
-        conditionClass: c.conditionClass,
-        stuffingClass: c.stuffingClass,
-        locationAtList: formatLocation(c),
-      });
-      next = updateContainerById(next, c.id, { vesselExportItemId: itemId });
-    }
-    next = { ...next, vesselLists: [{ id: listId, mode: input.mode, vesselName, plannedAt: input.plannedAt, truckNos, items, status: 'OPEN', createdBy: state.currentUser.fullName, createdAt: now }, ...(next.vesselLists || [])] };
+    ({ state: next, items } = buildExportItems(state, input.exportContainerIds || []));
   }
-
+  const list: VesselList = {
+    id: listId, mode: input.mode, vesselName, shippingLineCode, plannedAt: input.plannedAt, truckNos, items,
+    status: 'OPEN', createdBy: state.currentUser.fullName, createdAt: nowIso(),
+  };
   return {
     listId,
     state: appendAudit(
-      next,
+      { ...next, vesselLists: [list, ...(next.vesselLists || [])] },
       input.mode === 'NHAP_TAU' ? 'NHAP_TAU_LAP_DANH_SACH' : 'XUAT_TAU_LAP_DANH_SACH',
       'VESSEL',
       vesselName,
       `Văn phòng lập danh sách ${label(input.mode)} tàu ${vesselName} (${formatDateTime(input.plannedAt)}): ${items.length} container, xe ${truckNos.join(', ')}`
     ),
   };
+}
+
+// Sửa thông tin chung: tên tàu, thời gian, danh sách số xe; hãng tàu (NHẬP TÀU) chỉ đổi được khi chưa giám định cont nào
+export function updateVesselList(
+  state: DepotState,
+  input: { listId: string; mode: VesselMode; vesselName: string; plannedAt: string; truckNos: string[]; shippingLineCode?: string }
+): DepotState {
+  assertPermission(state, 'VESSEL_LIST_MANAGE', `chỉ Văn phòng / Quản lý được sửa danh sách ${label(input.mode)}.`);
+  const list = findList(state, input.listId, input.mode);
+  const { vesselName, truckNos } = validateHeader(input.mode, input);
+  let shippingLineCode = list.shippingLineCode;
+  if (input.mode === 'NHAP_TAU') {
+    const code = assertShippingLine(state, input.shippingLineCode);
+    if (code !== list.shippingLineCode && list.items.some((i) => i.status !== 'PENDING')) {
+      throw new Error('Đã có container được giám định — không đổi HÃNG TÀU được.');
+    }
+    shippingLineCode = code;
+  }
+  return appendAudit(
+    { ...state, vesselLists: state.vesselLists.map((l) => (l.id === list.id ? { ...l, vesselName, plannedAt: input.plannedAt, truckNos, shippingLineCode } : l)) },
+    'VESSEL_UPDATE_LIST',
+    'VESSEL',
+    vesselName,
+    `Sửa danh sách ${label(list.mode)}: tàu ${list.vesselName} → ${vesselName}, ${formatDateTime(input.plannedAt)}, xe ${truckNos.join(', ')}${shippingLineCode ? `, hãng ${shippingLineCode}` : ''}`
+  );
+}
+
+// Thêm container vào danh sách đang mở
+export function addVesselListItems(
+  state: DepotState,
+  input: { listId: string; mode: VesselMode; importItems?: ImportRow[]; exportContainerIds?: string[] }
+): DepotState {
+  assertPermission(state, 'VESSEL_LIST_MANAGE', `chỉ Văn phòng / Quản lý được sửa danh sách ${label(input.mode)}.`);
+  const list = findList(state, input.listId, input.mode);
+  let next = state;
+  let items: VesselListItem[];
+  if (input.mode === 'NHAP_TAU') items = buildImportItems(state, input.importItems || [], list.items);
+  else ({ state: next, items } = buildExportItems(state, input.exportContainerIds || []));
+  return appendAudit(
+    { ...next, vesselLists: next.vesselLists.map((l) => (l.id === list.id ? { ...l, items: [...l.items, ...items] } : l)) },
+    'VESSEL_ADD_ITEMS',
+    'VESSEL',
+    list.vesselName,
+    `Thêm ${items.length} container vào danh sách ${label(list.mode)} tàu ${list.vesselName}: ${items.map((i) => i.containerNo).join(', ')}`
+  );
+}
+
+// Xóa cả danh sách: chỉ khi CHƯA có container nào được tác nghiệp (tránh mất hồ sơ đã tạo)
+export function deleteVesselList(state: DepotState, input: { listId: string; mode: VesselMode }): DepotState {
+  assertPermission(state, 'VESSEL_LIST_MANAGE', `chỉ Văn phòng / Quản lý được xóa danh sách ${label(input.mode)}.`);
+  const list = findList(state, input.listId, input.mode);
+  const worked = list.items.filter((i) => i.status !== 'PENDING');
+  if (worked.length > 0) {
+    throw new Error(`Đã có ${worked.length} container được tác nghiệp — không xóa danh sách được (chỉ bỏ được cont còn chờ).`);
+  }
+  let next: DepotState = { ...state, vesselLists: state.vesselLists.filter((l) => l.id !== list.id) };
+  for (const i of list.items) if (i.containerId) next = updateContainerById(next, i.containerId, { vesselExportItemId: undefined });
+  return appendAudit(next, 'VESSEL_DELETE_LIST', 'VESSEL', list.vesselName, `Xóa danh sách ${label(list.mode)} tàu ${list.vesselName} (${list.items.length} container chưa tác nghiệp)`);
 }
 
 // Bỏ 1 container còn chờ khỏi danh sách (chưa tác nghiệp)
@@ -433,4 +514,102 @@ export function parseVesselImportText(
 // Danh sách số xe: mỗi dòng / dấu phẩy 1 xe
 export function parseTruckList(text: string): string[] {
   return normalizeTrucks(text.split(/[\n,;]+/));
+}
+
+// DEC-070: danh sách container luôn xếp theo SIZE (20 → 40 → 45...) rồi số container A→Z
+export function sortVesselItems<T extends { containerNo: string; size: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => Number(a.size) - Number(b.size) || a.containerNo.localeCompare(b.containerNo));
+}
+
+// ---------------------------------------------------------------------------
+// THEO DÕI TÁC NGHIỆP HIỆN TRƯỜNG (DEC-071): mỗi bộ phận biết cont nào mình phải làm / đã làm / chưa tới lượt
+// ---------------------------------------------------------------------------
+export type VesselFieldStep = 'NT_INSPECT' | 'NT_PLACE' | 'XT_EXPORT';
+export type VesselStepStatus = 'TODO' | 'WAIT' | 'DONE';
+
+export interface VesselStepInfo {
+  status: VesselStepStatus;
+  note: string;      // Mô tả ngắn hiển thị trên thẻ
+  by?: string;
+  at?: string;
+  truckNo?: string;
+}
+
+export function vesselStepInfo(state: DepotState, step: VesselFieldStep, item: VesselListItem): VesselStepInfo {
+  if (step === 'NT_INSPECT') {
+    return item.status === 'PENDING'
+      ? { status: 'TODO', note: 'Chờ giám định' }
+      : { status: 'DONE', note: item.status === 'DONE' ? 'Đã giám định • đã hạ bãi' : 'Đã giám định', by: item.inspectedBy, at: item.inspectedAt, truckNo: item.truckNo };
+  }
+  if (step === 'NT_PLACE') {
+    if (item.status === 'DONE') return { status: 'DONE', note: 'Đã hạ bãi', by: item.doneBy, at: item.doneAt, truckNo: item.truckNo };
+    if (item.status === 'PENDING') return { status: 'WAIT', note: 'Chưa về — chờ Giám định' };
+    const c = state.containers.find((x) => x.id === item.containerId);
+    if (c?.needsCleaning) return { status: 'WAIT', note: 'Chờ Vệ sinh xong', truckNo: item.truckNo };
+    return { status: 'TODO', note: 'Chờ hạ bãi', truckNo: item.truckNo };
+  }
+  return item.status === 'DONE'
+    ? { status: 'DONE', note: 'Đã xuất tàu', by: item.doneBy, at: item.doneAt, truckNo: item.truckNo }
+    : { status: 'TODO', note: 'Chờ xuất' };
+}
+
+export interface VesselStepSummary {
+  total: number;
+  todo: number;
+  wait: number;
+  done: number;
+  mine: number;                          // số cont người đang dùng đã làm ở bước này
+  byTruck: { truckNo: string; count: number }[]; // số cont đã làm theo từng xe
+}
+
+export function vesselStepSummary(state: DepotState, step: VesselFieldStep, list: VesselList): VesselStepSummary {
+  const infos = list.items.map((i) => vesselStepInfo(state, step, i));
+  const done = infos.filter((x) => x.status === 'DONE');
+  const counts = new Map<string, number>(list.truckNos.map((t) => [t, 0]));
+  for (const d of done) if (d.truckNo) counts.set(d.truckNo, (counts.get(d.truckNo) || 0) + 1);
+  return {
+    total: infos.length,
+    todo: infos.filter((x) => x.status === 'TODO').length,
+    wait: infos.filter((x) => x.status === 'WAIT').length,
+    done: done.length,
+    mine: done.filter((x) => x.by === state.currentUser.fullName).length,
+    byTruck: Array.from(counts, ([truckNo, count]) => ({ truckNo, count })),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// DEC-083: TÁC NGHIỆP hiện tại của 1 cont — để Vệ sinh / Xe nâng biết đang làm việc gì
+//   NT- → NHẬP TÀU (+ tên tàu); trong danh sách xuất tàu → XUẤT TÀU (+ tên tàu);
+//   đã lập lệnh cấp → CẤP VỎ; còn lại → HẠ VỎ.
+// ---------------------------------------------------------------------------
+export type ContainerOperationCode = 'HA_VO' | 'CAP_VO' | 'NHAP_TAU' | 'XUAT_TAU';
+export const CONTAINER_OPERATION_LABELS: Record<ContainerOperationCode, string> = {
+  HA_VO: 'HẠ VỎ',
+  CAP_VO: 'CẤP VỎ',
+  NHAP_TAU: 'NHẬP TÀU',
+  XUAT_TAU: 'XUẤT TÀU',
+};
+
+export interface ContainerOperation {
+  code: ContainerOperationCode;
+  label: string;
+  dossierCode: string;   // mã hồ sơ của tác nghiệp (HV- / CV- / NT- / XT-)
+  vesselName?: string;   // Nhập tàu / Xuất tàu
+}
+
+export function containerOperation(state: DepotState, c: ContainerRecord): ContainerOperation {
+  const lists = state.vesselLists || [];
+  if (c.vesselExportItemId) {
+    const list = lists.find((l) => l.items.some((i) => i.id === c.vesselExportItemId));
+    const item = list?.items.find((i) => i.id === c.vesselExportItemId);
+    return { code: 'XUAT_TAU', label: CONTAINER_OPERATION_LABELS.XUAT_TAU, dossierCode: item?.dossierCode || c.masterDossierCode, vesselName: list?.vesselName };
+  }
+  if (c.status === 'ALLOCATED' && c.outDossierCode) {
+    return { code: 'CAP_VO', label: CONTAINER_OPERATION_LABELS.CAP_VO, dossierCode: c.outDossierCode };
+  }
+  if (c.masterDossierCode.startsWith('NT-')) {
+    const list = lists.find((l) => l.mode === 'NHAP_TAU' && l.items.some((i) => i.dossierCode === c.masterDossierCode));
+    return { code: 'NHAP_TAU', label: CONTAINER_OPERATION_LABELS.NHAP_TAU, dossierCode: c.masterDossierCode, vesselName: list?.vesselName };
+  }
+  return { code: 'HA_VO', label: CONTAINER_OPERATION_LABELS.HA_VO, dossierCode: c.masterDossierCode };
 }

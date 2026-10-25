@@ -74,6 +74,123 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Added (2026-10-24, DEC-069)
 - NHẬP TÀU / XUẤT TÀU: Văn phòng lập danh sách theo tàu (tên tàu, thời gian, số xe, container) và duyệt khi xong; Giám định xác nhận cont nhập tàu (mobile); Vệ sinh / Xe nâng có menu Nhập tàu; Giám định / Xe nâng xuất tàu (mobile); hồ sơ NT- / XT-; Báo cáo Nhập tàu / Xuất tàu + sheet NHẬP VỎ / XUẤT VỎ của Tổng hợp. Không thu phí, không K80. Kiểm thử: 68/68 pass.
 
+### Changed (2026-10-24, DEC-070)
+- Bỏ menu Vệ sinh → Nhập tàu (cont nhập tàu vào Chờ vệ sinh). Văn phòng → Nhập tàu / Xuất tàu: danh sách đang thực hiện → chi tiết; sửa thông tin / thêm cont / xóa danh sách khi chưa duyệt. Danh sách cont xếp size 20 → 40, số cont A→Z; ô tìm ở Giám định / Xe nâng lọc ngay khi gõ như Tồn vỏ. Kiểm thử: 72/72 pass.
+
+### Changed (2026-10-24, DEC-071)
+- Màn hiện trường Nhập tàu / Xuất tàu (Giám định, Xe nâng): khung tiến độ (xong/tổng, chờ làm, bạn đã làm, theo xe), tab Chờ làm / Đã xong / Tất cả, báo cont đã làm để chống làm trùng, dải Vừa xong. Xe nâng → Nhập tàu dùng chung mẫu màn này. Kiểm thử: 73/73 pass.
+
+### Fixed (2026-10-24, DEC-072)
+- Hồ sơ container: "In hồ sơ" in ra trang trắng → thay bằng In EEIR / In EEIR + phiếu thu cho từng lượt Hạ vỏ / Cấp vỏ. EEIR và phiếu thu dùng chung khung in (công ty, Số, Tác nghiệp, chữ ký, In lúc). In kèm phiếu thu vẫn đếm số lần in. Trả chứng từ: "In lại EEIR" không in lại phiếu thu. Kiểm thử: 74/74 pass.
+
+### Added (2026-10-24, DEC-073)
+- Văn phòng → Xuất tàu → Lập danh sách / Thêm cont: nút Tìm hàng loạt như Tồn vỏ (dán nhiều số cont, chọn tất cả cont tìm được, báo số không có trong tồn vỏ). Kiểm thử: 75/75 pass.
+
+### Changed (2026-10-24, DEC-074)
+- Tồn vỏ: cột Date in (thời gian vào bãi) giữa Hãng tàu và Trạng thái; Excel thêm DATE IN + VÀO BÃI BẰNG; sắp lại độ rộng cột. Kiểm thử: 75/75 pass.
+
+### Changed (2026-10-24, DEC-075)
+- Menu: số đếm việc chờ cho Giám định / Xe nâng → Nhập tàu, Xuất tàu; mọi việc hiện trường đang chờ hiện ô đếm màu cam + chấm nhấp nháy, nhóm menu cũng báo màu cam. Kiểm thử: 75/75 pass.
+
+### Changed (2026-10-24, DEC-076)
+- Phiếu thu: nút Tạo phiếu thu TTT cùng hàng Tra cứu / Xuất Excel. In EEIR + phiếu thu: mỗi phiếu nửa tờ A4 (A5), 2 phiếu 1 tờ; EEIR bỏ bảng bộ phận, thêm tình trạng vỏ Giám định. Kiểm thử: 76/76 pass.
+
+### Changed (2026-10-24, DEC-077)
+- Phiếu thu: danh sách full chiều ngang, đủ cột; tạo phiếu thu trước theo bố cục Khách hàng → Chi phí (biểu giá × số lượng, tổng do hệ thống tính) → Hình thức thanh toán; bản in PHIẾU THU TRƯỚC (TTT) có khung nổi bật PTT-, SL / đơn giá. Kiểm thử: 78/78 pass.
+
+### Changed (2026-10-24, DEC-078)
+- Menu: biểu tượng tác nghiệp mobile và số đếm nằm trong cột cố định → thẳng hàng.
+
+### Changed (2026-10-24, DEC-079)
+- Phiếu thu: bỏ cột Xác nhận thu, Trạng thái sát cột Đã in, cột Phương thức TT (Tiền mặt / Chuyển khoản), tách Thời gian / Nhân viên; phiếu thu trước hiện số lượt đã dùng / còn lại và bảng từng lần trừ (chứng từ, hồ sơ); Excel thêm cột tương ứng. Kiểm thử: 81/81 pass.
+
+### Added (2026-10-24, DEC-080)
+- Quy chuẩn trang nhiều dữ liệu (docs/UI_DATA_LIST_STANDARD.md): danh sách full màn hình, chi tiết mở cửa sổ trượt bên phải (DetailDrawer), chọn 20 / 50 / 100 dòng / trang. Áp dụng: Phiếu thu, Tồn vỏ, Nhập / Xuất tàu (Văn phòng), Báo cáo, Hồ sơ container. Kiểm thử: 83/83 pass.
+
+### Added (2026-10-24, DEC-081)
+- EEIR cho hồ sơ Nhập tàu / Xuất tàu (cùng khung EEIR Hạ vỏ / Cấp vỏ, có tình trạng vỏ Giám định, tên tàu, số xe); nút In EEIR NHẬP TÀU / XUẤT TÀU trong hồ sơ. Kiểm thử: 84/84 pass.
+
+### Changed (2026-10-24, UI-02)
+- Gom form Giám định (Trạng thái / Đóng hàng / Vệ sinh / AGE) của Giám định → Hạ vỏ và → Nhập tàu thành 1 component dùng chung `InspectionFields` (Hạ vỏ giữ cách hiện lần lượt từng mục). Không đổi nghiệp vụ. Kiểm thử: 85/85 pass.
+
+### Changed (2026-10-24, DEC-082)
+- Vị trí theo cấu hình thực tế: mã luôn BLOCK- (chỉ gõ A, B, C), mô tả bên dưới; Bay / Row / Tier tối đa để trống = không dùng; mọi tác vụ vị trí chỉ hiện / bắt buộc chiều đã cấu hình; bỏ đặt cấp Block trước. Kiểm thử: 87/87 pass.
+
+### Added (2026-10-24, DEC-083)
+- Vệ sinh / Xe nâng: nhãn tác nghiệp (Hạ vỏ / Cấp vỏ / Nhập tàu + tàu / Xuất tàu + tàu) ở khung cont vừa quét và danh sách chờ. Kiểm thử: 89/89 pass.
+
+### Changed (2026-10-24, DEC-084)
+- Báo giá → Chờ báo giá: bảng giống Tồn vỏ (thêm cột Hư hỏng), bấm dòng mở cửa sổ trượt nhập remark + giờ công. Kiểm thử: 90/90 pass.
+
+### Changed (2026-10-24, DEC-085)
+- Danh sách chờ Vệ sinh / Xe nâng: số cont ở cột cố định (thẳng hàng), nhãn tác nghiệp + tên tàu xuống dòng 2.
+
+### Changed (2026-10-24, DEC-086)
+- Chờ báo giá: cột Tình trạng sửa chữa + Giờ công thay Hư hỏng giám định; cột Tác nghiệp (Cập nhật / Xác nhận chờ sửa chữa); báo giá lưu nháp trước, xác nhận mới chuyển Sửa chữa. Kiểm thử: 91/91 pass.
+
+### Changed (2026-10-24, DEC-087)
+- Vị trí: chỉ chặn trùng khi đủ Block – Bay – Row – Tier; thiếu chiều thì nhiều cont chung 1 vị trí.
+
+### Added (2026-10-24, DEC-088)
+- Chờ báo giá: Tìm hàng loạt, chọn nhiều, Xác nhận chờ sửa chữa hàng loạt (bỏ qua cont chưa cập nhật). Kiểm thử: 92/92 pass.
+
+### Changed (2026-10-24, DEC-089)
+- Danh sách chờ Vệ sinh / Xe nâng: ô tác nghiệp riêng bên trái, bên phải số cont / size-type / vị trí, tầng 2 tên tàu tách riêng + thông tin phụ. Kiểm thử: 93/93 pass.
+
+### Changed (2026-10-24, DEC-090)
+- Xe nâng → Đảo chuyển: vị trí thẳng cột (lưới cột cố định số cont / size-type / vị trí canh trái). Kiểm thử: 94/94 pass.
+
+### Changed (2026-10-24, DEC-091)
+- Đảo chuyển: vị trí tách cột Block / Bay / Row / Tier thẳng hàng với hàng tiêu đề, thiếu thì để trống.
+
+### Changed (2026-10-24, DEC-092)
+- Đảo chuyển: số cont / size-type / vị trí trên 1 dòng (BLOCK-A / 17-02-02), ô Block rộng cố định để vị trí thẳng cột; bỏ hàng tiêu đề cột.
+
+### Changed (2026-10-24, DEC-093)
+- Hạ vỏ / Cấp vỏ: ô Khách hàng gõ tay hoặc chọn, gợi ý từ Danh mục; khách ngoài Danh mục chỉ thanh toán Tiền mặt / Chuyển khoản. Kiểm thử: 96/96 pass.
+
+### Changed (2026-10-24, DEC-094)
+- Đảo chuyển: ô trạng thái (AV / DAMAGE) đầu dòng, số cont + vị trí, dòng cuối size/type + nhãn tiến độ. Kiểm thử: 96/96 pass.
+
+### Changed (2026-10-24, DEC-095)
+- Đảo chuyển: tiến độ sang bên phải vị trí; dòng 2 hiện Ghi chú (Remark Văn phòng, nền vàng khi có).
+
+### Changed (2026-10-24, DEC-096)
+- Đảo chuyển: ô AV / DAMAGE cùng kích thước ô tác nghiệp ở danh sách Xe nâng.
+
+### Docs (2026-10-24, phiên 2)
+- Tư vấn nền tảng database: docs/DATABASE_PLATFORM_ADVICE.md (Supabase Singapore + PITR, 3 môi trường, sao lưu 3-2-1, 11 tình huống vận hành, lộ trình); Q-040 mới.
+
+### Changed (2026-10-25, DEC-097)
+- Hình thức thanh toán (Hạ vỏ / Cấp vỏ): TTTT — Trực tiếp đứng đầu, chọn sẵn + Tiền mặt. Kiểm thử: 97/97 pass.
+
+### Changed (2026-10-25, DEC-098 → DEC-101)
+- Mã phiếu thu mới: `PT-TT-YYMMDD-NNNN` (trực tiếp) và `PT-TTR-YYMMDD-NNNN` (nạp trước), duy nhất, đánh số theo ngày. Mã cũ giữ nguyên (DEC-098).
+- Tồn vỏ: thêm cột Hình thức TT và Phiếu thu, cả trên màn và trong Excel (DEC-099).
+- Ký hiệu hình thức thanh toán đổi thành TT / TTR / TTS (DEC-100).
+- Menu Báo cáo: "Sửa chữa chi tiết" → "Sửa chữa" (DEC-101).
+- Đề xuất xuất hóa đơn từ phiếu thu: Q-041. Kiểm thử: 99/99 pass, build PASS.
+
+### Added (2026-10-25, DEC-102)
+- Ô lọc nhanh thời gian cho mọi bộ lọc: Hôm nay / Hôm qua / Tuần này / Tuần trước / Tháng này / Tháng trước / Năm nay / Tùy chọn. Mặc định Hôm nay, tuần tính từ Thứ Hai; chọn Tùy chọn mới hiện ô Từ - Đến. Đổi nốt nhãn TTT → TTR. Kiểm thử: 100/100 pass, build PASS.
+- Sửa DEC-100 trong ngày: hình thức thanh toán là TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU, ký hiệu TT / TTR / TTS. Mã phiếu thu `PT-TT-…` / `PT-TTR-…` (bỏ TL / TR).
+- Đổi tên hiển thị "Phiếu thu mẹ" → **PHIẾU THU TRẢ TRƯỚC** trên màn hình, giấy in, Excel và thông báo (DEC-103). Kiểm thử: 100/100 pass, build PASS.
+- Tồn vỏ: cột **MÃ PHIẾU THU** chỉ hiện mã của lượt (TT `PT-TT-…`, TTR `PTT-…`); TTS / chưa thanh toán để trống; bỏ thông tin chứng từ (DEC-104).
+- Tồn vỏ: bấm MÃ PHIẾU THU mở đúng phiếu thu ở Văn phòng → Phiếu thu (DEC-105).
+- Ứng dụng mở với dữ liệu sạch (giữ danh mục, xóa dữ liệu tác nghiệp, mã đếm lại từ đầu); nút "Xóa dữ liệu" có xác nhận (DEC-106).
+- Văn phòng → Phiếu thu: bỏ chứng từ, số container ngay sau Tác nghiệp; Excel phiếu thu cùng thứ tự, cột HÌNH THỨC TT ghi chữ (DEC-107). Kiểm thử: 102/102 pass, build PASS.
+- Dữ liệu test đầy đủ trường hợp (MSK; 20 / 40 / 45; đủ hình thức thanh toán, khóa, DAMAGE, vệ sinh, cấp vỏ, nhập / xuất tàu), tạo bằng hàm nghiệp vụ thật; nút "Nạp dữ liệu test" (DEC-108). Kiểm thử: 103/103 pass, build PASS.
+- Hạ vỏ: ô tích **HẠ KỆ GIÁM ĐỊNH** ở Giám định → Xe nâng chỉ được hạ vào block Kệ giám định (Admin đánh dấu trong Danh mục Vị trí), K80 ghi rõ bước; giám định xong thì Đảo chuyển về vị trí phù hợp (DEC-109). Kiểm thử: 106/106 pass, build PASS.
+- Trả chứng từ: nút **Xem trước** bên trái nút Trả chứng từ — xem EEIR + phiếu thu, không ghi trả, không in, không tính lần in (DEC-110). Kiểm thử: 107/107 pass, build PASS.
+- Phiếu thu có **mã bảo mật 12 ký tự** + đường link in trên phiếu; trang khách hàng `#/hoa-don` để gửi MST / Gmail / Tên công ty / Địa chỉ / Ghi chú; trạng thái CHƯA XHD → YÊU CẦU XHD → ĐÃ XHD; **thêm lại vai trò Kế toán** cập nhật ĐÃ XHD (số hóa đơn MISA tùy chọn); cột / lọc / Excel Hóa đơn; dữ liệu test có đủ 3 trạng thái (DEC-111, Q-041). Kiểm thử: 115/115 pass, build PASS.
+- Phiếu thu: khối Xuất hóa đơn hiện **mã bảo mật** để đối soát (DEC-112). Kiểm thử: 115/115 pass, build PASS.
+- Phiếu thu in: "Người thu tiền" là nhân viên Văn phòng (không còn "HỆ THỐNG (Ngân hàng)"); trang yêu cầu xuất hóa đơn có **hướng dẫn từng bước** + cách xử lý khi sai thông tin / đã xuất; khối Xuất hóa đơn hiện cả đường link (DEC-113). Kiểm thử: 116/116 pass, build PASS.
+- Trang yêu cầu xuất hóa đơn: hướng dẫn rút gọn 3 bước + 1 dòng "Ghi sai?", đặt dưới ô Mã bảo mật (DEC-114).
+- Xe nâng → Đảo chuyển: mỗi cont đúng 2 dòng trên mobile — dòng 1 số cont | size/type | tiến độ; dòng 2 vị trí | ghi chú (DEC-115). Kiểm thử: 116/116 pass, build PASS.
+- Mobile: ô nhập / chọn dùng chữ 16px trên màn nhỏ để điện thoại không tự phóng to làm vỡ khung; Đảo chuyển bỏ ô Ghi chú tác nghiệp (DEC-116). Kiểm thử: 117/117 pass, build PASS.
+- Link dữ liệu thống nhất kiểu Mã hồ sơ toàn app (`linkCls`); Tồn vỏ cột MÃ PHIẾU THU cùng định dạng Mã hồ sơ (DEC-117). Kiểm thử: 117/117 pass, build PASS.
+- Mọi mã có hồ sơ lưu trữ đều là link: Phiếu thu (mã phiếu thu, mã hồ sơ, phiếu thu trả trước), Tồn vỏ (mã hồ sơ), Báo giá, Trả chứng từ (DEC-118). Kiểm thử: 117/117 pass, build PASS.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

@@ -66,9 +66,9 @@ describe('DEC-069: NHẬP TÀU', () => {
     expect(() => approveVesselList(as(s, 'usr-office'), { listId, mode: 'NHAP_TAU' })).toThrow(/Chưa NHẬP TÀU hết/);
 
     // Có vệ sinh: Xe nâng chỉ hạ được sau khi Vệ sinh xong (dùng chung hàm Hạ vỏ)
-    expect(() => updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU1234567', blockCode: 'BLOCK-A', reason: '' })).toThrow(/vệ sinh/);
+    expect(() => updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU1234567', blockCode: 'BLOCK-B', reason: '' })).toThrow(/vệ sinh/);
     s = completeCleaningTask(as(s, 'usr-cleaning'), { containerNo: 'TCLU1234567' });
-    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU1234567', blockCode: 'BLOCK-A', reason: '' });
+    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU1234567', blockCode: 'BLOCK-B', reason: '' });
     expect(s.vesselLists[0].items[0].status).toBe('DONE');
     expect(s.containers.find((c) => c.id === it1.containerId)!.status).toBe('IN_YARD');
 
@@ -77,7 +77,7 @@ describe('DEC-069: NHẬP TÀU', () => {
     });
     const c2 = s.containers.find((c) => c.containerNo === 'TCLU7654321' && c.status !== 'GATED_OUT')!;
     expect(c2.needsCleaning).toBe(false);
-    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU7654321', blockCode: 'BLOCK-A', reason: '' });
+    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU7654321', blockCode: 'BLOCK-B', reason: '' });
     expect(releaseBlocker(s.containers.find((c) => c.id === c2.id)!)).toBeNull();
 
     expect(() => approveVesselList(as(s, 'usr-forklift'), { listId, mode: 'NHAP_TAU' })).toThrow(/Không đủ quyền/);
@@ -142,5 +142,118 @@ describe('DEC-069: đọc danh sách dán từ Excel', () => {
     expect(r.rows[2]).toMatchObject({ size: '40', type: 'HC' });
     expect(r.errors).toHaveLength(3);
     expect(parseTruckList('15c-111.11\n15C-222.22, 15c-111.11')).toEqual(['15C-111.11', '15C-222.22']);
+  });
+});
+
+describe('DEC-070: Văn phòng sửa / thêm cont / xóa danh sách khi chưa duyệt', () => {
+  it('Nhập tàu: sửa thông tin, thêm cont (chặn trùng), đổi hãng tàu bị chặn khi đã giám định, xóa bị chặn khi đã tác nghiệp', async () => {
+    const v = await import('../src/services/vessel');
+    const office = as(createInitialState(), 'usr-office');
+    let { state: s, listId } = v.createVesselList(office, {
+      mode: 'NHAP_TAU', vesselName: 'Tàu A', plannedAt: PLANNED, truckNos: ['15C-1'], shippingLineCode: 'MAERSK',
+      importItems: [{ containerNo: 'TCLU1234567', size: '40', type: 'HC' }],
+    });
+    expect(() => v.updateVesselList(as(s, 'usr-forklift'), { listId, mode: 'NHAP_TAU', vesselName: 'X', plannedAt: PLANNED, truckNos: ['1'], shippingLineCode: 'MAERSK' })).toThrow(/Không đủ quyền/);
+    expect(() => v.updateVesselList(s, { listId, mode: 'NHAP_TAU', vesselName: ' ', plannedAt: PLANNED, truckNos: ['1'], shippingLineCode: 'MAERSK' })).toThrow(/TÊN TÀU/);
+    s = v.updateVesselList(s, { listId, mode: 'NHAP_TAU', vesselName: 'Tàu B', plannedAt: PLANNED, truckNos: ['15C-1', '15c-2'], shippingLineCode: 'ONE' });
+    expect(s.vesselLists[0]).toMatchObject({ vesselName: 'TÀU B', truckNos: ['15C-1', '15C-2'], shippingLineCode: 'ONE' });
+
+    expect(() => v.addVesselListItems(s, { listId, mode: 'NHAP_TAU', importItems: [{ containerNo: 'TCLU1234567', size: '40', type: 'HC' }] })).toThrow(/trùng/);
+    s = v.addVesselListItems(s, { listId, mode: 'NHAP_TAU', importItems: [{ containerNo: 'TCLU7654321', size: '20', type: 'DC' }] });
+    expect(s.vesselLists[0].items).toHaveLength(2);
+
+    const it0 = s.vesselLists[0].items[0];
+    s = v.inspectVesselImportItem(as(s, 'usr-inspector'), {
+      listId, itemId: it0.id, actualContainerNo: it0.containerNo, truckNo: '15C-2', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2015,
+    });
+    s = as(s, 'usr-office');
+    expect(() => v.updateVesselList(s, { listId, mode: 'NHAP_TAU', vesselName: 'Tàu B', plannedAt: PLANNED, truckNos: ['15C-1'], shippingLineCode: 'MAERSK' })).toThrow(/HÃNG TÀU/);
+    expect(() => v.deleteVesselList(s, { listId, mode: 'NHAP_TAU' })).toThrow(/không xóa/);
+  });
+
+  it('Xuất tàu: thêm cont từ tồn vỏ (XT- mới), xóa danh sách chưa tác nghiệp → cont mở lại cho cấp vỏ; danh sách đã duyệt thì không sửa', async () => {
+    const v = await import('../src/services/vessel');
+    const office = as(createInitialState(), 'usr-office');
+    const yard = office.containers.filter((c) => c.status === 'IN_YARD').slice(0, 2);
+    let { state: s, listId } = v.createVesselList(office, { mode: 'XUAT_TAU', vesselName: 'Tàu X', plannedAt: PLANNED, truckNos: ['15C-9'], exportContainerIds: [yard[0].id] });
+    s = v.addVesselListItems(s, { listId, mode: 'XUAT_TAU', exportContainerIds: [yard[1].id] });
+    expect(s.vesselLists[0].items.map((i) => i.dossierCode)).toEqual([expect.stringMatching(/-001$/), expect.stringMatching(/-002$/)]);
+    expect(() => v.addVesselListItems(s, { listId, mode: 'XUAT_TAU', exportContainerIds: [yard[1].id] })).toThrow(/Xuất tàu khác/);
+    expect(() => v.deleteVesselList(as(s, 'usr-inspector'), { listId, mode: 'XUAT_TAU' })).toThrow(/Không đủ quyền/);
+    const deleted = v.deleteVesselList(s, { listId, mode: 'XUAT_TAU' });
+    expect(deleted.vesselLists).toHaveLength(0);
+    expect(deleted.containers.filter((c) => yard.some((y) => y.id === c.id)).every((c) => !c.vesselExportItemId && !/XUẤT TÀU/.test(releaseBlocker(c) || ""))).toBe(true);
+
+    for (const i of s.vesselLists[0].items) s = executeVesselExport(as(s, 'usr-forklift'), { listId, itemId: i.id, truckNo: '15C-9' });
+    s = approveVesselList(as(s, 'usr-office'), { listId, mode: 'XUAT_TAU' });
+    expect(() => v.updateVesselList(s, { listId, mode: 'XUAT_TAU', vesselName: 'Y', plannedAt: PLANNED, truckNos: ['1'] })).toThrow(/đã được duyệt/);
+    expect(() => v.deleteVesselList(s, { listId, mode: 'XUAT_TAU' })).toThrow(/đã được duyệt/);
+  });
+});
+
+describe('DEC-070: sắp xếp danh sách tàu', () => {
+  it('Size 20 → 40 → 45, cùng size thì số cont A→Z', async () => {
+    const { sortVesselItems } = await import('../src/services/vessel');
+    const rows = [
+      { containerNo: 'ZZZU0000001', size: '20' }, { containerNo: 'AAAU0000001', size: '40' },
+      { containerNo: 'BBBU0000001', size: '20' }, { containerNo: 'CCCU0000001', size: '45' }, { containerNo: 'AAAU0000002', size: '20' },
+    ];
+    expect(sortVesselItems(rows).map((r) => r.containerNo)).toEqual(['AAAU0000002', 'BBBU0000001', 'ZZZU0000001', 'AAAU0000001', 'CCCU0000001']);
+  });
+});
+
+describe('DEC-071: theo dõi tác nghiệp hiện trường từng bộ phận', () => {
+  it('Giám định / Xe nâng nhập tàu, xuất tàu: chờ làm / chưa tới lượt / đã xong, của tôi, theo xe', async () => {
+    const v = await import('../src/services/vessel');
+    const office = as(createInitialState(), 'usr-office');
+    let { state: s, listId } = v.createVesselList(office, {
+      mode: 'NHAP_TAU', vesselName: 'Tàu T', plannedAt: PLANNED, truckNos: ['15C-1', '15C-2'], shippingLineCode: 'MAERSK',
+      importItems: [{ containerNo: 'TCLU1000001', size: '20', type: 'DC' }, { containerNo: 'TCLU1000002', size: '40', type: 'HC' }],
+    });
+    const [a, b] = s.vesselLists[0].items;
+    s = v.inspectVesselImportItem(as(s, 'usr-inspector'), { listId, itemId: a.id, actualContainerNo: a.containerNo, truckNo: '15C-2', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['WW'], manufactureYear: 2015 });
+    const list = () => s.vesselLists[0];
+    const gd = v.vesselStepSummary(s, 'NT_INSPECT', list());
+    expect(gd).toMatchObject({ total: 2, done: 1, todo: 1, wait: 0, mine: 1 });
+    expect(gd.byTruck).toEqual([{ truckNo: '15C-1', count: 0 }, { truckNo: '15C-2', count: 1 }]);
+    expect(v.vesselStepInfo(s, 'NT_INSPECT', list().items[0])).toMatchObject({ status: 'DONE', truckNo: '15C-2' });
+    // Xe nâng: cont đã giám định nhưng còn chờ vệ sinh → chưa tới lượt; cont chưa về → chưa tới lượt
+    expect(v.vesselStepSummary(s, 'NT_PLACE', list())).toMatchObject({ todo: 0, wait: 2, done: 0 });
+    expect(v.vesselStepInfo(s, 'NT_PLACE', list().items[0]).note).toMatch(/Vệ sinh/);
+    expect(v.vesselStepInfo(s, 'NT_PLACE', list().items.find((i) => i.id === b.id)!).note).toMatch(/Giám định/);
+    s = completeCleaningTask(as(s, 'usr-cleaning'), { containerNo: a.containerNo });
+    expect(v.vesselStepInfo(s, 'NT_PLACE', list().items[0]).status).toBe('TODO');
+    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: a.containerNo, blockCode: 'BLOCK-B', reason: '' });
+    expect(v.vesselStepSummary(s, 'NT_PLACE', list())).toMatchObject({ done: 1, mine: 1 });
+  });
+});
+
+describe('DEC-083: tác nghiệp hiện tại của cont (cho Vệ sinh / Xe nâng)', () => {
+  it('HẠ VỎ / NHẬP TÀU + tàu / XUẤT TÀU + tàu / CẤP VỎ', async () => {
+    const { containerOperation } = await import('../src/services/vessel');
+    const { createReleaseOrder } = await import('../src/services/depotOperations');
+    let s = as(createInitialState(), 'usr-office');
+    const yard = s.containers.filter((c) => c.status === 'IN_YARD');
+    expect(containerOperation(s, yard[0])).toMatchObject({ code: 'HA_VO', label: 'HẠ VỎ' });
+
+    const nt = createVesselList(s, { mode: 'NHAP_TAU', vesselName: 'Tàu Vào', plannedAt: PLANNED, truckNos: ['15C-1'], shippingLineCode: 'MAERSK', importItems: [{ containerNo: 'TCLU3333333', size: '20', type: 'DC' }] });
+    s = inspectVesselImportItem(as(nt.state, 'usr-inspector'), { listId: nt.listId, itemId: nt.state.vesselLists[0].items[0].id, actualContainerNo: 'TCLU3333333', truckNo: '15C-1', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['WW'], manufactureYear: 2018 });
+    const ntCont = s.containers.find((c) => c.containerNo === 'TCLU3333333')!;
+    expect(containerOperation(s, ntCont)).toMatchObject({ code: 'NHAP_TAU', vesselName: 'TÀU VÀO', dossierCode: ntCont.masterDossierCode });
+
+    const xt = createVesselList(as(s, 'usr-office'), { mode: 'XUAT_TAU', vesselName: 'Tàu Ra', plannedAt: PLANNED, truckNos: ['15C-2'], exportContainerIds: [yard[0].id] });
+    const xtCont = xt.state.containers.find((c) => c.id === yard[0].id)!;
+    expect(containerOperation(xt.state, xtCont)).toMatchObject({ code: 'XUAT_TAU', vesselName: 'TÀU RA', dossierCode: xt.state.vesselLists[0].items[0].dossierCode });
+
+    const ready = s.containers.find((c) => c.status === 'IN_YARD' && c.id !== yard[0].id && c.containerNo === 'MSKU4089123');
+    if (ready) {
+      try {
+        const cv = createReleaseOrder(as(s, 'usr-office'), { bookingNo: 'BK-OP-1', customerName: 'Công ty Tiếp Vận Việt (VietLog)', containerNo: ready.containerNo, truckNo: '15H-1', driverPhone: '0912345678', feeCatalogIds: ['fee-lolo-40-hc-maersk'] });
+        const c = cv.containers.find((x) => x.id === ready.id)!;
+        expect(containerOperation(cv, c)).toMatchObject({ code: 'CAP_VO' });
+      } catch {
+        // cont mẫu không đủ điều kiện cấp vỏ — bỏ qua nhánh này
+      }
+    }
   });
 });

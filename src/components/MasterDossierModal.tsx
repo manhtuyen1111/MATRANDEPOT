@@ -1,12 +1,15 @@
 import React from 'react';
 import { CheckCircle2, Clock, Printer, QrCode, ReceiptText, X } from 'lucide-react';
-import { ContainerStatus, K80InternalTicket, PaymentVoucher, RECEIPT_OPERATION_LABELS } from '../types/depot';
+import { ContainerStatus, K80InternalTicket, PaymentVoucher, RECEIPT_OPERATION_LABELS, VesselList, VesselListItem } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
 import { formatLocation } from '../services/core';
 import { paymentLabelOf, receiptOperationOf } from '../services/payments';
-import { isTicketClosed } from '../services/driverRoute';
+import { documentPackOf, isTicketClosed } from "../services/driverRoute";
+import { recordReceiptPrint } from "../services/depotOperations";
+import { formatDateTime } from "../services/datetime";
+import { EeirPrintSheet, PrintPortal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
 import { findVesselItemByCode } from '../services/vessel';
-import { formatViTime } from './shared';
+import { linkCls, formatViTime } from './shared';
 
 interface Props {
   masterDossierCode: string | null; // Mã hồ sơ HẠ VỎ (HV-...) hoặc CẤP VỎ (CV-...)
@@ -14,6 +17,7 @@ interface Props {
   onClose: () => void;
   onOpenK80Ticket?: (ticket: K80InternalTicket) => void;
   onOpenReceipt?: (key: string) => void; // DEC-051: mở Văn phòng → Phiếu thu
+  onUpdateState?: (next: DepotState) => void; // DEC-072: ghi nhận số lần in phiếu thu khi in kèm EEIR
 }
 
 const CONTAINER_STATUS: Record<ContainerStatus, string> = {
@@ -85,7 +89,7 @@ const Step: React.FC<{ no: number; title: string; tone?: 'default' | 'payment'; 
 
 const ReceiptLink: React.FC<{ label: string; target: string; onOpenReceipt?: (key: string) => void }> = ({ label, target, onOpenReceipt }) =>
   onOpenReceipt ? (
-    <button type="button" onClick={() => onOpenReceipt(target)} className="inline-flex items-center gap-1 font-mono font-bold text-blue-700 underline hover:text-blue-900">
+    <button type="button" onClick={() => onOpenReceipt(target)} className={`inline-flex items-center gap-1 ${linkCls}`}>
       <ReceiptText className="h-3.5 w-3.5" />
       {label}
     </button>
@@ -110,7 +114,7 @@ function paymentInfo(state: DepotState, voucher?: PaymentVoucher) {
     const m = state.masterReceipts.find((x) => x.receiptCode === voucher.masterReceiptCode);
     const topup = m && state.paymentTransactions.find((t) => t.masterReceiptId === m.id && t.status === 'SUCCEEDED');
     const r = topup && state.paymentReceipts.find((x) => x.transactionId === topup.id);
-    if (r) receipts.push({ no: r.receiptNo, target: r.receiptNo, note: `Phiếu thu gốc của Phiếu thu mẹ ${voucher.masterReceiptCode}` });
+    if (r) receipts.push({ no: r.receiptNo, target: r.receiptNo, note: `Phiếu thu gốc của Phiếu thu trả trước ${voucher.masterReceiptCode}` });
   }
 
   let status: string;
@@ -176,7 +180,14 @@ const PaymentBody: React.FC<{ state: DepotState; voucher?: PaymentVoucher; onOpe
 // ---------------------------------------------------------------------------
 // HỒ SƠ CONTAINER (DEC-058): thông tin container ở đầu → các bộ phận theo thứ tự tác nghiệp
 // ---------------------------------------------------------------------------
-export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, onClose, onOpenK80Ticket, onOpenReceipt }) => {
+export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, onClose, onOpenK80Ticket, onOpenReceipt, onUpdateState }) => {
+  // Esc để đóng hồ sơ (DEC-080)
+  React.useEffect(() => {
+    if (!masterDossierCode) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [masterDossierCode, onClose]);
   if (!masterDossierCode) return null;
 
   // DEC-069: mã XT- → lượt lưu bãi của container đã xuất tàu; mã NT- là hồ sơ lượt lưu bãi
@@ -313,10 +324,11 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-2 sm:p-4" role="dialog" aria-modal="true" aria-label="Hồ sơ container">
-      <div className="my-4 w-full max-w-4xl rounded-lg border border-slate-300 bg-white shadow-xl">
+    // DEC-080: hồ sơ mở dạng cửa sổ trượt bên phải (giống chi tiết các danh sách); bấm ra ngoài / Esc để đóng
+    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/30" role="dialog" aria-modal="true" aria-label="Hồ sơ container" onClick={onClose}>
+      <div className="h-full w-full overflow-y-auto bg-white shadow-2xl sm:w-[min(960px,80vw)]" onClick={(e) => e.stopPropagation()}>
         {/* THÔNG TIN CƠ BẢN CONTAINER — focus số cont */}
-        <header className="rounded-t-lg bg-slate-900 px-5 py-4 text-white">
+        <header className="bg-slate-900 px-5 py-4 text-white">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-300">Hồ sơ container</p>
@@ -506,12 +518,147 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
               {ticketClosed ? 'Xem phiếu K80 (đã đóng)' : 'Xem / in phiếu K80'}
             </button>
           )}
-          <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
-            <Printer className="h-4 w-4" />
-            In hồ sơ
-          </button>
         </footer>
+        <DossierPrintBar state={state} tickets={tickets} onUpdateState={onUpdateState} vessel={[...(importHit ? [importHit] : []), ...exportHits]} />
       </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// IN EEIR từ hồ sơ (DEC-072): mỗi lượt Hạ vỏ / Cấp vỏ 1 EEIR; in kèm phiếu thu thì ghi nhận số lần in (DEC-063)
+// ---------------------------------------------------------------------------
+const DossierPrintBar: React.FC<{
+  state: DepotState;
+  tickets: K80InternalTicket[];
+  onUpdateState?: (next: DepotState) => void;
+  // DEC-081: EEIR Nhập tàu / Xuất tàu (không có K80)
+  vessel?: { list: VesselList; item: VesselListItem }[];
+}> = ({ state, tickets, onUpdateState, vessel = [] }) => {
+  const [job, setJob] = React.useState<{ ticketCode: string; withReceipts: boolean } | null>(null);
+  const [vesselJob, setVesselJob] = React.useState<string | null>(null);
+  const [confirmCode, setConfirmCode] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  // In xong thì gỡ lớp in để không chặn giấy tờ khác (VD phiếu K80)
+  React.useEffect(() => {
+    const clear = () => {
+      setJob(null);
+      setVesselJob(null);
+    };
+    window.addEventListener("afterprint", clear);
+    return () => window.removeEventListener("afterprint", clear);
+  }, []);
+  // Mỗi tác nghiệp lấy phiếu K80 mới nhất (EEIR theo lượt Hạ vỏ / từng lệnh Cấp vỏ)
+  const seen = new Set<string>();
+  const packs = tickets
+    .filter((t) => {
+      const key = `${t.operationMode}-${t.outDossierCode || t.masterDossierCode}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((t) => documentPackOf(state, t));
+  if (packs.length === 0 && vessel.length === 0) return null;
+
+  // EEIR tàu: Nhập tàu in được từ khi Giám định xác nhận; Xuất tàu khi cont đã OUT
+  const vesselReady = (v: { list: VesselList; item: VesselListItem }) => (v.list.mode === 'NHAP_TAU' ? v.item.status !== 'PENDING' : v.item.status === 'DONE');
+  const printVessel = (itemId: string) => {
+    setError(null);
+    setJob(null);
+    setVesselJob(itemId);
+    setTimeout(() => window.print(), 150);
+  };
+  const vesselJobHit = vesselJob ? vessel.find((v) => v.item.id === vesselJob) : undefined;
+
+  const print = (ticketCode: string, withReceipts: boolean) => {
+    setError(null);
+    setConfirmCode(null);
+    if (withReceipts) {
+      const pack = packs.find((p) => p.ticket.ticketCode === ticketCode)!;
+      if (!onUpdateState) return setError('Màn này không ghi nhận được số lần in — in phiếu thu tại Văn phòng → Phiếu thu.');
+      try {
+        let next = state;
+        for (const r of pack.receipts) next = recordReceiptPrint(next, { receiptNo: r.receiptNo });
+        onUpdateState(next);
+      } catch (err) {
+        return setError(err instanceof Error ? err.message : 'Không in được phiếu thu');
+      }
+    }
+    setVesselJob(null);
+    setJob({ ticketCode, withReceipts });
+    setTimeout(() => window.print(), 150);
+  };
+
+  const jobPack = job ? packs.find((p) => p.ticket.ticketCode === job.ticketCode) : undefined;
+  const btn = 'inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold';
+  return (
+    <div className="space-y-2 border-t border-slate-200 px-5 py-3 text-xs">
+      {error && <p className="rounded-md bg-rose-50 px-3 py-2 text-rose-800">{error}</p>}
+      {packs.map((p) => {
+        const op = p.ticket.operationMode === 'CAP_VO' ? 'CẤP VỎ' : 'HẠ VỎ';
+        const printedBefore = p.receipts.filter((r) => (r.printLog?.length || 0) > 0);
+        return (
+          <div key={p.ticket.ticketCode} className="flex flex-wrap items-center justify-end gap-2">
+            <span className="mr-auto font-semibold text-slate-700">EEIR {op} — <span className="font-mono">{p.dossierCode}</span>{p.receipts.length > 0 && <> • {p.receipts.length} phiếu thu</>}</span>
+            {confirmCode === p.ticket.ticketCode ? (
+              <span className="inline-flex flex-wrap items-center gap-2 rounded-md border border-rose-300 bg-rose-50 px-2 py-1 text-[11px] text-rose-800">
+                {printedBefore.map((r) => `${r.receiptNo} đã in ${r.printLog!.length} lần (gần nhất ${formatDateTime(r.printLog![r.printLog!.length - 1].at)})`).join('; ')}. In lại?
+                <button type="button" onClick={() => print(p.ticket.ticketCode, true)} className="rounded bg-rose-600 px-2 py-1 font-bold text-white">In lại</button>
+                <button type="button" onClick={() => setConfirmCode(null)} className="rounded border border-slate-300 bg-white px-2 py-1">Hủy</button>
+              </span>
+            ) : (
+              <>
+                <button type="button" onClick={() => print(p.ticket.ticketCode, false)} className={`${btn} border border-slate-300 text-slate-700 hover:bg-slate-50`}>
+                  <Printer className="h-4 w-4" />
+                  In EEIR {op}
+                </button>
+                {p.receipts.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => (printedBefore.length ? setConfirmCode(p.ticket.ticketCode) : print(p.ticket.ticketCode, true))}
+                    className={`${btn} bg-slate-900 text-white hover:bg-slate-800`}
+                  >
+                    <Printer className="h-4 w-4" />
+                    In EEIR + phiếu thu
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })}
+      {vessel.map((v) => {
+        const op = v.list.mode === 'NHAP_TAU' ? 'NHẬP TÀU' : 'XUẤT TÀU';
+        const ready = vesselReady(v);
+        return (
+          <div key={v.item.id} className="flex flex-wrap items-center justify-end gap-2">
+            <span className="mr-auto font-semibold text-slate-700">
+              EEIR {op} — <span className="font-mono">{v.item.dossierCode}</span> • tàu {v.list.vesselName}
+            </span>
+            <button
+              type="button"
+              disabled={!ready}
+              title={ready ? '' : v.list.mode === 'NHAP_TAU' ? 'Chờ Giám định xác nhận cont' : 'Chờ cont xuất tàu'}
+              onClick={() => printVessel(v.item.id)}
+              className={`${btn} border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40`}
+            >
+              <Printer className="h-4 w-4" />
+              In EEIR {op}
+            </button>
+          </div>
+        );
+      })}
+      {jobPack && (
+        <PrintPortal>
+          <EeirPrintSheet state={state} ticket={jobPack.ticket} />
+          {job!.withReceipts && jobPack.receipts.map((r) => <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={r.printLog?.length || 1} />)}
+        </PrintPortal>
+      )}
+      {vesselJobHit && (
+        <PrintPortal>
+          <VesselEeirPrintSheet state={state} list={vesselJobHit.list} item={vesselJobHit.item} />
+        </PrintPortal>
+      )}
     </div>
   );
 };

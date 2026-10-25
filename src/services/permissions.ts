@@ -20,7 +20,9 @@ export const PERMISSIONS = {
   RELEASE_ORDER: ['OFFICE', 'MANAGER'],
   GATE_OUT_CONFIRM: ['FORKLIFT', 'OFFICE', 'MANAGER'],
   // DEC-047: bỏ vai trò Kế toán — Văn phòng tạo phiếu thu TTT và xác nhận tiền mặt
-  RECEIPT_VIEW: ['OFFICE', 'MANAGER'],
+  RECEIPT_VIEW: ['OFFICE', 'MANAGER', 'ACCOUNTANT'],
+  // DEC-111: thêm lại Kế toán — cập nhật ĐÃ XHD sau khi xuất hóa đơn trên MISA
+  INVOICE_ISSUE: ['ACCOUNTANT'],
   PREPAID_RECEIPT_CREATE: ['OFFICE'],
   PREPAID_CASH_CONFIRM: ['OFFICE'],
   REPORT_FINANCE: ['OFFICE', 'MANAGER'],
@@ -59,7 +61,6 @@ export const MENU_ACCESS: Record<WorkspaceMenuId, AppRole[]> = {
   VP_XUAT_TAU: ['OFFICE', 'MANAGER'],
   GD_NHAP_TAU: PERMISSIONS.VESSEL_IMPORT_INSPECT,
   GD_XUAT_TAU: ['INSPECTOR', 'MANAGER'],
-  VS_NHAP_TAU: ['CLEANING', 'OFFICE', 'MANAGER'],
   XN_NHAP_TAU: PERMISSIONS.FORKLIFT_OPS,
   XN_XUAT_TAU: ['FORKLIFT', 'MANAGER'],
   VS_CHO_VE_SINH: ['CLEANING', 'OFFICE', 'MANAGER'],
@@ -94,6 +95,7 @@ export const ASSIGNABLE_ROLES: AppRole[] = [
   'MANAGER',
   'ADMIN',
   'REPAIR_STAFF',
+  'ACCOUNTANT', // DEC-111
 ];
 
 export function canOpenMenu(user: StaffUser, menuId: WorkspaceMenuId): boolean {

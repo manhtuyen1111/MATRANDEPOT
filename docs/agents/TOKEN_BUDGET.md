@@ -9,7 +9,7 @@
 | Loại việc | Đọc | Không cần đọc |
 |---|---|---|
 | Sửa logic nghiệp vụ | Grep `docs/DECISIONS.md` theo từ khóa; file service liên quan; test liên quan | Toàn bộ docs, các màn UI không liên quan |
-| Sửa giao diện | `src/components/shared.tsx` (phần export), màn hình đó, `docs/agents/` skill ui | DECISIONS (trừ khi đổi hành vi) |
+| Sửa giao diện | `src/components/shared.tsx` (phần export), màn hình đó, `docs/agents/` skill ui; **trang danh sách / báo cáo: `docs/UI_DATA_LIST_STANDARD.md`** | DECISIONS (trừ khi đổi hành vi) |
 | Báo cáo / tra cứu | `src/services/reports.ts`, `ReportsWorkspace.tsx` | Payments, inspector |
 | Thanh toán / phiếu thu | `src/services/payments.ts`, DEC-031/032/033 | Yard, catalog |
 | Quyền | `src/services/permissions.ts`, `ROLE_PERMISSION_MATRIX.md` mục 2A | — |

@@ -17,9 +17,9 @@ import {
 } from '../../services/reports';
 import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
-import { defaultLastDayRange, fileStamp } from '../../services/datetime';
+import { quickRange, fileStamp } from '../../services/datetime';
 import { VesselReport } from './VesselReport';
-import { DateTimeField, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard } from '../../components/shared';
+import { linkCls, DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
 
 export type ReportSection = 'BC_HA_VO' | 'BC_CAP_VO' | 'BC_NHAP_TAU' | 'BC_XUAT_TAU' | 'BC_SUA_CHUA' | 'BC_TONG_HOP';
 
@@ -34,7 +34,7 @@ const TITLES: Record<ReportSection, string> = {
   BC_HA_VO: 'Báo cáo Hạ vỏ',
   BC_NHAP_TAU: 'Báo cáo Nhập tàu',
   BC_XUAT_TAU: 'Báo cáo Xuất tàu',
-  BC_SUA_CHUA: 'Báo cáo Sửa chữa chi tiết',
+  BC_SUA_CHUA: 'Báo cáo Sửa chữa',
   BC_TONG_HOP: 'Báo cáo Tổng hợp',
 };
 
@@ -86,9 +86,10 @@ export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossie
 };
 
 const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => {
-  const [draft, setDraft] = useState<OperationReportFilter>(() => ({ containerNo: '', ...defaultLastDayRange(), shippingLineCode: '', size: '' }));
+  const [draft, setDraft] = useState<OperationReportFilter>(() => ({ containerNo: '', ...quickRange('TODAY'), shippingLineCode: '', size: '' }));
   const [applied, setApplied] = useState<OperationReportFilter | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = usePageSize(`report-${section}`, 50); // DEC-080
   const showMoney = can(state.currentUser, 'REPORT_FINANCE');
 
   let outRows: PagedResult<GateOutOrder> | null = null;
@@ -97,9 +98,9 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
   if (applied) {
     const f = { ...applied, shippingLineCode: applied.shippingLineCode || undefined, size: applied.size || undefined };
     try {
-      if (section === 'BC_HA_VO') inRows = queryGateInReport(state, 'CUSTOMER_RETURN', f, page);
-      else if (section === 'BC_NHAP_TAU') inRows = queryGateInReport(state, 'VESSEL_IMPORT', f, page);
-      else outRows = queryGateOutReport(state, section === 'BC_CAP_VO' ? ['EMPTY_RELEASE'] : ['VESSEL_EXPORT'], f, page);
+      if (section === 'BC_HA_VO') inRows = queryGateInReport(state, 'CUSTOMER_RETURN', f, page, pageSize);
+      else if (section === 'BC_NHAP_TAU') inRows = queryGateInReport(state, 'VESSEL_IMPORT', f, page, pageSize);
+      else outRows = queryGateOutReport(state, section === 'BC_CAP_VO' ? ['EMPTY_RELEASE'] : ['VESSEL_EXPORT'], f, page, pageSize);
     } catch (err) {
       queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
     }
@@ -114,8 +115,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
             <span className={labelCls}>Số container</span>
             <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
           </label>
-          <DateTimeField label="Từ (dd/mm/yyyy hh:mm:ss)" value={draft.dateFrom || ''} onChange={(v) => setDraft({ ...draft, dateFrom: v })} />
-          <DateTimeField label="Đến (dd/mm/yyyy hh:mm:ss)" value={draft.dateTo || ''} onChange={(v) => setDraft({ ...draft, dateTo: v })} fallback="end" />
+          <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <label>
             <span className={labelCls}>Hãng tàu</span>
             <select value={draft.shippingLineCode} onChange={(e) => setDraft({ ...draft, shippingLineCode: e.target.value })} className={inputCls}>
@@ -173,7 +173,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
                 <tbody className="divide-y divide-slate-100">
                   {outRows.rows.map((o) => (
                     <tr key={o.id} className="hover:bg-slate-50">
-                      <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.gateOutCode)} className="font-mono text-blue-700 hover:underline">{o.gateOutCode}</button></td>
+                      <td className={linkCls}><button type="button" onClick={() => onOpenDossier(o.gateOutCode)} className="font-mono text-blue-700 hover:underline">{o.gateOutCode}</button></td>
                       <td className="px-3 py-2 font-mono font-bold">{o.containerNo}</td>
                       <td className="px-3 py-2 font-mono">{o.bookingNo}</td>
                       <td className="px-3 py-2">{o.receiverRep}</td>
@@ -209,7 +209,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
                 <tbody className="divide-y divide-slate-100">
                   {inRows.rows.map((o) => (
                     <tr key={o.id} className="hover:bg-slate-50">
-                      <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.masterDossierCode)} className="font-mono text-blue-700 hover:underline">{o.masterDossierCode}</button></td>
+                      <td className={linkCls}><button type="button" onClick={() => onOpenDossier(o.masterDossierCode)} className="font-mono text-blue-700 hover:underline">{o.masterDossierCode}</button></td>
                       <td className="px-3 py-2 font-mono font-bold">{o.containerNo || '-'}</td>
                       <td className="px-3 py-2">{o.size || '-'}/{o.type || '-'}</td>
                       <td className="px-3 py-2">{o.shippingLineCode || '-'}</td>
@@ -226,7 +226,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
                 </tbody>
               </table>
             )}
-            <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} />
+            <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} pageSize={pageSize} onPageSize={setPageSize} />
           </>
         )}
       </div>
@@ -235,7 +235,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
 };
 
 const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
-  const [range, setRange] = useState(() => defaultLastDayRange());
+  const [range, setRange] = useState(() => quickRange('TODAY'));
   const [sheets, setSheets] = useState<SheetData[] | null>(null);
   const [generatedAt, setGeneratedAt] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -256,8 +256,7 @@ const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
     <div className="space-y-4">
       <SectionCard title="Báo cáo Tổng hợp" icon={<FileSpreadsheet className="h-4 w-4 text-slate-500" />}>
         <form onSubmit={generate} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <DateTimeField label="Từ (dd/mm/yyyy hh:mm:ss) *" value={range.dateFrom || ''} onChange={(v) => setRange({ ...range, dateFrom: v })} />
-          <DateTimeField label="Đến (dd/mm/yyyy hh:mm:ss) *" value={range.dateTo || ''} onChange={(v) => setRange({ ...range, dateTo: v })} fallback="end" />
+          <DateRangeFilter value={range} onChange={(r) => setRange(r)} required />
           <button type="submit" className={primaryBtn}>Tạo báo cáo</button>
         </form>
         <p className="mt-2 text-[11px] text-slate-500">
@@ -299,9 +298,10 @@ const REPAIR_STATUS: Record<string, string> = {
 
 // BÁO CÁO SỬA CHỮA CHI TIẾT (DEC-044): bắt buộc lọc, phân trang, xuất Excel kết quả lọc
 const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) => void }> = ({ state, onOpenDossier }) => {
-  const [draft, setDraft] = useState<RepairReportFilter>(() => ({ containerNo: '', ...defaultLastDayRange(), teamCode: '', shippingLineCode: '', status: 'ALL' }));
+  const [draft, setDraft] = useState<RepairReportFilter>(() => ({ containerNo: '', ...quickRange('TODAY'), teamCode: '', shippingLineCode: '', status: 'ALL' }));
   const [applied, setApplied] = useState<RepairReportFilter | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = usePageSize('report-BC_SUA_CHUA', 50); // DEC-080
 
   const clean = (f: RepairReportFilter): RepairReportFilter => ({
     ...f,
@@ -312,7 +312,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
   let queryError: string | null = null;
   if (applied) {
     try {
-      result = queryRepairReport(state, clean(applied), page);
+      result = queryRepairReport(state, clean(applied), page, pageSize);
     } catch (err) {
       queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
     }
@@ -320,14 +320,13 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Báo cáo Sửa chữa chi tiết" icon={<Search className="h-4 w-4 text-slate-500" />}>
+      <SectionCard title="Báo cáo Sửa chữa" icon={<Search className="h-4 w-4 text-slate-500" />}>
         <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2 sm:col-span-1">
             <span className={labelCls}>Số container</span>
             <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
           </label>
-          <DateTimeField label="Từ (dd/mm/yyyy hh:mm:ss)" value={draft.dateFrom || ''} onChange={(v) => setDraft({ ...draft, dateFrom: v })} />
-          <DateTimeField label="Đến (dd/mm/yyyy hh:mm:ss)" value={draft.dateTo || ''} onChange={(v) => setDraft({ ...draft, dateTo: v })} fallback="end" />
+          <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <label>
             <span className={labelCls}>Tổ sửa chữa</span>
             <select value={draft.teamCode} onChange={(e) => setDraft({ ...draft, teamCode: e.target.value })} className={inputCls}>
@@ -394,7 +393,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
                 {result.rows.map(({ workOrder: w, container: c }) => (
                   <tr key={w.id} className="hover:bg-slate-50">
                     <td className="px-3 py-2">
-                      <button type="button" onClick={() => onOpenDossier(w.masterDossierCode)} className="font-mono text-blue-700 hover:underline">{w.masterDossierCode}</button>
+                      <button type="button" onClick={() => onOpenDossier(w.masterDossierCode)} className={linkCls}>{w.masterDossierCode}</button>
                     </td>
                     <td className="px-3 py-2 font-mono font-bold">{w.containerNo}</td>
                     <td className="px-3 py-2">{c?.shippingLineCode || '-'}</td>
@@ -416,7 +415,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
                 </tr>
               </tfoot>
             </table>
-            <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} />
+            <Pager page={result.page} pageCount={result.pageCount} total={result.total} onPage={setPage} pageSize={pageSize} onPageSize={setPageSize} />
           </>
         )}
       </div>
