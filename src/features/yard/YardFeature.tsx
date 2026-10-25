@@ -262,7 +262,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
               <th className="w-40 px-2 py-2.5">Vị trí</th>
               <th className="w-40 px-2 py-2.5">Tiến độ</th>
               <th className="w-36 whitespace-nowrap px-2 py-2.5">Hình thức TT</th>
-              <th className="w-40 whitespace-nowrap px-2 py-2.5">Phiếu thu</th>
+              <th className="w-40 whitespace-nowrap px-2 py-2.5">Mã phiếu thu</th>
               <th className="min-w-[14rem] px-2 py-2.5">Ghi chú</th>
             </tr>
           </thead>

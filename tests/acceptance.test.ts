@@ -1113,14 +1113,14 @@ describe('DEC-099: Tồn vỏ — hình thức thanh toán + phiếu thu của l
     const t = gateInTts(createInitialState(), 'MSKU7654321');
     const tts = containerPaymentInfo(t.state, { masterDossierCode: t.order.masterDossierCode });
     expect(tts).toMatchObject({ category: 'TTS', label: 'TTS — THANH TOÁN SAU' });
-    expect(tts.receipt).toMatch(/^Công nợ \(CT-/);
+    expect(tts.receipt).toBe(''); // DEC-104: TTS không có phiếu thu → để trống, không hiện chứng từ
     // Nhập tàu
-    expect(containerPaymentInfo(s, { masterDossierCode: 'NT-261025-001' }).label).toBe('Không thu phí');
+    expect(containerPaymentInfo(s, { masterDossierCode: 'NT-261025-001' })).toEqual({ label: 'Không thu phí', receipt: '' });
     // Excel
     const c = s.containers.find((x) => x.masterDossierCode === g.masterDossierCode)!;
     const sheet = yardStockSheet([c], s);
     const i = sheet.columns.indexOf('HÌNH THỨC TT');
-    expect(sheet.columns.slice(i, i + 2)).toEqual(['HÌNH THỨC TT', 'PHIẾU THU']);
+    expect(sheet.columns.slice(i, i + 2)).toEqual(['HÌNH THỨC TT', 'MÃ PHIẾU THU']);
     expect(sheet.rows[0][i]).toBe('TT — TRỰC TIẾP');
     expect(String(sheet.rows[0][i + 1])).toMatch(/^PT-TT-/);
     for (const row of sheet.rows) expect(row.length).toBe(sheet.columns.length);

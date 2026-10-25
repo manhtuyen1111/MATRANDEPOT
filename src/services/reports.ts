@@ -429,7 +429,7 @@ export function yardStockSheet(rows: ContainerRecord[], state?: DepotState): She
     columns: [
       'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'DATE IN', 'VÀO BÃI BẰNG', 'TRẠNG THÁI', 'LƯU BÃI (NGÀY)', 'ĐÓNG HÀNG', 'AGE', 'VỊ TRÍ', 'TIẾN ĐỘ',
       // DEC-099: thông tin thanh toán lượt vào bãi
-      'HÌNH THỨC TT', 'PHIẾU THU',
+      'HÌNH THỨC TT', 'MÃ PHIẾU THU',
       'KHÁCH HÀNG', 'SỐ XE HẠ', 'KHÓA', 'NGƯỜI KHÓA', 'KHÓA LÚC', 'GHI CHÚ', 'GHI CHÚ BỞI', 'GHI CHÚ LÚC',
     ],
     rows: rows.map((c) => {
@@ -438,7 +438,7 @@ export function yardStockSheet(rows: ContainerRecord[], state?: DepotState): She
         c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, fmt(c.gateInAt), c.masterDossierCode.startsWith('NT-') ? 'NHẬP TÀU' : 'HẠ VỎ',
         c.conditionClass, storageDays(c.gateInAt), c.stuffingClass,
         c.manufactureYear || '', formatLocation(c), getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', '),
-        pay?.label || '', pay?.receipt && pay.receipt !== '-' ? pay.receipt : '',
+        pay?.label || '', pay?.receipt || '',
         c.customerRep || '', c.truckNo || '', c.isOnHold ? 'ĐANG KHÓA' : '', c.holdBy || '', fmt(c.holdAt),
         c.officeNote || '', c.officeNoteUpdatedBy || '', fmt(c.officeNoteUpdatedAt),
       ];
