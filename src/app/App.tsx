@@ -99,7 +99,7 @@ const MENU: MenuGroup[] = [
       { id: 'BC_CAP_VO', label: 'Cấp vỏ' },
       { id: 'BC_NHAP_TAU', label: 'Nhập tàu' },
       { id: 'BC_XUAT_TAU', label: 'Xuất tàu' },
-      { id: 'BC_SUA_CHUA', label: 'Sửa chữa chi tiết' },
+      { id: 'BC_SUA_CHUA', label: 'Sửa chữa' },
       { id: 'BC_TONG_HOP', label: 'Tổng hợp' },
     ],
   },

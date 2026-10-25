@@ -34,7 +34,7 @@ const TITLES: Record<ReportSection, string> = {
   BC_HA_VO: 'Báo cáo Hạ vỏ',
   BC_NHAP_TAU: 'Báo cáo Nhập tàu',
   BC_XUAT_TAU: 'Báo cáo Xuất tàu',
-  BC_SUA_CHUA: 'Báo cáo Sửa chữa chi tiết',
+  BC_SUA_CHUA: 'Báo cáo Sửa chữa',
   BC_TONG_HOP: 'Báo cáo Tổng hợp',
 };
 
@@ -322,7 +322,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Báo cáo Sửa chữa chi tiết" icon={<Search className="h-4 w-4 text-slate-500" />}>
+      <SectionCard title="Báo cáo Sửa chữa" icon={<Search className="h-4 w-4 text-slate-500" />}>
         <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2 sm:col-span-1">
             <span className={labelCls}>Số container</span>
