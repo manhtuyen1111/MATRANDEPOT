@@ -100,6 +100,8 @@ export const ContainerNo: React.FC<{ no: string; locked?: boolean; lockReason?: 
 export const inputCls =
   'w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-hidden focus:ring-1 focus:ring-blue-600';
 export const labelCls = 'mb-1 block text-[11px] font-semibold uppercase text-slate-600';
+// DEC-117: KIỂU LINK DỮ LIỆU THỐNG NHẤT toàn app (mã hồ sơ, mã phiếu thu, mã cấp vỏ, NT- / XT-…) — giống Mã hồ sơ ở Tồn vỏ
+export const linkCls = 'font-mono text-blue-700 hover:underline';
 export const primaryBtn =
   'inline-flex items-center justify-center gap-1.5 rounded-md bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
 export const secondaryBtn =

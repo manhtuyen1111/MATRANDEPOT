@@ -13,7 +13,7 @@ import { findTicketByQr, isTicketClosed } from '../../services/driverRoute';
 import { OperationBadge } from '../vessel/VesselShared';
 import { containerOperation } from '../../services/vessel';
 import { QuotationWorkspace } from '../quotation/QuotationWorkspace';
-import {
+import { linkCls,
   ContainerNo,
   EMPTY_SLOT,
   Feedback,
@@ -346,7 +346,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
             )}
             <dt className="text-slate-500">Hồ sơ</dt>
             <dd>
-              <button type="button" onClick={() => onOpenDossier?.(scanned.masterDossierCode)} className="font-mono text-blue-700 hover:underline">
+              <button type="button" onClick={() => onOpenDossier?.(scanned.masterDossierCode)} className={linkCls}>
                 {scanned.outDossierCode || scanned.masterDossierCode}
               </button>
             </dd>

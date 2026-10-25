@@ -18,7 +18,7 @@ import {
 import { formatLocation, parseContainerList, storageDays } from '../../services/core';
 import { formatDateTime, parseDateTime } from '../../services/datetime';
 import { can } from '../../services/permissions';
-import { ContainerNo, DateTimeField, DetailDrawer, Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
+import { linkCls, ContainerNo, DateTimeField, DetailDrawer, Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
 import { VesselListTitle, VesselProgressBar } from './VesselShared';
 
 interface Props {
@@ -564,7 +564,7 @@ const ListDetail: React.FC<{
                     <td className="py-1.5 pr-2 text-slate-400">{idx + 1}</td>
                     <td className="py-1.5 pr-2 font-mono">
                       {i.dossierCode && i.status !== 'PENDING' ? (
-                        <button type="button" onClick={() => onOpenDossier?.(i.dossierCode!)} className="text-blue-700 hover:underline">{i.dossierCode}</button>
+                        <button type="button" onClick={() => onOpenDossier?.(i.dossierCode!)} className={linkCls}>{i.dossierCode}</button>
                       ) : (
                         <span className="text-slate-500">{i.dossierCode || '-'}</span>
                       )}

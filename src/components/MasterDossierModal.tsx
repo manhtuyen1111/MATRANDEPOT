@@ -9,7 +9,7 @@ import { recordReceiptPrint } from "../services/depotOperations";
 import { formatDateTime } from "../services/datetime";
 import { EeirPrintSheet, PrintPortal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
 import { findVesselItemByCode } from '../services/vessel';
-import { formatViTime } from './shared';
+import { linkCls, formatViTime } from './shared';
 
 interface Props {
   masterDossierCode: string | null; // Mã hồ sơ HẠ VỎ (HV-...) hoặc CẤP VỎ (CV-...)
@@ -89,7 +89,7 @@ const Step: React.FC<{ no: number; title: string; tone?: 'default' | 'payment'; 
 
 const ReceiptLink: React.FC<{ label: string; target: string; onOpenReceipt?: (key: string) => void }> = ({ label, target, onOpenReceipt }) =>
   onOpenReceipt ? (
-    <button type="button" onClick={() => onOpenReceipt(target)} className="inline-flex items-center gap-1 font-mono font-bold text-blue-700 underline hover:text-blue-900">
+    <button type="button" onClick={() => onOpenReceipt(target)} className={`inline-flex items-center gap-1 ${linkCls}`}>
       <ReceiptText className="h-3.5 w-3.5" />
       {label}
     </button>

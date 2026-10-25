@@ -17,7 +17,7 @@ import { INVOICE_STATUS_LABELS, invoicePortalUrl, markInvoiceIssued } from '../.
 import type { InvoiceStatus, PaymentReceipt } from '../../types/depot';
 import { PrintPortal, PrintReceiptButton, ReceiptPrintSheet } from '../../components/ReceiptPrint';
 import { quickRange, fileStamp } from '../../services/datetime';
-import {
+import { linkCls,
   DateRangeFilter,
   DetailDrawer,
   ExportExcelButton,
@@ -387,7 +387,7 @@ export const ReceiptsWorkspace: React.FC<{
                   <>
                     <dt className="text-slate-500">Hồ sơ nghiệp vụ</dt>
                     <dd>
-                      <button type="button" onClick={() => onOpenDossier?.(selected.transaction.dossierCode!)} className="font-mono text-blue-700 hover:underline">
+                      <button type="button" onClick={() => onOpenDossier?.(selected.transaction.dossierCode!)} className={linkCls}>
                         {selected.transaction.dossierCode}
                       </button>
                       {selected.transaction.containerNo && <span className="font-mono"> • {selected.transaction.containerNo}</span>}
@@ -506,7 +506,7 @@ export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpe
                   <td className="py-1.5 pr-2 font-bold">{u.operation}</td>
                   <td className="py-1.5 pr-2 font-mono">
                     {u.dossierCode ? (
-                      <button type="button" onClick={() => onOpenDossier?.(u.dossierCode)} className="text-blue-700 hover:underline">{u.dossierCode}</button>
+                      <button type="button" onClick={() => onOpenDossier?.(u.dossierCode)} className={linkCls}>{u.dossierCode}</button>
                     ) : '-'}
                   </td>
                   <td className="py-1.5 pr-2 font-mono">{u.containerNo}</td>

@@ -18,7 +18,7 @@ import {
   vesselStepSummary,
 } from '../../services/vessel';
 import { formatDateTime } from '../../services/datetime';
-import { EMPTY_SLOT, Feedback, inputCls, isSlotComplete, labelCls, primaryBtn, SlotPicker, SlotValue } from '../../components/shared';
+import { linkCls, EMPTY_SLOT, Feedback, inputCls, isSlotComplete, labelCls, primaryBtn, SlotPicker, SlotValue } from '../../components/shared';
 import { ChoiceButtons } from './VesselShared';
 import { EMPTY_INSPECTION, InspectionFields, InspectionValue, inspectionRemarks, isInspectionComplete } from '../../components/InspectionFields';
 
@@ -209,7 +209,7 @@ export const VesselFieldMobile: React.FC<{
                   <li key={`${r.no}-${i}`} className="flex flex-wrap items-center justify-between gap-1">
                     <span className="flex items-center gap-1 font-mono text-sm font-black"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />{r.no}</span>
                     <span>{r.truck ? `xe ${r.truck} • ` : ''}{formatDateTime(r.at).slice(11)}</span>
-                    {r.code && <button type="button" onClick={() => onOpenDossier?.(r.code!)} className="font-mono text-blue-700 underline">{r.code}</button>}
+                    {r.code && <button type="button" onClick={() => onOpenDossier?.(r.code!)} className={linkCls}>{r.code}</button>}
                   </li>
                 ))}
               </ul>

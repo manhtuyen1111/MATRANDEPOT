@@ -22,7 +22,7 @@ import {
 } from '../../services/depotOperations';
 import { cancelPendingTransaction, pendingTransactionOf } from '../../services/payments';
 import { formatLocation } from '../../services/core';
-import {
+import { linkCls,
   ContainerNo,
   CustomerInput,
   EMPTY_PAYMENT,
@@ -219,7 +219,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
             <form onSubmit={handleSubmit} className="space-y-4">
               <SectionCard
                 title={
-                  <button type="button" onClick={() => onOpenDossier?.(order.masterDossierCode)} className="font-mono text-blue-700 hover:underline">
+                  <button type="button" onClick={() => onOpenDossier?.(order.masterDossierCode)} className={linkCls}>
                     Hồ sơ {order.masterDossierCode}
                   </button>
                 }
@@ -456,7 +456,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
               <li key={o.id} className="rounded-md border border-slate-200 p-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span>
-                    <button type="button" onClick={() => onOpenDossier?.(o.gateOutCode)} className="font-mono font-bold text-blue-700 hover:underline">
+                    <button type="button" onClick={() => onOpenDossier?.(o.gateOutCode)} className={linkCls}>
                       {o.gateOutCode}
                     </button>{' '}
                     • <span className="font-mono">{o.containerNo}</span> • {o.bookingNo} • {formatVnd(o.feeAmount)}
@@ -633,7 +633,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                       {summary.orders.map((o) => (
                         <tr key={o.id}>
                           <td className="py-1 pr-2 font-mono">
-                            <button type="button" onClick={() => onOpenDossier?.(o.gateOutCode)} className="text-blue-700 hover:underline">{o.gateOutCode}</button>
+                            <button type="button" onClick={() => onOpenDossier?.(o.gateOutCode)} className={linkCls}>{o.gateOutCode}</button>
                           </td>
                           <td className="py-1 pr-2 font-mono">{o.containerNo}</td>
                           <td className="py-1 pr-2">{statusLabel[o.status]}</td>

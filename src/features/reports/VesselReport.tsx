@@ -4,7 +4,7 @@ import { VesselMode, VESSEL_MODE_LABELS } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import { collectAllPages, queryVesselReport, VesselReportFilter, vesselReportSheet } from '../../services/reports';
 import { quickRange, fileStamp, formatDateTime } from '../../services/datetime';
-import { ContainerNo, DateRangeFilter, ExportExcelButton, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
+import { linkCls, ContainerNo, DateRangeFilter, ExportExcelButton, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
 
 const STATUS: Record<VesselMode, Record<string, string>> = {
   NHAP_TAU: { PENDING: 'Chờ xe về', INSPECTED: 'Đã giám định — chờ hạ', DONE: 'Đã hạ bãi' },
@@ -89,7 +89,7 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
                     <td className="px-3 py-2 font-mono">{formatDateTime(l.plannedAt)}</td>
                     <td className="px-3 py-2 font-mono">
                       {i.dossierCode && i.status !== 'PENDING' ? (
-                        <button type="button" onClick={() => onOpenDossier?.(i.dossierCode!)} className="text-blue-700 hover:underline">{i.dossierCode}</button>
+                        <button type="button" onClick={() => onOpenDossier?.(i.dossierCode!)} className={linkCls}>{i.dossierCode}</button>
                       ) : (
                         i.dossierCode || '-'
                       )}

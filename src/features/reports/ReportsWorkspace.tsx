@@ -19,7 +19,7 @@ import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportShe
 import { can } from '../../services/permissions';
 import { quickRange, fileStamp } from '../../services/datetime';
 import { VesselReport } from './VesselReport';
-import { DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
+import { linkCls, DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
 
 export type ReportSection = 'BC_HA_VO' | 'BC_CAP_VO' | 'BC_NHAP_TAU' | 'BC_XUAT_TAU' | 'BC_SUA_CHUA' | 'BC_TONG_HOP';
 
@@ -173,7 +173,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
                 <tbody className="divide-y divide-slate-100">
                   {outRows.rows.map((o) => (
                     <tr key={o.id} className="hover:bg-slate-50">
-                      <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.gateOutCode)} className="font-mono text-blue-700 hover:underline">{o.gateOutCode}</button></td>
+                      <td className={linkCls}><button type="button" onClick={() => onOpenDossier(o.gateOutCode)} className="font-mono text-blue-700 hover:underline">{o.gateOutCode}</button></td>
                       <td className="px-3 py-2 font-mono font-bold">{o.containerNo}</td>
                       <td className="px-3 py-2 font-mono">{o.bookingNo}</td>
                       <td className="px-3 py-2">{o.receiverRep}</td>
@@ -209,7 +209,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
                 <tbody className="divide-y divide-slate-100">
                   {inRows.rows.map((o) => (
                     <tr key={o.id} className="hover:bg-slate-50">
-                      <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.masterDossierCode)} className="font-mono text-blue-700 hover:underline">{o.masterDossierCode}</button></td>
+                      <td className={linkCls}><button type="button" onClick={() => onOpenDossier(o.masterDossierCode)} className="font-mono text-blue-700 hover:underline">{o.masterDossierCode}</button></td>
                       <td className="px-3 py-2 font-mono font-bold">{o.containerNo || '-'}</td>
                       <td className="px-3 py-2">{o.size || '-'}/{o.type || '-'}</td>
                       <td className="px-3 py-2">{o.shippingLineCode || '-'}</td>
@@ -393,7 +393,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
                 {result.rows.map(({ workOrder: w, container: c }) => (
                   <tr key={w.id} className="hover:bg-slate-50">
                     <td className="px-3 py-2">
-                      <button type="button" onClick={() => onOpenDossier(w.masterDossierCode)} className="font-mono text-blue-700 hover:underline">{w.masterDossierCode}</button>
+                      <button type="button" onClick={() => onOpenDossier(w.masterDossierCode)} className={linkCls}>{w.masterDossierCode}</button>
                     </td>
                     <td className="px-3 py-2 font-mono font-bold">{w.containerNo}</td>
                     <td className="px-3 py-2">{c?.shippingLineCode || '-'}</td>

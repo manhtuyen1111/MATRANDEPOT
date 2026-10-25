@@ -84,6 +84,8 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     };
     const html = renderToString(<YardFeature state={s} onUpdateState={noop} onOpenReceipt={noop} />);
     expect(html).toContain('title="Mở phiếu thu"');
+    // DEC-117: link dữ liệu cùng kiểu Mã hồ sơ (font-mono text-blue-700, gạch chân khi rê chuột)
+    expect(html).toContain('class="font-mono text-blue-700 hover:underline" title="Mở phiếu thu"');
     expect(renderToString(<YardFeature state={base} onUpdateState={noop} />)).not.toContain('title="Mở phiếu thu"');
   });
 
@@ -156,11 +158,11 @@ describe('DEC-051: hồ sơ container link về Phiếu thu', () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(withLink.match(/Thanh toán — Hạ vỏ/g)).toHaveLength(1);
     expect(withLink).toContain('Hoàn thành');
-    expect(withLink).toContain("text-blue-700 underline");
+    expect(withLink).toContain("font-mono text-blue-700 hover:underline");
     expect(withLink).toContain(`Phiếu thu ${ptNo}`);
     const noLink = renderToString(<MasterDossierModal masterDossierCode={gi.masterDossierCode} state={s} onClose={noop} />);
     expect(noLink).toContain(ptNo);
-    expect(noLink).not.toContain("text-blue-700 underline");
+    expect(noLink).not.toContain("font-mono text-blue-700 hover:underline");
   });
 });
 
