@@ -15,7 +15,7 @@ import {
 } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { formatLocation, getContainerProgress, PROGRESS_LABELS, storageDays } from './core';
-import { masterReceiptUsage, receiptOperationOf } from './payments';
+import { containerPaymentInfo, masterReceiptUsage, receiptOperationOf } from './payments';
 import { formatDateTime, parseDateTime } from './datetime';
 
 // ============================================================================
@@ -423,20 +423,26 @@ export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData 
 }
 
 // Sheet TỒN VỎ (DEC-065)
-export function yardStockSheet(rows: ContainerRecord[]): SheetData {
+export function yardStockSheet(rows: ContainerRecord[], state?: DepotState): SheetData {
   return {
     name: 'TỒN VỎ',
     columns: [
       'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'DATE IN', 'VÀO BÃI BẰNG', 'TRẠNG THÁI', 'LƯU BÃI (NGÀY)', 'ĐÓNG HÀNG', 'AGE', 'VỊ TRÍ', 'TIẾN ĐỘ',
+      // DEC-099: thông tin thanh toán lượt vào bãi
+      'HÌNH THỨC TT', 'PHIẾU THU',
       'KHÁCH HÀNG', 'SỐ XE HẠ', 'KHÓA', 'NGƯỜI KHÓA', 'KHÓA LÚC', 'GHI CHÚ', 'GHI CHÚ BỞI', 'GHI CHÚ LÚC',
     ],
-    rows: rows.map((c) => [
-      c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, fmt(c.gateInAt), c.masterDossierCode.startsWith('NT-') ? 'NHẬP TÀU' : 'HẠ VỎ',
-      c.conditionClass, storageDays(c.gateInAt), c.stuffingClass,
-      c.manufactureYear || '', formatLocation(c), getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', '),
-      c.customerRep || '', c.truckNo || '', c.isOnHold ? 'ĐANG KHÓA' : '', c.holdBy || '', fmt(c.holdAt),
-      c.officeNote || '', c.officeNoteUpdatedBy || '', fmt(c.officeNoteUpdatedAt),
-    ]),
+    rows: rows.map((c) => {
+      const pay = state ? containerPaymentInfo(state, c) : undefined;
+      return [
+        c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, fmt(c.gateInAt), c.masterDossierCode.startsWith('NT-') ? 'NHẬP TÀU' : 'HẠ VỎ',
+        c.conditionClass, storageDays(c.gateInAt), c.stuffingClass,
+        c.manufactureYear || '', formatLocation(c), getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', '),
+        pay?.label || '', pay?.receipt && pay.receipt !== '-' ? pay.receipt : '',
+        c.customerRep || '', c.truckNo || '', c.isOnHold ? 'ĐANG KHÓA' : '', c.holdBy || '', fmt(c.holdAt),
+        c.officeNote || '', c.officeNoteUpdatedBy || '', fmt(c.officeNoteUpdatedAt),
+      ];
+    }),
   };
 }
 

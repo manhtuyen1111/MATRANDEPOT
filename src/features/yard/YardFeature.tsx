@@ -12,6 +12,7 @@ import {
 import { formatLocation, getContainerProgress, parseContainerList, PROGRESS_LABELS, storageDays } from '../../services/core';
 import { can } from '../../services/permissions';
 import { yardStockSheet } from '../../services/reports';
+import { containerPaymentInfo } from '../../services/payments';
 import { fileStamp, formatDateTime } from '../../services/datetime';
 import { ContainerRecord, FieldConditionClass, K80InternalTicket } from '../../types/depot';
 import {
@@ -145,7 +146,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
     }
   };
 
-  const colCount = canBulk ? 12 : 11;
+  const colCount = canBulk ? 14 : 13;
 
   return (
     <div className="w-full space-y-3">
@@ -189,7 +190,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
               <ListChecks className="h-3.5 w-3.5" />
               Tìm hàng loạt{bulkList.length ? ` (${bulkList.length})` : ''}
             </button>
-            <ExportExcelButton fileName={`MATRAN_TON_VO_${fileStamp(formatDateTime(new Date()))}.xlsx`} disabled={filtered.length === 0} getSheets={() => [yardStockSheet(filtered)]} />
+            <ExportExcelButton fileName={`MATRAN_TON_VO_${fileStamp(formatDateTime(new Date()))}.xlsx`} disabled={filtered.length === 0} getSheets={() => [yardStockSheet(filtered, state)]} />
           </div>
         </div>
 
@@ -237,7 +238,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
       )}
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="w-full min-w-[1120px] text-left text-xs">
+        <table className="w-full min-w-[1400px] text-left text-xs">
           <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
             <tr>
               {canBulk && (
@@ -260,6 +261,8 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
               <th className="w-16 whitespace-nowrap px-2 py-2.5 text-right">Lưu bãi</th>
               <th className="w-40 px-2 py-2.5">Vị trí</th>
               <th className="w-40 px-2 py-2.5">Tiến độ</th>
+              <th className="w-36 whitespace-nowrap px-2 py-2.5">Hình thức TT</th>
+              <th className="w-40 whitespace-nowrap px-2 py-2.5">Phiếu thu</th>
               <th className="min-w-[14rem] px-2 py-2.5">Ghi chú</th>
             </tr>
           </thead>
@@ -324,6 +327,17 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                         </div>
                       </td>
                       <td className="px-2 py-2.5 text-[11px]">{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</td>
+                      {(() => {
+                        // DEC-099: hình thức thanh toán + mã phiếu thu của lượt vào bãi
+                        const pay = containerPaymentInfo(state, c);
+                        const tone = pay.category === 'TTTT' ? 'text-emerald-700' : pay.category === 'TTT' ? 'text-blue-700' : pay.category === 'TTS' ? 'text-violet-700' : 'text-slate-400';
+                        return (
+                          <>
+                            <td className={`whitespace-nowrap px-2 py-2.5 text-[11px] font-bold ${tone}`}>{pay.label}</td>
+                            <td className="px-2 py-2.5 font-mono text-[11px]">{pay.receipt}</td>
+                          </>
+                        );
+                      })()}
                       <td className={`px-2 py-2.5 ${hasNote && editingNoteId !== c.id ? 'bg-yellow-200' : ''}`} onClick={(e) => e.stopPropagation()}>
                         {editingNoteId === c.id ? (
                           <div className="flex items-center gap-1">

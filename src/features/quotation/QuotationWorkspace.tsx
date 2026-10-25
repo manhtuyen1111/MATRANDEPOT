@@ -146,7 +146,7 @@ export const QuotationWorkspace: React.FC<{
             <ListChecks className="h-3.5 w-3.5" />
             Tìm hàng loạt{bulkList.length ? ` (${bulkList.length})` : ''}
           </button>
-          <ExportExcelButton fileName={`MATRAN_CHO_BAO_GIA_${fileStamp(formatDateTime(new Date()))}.xlsx`} disabled={filtered.length === 0} getSheets={() => [{ ...yardStockSheet(filtered), name: 'CHỜ BÁO GIÁ' }]} />
+          <ExportExcelButton fileName={`MATRAN_CHO_BAO_GIA_${fileStamp(formatDateTime(new Date()))}.xlsx`} disabled={filtered.length === 0} getSheets={() => [{ ...yardStockSheet(filtered, state), name: "CHỜ BÁO GIÁ" }]} />
         </div>
         {bulkOpen && (
           <div className="flex w-full flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-end">

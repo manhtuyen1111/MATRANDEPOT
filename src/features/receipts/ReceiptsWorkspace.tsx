@@ -191,7 +191,7 @@ export const ReceiptsWorkspace: React.FC<{
           <div className="flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-sm font-black text-slate-900">
               <FilePlus2 className="h-4 w-4 text-blue-600" />
-              Tạo phiếu thu TRƯỚC (TTT — thanh toán trước)
+              Tạo phiếu thu TRƯỚC (TR — trả trước)
             </h3>
             <button type="button" onClick={() => setCreateOpen(false)} aria-label="Đóng" className={secondaryBtn}><X className="h-3.5 w-3.5" /></button>
           </div>

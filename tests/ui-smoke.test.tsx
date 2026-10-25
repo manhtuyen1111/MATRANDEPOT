@@ -52,6 +52,10 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toMatch(/Hãng tàu<\/th><th[^>]*>Date in<\/th><th[^>]*>Trạng thái/);
     expect(html).toContain('Tìm hàng loạt');
     expect(html).toContain('Container không khóa');
+    // DEC-099: cột thanh toán
+    expect(html).toContain('Hình thức TT');
+    expect(html).toContain('>Phiếu thu<');
+    expect(html).toContain('TR — TRẢ TRƯỚC');
     expect(html).not.toContain('>Thao tác<');
   });
 
@@ -515,10 +519,10 @@ describe('DEC-097: Hình thức thanh toán — TTTT Trực tiếp đứng đầ
     const { PaymentPanel, EMPTY_PAYMENT } = await import('../src/components/shared');
     expect(EMPTY_PAYMENT).toMatchObject({ paymentCategory: 'TTTT', directMethod: 'CASH' });
     const html = renderToString(<PaymentPanel state={base} value={EMPTY_PAYMENT} onChange={noop} />);
-    const iTTTT = html.indexOf('TTTT — Trực tiếp');
+    const iTTTT = html.indexOf('TL — Trả ngay');
     expect(iTTTT).toBeGreaterThan(-1);
-    expect(iTTTT).toBeLessThan(html.indexOf('TTT — Thanh toán trước'));
-    expect(html.indexOf('TTT — Thanh toán trước')).toBeLessThan(html.indexOf('TTS — Thanh toán sau'));
-    expect(html).toMatch(/aria-checked="true"[^>]*><span[^>]*>TTTT — Trực tiếp/);
+    expect(iTTTT).toBeLessThan(html.indexOf('TR — Trả trước'));
+    expect(html.indexOf('TR — Trả trước')).toBeLessThan(html.indexOf('TTS — Thanh toán sau'));
+    expect(html).toMatch(/aria-checked="true"[^>]*><span[^>]*>TL — Trả ngay/);
   });
 });

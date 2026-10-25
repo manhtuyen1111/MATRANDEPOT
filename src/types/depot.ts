@@ -396,7 +396,7 @@ export const RECEIPT_OPERATION_LABELS: Record<ReceiptOperation, string> = {
 
 export interface PaymentReceipt {
   id: string;
-  receiptNo: string; // PT-YYYY-NNNNNN
+  receiptNo: string; // PT-TL-YYMMDD-NNNN / PT-TR-YYMMDD-NNNN (DEC-098); dữ liệu cũ PT-YYYY-NNNNNN
   transactionId: string;
   purpose: 'VOUCHER' | 'PREPAID_TOPUP';
   operation?: ReceiptOperation; // Tác nghiệp phát sinh khoản thu (DEC-051)

@@ -79,7 +79,8 @@ function issueReceipt(state: DepotState, transactionId: string, issuedBy: string
   }
   if (tx.receiptId || state.paymentReceipts.some((r) => r.transactionId === tx.id)) return state;
 
-  const allocated = allocateCode(state, 'PT');
+  // DEC-098: mã phiếu thu cho biết hình thức + ngày thu
+  const allocated = allocateCode(state, tx.purpose === 'PREPAID_TOPUP' ? 'PT-TR' : 'PT-TL');
   const voucher = tx.voucherId ? allocated.state.vouchers.find((v) => v.id === tx.voucherId) : undefined;
   const master = tx.masterReceiptId
     ? allocated.state.masterReceipts.find((r) => r.id === tx.masterReceiptId)
@@ -172,7 +173,7 @@ export function settleVoucher(
 
   if (input.paymentCategory === 'TTT') {
     const qr = (input.scannedQrCode || '').trim().toUpperCase();
-    if (!qr) throw new Error('THANH TOÁN TRƯỚC (TTT): Vui lòng quét mã QR của Phiếu thu mẹ vào chứng từ.');
+    if (!qr) throw new Error('TRẢ TRƯỚC (TR): Vui lòng quét mã QR của Phiếu thu mẹ vào chứng từ.');
     const master = state.masterReceipts.find((r) => r.qrCode.toUpperCase() === qr);
     if (!master) throw new Error(`Mã QR "${qr}" không tồn tại.`);
     if (master.status === 'PENDING_PAYMENT') {
@@ -235,7 +236,7 @@ export function settleVoucher(
 
   // TTTT — Thanh toán trực tiếp
   if (!input.directMethod) {
-    throw new Error('THANH TOÁN TRỰC TIẾP (TTTT): Phải chọn Chuyển khoản (API QR) hoặc Tiền mặt.');
+    throw new Error('TRẢ NGAY (TL): Phải chọn Chuyển khoản (API QR) hoặc Tiền mặt.');
   }
   const tx: PaymentTransaction = {
     id: newId('tx'),
@@ -523,4 +524,36 @@ export function masterReceiptUsage(state: DepotState, receiptCode: string): Mast
     .sort((a, b) => b.performedAt.localeCompare(a.performedAt));
   const usedAmount = rows.reduce((s, r) => s + r.amount, 0);
   return { master, rows, usedCount: rows.length, usedAmount, remainingAmount: master.remainingAmount };
+}
+
+// DEC-099: THÔNG TIN THANH TOÁN của lượt cont vào bãi (dùng ở Tồn vỏ + Excel)
+//   (DEC-100: ký hiệu hiển thị TL / TTS / TR; mã nội bộ vẫn TTTT / TTS / TTT)
+//   TL → mã phiếu thu PT-TL-…; TR → phiếu thu mẹ PTT-…; + phiếu thu mẹ PTT-…;
+//   TTS → THANH TOÁN SAU (công nợ, chỉ chứng từ CT-…); Nhập tàu → Không thu phí.
+export const PAYMENT_CATEGORY_FULL_LABELS: Record<PaymentCategory, string> = {
+  TTTT: 'TL — TRẢ NGAY',
+  TTS: 'TTS — THANH TOÁN SAU',
+  TTT: 'TR — TRẢ TRƯỚC',
+};
+
+export interface ContainerPaymentInfo {
+  category?: PaymentCategory;
+  label: string;        // hình thức thanh toán (chữ đầy đủ) hoặc tình trạng
+  receipt: string;      // mã phiếu thu / phiếu thu mẹ / ghi chú công nợ
+  voucherNo?: string;
+}
+
+export function containerPaymentInfo(state: DepotState, c: { masterDossierCode: string }): ContainerPaymentInfo {
+  if (c.masterDossierCode.startsWith('NT-')) return { label: 'Không thu phí', receipt: '-' };
+  const voucher = state.vouchers.find((v) => v.masterDossierCode === c.masterDossierCode && v.serviceType === 'GATE_IN');
+  if (!voucher) return { label: 'Chưa lập chứng từ', receipt: '-' };
+  if (voucher.status !== 'CONFIRMED' && voucher.status !== 'DEFERRED') {
+    return { label: 'Chưa thanh toán', receipt: '-', voucherNo: voucher.voucherNo };
+  }
+  const category = voucher.paymentCategory;
+  if (category === 'TTS') return { category, label: PAYMENT_CATEGORY_FULL_LABELS.TTS, receipt: `Công nợ (${voucher.voucherNo})`, voucherNo: voucher.voucherNo };
+  if (category === 'TTT') return { category, label: PAYMENT_CATEGORY_FULL_LABELS.TTT, receipt: voucher.masterReceiptCode || '-', voucherNo: voucher.voucherNo };
+  const txIds = state.paymentTransactions.filter((t) => t.voucherId === voucher.id && t.status === 'SUCCEEDED').map((t) => t.id);
+  const receipts = state.paymentReceipts.filter((r) => txIds.includes(r.transactionId)).map((r) => r.receiptNo);
+  return { category: 'TTTT', label: PAYMENT_CATEGORY_FULL_LABELS.TTTT, receipt: receipts.join(', ') || '-', voucherNo: voucher.voucherNo };
 }

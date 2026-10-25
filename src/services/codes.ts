@@ -5,7 +5,8 @@ import type { DepotState } from './depotStore';
 // DEC-068: ký tự đầu mã = viết tắt tác nghiệp
 //   Hồ sơ HẠ VỎ    : HV-YYMMDD-NNN   (đánh số lại mỗi ngày)
 //   Hồ sơ CẤP VỎ   : CV-YYMMDD-NNN   (đánh số lại mỗi ngày)
-//   Phiếu thu      : PT-YYYY-NNNNNN  (đánh số liên tục theo năm)
+//   Phiếu thu      : PT-TL-YYMMDD-NNNN (TL trả ngay) / PT-TR-YYMMDD-NNNN (nạp quỹ thu trước) — DEC-098
+//                    (dữ liệu cũ PT-YYYY-NNNNNN giữ nguyên)
 //   Phiếu thu trước: PTT-YYYY-NNN    (phiếu thu mẹ TTT)
 //   Chứng từ       : CT-YYMMDD-NNNN
 // Mã cũ (IN-/HS-, OUT-/GO-, PTM-) được đổi khi nạp dữ liệu: renameLegacyCodes
@@ -13,7 +14,9 @@ import type { DepotState } from './depotStore';
 // Chế độ Supabase: bắt buộc cấp trong database (bảng bộ đếm + khóa dòng trong cùng transaction).
 // ============================================================================
 
-export type CodeSeries = 'HV' | 'CV' | 'NT' | 'XT' | 'PT' | 'PTT' | 'CT';
+// DEC-098: phiếu thu theo hình thức + ngày — PT-TL-YYMMDD-NNNN (TL trả ngay), PT-TR-YYMMDD-NNNN (nạp quỹ thu trước).
+// Dãy PT (PT-YYYY-NNNNNN) giữ cho dữ liệu cũ, không cấp mới.
+export type CodeSeries = 'HV' | 'CV' | 'NT' | 'XT' | 'PT' | 'PT-TL' | 'PT-TR' | 'PTT' | 'CT';
 
 const SERIES_FORMAT: Record<CodeSeries, { period: 'day' | 'year'; digits: number }> = {
   HV: { period: 'day', digits: 3 },
@@ -22,6 +25,8 @@ const SERIES_FORMAT: Record<CodeSeries, { period: 'day' | 'year'; digits: number
   XT: { period: 'day', digits: 3 },
   CT: { period: 'day', digits: 4 },
   PT: { period: 'year', digits: 6 },
+  'PT-TL': { period: 'day', digits: 4 },
+  'PT-TR': { period: 'day', digits: 4 },
   PTT: { period: 'year', digits: 3 },
 };
 
@@ -44,6 +49,8 @@ function existingCodes(state: DepotState, series: CodeSeries): string[] {
     case 'XT':
       return (state.vesselLists || []).flatMap((l) => l.items.map((i) => i.dossierCode || '')).filter((c) => c.startsWith(series));
     case 'PT':
+    case 'PT-TL':
+    case 'PT-TR':
       return (state.paymentReceipts || []).map((r) => r.receiptNo);
     case 'PTT':
       return state.masterReceipts.map((r) => r.receiptCode);
