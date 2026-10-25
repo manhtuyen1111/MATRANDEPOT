@@ -920,6 +920,15 @@ Quy ước trạng thái:
   - **Dòng 2:** VỊ TRÍ `BLOCK-A / 17-02-02` (ô Block rộng cố định, thẳng cột) | GHI CHÚ (nền vàng khi có, cắt bớt nếu dài, để trống khi không có).
   - Hai dòng **không xuống dòng**: phần dư bị cắt, không đẩy sang dòng thứ 3.
 
+### DEC-116 — Mobile: chạm ô nhập không phóng to vỡ khung; Đảo chuyển bỏ ô ghi chú
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- **Ô nhập trên điện thoại:**
+  - Vấn đề: iPhone / Safari tự phóng to màn hình khi chạm vào ô nhập có chữ nhỏ hơn 16px, làm vỡ khung.
+  - Quyết định: trên màn hình < 640px, mọi `input` / `select` / `textarea` dùng chữ **16px** (`src/index.css`). Màn máy tính giữ cỡ chữ cũ.
+  - **Không** chặn người dùng tự phóng to bằng hai ngón tay.
+- **Xe nâng → Đảo chuyển:** bỏ ô "Ghi chú tác nghiệp". Xe nâng chỉ chọn vị trí mới rồi xác nhận. Lịch sử đảo chuyển vẫn ghi đủ vị trí trước / sau, người làm và thời gian.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1009,6 +1018,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-115 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-116 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
