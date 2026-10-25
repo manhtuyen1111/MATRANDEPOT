@@ -858,7 +858,7 @@ Quy ước trạng thái:
 - **Mã bảo mật:**
   - Mỗi phiếu thu (`PT-TT-…`, `PT-TTR-…`) có mã bảo mật **12 ký tự** gồm chữ hoa, chữ thường và số.
   - Mã sinh ngẫu nhiên bằng nguồn ngẫu nhiên mật mã (`crypto.getRandomValues`), có khoảng 3,2 × 10^21 khả năng nên không đoán được, và không trùng.
-  - Mã **in trên phiếu thu** kèm đường link trang yêu cầu hóa đơn. Mã **không hiển thị** trên màn nội bộ và không có trong Excel.
+  - Mã **in trên phiếu thu** kèm đường link trang yêu cầu hóa đơn. Mã không có trong Excel. *(Phần "không hiện trên màn nội bộ" đã được DEC-112 thay.)*
   - Phiếu thu cũ được tự bổ sung mã khi nạp dữ liệu.
 - **Trang khách hàng** (`#/hoa-don`, không cần đăng nhập):
   - Khách dán mã (phân biệt chữ hoa / thường) và thấy thông tin tối thiểu: số phiếu, ngày, số tiền, bên thanh toán, số cont, trạng thái.
@@ -874,6 +874,13 @@ Quy ước trạng thái:
   - Trang khách hàng chỉ dùng chung dữ liệu với **cùng trình duyệt** (localStorage).
   - Khi có database, trang này phải gọi RPC công khai có **giới hạn số lần thử** theo IP / thiết bị (chống dò mã), và gửi email thông báo cho Kế toán.
   - Kết nối API MISA làm sau.
+
+### DEC-112 — Phiếu thu: hiện mã bảo mật ở khối "Xuất hóa đơn"
+
+- Trạng thái: CONFIRMED (2026-10-25). Thay một phần DEC-111.
+- Quyết định: Ở Văn phòng → Phiếu thu, cửa sổ chi tiết phiếu, khối **Xuất hóa đơn** luôn hiện **mã bảo mật** của phiếu, ở mọi trạng thái, để Văn phòng / Kế toán dễ theo dõi và đối soát.
+- Người thấy mã: những ai được xem Phiếu thu (Văn phòng, Quản lý, Kế toán, Admin).
+- Mã vẫn **không** có trong Excel.
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
@@ -964,6 +971,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-111 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-112 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

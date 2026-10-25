@@ -4,7 +4,7 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-25 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-111**), **đã push đầy đủ lên GitHub 2026-10-25**, chưa merge vào `main`. Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-112**), **đã push đầy đủ lên GitHub 2026-10-25**, chưa merge vào `main`. Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
 **Điểm dừng 2026-10-25:** đã kiểm tra (107/107 test, build) + **push đầy đủ lên GitHub** (DEC-050 → DEC-110). **Đọc mục I (I.3) trước khi làm việc tiếp theo.**
 
@@ -285,4 +285,5 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-25 — Claude Code: DEC-110 Trả chứng từ — nút Xem trước. 107/107 • build PASS.
 
 - 2026-10-25 — Claude Code: DEC-111 mã bảo mật phiếu thu + trang khách yêu cầu xuất hóa đơn + vai trò Kế toán. 115/115 • build PASS.
+- 2026-10-25 — Claude Code: DEC-112 hiện mã bảo mật ở khối Xuất hóa đơn. 115/115 • build PASS.
 - 2026-10-25 — Claude Code: quyết định tạm hoãn GĐ 4 (người dùng test Demo trước); cập nhật tiến độ, F3, bàn giao I.3; kiểm tra + push đầy đủ (DEC-050 → DEC-110).
