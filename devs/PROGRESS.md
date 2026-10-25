@@ -4,7 +4,7 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-107**), **đã push đầy đủ lên GitHub 2026-10-24 (tối)**, chưa merge vào `main`. Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-108**), **đã push đầy đủ lên GitHub 2026-10-24 (tối)**, chưa merge vào `main`. Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
 **Điểm dừng 2026-10-24 (phiên 2 — tạm nghỉ):** đã kiểm tra + **push đầy đủ lên GitHub** (DEC-050 → DEC-096). **Đọc mục I trước khi làm việc tiếp theo.** Để mở GĐ 4 Database cần bạn chốt: OPEN-003, Q-037 → Q-040 (xem `docs/DATABASE_PLATFORM_ADVICE.md`).
 Kiểm thử mới nhất: `npm test` **97/97 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
@@ -256,3 +256,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 - 2026-10-25 — Claude Code: sửa DEC-100 (TT / TTR / TTS); DEC-103 "Phiếu thu mẹ" → PHIẾU THU TRẢ TRƯỚC. 100/100 • build PASS.
 - 2026-10-25 — Claude Code: DEC-104 Tồn vỏ chỉ hiện MÃ PHIẾU THU. 100/100 • build PASS.
 - 2026-10-25 — Claude Code: DEC-105 link mã phiếu thu ở Tồn vỏ; DEC-106 dữ liệu sạch + nút Xóa dữ liệu; DEC-107 Phiếu thu bỏ chứng từ, số cont cạnh tác nghiệp. 102/102 • build PASS.
+- 2026-10-25 — Claude Code: DEC-108 dữ liệu test đầy đủ trường hợp + nút Nạp dữ liệu test. 103/103 • build PASS.

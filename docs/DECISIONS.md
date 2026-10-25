@@ -807,6 +807,24 @@ Quy ước trạng thái:
   - Cột Excel "TRƯỜNG HỢP" đổi thành **HÌNH THỨC TT** và ghi chữ (TT — TRỰC TIẾP / TTR — TRẢ TRƯỚC).
   - Cột "PHIẾU THU MẸ" đổi thành **PHIẾU THU TRẢ TRƯỚC**; "(TTT)" đổi thành "(TTR)".
 
+### DEC-108 — Dữ liệu test đầy đủ trường hợp
+
+- Trạng thái: CONFIRMED (2026-10-25) — bổ sung DEC-106
+- Quyết định: Bản Demo có bộ **dữ liệu test** (`createDemoState`, `src/services/demoData.ts`). Dữ liệu được tạo bằng cách chạy đúng các hàm nghiệp vụ theo đúng vai trò, nên mã hồ sơ, phiếu thu, chứng từ và K80 đều khớp quy tắc. Bộ dữ liệu gồm:
+  - **Chung:** hãng tàu MAERSK (MSK); size 20 / 40 / 45.
+  - **Hạ vỏ / Tồn vỏ:**
+    - Hình thức thanh toán: TT tiền mặt, TT chuyển khoản, TTR, TTS, và 1 lượt chờ thanh toán.
+    - Vị trí: Block có Bay / Row / Tier và Block chỉ quản lý theo Block.
+    - Có 1 cont bị khóa.
+    - DAMAGE: chờ báo giá, chờ sửa chữa, đã sửa xong.
+    - Cont đang chờ vệ sinh, cont chờ Xe nâng hạ.
+  - **Phiếu thu:** `PT-TT-…`, phiếu thu trả trước đã thu (`PT-TTR-…`), phiếu thu trả trước chờ chuyển khoản.
+  - **Cấp vỏ:** 1 lượt đã xuất bãi, 1 lượt chờ Xe nâng.
+  - **Nhập tàu:** đã hạ / chờ vệ sinh / chưa giám định.
+  - **Xuất tàu:** đã xuất / chờ xuất.
+- Lần đầu mở app, dữ liệu cũ trên trình duyệt được thay bằng dữ liệu test (đổi khóa lưu trình duyệt lên v9).
+- Đầu trang có 2 nút: **Xóa dữ liệu** (dữ liệu sạch, giữ danh mục) và **Nạp dữ liệu test**, cả hai đều hỏi xác nhận.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -896,6 +914,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-107 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-108 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
