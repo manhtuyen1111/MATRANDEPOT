@@ -749,7 +749,7 @@ Quy ước trạng thái:
 - Quyết định: Hình thức thanh toán hiển thị và ký hiệu như sau:
   - **TT — TRỰC TIẾP**: tiền mặt hoặc chuyển khoản. Mã phiếu thu `PT-TT-YYMMDD-NNNN`.
   - **TTR — TRẢ TRƯỚC**: dùng tiền khách đã nạp trước. Phiếu nạp tiền có mã `PT-TTR-YYMMDD-NNNN`; lượt cont trừ vào phiếu thu mẹ `PTT-`.
-  - **TTS — THANH TOÁN SAU**: công nợ. Không có phiếu thu, chỉ có chứng từ `CT-` (DEC-031).
+  - **TTS — THANH TOÁN SAU**: công nợ. **Không cấp mã phiếu thu** (người dùng xác nhận lại 2026-10-25), chỉ có chứng từ `CT-` (DEC-031).
 - Mã nội bộ trong code / dữ liệu vẫn là TTTT / TTT / TTS, chỉ đổi phần hiển thị và tiền tố mã phiếu thu.
 
 ### DEC-101 — Menu Báo cáo: "Sửa chữa chi tiết" → "Sửa chữa"
