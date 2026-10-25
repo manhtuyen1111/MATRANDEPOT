@@ -842,6 +842,16 @@ Quy ước trạng thái:
   - `ContainerRecord.forkliftShiftTask = 'HA_KE_GIAM_DINH'` (dùng lại cờ cũ, xóa khi Đảo chuyển).
   - `YardBlock.isInspectionRack`, `setYardBlockInspectionRack`.
 
+### DEC-110 — Trả chứng từ: nút XEM TRƯỚC
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Ở Văn phòng → Trả chứng từ có nút **Xem trước** nằm **bên trái** nút "Trả chứng từ" (từng dòng chờ) và nút "Xác nhận & in" (ô quét).
+- Bấm Xem trước sẽ mở bộ chứng từ (EEIR + phiếu thu) để xem trên màn hình, và:
+  - **không** ghi nhận trả chứng từ;
+  - **không** in;
+  - **không** tăng số lần in phiếu thu.
+- Xem được cả khi lái xe chưa đi hết lộ trình. Chỉ Văn phòng / Quản lý được xem (`previewDocumentPack`, `driverRoute.ts`).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -931,6 +941,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-109 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-110 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
