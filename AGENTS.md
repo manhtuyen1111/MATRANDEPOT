@@ -101,7 +101,8 @@ Một việc chỉ "xong" khi:
 - **Phiếu thu / hình thức thanh toán (DEC-098 → 100):**
   - Hiển thị ký hiệu **TT** (TRỰC TIẾP) / **TTR** (TRẢ TRƯỚC) / **TTS** (THANH TOÁN SAU). Mã nội bộ vẫn là TTTT / TTT / TTS.
   - Gọi là **PHIẾU THU TRẢ TRƯỚC**, không viết "phiếu thu mẹ" (DEC-103).
-  - **Xuất hóa đơn (DEC-111):** nghiệp vụ ở `src/services/invoice.ts`. Mã bảo mật 12 ký tự chỉ sinh bằng `generateInvoiceSecret` (crypto). Mã in trên phiếu và hiện ở khối Xuất hóa đơn của chi tiết phiếu thu (DEC-112); **không** đưa vào Excel. Trạng thái CHƯA XHD → YÊU CẦU XHD (khách, trang `#/hoa-don`) → ĐÃ XHD (Kế toán).
+  - **Xuất hóa đơn (DEC-111):** nghiệp vụ ở `src/services/invoice.ts`. Mã bảo mật 12 ký tự chỉ sinh bằng `generateInvoiceSecret` (crypto). Mã in trên phiếu và hiện ở khối Xuất hóa đơn của chi tiết phiếu thu, kèm đường link (DEC-112, DEC-113); **không** đưa vào Excel.
+  - **Người thu tiền** trên phiếu luôn là nhân viên — dùng `receiptCollectorName`, không in "HỆ THỐNG (Ngân hàng)" (DEC-113). Trạng thái CHƯA XHD → YÊU CẦU XHD (khách, trang `#/hoa-don`) → ĐÃ XHD (Kế toán).
   - Mã phiếu thu `PT-TT-YYMMDD-NNNN` / `PT-TTR-YYMMDD-NNNN`, chỉ cấp qua `codes.ts`.
   - Giữ 2 mã bên trong (`CT-` khoản phải thu, `PT-` tiền đã thu), nhưng Tồn vỏ chỉ hiện ô **MÃ PHIẾU THU** lấy từ `containerPaymentInfo` (TT `PT-TT-…`, TTR `PTT-…`, TTS để trống; không hiện `CT-` — DEC-104); mã là link mở phiếu thu (`receiptTarget`, DEC-105). Màn / Excel Phiếu thu cũng không hiện chứng từ; số cont đứng ngay sau Tác nghiệp (DEC-107).
   - **Dữ liệu Demo (DEC-106, DEC-108):** lần đầu mở app nạp `createDemoState()` (`src/services/demoData.ts`, tạo bằng hàm nghiệp vụ thật). Nút "Xóa dữ liệu" → `createCleanState()`. `createInitialState()` chỉ dùng cho test. Thêm trường hợp test mới → thêm vào `demoData.ts` bằng hàm service, không ghi tay vào state.

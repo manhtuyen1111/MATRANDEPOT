@@ -882,6 +882,25 @@ Quy ước trạng thái:
 - Người thấy mã: những ai được xem Phiếu thu (Văn phòng, Quản lý, Kế toán, Admin).
 - Mã vẫn **không** có trong Excel.
 
+### DEC-113 — Người thu tiền trên phiếu là nhân viên; hướng dẫn xuất hóa đơn cho khách; khối Xuất hóa đơn có link
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- **Người thu tiền:** ô ký "Người thu tiền" trên phiếu thu luôn là **nhân viên Văn phòng tác nghiệp**. Ngân hàng / hệ thống chỉ là công cụ xác nhận tiền về.
+  - Khi chuyển khoản được ngân hàng báo có, phiếu thu ghi nhân viên đã lập yêu cầu thu (`tx.createdBy`), không ghi "HỆ THỐNG (Ngân hàng)".
+  - Phiếu cũ đã ghi "HỆ THỐNG" vẫn in tên nhân viên (`receiptCollectorName`).
+  - Mã giao dịch ngân hàng vẫn in ở dòng Hình thức.
+- **Trang yêu cầu xuất hóa đơn** có khung **Hướng dẫn xuất hóa đơn**, mở sẵn và thu gọn được:
+  1. Tìm mã 12 ký tự trên phiếu.
+  2. Nhập đúng mã (phân biệt hoa / thường) và kiểm tra số phiếu, số tiền.
+  3. Điền thông tin đúng như Giấy đăng ký kinh doanh.
+  4. Nhận hóa đơn qua Gmail; tra cứu lại bằng mã để xem trạng thái.
+- Nội dung hướng dẫn cho các trường hợp:
+  - **Sai thông tin khi chưa xuất:** nhập lại mã → sửa → Cập nhật yêu cầu.
+  - **Đã xuất:** trang khóa; khách liên hệ Kế toán (SĐT / email lấy từ Danh mục → Công ty) và báo số phiếu thu để được hướng dẫn điều chỉnh hóa đơn.
+  - Nhắc khách giữ kín mã.
+- **Văn phòng → Phiếu thu → khối Xuất hóa đơn:** hiện cả **Đường link** và **Mã bảo mật**.
+- Chưa có trong hệ thống: quy trình điều chỉnh / thay thế hóa đơn đã xuất. Kế toán xử lý trên MISA theo quy định.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -971,6 +990,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-112 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-113 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
