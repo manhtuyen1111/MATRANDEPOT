@@ -32,7 +32,7 @@ const as = (s: DepotState, id: string) => ({ ...s, currentUser: s.staffUsers.fin
 describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
   it('App khung menu', () => {
     // DEC-106: App mở với dữ liệu sạch; smoke này cần dữ liệu mẫu → nạp qua localStorage giả
-    const store: Record<string, string> = { matran_depot_erp_state_v8: JSON.stringify(base) };
+    const store: Record<string, string> = { matran_depot_erp_state_v9: JSON.stringify(base) };
     const prev = (globalThis as { localStorage?: unknown }).localStorage;
     (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } };
     const html = renderToString(<App />);

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { K80InternalTicket, ROLE_LABELS, WorkspaceMenuId } from '../types/depot';
 import { DepotState, loadDepotState, resetDepotState, saveDepotState } from '../services/depotStore';
+import { createDemoState } from '../services/demoData';
 import { canOpenMenu } from '../services/permissions';
 import { isSupabaseConfigured } from '../lib/env';
 import { K80TicketModal } from '../components/K80TicketModal';
@@ -151,7 +152,7 @@ function writePrefs(p: { collapsedGroups: string[]; railMode: boolean }) {
 }
 
 export const App: React.FC = () => {
-  const [state, setState] = useState<DepotState>(() => loadDepotState());
+  const [state, setState] = useState<DepotState>(() => loadDepotState(createDemoState));
   const [activeMenu, setActiveMenu] = useState<WorkspaceMenuId>('GD_HA_VO');
   const [activeK80Ticket, setActiveK80Ticket] = useState<K80InternalTicket | null>(null);
   const [activeDossierCode, setActiveDossierCode] = useState<string | null>(null);
@@ -425,6 +426,10 @@ export const App: React.FC = () => {
             <button type="button" onClick={() => { if (window.confirm('Xóa toàn bộ dữ liệu tác nghiệp (container, lệnh, phiếu thu…)? Danh mục được giữ lại.')) setState(resetDepotState()); }} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
               <RefreshCw className="h-3 w-3" />
               Xóa dữ liệu
+            </button>
+            <button type="button" onClick={() => { if (window.confirm('Thay toàn bộ dữ liệu hiện tại bằng DỮ LIỆU TEST (đủ các trường hợp)?')) setState(resetDepotState(createDemoState)); }} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
+              <RefreshCw className="h-3 w-3" />
+              Nạp dữ liệu test
             </button>
           </div>
         </header>

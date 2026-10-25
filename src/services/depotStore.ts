@@ -25,9 +25,9 @@ import {
   VesselList,
 } from '../types/depot';
 
-// DEC-106: đổi khóa để mọi máy bắt đầu lại từ dữ liệu sạch; khóa cũ bị xóa khi nạp
-const STORAGE_KEY = 'matran_depot_erp_state_v8';
-const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7'];
+// DEC-106, DEC-108: đổi khóa để mọi máy nạp lại dữ liệu test mới; khóa cũ bị xóa khi nạp
+const STORAGE_KEY = 'matran_depot_erp_state_v9';
+const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7', 'matran_depot_erp_state_v8'];
 
 export interface DepotState {
   currentUser: StaffUser;
@@ -859,14 +859,15 @@ export function createCleanState(): DepotState {
   };
 }
 
-export function loadDepotState(): DepotState {
+// DEC-108: chưa có dữ liệu lưu → dùng fallback (App truyền dữ liệu test); mặc định dữ liệu sạch
+export function loadDepotState(fallback: () => DepotState = createCleanState): DepotState {
   try {
     for (const key of LEGACY_STORAGE_KEYS) localStorage.removeItem(key);
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createCleanState();
+    if (!raw) return fallback();
     return normalizeDepotState(JSON.parse(raw) as Partial<DepotState>);
   } catch {
-    return createCleanState();
+    return fallback();
   }
 }
 
@@ -878,8 +879,9 @@ export function saveDepotState(state: DepotState): void {
   }
 }
 
-export function resetDepotState(): DepotState {
-  const initial = createCleanState();
+// DEC-106: Xóa dữ liệu → dữ liệu sạch; DEC-108: Nạp dữ liệu test → truyền createDemoState
+export function resetDepotState(build: () => DepotState = createCleanState): DepotState {
+  const initial = build();
   saveDepotState(initial);
   return initial;
 }
