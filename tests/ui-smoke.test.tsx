@@ -517,10 +517,12 @@ describe('DEC-090: Xe nâng → Đảo chuyển — vị trí thẳng cột', ()
     const statusAt = html.lastIndexOf('data-testid="shift-status"', at);
     const progressAt = html.indexOf('data-testid="shift-progress"', at);
     expect(statusAt).toBeGreaterThan(-1);
-    expect(progressAt).toBeGreaterThan(html.indexOf('/ 04-02-01', at));
-    // DEC-095: tiến độ bên phải vị trí (dòng 1); dòng 2 size/type | GHI CHÚ (nền vàng khi có)
+    // DEC-115: 2 dòng — dòng 1 số cont | size/type | tiến độ; dòng 2 vị trí | ghi chú; không xuống dòng
+    expect(progressAt).toBeLessThan(html.indexOf('/ 04-02-01', at));
+    expect(html.indexOf('data-testid="shift-slot"', at)).toBeGreaterThan(progressAt);
     expect(html.match(/data-testid="shift-note"/g)?.length).toBe(rows);
-    expect(html.indexOf('data-testid="shift-note"', at)).toBeGreaterThan(progressAt);
+    expect(html.indexOf('data-testid="shift-note"', at)).toBeGreaterThan(html.indexOf('data-testid="shift-slot"', at));
+    expect(html.match(/flex items-center gap-2 overflow-hidden whitespace-nowrap/g)?.length).toBe(rows * 2);
     const noted = toggleContainerHold(as(base, 'usr-office'), { containerNo: 'MSKU4089123', hold: true, reason: 'Chờ hãng tàu' });
     const html2 = renderToString(<YardShiftWorkspace state={noted} onUpdateState={noop} />).replace(/<!-- -->/g, '');
     expect(html2).toMatch(/bg-yellow-200[^"]*"[^>]*>Ghi chú: Chờ hãng tàu</);

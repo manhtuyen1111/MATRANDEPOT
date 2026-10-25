@@ -148,8 +148,7 @@ export const YardShiftWorkspace: React.FC<{
                 onClick={() => { setSelectedId(c.id); setSlot(EMPTY_SLOT); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className={`w-full rounded-lg border px-3 py-2.5 text-left text-xs ${selectedId === c.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white active:bg-slate-50'}`}
               >
-                {/* DEC-094: cấu trúc như danh sách Xe nâng — ô TRẠNG THÁI riêng bên trái; bên phải dòng 1 SỐ CONT | VỊ TRÍ
-                    (ô Block rộng cố định → vị trí thẳng cột, DEC-092), dòng cuối SIZE/TYPE | TIẾN ĐỘ */}
+                {/* DEC-094: ô TRẠNG THÁI riêng bên trái (cùng kích thước ô tác nghiệp — DEC-096) */}
                 <div className="grid grid-cols-[5rem_1fr] items-center gap-2.5" data-testid="shift-row">
                   <span
                     data-testid="shift-status"
@@ -158,29 +157,30 @@ export const YardShiftWorkspace: React.FC<{
                     {c.conditionClass}
                   </span>
                   <span className="min-w-0">
-                    {/* DEC-095: dòng 1 SỐ CONT | VỊ TRÍ (ô rộng cố định) | TIẾN ĐỘ; dòng 2 SIZE/TYPE | GHI CHÚ */}
-                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="w-[7rem] shrink-0"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" /></span>
-                      <span className="flex shrink-0 font-mono text-[11px] font-bold text-slate-900" style={{ width: `${blockCh + 11}ch` }} data-testid="shift-slot">
-                        <span className="shrink-0" style={{ width: `${blockCh}ch` }}>{c.currentBlock || ''}</span>
-                        <span className="truncate">{slotDetail(c) ? ` / ${slotDetail(c)}` : ''}</span>
-                      </span>
-                      <span className="ml-auto flex flex-wrap justify-end gap-1" data-testid="shift-progress">
+                    {/* DEC-115: tối ưu mobile — đúng 2 dòng, không xuống dòng:
+                        dòng 1 SỐ CONT | SIZE/TYPE | TIẾN ĐỘ (bên phải); dòng 2 VỊ TRÍ (ô Block rộng cố định, thẳng cột — DEC-092) | GHI CHÚ */}
+                    <span className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                      <span className="shrink-0"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" /></span>
+                      <span className="shrink-0 font-mono text-[11px] text-slate-600">{c.size}/{c.type}</span>
+                      <span className="ml-auto flex min-w-0 justify-end gap-1 overflow-hidden" data-testid="shift-progress">
                         {getContainerProgress(c).map((p) => (
-                          <span key={p} className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold ${p === 'SAN_SANG' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
+                          <span key={p} className={`shrink-0 whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold ${p === 'SAN_SANG' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
                             {PROGRESS_LABELS[p]}
                           </span>
                         ))}
                       </span>
                     </span>
-                    <span className="mt-1 flex items-center gap-2">
-                      <span className="w-[7rem] shrink-0 font-mono text-[11px] text-slate-600">{c.size}/{c.type}</span>
+                    <span className="mt-1 flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                      <span className="flex shrink-0 font-mono text-[11px] font-bold text-slate-900" data-testid="shift-slot">
+                        <span className="shrink-0" style={{ width: `${blockCh}ch` }}>{c.currentBlock || ''}</span>
+                        <span className="truncate">{slotDetail(c) ? ` / ${slotDetail(c)}` : ''}</span>
+                      </span>
                       <span
                         data-testid="shift-note"
                         className={`min-w-0 flex-1 truncate rounded px-1.5 py-0.5 text-[11px] ${c.officeNote ? 'bg-yellow-200 font-semibold text-slate-900' : 'text-slate-400'}`}
                         title={c.officeNote || ''}
                       >
-                        {c.officeNote ? `Ghi chú: ${c.officeNote}` : 'Ghi chú: -'}
+                        {c.officeNote ? `Ghi chú: ${c.officeNote}` : ''}
                       </span>
                     </span>
                   </span>
