@@ -96,7 +96,7 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
   const lines = master?.feeLines?.length ? master.feeLines : voucher?.feeLines || [];
   const hasQty = lines.some((l) => (l.quantity || 1) > 1);
   return (
-    <PrintFrame state={state} title={isPrepaid ? "PHIẾU THU TRƯỚC (TR)" : "PHIẾU THU"} number={r.receiptNo} operation={op} reprintNo={printNo}>
+    <PrintFrame state={state} title={isPrepaid ? "PHIẾU THU TRƯỚC (TTR)" : "PHIẾU THU"} number={r.receiptNo} operation={op} reprintNo={printNo}>
       {isPrepaid && master && (
         <div className="mt-2 border-4 border-double border-slate-900 px-3 py-2 text-center">
           <p className="text-[10px] font-bold uppercase tracking-wider">Phiếu thu mẹ — dùng trừ dần cho Hạ vỏ / Cấp vỏ</p>

@@ -66,7 +66,7 @@ export const CompanyCatalog: React.FC<{ state: DepotState; onUpdateState: (next:
       <div className="lg:col-span-5">
         <SectionCard title="Xem trước phần đầu giấy tờ in">
           <div className="border border-dashed border-slate-300 p-3 text-xs">
-            <CompanyHeader company={{ ...form, shortName: form.shortName || form.name }} title="PHIẾU THU" subtitle={<p className="font-mono">Số: PT-TL-YYMMDD-NNNN</p>} />
+            <CompanyHeader company={{ ...form, shortName: form.shortName || form.name }} title="PHIẾU THU" subtitle={<p className="font-mono">Số: PT-TT-YYMMDD-NNNN</p>} />
           </div>
         </SectionCard>
       </div>

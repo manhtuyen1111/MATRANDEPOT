@@ -55,7 +55,7 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     // DEC-099: cột thanh toán
     expect(html).toContain('Hình thức TT');
     expect(html).toContain('>Phiếu thu<');
-    expect(html).toContain('TR — TRẢ TRƯỚC');
+    expect(html).toContain('TTR — TRẢ TRƯỚC');
     expect(html).not.toContain('>Thao tác<');
   });
 
@@ -294,7 +294,7 @@ describe('DEC-073: Lập danh sách XUẤT TÀU có Tìm hàng loạt như Tồn
 describe('DEC-076: Phiếu thu — nút Tạo phiếu thu TTT cùng hàng Tra cứu', () => {
   it('Nút Tạo phiếu thu TTT nằm trong hàng nút tra cứu; form chưa mở sẵn', () => {
     const html = renderToString(<ReceiptsWorkspace state={as(base, 'usr-office')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
-    expect(html).toMatch(/Tra cứu<\/button>.*Tạo phiếu thu TR \(trả trước\)<\/button>/s);
+    expect(html).toMatch(/Tra cứu<\/button>.*Tạo phiếu thu TTR \(trả trước\)<\/button>/s);
     expect(html).not.toContain('Tạo phiếu thu (chờ thanh toán)');
     // DEC-102: ô lọc nhanh thời gian, mặc định Hôm nay; chưa chọn Tùy chọn thì chưa hiện ô Từ - Đến
     expect(html).toContain('aria-label="Lọc nhanh thời gian"');
@@ -313,7 +313,7 @@ describe('DEC-077: phiếu thu trước — biểu giá × số lượng, bản 
     s = confirmPrepaidCash(s, { transactionId: s.paymentTransactions[0].id });
     const receipt = s.paymentReceipts.find((r) => r.masterReceiptId === master.id)!;
     const html = renderToString(<ReceiptPrintSheet state={s} receipt={receipt} />).replace(/<!-- -->/g, '');
-    expect(html).toContain('PHIẾU THU TRƯỚC (TR)');
+    expect(html).toContain('PHIẾU THU TRƯỚC (TTR)');
     expect(html).toContain(master.receiptCode);
     expect(html).toContain('SỐ TIỀN NẠP TRƯỚC');
     expect(html).toContain('Lô tháng 11');
@@ -523,10 +523,10 @@ describe('DEC-097: Hình thức thanh toán — TTTT Trực tiếp đứng đầ
     const { PaymentPanel, EMPTY_PAYMENT } = await import('../src/components/shared');
     expect(EMPTY_PAYMENT).toMatchObject({ paymentCategory: 'TTTT', directMethod: 'CASH' });
     const html = renderToString(<PaymentPanel state={base} value={EMPTY_PAYMENT} onChange={noop} />);
-    const iTTTT = html.indexOf('TL — Trả ngay');
+    const iTTTT = html.indexOf('TT — Trực tiếp');
     expect(iTTTT).toBeGreaterThan(-1);
-    expect(iTTTT).toBeLessThan(html.indexOf('TR — Trả trước'));
-    expect(html.indexOf('TR — Trả trước')).toBeLessThan(html.indexOf('TTS — Thanh toán sau'));
-    expect(html).toMatch(/aria-checked="true"[^>]*><span[^>]*>TL — Trả ngay/);
+    expect(iTTTT).toBeLessThan(html.indexOf('TTR — Trả trước'));
+    expect(html.indexOf('TTR — Trả trước')).toBeLessThan(html.indexOf('TTS — Thanh toán sau'));
+    expect(html).toMatch(/aria-checked="true"[^>]*><span[^>]*>TT — Trực tiếp/);
   });
 });

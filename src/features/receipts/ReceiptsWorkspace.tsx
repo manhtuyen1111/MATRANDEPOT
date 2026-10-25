@@ -113,7 +113,7 @@ export const ReceiptsWorkspace: React.FC<{
       const next = createMasterPrepaidReceipt(state, { ...create, feeItems: feeIds.map((catalogId, i) => ({ catalogId, quantity: qtys[i] })) });
       onUpdateState(next);
       setSelectedTxId(next.paymentTransactions[0].id);
-      setSuccess(`Đã tạo phiếu thu TR ${next.masterReceipts[0].receiptCode} — đang chờ thanh toán.`);
+      setSuccess(`Đã tạo phiếu thu TTR ${next.masterReceipts[0].receiptCode} — đang chờ thanh toán.`);
       setCreate({ customerCode: '', lotDescription: '', method: 'CASH' });
       setFeeIds([]);
       setQtys([]);
@@ -177,7 +177,7 @@ export const ReceiptsWorkspace: React.FC<{
             {canCreate && (
               <button type="button" onClick={() => setCreateOpen(!createOpen)} className={`${secondaryBtn} ${createOpen ? "border-blue-600 text-blue-700" : ""}`}>
                 <FilePlus2 className="h-4 w-4" />
-                Tạo phiếu thu TR (trả trước)
+                Tạo phiếu thu TTR (trả trước)
               </button>
             )}
           </div>
@@ -190,7 +190,7 @@ export const ReceiptsWorkspace: React.FC<{
           <div className="flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-sm font-black text-slate-900">
               <FilePlus2 className="h-4 w-4 text-blue-600" />
-              Tạo phiếu thu TRƯỚC (TR — trả trước)
+              Tạo phiếu thu TRƯỚC (TTR — trả trước)
             </h3>
             <button type="button" onClick={() => setCreateOpen(false)} aria-label="Đóng" className={secondaryBtn}><X className="h-3.5 w-3.5" /></button>
           </div>

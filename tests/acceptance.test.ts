@@ -156,14 +156,14 @@ describe('HẠ VỎ — Giám định → Văn phòng → Thanh toán → GATE I
     expect(state.k80Tickets[0].isPaid).toBe(false);
   });
 
-  it('TTTT tiền mặt: người có quyền xác nhận → giao dịch thành công → phát hành 1 PHIẾU THU PT-TL-YYMMDD-NNNN (DEC-098)', () => {
+  it('TTTT tiền mặt: người có quyền xác nhận → giao dịch thành công → phát hành 1 PHIẾU THU PT-TT-YYMMDD-NNNN (DEC-098)', () => {
     let s = fieldStep(createInitialState());
     const order = s.gateInOrders[0];
     s = officeStep(s, order.id, 'MSKU1234567');
     s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: order.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
     expect(s.gateInOrders.find((o) => o.id === order.id)!.status).toBe('GATE_IN_OK');
     expect(s.paymentReceipts).toHaveLength(1);
-    expect(s.paymentReceipts[0].receiptNo).toMatch(/^PT-TL-\d{6}-0001$/);
+    expect(s.paymentReceipts[0].receiptNo).toMatch(/^PT-TT-\d{6}-0001$/);
     expect(s.paymentReceipts[0].dossierCode).toBe(order.masterDossierCode);
   });
 
@@ -1072,7 +1072,7 @@ describe('DEC-093: khách hàng gõ tay hoặc chọn; khách ngoài Danh mục 
 });
 
 describe('DEC-098: mã phiếu thu theo hình thức + ngày, duy nhất', () => {
-  it('Trực tiếp PT-TL-YYMMDD-NNNN tăng dần trong ngày; nạp quỹ thu trước PT-TR-YYMMDD-NNNN; không trùng', async () => {
+  it('Trực tiếp PT-TT-YYMMDD-NNNN tăng dần trong ngày; nạp quỹ thu trước PT-TTR-YYMMDD-NNNN; không trùng', async () => {
     const { createMasterPrepaidReceipt, confirmPrepaidCash } = await import('../src/services/payments');
     let s = fieldStep(fieldStep(createInitialState()));
     const [g2, g1] = s.gateInOrders;
@@ -1081,25 +1081,25 @@ describe('DEC-098: mã phiếu thu theo hình thức + ngày, duy nhất', () =>
     s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: g1.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
     s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: g2.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
     const day = s.paymentReceipts[0].receiptNo.slice(6, 12);
-    expect(s.paymentReceipts.map((r) => r.receiptNo).sort()).toEqual([`PT-TL-${day}-0001`, `PT-TL-${day}-0002`]);
+    expect(s.paymentReceipts.map((r) => r.receiptNo).sort()).toEqual([`PT-TT-${day}-0001`, `PT-TT-${day}-0002`]);
 
     const office = as(s, 'usr-office');
     s = createMasterPrepaidReceipt(office, { customerCode: office.partners.find((p) => p.isCustomer)!.code, lotDescription: '', method: 'CASH', feeItems: [{ catalogId: office.feeCatalog[0].id, quantity: 1 }] });
     s = confirmPrepaidCash(s, { transactionId: s.paymentTransactions[0].id });
     const topup = s.paymentReceipts.find((r) => r.purpose === 'PREPAID_TOPUP')!;
-    expect(topup.receiptNo).toMatch(/^PT-TR-\d{6}-0001$/);
+    expect(topup.receiptNo).toMatch(/^PT-TTR-\d{6}-0001$/);
     const all = s.paymentReceipts.map((r) => r.receiptNo);
     expect(new Set(all).size).toBe(all.length);
   });
 });
 
 describe('DEC-099: Tồn vỏ — hình thức thanh toán + phiếu thu của lượt vào bãi', () => {
-  it('TL (mã PT-TL), TTS (công nợ CT-), TR (phiếu thu mẹ PTT-), chưa thanh toán; Excel đủ cột', async () => {
+  it('TT (mã PT-TT), TTS (công nợ CT-), TTR (phiếu thu mẹ PTT-), chưa thanh toán; Excel đủ cột', async () => {
     const { containerPaymentInfo } = await import('../src/services/payments');
     const { yardStockSheet } = await import('../src/services/reports');
     // TTT — dữ liệu mẫu HV-261019-001 trừ phiếu thu mẹ PTT-2026-001
     const s0 = createInitialState();
-    expect(containerPaymentInfo(s0, { masterDossierCode: 'HV-261019-001' })).toMatchObject({ category: 'TTT', label: 'TR — TRẢ TRƯỚC', receipt: 'PTT-2026-001' });
+    expect(containerPaymentInfo(s0, { masterDossierCode: 'HV-261019-001' })).toMatchObject({ category: 'TTT', label: 'TTR — TRẢ TRƯỚC', receipt: 'PTT-2026-001' });
     // TTTT tiền mặt
     let s = fieldStep(s0);
     const g = s.gateInOrders[0];
@@ -1107,8 +1107,8 @@ describe('DEC-099: Tồn vỏ — hình thức thanh toán + phiếu thu của l
     expect(containerPaymentInfo(s, { masterDossierCode: g.masterDossierCode }).label).toBe('Chưa thanh toán');
     s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: g.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
     const tttt = containerPaymentInfo(s, { masterDossierCode: g.masterDossierCode });
-    expect(tttt).toMatchObject({ category: 'TTTT', label: 'TL — TRẢ NGAY' });
-    expect(tttt.receipt).toMatch(/^PT-TL-\d{6}-\d{4}$/);
+    expect(tttt).toMatchObject({ category: 'TTTT', label: 'TT — TRỰC TIẾP' });
+    expect(tttt.receipt).toMatch(/^PT-TT-\d{6}-\d{4}$/);
     // TTS
     const t = gateInTts(createInitialState(), 'MSKU7654321');
     const tts = containerPaymentInfo(t.state, { masterDossierCode: t.order.masterDossierCode });
@@ -1121,8 +1121,8 @@ describe('DEC-099: Tồn vỏ — hình thức thanh toán + phiếu thu của l
     const sheet = yardStockSheet([c], s);
     const i = sheet.columns.indexOf('HÌNH THỨC TT');
     expect(sheet.columns.slice(i, i + 2)).toEqual(['HÌNH THỨC TT', 'PHIẾU THU']);
-    expect(sheet.rows[0][i]).toBe('TL — TRẢ NGAY');
-    expect(String(sheet.rows[0][i + 1])).toMatch(/^PT-TL-/);
+    expect(sheet.rows[0][i]).toBe('TT — TRỰC TIẾP');
+    expect(String(sheet.rows[0][i + 1])).toMatch(/^PT-TT-/);
     for (const row of sheet.rows) expect(row.length).toBe(sheet.columns.length);
   });
 });

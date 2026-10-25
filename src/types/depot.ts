@@ -390,13 +390,13 @@ export type ReceiptOperation = 'HA_VO' | 'CAP_VO' | 'THU_TRUOC' | 'KHAC';
 export const RECEIPT_OPERATION_LABELS: Record<ReceiptOperation, string> = {
   HA_VO: 'HẠ VỎ',
   CAP_VO: 'CẤP VỎ',
-  THU_TRUOC: 'THU TRƯỚC (TR)',
+  THU_TRUOC: 'THU TRƯỚC (TTR)',
   KHAC: 'KHÁC',
 };
 
 export interface PaymentReceipt {
   id: string;
-  receiptNo: string; // PT-TL-YYMMDD-NNNN / PT-TR-YYMMDD-NNNN (DEC-098); dữ liệu cũ PT-YYYY-NNNNNN
+  receiptNo: string; // PT-TT-YYMMDD-NNNN / PT-TTR-YYMMDD-NNNN (DEC-098); dữ liệu cũ PT-YYYY-NNNNNN
   transactionId: string;
   purpose: 'VOUCHER' | 'PREPAID_TOPUP';
   operation?: ReceiptOperation; // Tác nghiệp phát sinh khoản thu (DEC-051)

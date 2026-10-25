@@ -258,10 +258,10 @@ export const EMPTY_PAYMENT: PaymentChoice = {
   directMethod: 'CASH',
 };
 
-// DEC-097: trả ngay đứng đầu; DEC-100: ký hiệu TL / TR / TTS
+// DEC-097: trả ngay đứng đầu; DEC-100: ký hiệu TT / TTR / TTS
 const PAYMENT_OPTIONS: { code: PaymentCategory; title: string; sub: string }[] = [
-  { code: 'TTTT', title: 'TL — Trả ngay', sub: 'Tiền mặt hoặc chuyển khoản (API QR)' },
-  { code: 'TTT', title: 'TR — Trả trước', sub: 'Dùng tiền khách đã nạp trước (QR Phiếu thu mẹ)' },
+  { code: 'TTTT', title: 'TT — Trực tiếp', sub: 'Tiền mặt hoặc chuyển khoản (API QR)' },
+  { code: 'TTT', title: 'TTR — Trả trước', sub: 'Dùng tiền khách đã nạp trước (QR Phiếu thu mẹ)' },
   { code: 'TTS', title: 'TTS — Thanh toán sau', sub: 'Ghi chú TTS trên chứng từ (công nợ)' },
 ];
 

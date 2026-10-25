@@ -80,7 +80,7 @@ function issueReceipt(state: DepotState, transactionId: string, issuedBy: string
   if (tx.receiptId || state.paymentReceipts.some((r) => r.transactionId === tx.id)) return state;
 
   // DEC-098: mã phiếu thu cho biết hình thức + ngày thu
-  const allocated = allocateCode(state, tx.purpose === 'PREPAID_TOPUP' ? 'PT-TR' : 'PT-TL');
+  const allocated = allocateCode(state, tx.purpose === 'PREPAID_TOPUP' ? 'PT-TTR' : 'PT-TT');
   const voucher = tx.voucherId ? allocated.state.vouchers.find((v) => v.id === tx.voucherId) : undefined;
   const master = tx.masterReceiptId
     ? allocated.state.masterReceipts.find((r) => r.id === tx.masterReceiptId)
@@ -173,7 +173,7 @@ export function settleVoucher(
 
   if (input.paymentCategory === 'TTT') {
     const qr = (input.scannedQrCode || '').trim().toUpperCase();
-    if (!qr) throw new Error('TRẢ TRƯỚC (TR): Vui lòng quét mã QR của Phiếu thu mẹ vào chứng từ.');
+    if (!qr) throw new Error('TRẢ TRƯỚC (TTR): Vui lòng quét mã QR của Phiếu thu mẹ vào chứng từ.');
     const master = state.masterReceipts.find((r) => r.qrCode.toUpperCase() === qr);
     if (!master) throw new Error(`Mã QR "${qr}" không tồn tại.`);
     if (master.status === 'PENDING_PAYMENT') {
@@ -236,7 +236,7 @@ export function settleVoucher(
 
   // TTTT — Thanh toán trực tiếp
   if (!input.directMethod) {
-    throw new Error('TRẢ NGAY (TL): Phải chọn Chuyển khoản (API QR) hoặc Tiền mặt.');
+    throw new Error('TRỰC TIẾP (TT): Phải chọn Chuyển khoản (API QR) hoặc Tiền mặt.');
   }
   const tx: PaymentTransaction = {
     id: newId('tx'),
@@ -372,7 +372,7 @@ export function createMasterPrepaidReceipt(
     feeItems?: { catalogId: string; quantity: number }[];
   }
 ): DepotState {
-  assertPermission(state, 'PREPAID_RECEIPT_CREATE', 'chỉ Văn phòng được tạo phiếu thu TR (Trả trước).');
+  assertPermission(state, 'PREPAID_RECEIPT_CREATE', 'chỉ Văn phòng được tạo phiếu thu TTR (Trả trước).');
   const partner = state.partners.find((p) => p.code === input.customerCode.trim().toUpperCase());
   if (!partner) throw new Error('Vui lòng chọn khách hàng / đối tác thanh toán từ Danh mục chung.');
   const feeLines = input.feeItems?.length ? buildPrepaidFeeLines(state, input.feeItems) : undefined;
@@ -424,7 +424,7 @@ export function createMasterPrepaidReceipt(
     'CREATE_MASTER_RECEIPT_TTT',
     'FINANCE',
     master.receiptCode,
-    `Tạo phiếu thu TR ${master.receiptCode} cho ${partner.name}: ${amount.toLocaleString('vi-VN')}đ (${
+    `Tạo phiếu thu TTR ${master.receiptCode} cho ${partner.name}: ${amount.toLocaleString('vi-VN')}đ (${
       input.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản QR'
     }) — Chờ thanh toán`
   );
@@ -434,7 +434,7 @@ export function createMasterPrepaidReceipt(
 export function confirmPrepaidCash(state: DepotState, input: { transactionId: string }): DepotState {
   assertPermission(state, 'PREPAID_CASH_CONFIRM', 'chỉ Văn phòng được xác nhận đã thu tiền mặt.');
   const tx = state.paymentTransactions.find((t) => t.id === input.transactionId);
-  if (!tx || tx.purpose !== 'PREPAID_TOPUP') throw new Error('Không tìm thấy phiếu thu TR cần xác nhận.');
+  if (!tx || tx.purpose !== 'PREPAID_TOPUP') throw new Error('Không tìm thấy phiếu thu TTR cần xác nhận.');
   if (tx.method !== 'CASH') throw new Error('Phiếu chuyển khoản chỉ được xác nhận bằng kết quả từ ngân hàng.');
   if (tx.status !== 'PENDING') throw new Error('Giao dịch không còn ở trạng thái chờ thanh toán.');
 
@@ -527,13 +527,13 @@ export function masterReceiptUsage(state: DepotState, receiptCode: string): Mast
 }
 
 // DEC-099: THÔNG TIN THANH TOÁN của lượt cont vào bãi (dùng ở Tồn vỏ + Excel)
-//   (DEC-100: ký hiệu hiển thị TL / TTS / TR; mã nội bộ vẫn TTTT / TTS / TTT)
-//   TL → mã phiếu thu PT-TL-…; TR → phiếu thu mẹ PTT-…; + phiếu thu mẹ PTT-…;
+//   (DEC-100: ký hiệu hiển thị TT / TTS / TTR; mã nội bộ vẫn TTTT / TTS / TTT)
+//   TT → mã phiếu thu PT-TT-…; TTR → phiếu thu mẹ PTT-…;
 //   TTS → THANH TOÁN SAU (công nợ, chỉ chứng từ CT-…); Nhập tàu → Không thu phí.
 export const PAYMENT_CATEGORY_FULL_LABELS: Record<PaymentCategory, string> = {
-  TTTT: 'TL — TRẢ NGAY',
+  TTTT: 'TT — TRỰC TIẾP',
   TTS: 'TTS — THANH TOÁN SAU',
-  TTT: 'TR — TRẢ TRƯỚC',
+  TTT: 'TTR — TRẢ TRƯỚC',
 };
 
 export interface ContainerPaymentInfo {
