@@ -227,7 +227,7 @@ export const ReceiptsWorkspace: React.FC<{
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-[11px] text-slate-500">Chỉ ghi nhận đã thu khi Văn phòng xác nhận tiền mặt hoặc ngân hàng xác nhận chuyển khoản; khi đó Phiếu thu mẹ mới dùng được để trừ dần.</p>
+            <p className="mt-2 text-[11px] text-slate-500">Chỉ ghi nhận đã thu khi Văn phòng xác nhận tiền mặt hoặc ngân hàng xác nhận chuyển khoản; khi đó Phiếu thu trả trước mới dùng được để trừ dần.</p>
           </SectionCard>
           <div className="flex flex-wrap items-center justify-end gap-3">
             <span className="text-sm">Tổng thu trước: <strong className="font-mono text-base">{formatVnd(previewTotal)}</strong></span>
@@ -259,7 +259,7 @@ export const ReceiptsWorkspace: React.FC<{
                         <th className="whitespace-nowrap px-2 py-2 text-right">Số tiền</th>
                         <th className="whitespace-nowrap px-2 py-2">Phương thức TT</th>
                         <th className="px-2 py-2">Bên thanh toán</th>
-                        <th className="whitespace-nowrap px-2 py-2">Mã hồ sơ / Phiếu thu mẹ</th>
+                        <th className="whitespace-nowrap px-2 py-2">Mã hồ sơ / Phiếu thu trả trước</th>
                         <th className="whitespace-nowrap px-2 py-2">Số cont</th>
                         <th className="whitespace-nowrap px-2 py-2">Chứng từ</th>
                         <th className="whitespace-nowrap px-2 py-2">Thời gian</th>
@@ -271,7 +271,7 @@ export const ReceiptsWorkspace: React.FC<{
                     <tbody className="divide-y divide-slate-100">
                       {result.rows.map((row) => {
                         const { transaction: t, receipt: r } = row;
-                        // DEC-079: phiếu thu trước → hiện luôn số lượt đã dùng / số tiền còn lại của Phiếu thu mẹ
+                        // DEC-079: phiếu thu trước → hiện luôn số lượt đã dùng / số tiền còn lại của Phiếu thu trả trước
                         const usage = t.purpose === 'PREPAID_TOPUP' ? masterReceiptUsage(state, r?.masterReceiptCode || t.paymentRef) : undefined;
                         return (
                         <tr key={t.id} onClick={() => setSelectedTxId(t.id)} className={`cursor-pointer ${selectedTxId === t.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
@@ -393,7 +393,7 @@ export const ReceiptsWorkspace: React.FC<{
                 )}
                 {(selected.receipt?.masterReceiptCode || selected.transaction.purpose === 'PREPAID_TOPUP') && (
                   <>
-                    <dt className="text-slate-500">Phiếu thu mẹ (TTT)</dt>
+                    <dt className="text-slate-500">Phiếu thu trả trước (TTT)</dt>
                     <dd className="font-mono">
                       {selected.receipt?.masterReceiptCode || selected.transaction.paymentRef}
                       {(() => {
@@ -452,7 +452,7 @@ export const ReceiptsWorkspace: React.FC<{
   );
 };
 
-// DEC-079: SỬ DỤNG PHIẾU THU MẸ — mỗi lần trừ tiền gắn chứng từ, hồ sơ; tổng nạp / số lượt / đã dùng / còn lại
+// DEC-079: SỬ DỤNG PHIẾU THU TRẢ TRƯỚC — mỗi lần trừ tiền gắn chứng từ, hồ sơ; tổng nạp / số lượt / đã dùng / còn lại
 export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpenDossier?: (code: string) => void }> = ({ state, code, onOpenDossier }) => {
   const usage = masterReceiptUsage(state, code);
   if (!usage) return null;
@@ -464,7 +464,7 @@ export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpe
   );
   return (
     <div className="mt-3 space-y-2 rounded-md border-2 border-blue-200 p-3 text-xs">
-      <p className="font-black uppercase text-slate-800">Sử dụng phiếu thu mẹ {usage.master.receiptCode}</p>
+      <p className="font-black uppercase text-slate-800">Sử dụng phiếu thu trả trước {usage.master.receiptCode}</p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {tile('Tổng nạp', formatVnd(usage.master.totalAmount), 'border-slate-200 text-slate-800')}
         {tile('Số lượt đã dùng', `${usage.usedCount} lượt`, 'border-blue-200 bg-blue-50 text-blue-800')}
@@ -472,7 +472,7 @@ export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpe
         {tile('Còn lại', formatVnd(usage.remainingAmount), 'border-emerald-200 bg-emerald-50 text-emerald-800')}
       </div>
       {usage.rows.length === 0 ? (
-        <p className="text-slate-500">{usage.master.status === 'PENDING_PAYMENT' ? 'Chưa thu tiền nạp — chưa dùng được để trừ.' : 'Chưa có lượt tác nghiệp nào trừ vào phiếu thu mẹ này.'}</p>
+        <p className="text-slate-500">{usage.master.status === 'PENDING_PAYMENT' ? 'Chưa thu tiền nạp — chưa dùng được để trừ.' : 'Chưa có lượt tác nghiệp nào trừ vào phiếu thu trả trước này.'}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left">

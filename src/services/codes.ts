@@ -7,7 +7,7 @@ import type { DepotState } from './depotStore';
 //   Hồ sơ CẤP VỎ   : CV-YYMMDD-NNN   (đánh số lại mỗi ngày)
 //   Phiếu thu      : PT-TT-YYMMDD-NNNN (TT trực tiếp) / PT-TTR-YYMMDD-NNNN (nạp quỹ thu trước) — DEC-098
 //                    (dữ liệu cũ PT-YYYY-NNNNNN giữ nguyên)
-//   Phiếu thu trước: PTT-YYYY-NNN    (phiếu thu mẹ TTT)
+//   Phiếu thu trước: PTT-YYYY-NNN    (phiếu thu trả trước TTT)
 //   Chứng từ       : CT-YYMMDD-NNNN
 // Mã cũ (IN-/HS-, OUT-/GO-, PTM-) được đổi khi nạp dữ liệu: renameLegacyCodes
 // Chế độ Demo: bộ đếm nằm trong state và chỉ an toàn trong một phiên trình duyệt.

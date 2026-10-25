@@ -261,12 +261,12 @@ export const EMPTY_PAYMENT: PaymentChoice = {
 // DEC-097: trả ngay đứng đầu; DEC-100: ký hiệu TT / TTR / TTS
 const PAYMENT_OPTIONS: { code: PaymentCategory; title: string; sub: string }[] = [
   { code: 'TTTT', title: 'TT — Trực tiếp', sub: 'Tiền mặt hoặc chuyển khoản (API QR)' },
-  { code: 'TTT', title: 'TTR — Trả trước', sub: 'Dùng tiền khách đã nạp trước (QR Phiếu thu mẹ)' },
+  { code: 'TTT', title: 'TTR — Trả trước', sub: 'Dùng tiền khách đã nạp trước (QR Phiếu thu trả trước)' },
   { code: 'TTS', title: 'TTS — Thanh toán sau', sub: 'Ghi chú TTS trên chứng từ (công nợ)' },
 ];
 
 export function paymentSubmitLabel(p: PaymentChoice): string {
-  if (p.paymentCategory === 'TTT') return 'Trừ Phiếu thu mẹ & hoàn tất';
+  if (p.paymentCategory === 'TTT') return 'Trừ Phiếu thu trả trước & hoàn tất';
   if (p.paymentCategory === 'TTS') return 'Xác nhận TTS & hoàn tất';
   return p.directMethod === 'CASH' ? 'Xác nhận đã thu tiền mặt & hoàn tất' : 'Tạo QR chuyển khoản';
 }
@@ -310,7 +310,7 @@ export const PaymentPanel: React.FC<{
       <div className="mt-3">
         {value.paymentCategory === 'TTT' && (
           <label className="block">
-            <span className={labelCls}>Mã QR Phiếu thu mẹ</span>
+            <span className={labelCls}>Mã QR Phiếu thu trả trước</span>
             <div className="flex items-center gap-2">
               <QrCode className="h-4 w-4 shrink-0 text-slate-500" />
               <input

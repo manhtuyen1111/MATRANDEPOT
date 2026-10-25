@@ -137,7 +137,7 @@ export interface FeeLineItem {
 
 // 3 trường hợp thanh toán đã xác nhận (DEC-004, DEC-031)
 export type PaymentCategory =
-  | 'TTT'   // THANH TOÁN TRƯỚC (Phiếu thu mẹ + Quét mã QR trừ dần)
+  | 'TTT'   // THANH TOÁN TRƯỚC (Phiếu thu trả trước + Quét mã QR trừ dần)
   | 'TTS'   // THANH TOÁN SAU (Kiểm tra nguồn + Note ở chứng từ là TTS) -> công nợ, chưa thu tiền
   | 'TTTT'; // THANH TOÁN TRỰC TIẾP (Chuyển khoản API QR / Tiền mặt)
 
@@ -293,7 +293,7 @@ export interface LocationHistoryItem {
   performedAt: string;
 }
 
-// Phiếu thu mẹ (TTT): chỉ ACTIVE (dùng được để trừ dần) sau khi tiền nạp đã thu thực tế
+// Phiếu thu trả trước (TTT): chỉ ACTIVE (dùng được để trừ dần) sau khi tiền nạp đã thu thực tế
 export interface MasterPrepaidReceipt {
   id: string;
   receiptCode: string;
@@ -370,7 +370,7 @@ export interface PaymentTransaction {
   containerNo?: string;
   payerName: string;
   method: DirectPaymentMethod;
-  paymentCategory: 'TTT' | 'TTTT'; // TTT = nạp Phiếu thu mẹ; TTTT = thu trực tiếp cho chứng từ
+  paymentCategory: 'TTT' | 'TTTT'; // TTT = nạp Phiếu thu trả trước; TTTT = thu trực tiếp cho chứng từ
   amount: number;
   status: PaymentTransactionStatus;
   qrPayload?: string;              // Nội dung QR chuyển khoản (chỉ là yêu cầu thanh toán, không phải bằng chứng đã thu)

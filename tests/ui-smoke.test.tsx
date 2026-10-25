@@ -313,7 +313,7 @@ describe('DEC-077: phiếu thu trước — biểu giá × số lượng, bản 
     s = confirmPrepaidCash(s, { transactionId: s.paymentTransactions[0].id });
     const receipt = s.paymentReceipts.find((r) => r.masterReceiptId === master.id)!;
     const html = renderToString(<ReceiptPrintSheet state={s} receipt={receipt} />).replace(/<!-- -->/g, '');
-    expect(html).toContain('PHIẾU THU TRƯỚC (TTR)');
+    expect(html).toContain('PHIẾU THU TRẢ TRƯỚC (TTR)');
     expect(html).toContain(master.receiptCode);
     expect(html).toContain('SỐ TIỀN NẠP TRƯỚC');
     expect(html).toContain('Lô tháng 11');
@@ -323,10 +323,10 @@ describe('DEC-077: phiếu thu trước — biểu giá × số lượng, bản 
   });
 });
 
-describe('DEC-079: khối Sử dụng phiếu thu mẹ', () => {
+describe('DEC-079: khối Sử dụng phiếu thu trả trước', () => {
   it('Hiện tổng nạp, số lượt, đã trừ, còn lại và bảng từng lần trừ (link hồ sơ)', () => {
     const html = renderToString(<MasterUsagePanel state={base} code="PTT-2026-001" />).replace(/<!-- -->/g, '');
-    expect(html).toContain('Sử dụng phiếu thu mẹ PTT-2026-001');
+    expect(html).toContain('Sử dụng phiếu thu trả trước PTT-2026-001');
     expect(html).toContain('1 lượt');
     expect(html).toContain('HV-261019-001');
     expect(html).toContain('CT-GIN-261019-01');

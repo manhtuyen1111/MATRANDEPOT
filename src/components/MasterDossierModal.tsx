@@ -114,7 +114,7 @@ function paymentInfo(state: DepotState, voucher?: PaymentVoucher) {
     const m = state.masterReceipts.find((x) => x.receiptCode === voucher.masterReceiptCode);
     const topup = m && state.paymentTransactions.find((t) => t.masterReceiptId === m.id && t.status === 'SUCCEEDED');
     const r = topup && state.paymentReceipts.find((x) => x.transactionId === topup.id);
-    if (r) receipts.push({ no: r.receiptNo, target: r.receiptNo, note: `Phiếu thu gốc của Phiếu thu mẹ ${voucher.masterReceiptCode}` });
+    if (r) receipts.push({ no: r.receiptNo, target: r.receiptNo, note: `Phiếu thu gốc của Phiếu thu trả trước ${voucher.masterReceiptCode}` });
   }
 
   let status: string;

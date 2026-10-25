@@ -110,7 +110,7 @@ const DocumentPackPrint: React.FC<{ state: DepotState; pack: DocumentPack; onClo
           {pack.receipts.map((r) => (
             <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={r.printLog?.length || 1} />
           ))}
-          {pack.receipts.length === 0 && <p className="text-center text-slate-500">Không có phiếu thu (TTT trừ Phiếu thu mẹ / TTS công nợ).</p>}
+          {pack.receipts.length === 0 && <p className="text-center text-slate-500">Không có phiếu thu (TTT trừ Phiếu thu trả trước / TTS công nợ).</p>}
         </div>
         <PrintPortal>
           <EeirPrintSheet state={state} ticket={pack.ticket} />

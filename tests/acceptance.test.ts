@@ -135,7 +135,7 @@ describe('HẠ VỎ — Giám định → Văn phòng → Thanh toán → GATE I
     expect(() => officeStep(s, b.id, 'MSKU1234567')).toThrow(/GIN-006/);
   });
 
-  it('TTT: trừ dần Phiếu thu mẹ, GATE IN OK, không phát hành phiếu thu mới', () => {
+  it('TTT: trừ dần Phiếu thu trả trước, GATE IN OK, không phát hành phiếu thu mới', () => {
     let s = fieldStep(createInitialState());
     const order = s.gateInOrders[0];
     s = officeStep(s, order.id, 'MSKU1234567');
@@ -428,7 +428,7 @@ describe('CR-05 CẤP VỎ — booking tự đếm, thu phí tại Văn phòng n
 });
 
 describe('CR-04 PHIẾU THU — Văn phòng tạo phiếu thu TTT', () => {
-  it('DEC-047: Văn phòng tạo phiếu thu TTT (bỏ Kế toán); tạo xong là CHỜ THANH TOÁN, QR chưa dùng được; xác nhận tiền mặt → phiếu thu + Phiếu thu mẹ ACTIVE', () => {
+  it('DEC-047: Văn phòng tạo phiếu thu TTT (bỏ Kế toán); tạo xong là CHỜ THANH TOÁN, QR chưa dùng được; xác nhận tiền mặt → phiếu thu + Phiếu thu trả trước ACTIVE', () => {
     const s0 = createInitialState();
     const input = { customerCode: 'VIETLOG', lotDescription: 'Lô 10 cont', totalAmount: 5000000, method: 'CASH' as const };
     expect(() => createMasterPrepaidReceipt(as(s0, 'usr-forklift'), input)).toThrow(/Không đủ quyền/);
@@ -912,7 +912,7 @@ describe('DEC-077: phiếu thu trước chọn biểu giá kèm số lượng', 
   });
 });
 
-describe('DEC-079: phiếu thu mẹ liên kết từng lần trừ tiền — chứng từ, hồ sơ, số lượt, số tiền', () => {
+describe('DEC-079: phiếu thu trả trước liên kết từng lần trừ tiền — chứng từ, hồ sơ, số lượt, số tiền', () => {
   it('Tổng hợp sử dụng: số lượt, đã trừ, còn lại; mỗi lượt gắn chứng từ + hồ sơ + tác nghiệp', async () => {
     const { masterReceiptUsage } = await import('../src/services/payments');
     let s = createInitialState();
@@ -1094,10 +1094,10 @@ describe('DEC-098: mã phiếu thu theo hình thức + ngày, duy nhất', () =>
 });
 
 describe('DEC-099: Tồn vỏ — hình thức thanh toán + phiếu thu của lượt vào bãi', () => {
-  it('TT (mã PT-TT), TTS (công nợ CT-), TTR (phiếu thu mẹ PTT-), chưa thanh toán; Excel đủ cột', async () => {
+  it('TT (mã PT-TT), TTS (công nợ CT-), TTR (phiếu thu trả trước PTT-), chưa thanh toán; Excel đủ cột', async () => {
     const { containerPaymentInfo } = await import('../src/services/payments');
     const { yardStockSheet } = await import('../src/services/reports');
-    // TTT — dữ liệu mẫu HV-261019-001 trừ phiếu thu mẹ PTT-2026-001
+    // TTT — dữ liệu mẫu HV-261019-001 trừ phiếu thu trả trước PTT-2026-001
     const s0 = createInitialState();
     expect(containerPaymentInfo(s0, { masterDossierCode: 'HV-261019-001' })).toMatchObject({ category: 'TTT', label: 'TTR — TRẢ TRƯỚC', receipt: 'PTT-2026-001' });
     // TTTT tiền mặt

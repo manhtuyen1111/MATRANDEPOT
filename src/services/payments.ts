@@ -14,7 +14,7 @@ import type { DepotState } from './depotStore';
 
 // ============================================================================
 // TÀI CHÍNH: CHỨNG TỪ PHẢI THU → GIAO DỊCH THU TIỀN → PHIẾU THU (DEC-031, DEC-032)
-//  - TTT : trừ dần Phiếu thu mẹ đã ACTIVE. Không phát hành phiếu thu mới (tiền đã thu khi nạp quỹ).
+//  - TTT : trừ dần Phiếu thu trả trước đã ACTIVE. Không phát hành phiếu thu mới (tiền đã thu khi nạp quỹ).
 //  - TTS : ghi chú TTS, chứng từ DEFERRED (công nợ). Không phát hành phiếu thu.
 //  - TTTT Tiền mặt     : người có quyền xác nhận đã nhận tiền → giao dịch SUCCEEDED → phiếu thu.
 //  - TTTT Chuyển khoản : tạo yêu cầu (QR) ở trạng thái PENDING; chỉ SUCCEEDED khi có callback
@@ -36,7 +36,7 @@ export function isVoucherSettled(v?: PaymentVoucher): boolean {
 
 export function paymentLabelOf(v: PaymentVoucher): string {
   if (v.status === 'DEFERRED') return `TTS (${v.ttsNote || 'Thanh toán sau'})`;
-  if (v.paymentCategory === 'TTT') return `TTT (Đã trừ Phiếu thu mẹ ${v.masterReceiptCode || ''})`.trim();
+  if (v.paymentCategory === 'TTT') return `TTT (Đã trừ Phiếu thu trả trước ${v.masterReceiptCode || ''})`.trim();
   if (v.paymentCategory === 'TTTT') {
     return `TTTT (${v.directMethod === 'BANK_TRANSFER_API' ? 'Chuyển khoản API' : 'Tiền mặt'})`;
   }
@@ -113,7 +113,7 @@ function issueReceipt(state: DepotState, transactionId: string, issuedBy: string
   return next;
 }
 
-// Áp dụng kết quả thu tiền thành công lên chứng từ / phiếu thu mẹ
+// Áp dụng kết quả thu tiền thành công lên chứng từ / phiếu thu trả trước
 function applySucceededTransaction(state: DepotState, tx: PaymentTransaction, actorName: string): DepotState {
   let next = issueReceipt(state, tx.id, actorName);
   if (tx.purpose === 'VOUCHER' && tx.voucherId) {
@@ -173,16 +173,16 @@ export function settleVoucher(
 
   if (input.paymentCategory === 'TTT') {
     const qr = (input.scannedQrCode || '').trim().toUpperCase();
-    if (!qr) throw new Error('TRẢ TRƯỚC (TTR): Vui lòng quét mã QR của Phiếu thu mẹ vào chứng từ.');
+    if (!qr) throw new Error('TRẢ TRƯỚC (TTR): Vui lòng quét mã QR của Phiếu thu trả trước vào chứng từ.');
     const master = state.masterReceipts.find((r) => r.qrCode.toUpperCase() === qr);
     if (!master) throw new Error(`Mã QR "${qr}" không tồn tại.`);
     if (master.status === 'PENDING_PAYMENT') {
-      throw new Error(`Phiếu thu mẹ ${master.receiptCode} chưa được thu tiền nạp quỹ, chưa thể trừ dần.`);
+      throw new Error(`Phiếu thu trả trước ${master.receiptCode} chưa được thu tiền nạp quỹ, chưa thể trừ dần.`);
     }
-    if (master.status !== 'ACTIVE') throw new Error(`Phiếu thu mẹ ${master.receiptCode} không còn hiệu lực.`);
+    if (master.status !== 'ACTIVE') throw new Error(`Phiếu thu trả trước ${master.receiptCode} không còn hiệu lực.`);
     if (master.remainingAmount < voucher.amount) {
       throw new Error(
-        `Số dư Phiếu thu mẹ ${master.receiptCode} (${master.remainingAmount.toLocaleString('vi-VN')}đ) không đủ để trừ khoản thu (${voucher.amount.toLocaleString('vi-VN')}đ).`
+        `Số dư Phiếu thu trả trước ${master.receiptCode} (${master.remainingAmount.toLocaleString('vi-VN')}đ) không đủ để trừ khoản thu (${voucher.amount.toLocaleString('vi-VN')}đ).`
       );
     }
     const balanceAfter = master.remainingAmount - voucher.amount;
@@ -360,7 +360,7 @@ export function cancelPendingTransaction(
   );
 }
 
-// KẾ TOÁN tạo PHIẾU THU TTT (nạp Phiếu thu mẹ) tại menu PHIẾU THU — chưa ghi nhận đã thu tiền
+// KẾ TOÁN tạo PHIẾU THU TTT (nạp Phiếu thu trả trước) tại menu PHIẾU THU — chưa ghi nhận đã thu tiền
 export function createMasterPrepaidReceipt(
   state: DepotState,
   input: {
@@ -430,7 +430,7 @@ export function createMasterPrepaidReceipt(
   );
 }
 
-// KẾ TOÁN xác nhận đã nhận TIỀN MẶT cho phiếu thu TTT (nạp Phiếu thu mẹ)
+// KẾ TOÁN xác nhận đã nhận TIỀN MẶT cho phiếu thu TTT (nạp Phiếu thu trả trước)
 export function confirmPrepaidCash(state: DepotState, input: { transactionId: string }): DepotState {
   assertPermission(state, 'PREPAID_CASH_CONFIRM', 'chỉ Văn phòng được xác nhận đã thu tiền mặt.');
   const tx = state.paymentTransactions.find((t) => t.id === input.transactionId);
@@ -482,7 +482,7 @@ function buildPrepaidFeeLines(state: DepotState, items: { catalogId: string; qua
   });
 }
 
-// DEC-079: SỬ DỤNG PHIẾU THU MẸ (TTT) — từng lần trừ tiền gắn với chứng từ, hồ sơ, tác nghiệp; tổng nạp / đã dùng / còn lại
+// DEC-079: SỬ DỤNG PHIẾU THU TRẢ TRƯỚC (TTT) — từng lần trừ tiền gắn với chứng từ, hồ sơ, tác nghiệp; tổng nạp / đã dùng / còn lại
 export interface MasterReceiptUsageRow {
   deductionId: string;
   voucherNo: string;
@@ -528,7 +528,7 @@ export function masterReceiptUsage(state: DepotState, receiptCode: string): Mast
 
 // DEC-099: THÔNG TIN THANH TOÁN của lượt cont vào bãi (dùng ở Tồn vỏ + Excel)
 //   (DEC-100: ký hiệu hiển thị TT / TTS / TTR; mã nội bộ vẫn TTTT / TTS / TTT)
-//   TT → mã phiếu thu PT-TT-…; TTR → phiếu thu mẹ PTT-…;
+//   TT → mã phiếu thu PT-TT-…; TTR → phiếu thu trả trước PTT-…;
 //   TTS → THANH TOÁN SAU (công nợ, chỉ chứng từ CT-…); Nhập tàu → Không thu phí.
 export const PAYMENT_CATEGORY_FULL_LABELS: Record<PaymentCategory, string> = {
   TTTT: 'TT — TRỰC TIẾP',
@@ -539,7 +539,7 @@ export const PAYMENT_CATEGORY_FULL_LABELS: Record<PaymentCategory, string> = {
 export interface ContainerPaymentInfo {
   category?: PaymentCategory;
   label: string;        // hình thức thanh toán (chữ đầy đủ) hoặc tình trạng
-  receipt: string;      // mã phiếu thu / phiếu thu mẹ / ghi chú công nợ
+  receipt: string;      // mã phiếu thu / phiếu thu trả trước / ghi chú công nợ
   voucherNo?: string;
 }
 
