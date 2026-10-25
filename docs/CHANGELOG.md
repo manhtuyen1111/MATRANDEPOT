@@ -185,6 +185,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Phiếu thu có **mã bảo mật 12 ký tự** + đường link in trên phiếu; trang khách hàng `#/hoa-don` để gửi MST / Gmail / Tên công ty / Địa chỉ / Ghi chú; trạng thái CHƯA XHD → YÊU CẦU XHD → ĐÃ XHD; **thêm lại vai trò Kế toán** cập nhật ĐÃ XHD (số hóa đơn MISA tùy chọn); cột / lọc / Excel Hóa đơn; dữ liệu test có đủ 3 trạng thái (DEC-111, Q-041). Kiểm thử: 115/115 pass, build PASS.
 - Phiếu thu: khối Xuất hóa đơn hiện **mã bảo mật** để đối soát (DEC-112). Kiểm thử: 115/115 pass, build PASS.
 - Phiếu thu in: "Người thu tiền" là nhân viên Văn phòng (không còn "HỆ THỐNG (Ngân hàng)"); trang yêu cầu xuất hóa đơn có **hướng dẫn từng bước** + cách xử lý khi sai thông tin / đã xuất; khối Xuất hóa đơn hiện cả đường link (DEC-113). Kiểm thử: 116/116 pass, build PASS.
+- Trang yêu cầu xuất hóa đơn: hướng dẫn rút gọn 3 bước + 1 dòng "Ghi sai?", đặt dưới ô Mã bảo mật (DEC-114).
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

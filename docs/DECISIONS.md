@@ -901,6 +901,16 @@ Quy ước trạng thái:
 - **Văn phòng → Phiếu thu → khối Xuất hóa đơn:** hiện cả **Đường link** và **Mã bảo mật**.
 - Chưa có trong hệ thống: quy trình điều chỉnh / thay thế hóa đơn đã xuất. Kế toán xử lý trên MISA theo quy định.
 
+### DEC-114 — Trang yêu cầu xuất hóa đơn: hướng dẫn ngắn, đặt dưới ô Mã bảo mật
+
+- Trạng thái: CONFIRMED (2026-10-25). Thay phần trình bày hướng dẫn của DEC-113.
+- Quyết định: Hướng dẫn rút gọn còn **3 bước**:
+  1. Nhập mã bảo mật trên phiếu thu → Tra cứu.
+  2. Điền Mã số thuế, Tên công ty, Địa chỉ, Gmail → Gửi.
+  3. Nhận hóa đơn qua Gmail.
+- Thêm 1 dòng **"Ghi sai?"**: chưa xuất thì tra cứu lại → sửa → Cập nhật yêu cầu; đã xuất thì liên hệ Kế toán (SĐT công ty).
+- Khung hướng dẫn đặt **ngay dưới ô "Mã bảo mật trên phiếu thu (12 ký tự)"**.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -990,6 +1000,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-113 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-114 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
