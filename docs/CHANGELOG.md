@@ -180,6 +180,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Ứng dụng mở với dữ liệu sạch (giữ danh mục, xóa dữ liệu tác nghiệp, mã đếm lại từ đầu); nút "Xóa dữ liệu" có xác nhận (DEC-106).
 - Văn phòng → Phiếu thu: bỏ chứng từ, số container ngay sau Tác nghiệp; Excel phiếu thu cùng thứ tự, cột HÌNH THỨC TT ghi chữ (DEC-107). Kiểm thử: 102/102 pass, build PASS.
 - Dữ liệu test đầy đủ trường hợp (MSK; 20 / 40 / 45; đủ hình thức thanh toán, khóa, DAMAGE, vệ sinh, cấp vỏ, nhập / xuất tàu), tạo bằng hàm nghiệp vụ thật; nút "Nạp dữ liệu test" (DEC-108). Kiểm thử: 103/103 pass, build PASS.
+- Hạ vỏ: ô tích **HẠ KỆ GIÁM ĐỊNH** ở Giám định → Xe nâng chỉ được hạ vào block Kệ giám định (Admin đánh dấu trong Danh mục Vị trí), K80 ghi rõ bước; giám định xong thì Đảo chuyển về vị trí phù hợp (DEC-109). Kiểm thử: 106/106 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

@@ -825,6 +825,23 @@ Quy ước trạng thái:
 - Lần đầu mở app, dữ liệu cũ trên trình duyệt được thay bằng dữ liệu test (đổi khóa lưu trình duyệt lên v9).
 - Đầu trang có 2 nút: **Xóa dữ liệu** (dữ liệu sạch, giữ danh mục) và **Nạp dữ liệu test**, cả hai đều hỏi xác nhận.
 
+### DEC-109 — Hạ vỏ: HẠ KỆ GIÁM ĐỊNH khi chưa giám định được ngay
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Tình huống: Giám định kiểm tra cont, chụp ảnh và gửi thông tin vào Văn phòng, nhưng chưa thể giám định ngay.
+- Quyết định:
+  1. **Giám định:** chọn AV / DAMAGE như thường (tình trạng mô phỏng ban đầu), rồi tích ô **HẠ KỆ GIÁM ĐỊNH**.
+  2. **Văn phòng:** làm thủ tục, thu phí, in EEIR / K80 như bình thường, dùng tình trạng ban đầu. Màn Văn phòng hiện nhãn "HẠ KỆ GIÁM ĐỊNH".
+  3. **Phiếu K80:** bước Xe nâng ghi "Quét mã • HẠ KỆ GIÁM ĐỊNH".
+  4. **Vệ sinh:** làm như thường (nếu có). Xe nâng chỉ hạ sau khi vệ sinh xong.
+  5. **Xe nâng – Chờ hạ vỏ:** cont có nhãn **HẠ KỆ GIÁM ĐỊNH — không hạ về bay**; ô Block chỉ cho chọn các block là Kệ giám định. Service chặn mọi vị trí khác. Nếu chưa có block nào là Kệ giám định, hệ thống báo Admin cấu hình.
+  6. **Giám định xong:** Giám định thông báo ngoài hệ thống; Xe nâng dùng **ĐẢO CHUYỂN** để đưa cont về vị trí phù hợp, khi đó cờ Hạ kệ được xóa. Không có bước giám định lại trong hệ thống.
+- **Danh mục Vị trí:** Admin đánh dấu block nào là **Kệ giám định** (ô tích khi thêm mới và trong danh sách). Mặc định BLOCK-DAMAGE là Kệ giám định.
+- Kỹ thuật:
+  - `GateInOrder.toInspectionRack`.
+  - `ContainerRecord.forkliftShiftTask = 'HA_KE_GIAM_DINH'` (dùng lại cờ cũ, xóa khi Đảo chuyển).
+  - `YardBlock.isInspectionRack`, `setYardBlockInspectionRack`.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -914,6 +931,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-108 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-109 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
