@@ -175,6 +175,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Ô lọc nhanh thời gian cho mọi bộ lọc: Hôm nay / Hôm qua / Tuần này / Tuần trước / Tháng này / Tháng trước / Năm nay / Tùy chọn. Mặc định Hôm nay, tuần tính từ Thứ Hai; chọn Tùy chọn mới hiện ô Từ - Đến. Đổi nốt nhãn TTT → TTR. Kiểm thử: 100/100 pass, build PASS.
 - Sửa DEC-100 trong ngày: hình thức thanh toán là TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU, ký hiệu TT / TTR / TTS. Mã phiếu thu `PT-TT-…` / `PT-TTR-…` (bỏ TL / TR).
 - Đổi tên hiển thị "Phiếu thu mẹ" → **PHIẾU THU TRẢ TRƯỚC** trên màn hình, giấy in, Excel và thông báo (DEC-103). Kiểm thử: 100/100 pass, build PASS.
+- Tồn vỏ: cột **MÃ PHIẾU THU** chỉ hiện mã của lượt (TT `PT-TT-…`, TTR `PTT-…`); TTS / chưa thanh toán để trống; bỏ thông tin chứng từ (DEC-104).
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

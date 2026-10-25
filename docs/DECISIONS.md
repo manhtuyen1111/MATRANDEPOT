@@ -771,6 +771,15 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-25)
 - Quyết định: Mọi chữ hiển thị (màn hình, giấy in, Excel, thông báo) dùng **PHIẾU THU TRẢ TRƯỚC** thay cho "Phiếu thu mẹ". Mã `PTT-`, cách trừ dần và quy tắc thanh toán không đổi. Các mục DEC cũ còn chữ "Phiếu thu mẹ" được hiểu là Phiếu thu trả trước.
 
+### DEC-104 — Tồn vỏ: cột MÃ PHIẾU THU, không hiện chứng từ
+
+- Trạng thái: CONFIRMED (2026-10-25) — thay phần hiển thị của DEC-099
+- Quyết định: Cột "Phiếu thu" ở Tồn vỏ (màn và Excel) đổi thành **MÃ PHIẾU THU**, chỉ hiện mã phiếu thu tương ứng với tác nghiệp đó:
+  - TT: hiện `PT-TT-…`.
+  - TTR: hiện mã phiếu thu trả trước `PTT-…`.
+  - TTS, chưa thanh toán, Nhập tàu: **để trống**.
+- **Không hiện chứng từ `CT-`** ở Tồn vỏ. Chứng từ vẫn tồn tại bên trong hệ thống (công nợ, đối soát), chỉ không hiển thị ở đây.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -860,6 +869,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-103 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-104 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
