@@ -10,6 +10,8 @@ import {
   submitInvoiceRequest,
 } from '../src/services/invoice';
 import { canOpenMenu } from '../src/services/permissions';
+import { simulateDemoBankTransfer } from '../src/services/depotOperations';
+import { receiptCollectorName } from '../src/services/payments';
 import { collectAllPages, queryReceipts, receiptsSheet } from '../src/services/reports';
 
 const as = (state: DepotState, userId: string): DepotState => ({ ...state, currentUser: state.staffUsers.find((u) => u.id === userId)! });
@@ -115,5 +117,26 @@ describe('DEC-111: khách gửi yêu cầu → Kế toán cập nhật ĐÃ XHD'
     expect(sheet.rows[0][i + 1]).toBe('0101234567');
     expect(sheet.columns).not.toContain('MÃ BẢO MẬT');
     for (const row of sheet.rows) expect(row.length).toBe(sheet.columns.length);
+  });
+});
+
+describe('DEC-113: người thu tiền trên phiếu là nhân viên, không phải hệ thống ngân hàng', () => {
+  it('chuyển khoản báo có → phiếu thu ghi nhân viên Văn phòng đã lập yêu cầu thu; dữ liệu cũ ghi HỆ THỐNG vẫn in tên nhân viên', () => {
+    let s = recordGateInFieldStep(as(createInitialState(), 'usr-inspector'), {
+      gateInType: 'CUSTOMER_RETURN', doorPhotoUrl: 'data:image/jpeg;base64,AAA', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
+    });
+    const gi = s.gateInOrders[0];
+    s = verifyGateInOfficeAndCreatePayment(as(s, 'usr-office'), {
+      gateInId: gi.id, containerNo: 'MSKU1234567', size: '40', type: 'HC', truckNo: '15C-123.45', driverPhone: '0912 345 678',
+      customerName: 'Công ty Tiếp Vận Việt (VietLog)', shippingLineCode: 'MAERSK', orderDocNo: 'EIR-1', feeCatalogIds: ['fee-lolo-40-hc-maersk'],
+    });
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'BANK_TRANSFER_API' });
+    const office = s.staffUsers.find((u) => u.id === 'usr-office')!.fullName;
+    s = simulateDemoBankTransfer(as(s, 'usr-office'), { transactionId: s.paymentTransactions[0].id });
+    const r = s.paymentReceipts[0];
+    expect(r.issuedBy).toBe(office);
+    expect(r.issuedBy).not.toMatch(/HỆ THỐNG/);
+    expect(receiptCollectorName(s, { ...r, issuedBy: 'HỆ THỐNG (Ngân hàng)' })).toBe(office);
+    expect(receiptCollectorName(s, r)).toBe(office);
   });
 });

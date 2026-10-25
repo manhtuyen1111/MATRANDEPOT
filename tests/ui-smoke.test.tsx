@@ -567,7 +567,11 @@ describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
     const html = renderToString(<InvoicePortal state={demo} onUpdateState={noop} />);
     expect(html).toContain('Yêu cầu xuất hóa đơn');
     expect(html).toContain('aria-label="Mã bảo mật"');
-    expect(html).not.toContain('Mã số thuế');
+    expect(html).not.toContain('Gmail nhận hóa đơn *'); // form chỉ hiện sau khi tra cứu đúng mã
+    // DEC-113: hướng dẫn từng bước + xử lý khi sai thông tin / đã xuất
+    expect(html).toContain('data-testid="invoice-guide"');
+    expect(html).toContain('Cập nhật yêu cầu');
+    expect(html).toContain('liên hệ Kế toán');
   });
   it('phiếu thu in kèm đường link + mã bảo mật', () => {
     const r = demo.paymentReceipts.find((x) => x.invoiceSecret)!;
@@ -585,6 +589,7 @@ describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
     expect(panel).toContain('Đã xuất hóa đơn');
     expect(panel).toContain(req.invoiceRequest!.taxCode);
     expect(panel).toContain(req.invoiceSecret!); // DEC-112: hiện mã bảo mật để đối soát
+    expect(panel).toContain('#/hoa-don'); // DEC-113: kèm đường link
     expect(renderToString(<InvoicePanel receipt={req} canIssue={false} onIssue={noop} />)).not.toContain('Đã xuất hóa đơn</button>');
   });
 });

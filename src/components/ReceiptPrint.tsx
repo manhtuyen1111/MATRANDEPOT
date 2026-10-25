@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Printer } from 'lucide-react';
 import { CompanyProfile, K80InternalTicket, PAYMENT_METHOD_LABELS, PaymentReceipt, RECEIPT_OPERATION_LABELS, VesselList, VesselListItem } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
-import { receiptOperationOf } from '../services/payments';
+import { receiptCollectorName, receiptOperationOf } from '../services/payments';
 import { recordReceiptPrint } from '../services/depotOperations';
 import { formatDateTime } from '../services/datetime';
 import { ticketContext } from '../services/driverRoute';
@@ -146,7 +146,7 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
           </p>
         </div>
       )}
-      <Signatures left="Người nộp tiền" right="Người thu tiền" rightName={r.issuedBy} />
+      <Signatures left="Người nộp tiền" right="Người thu tiền" rightName={receiptCollectorName(state, r)} />
       {state.companyProfile.bankAccount && <p className="mt-3 text-center text-[10px] text-slate-600">TK ngân hàng: {state.companyProfile.bankAccount}</p>}
       <PrintFooter note={printNo ? `lần in thứ ${printNo}` : undefined} />
     </PrintFrame>

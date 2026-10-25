@@ -13,7 +13,7 @@ import { simulateDemoBankTransfer } from '../../services/depotOperations';
 import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, masterReceiptUsage, receiptOperationOf } from '../../services/payments';
 import { collectAllPages, queryReceipts, ReceiptQueryFilter, ReceiptRow, receiptsSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
-import { INVOICE_STATUS_LABELS, markInvoiceIssued } from '../../services/invoice';
+import { INVOICE_STATUS_LABELS, invoicePortalUrl, markInvoiceIssued } from '../../services/invoice';
 import type { InvoiceStatus, PaymentReceipt } from '../../types/depot';
 import { PrintPortal, PrintReceiptButton, ReceiptPrintSheet } from '../../components/ReceiptPrint';
 import { quickRange, fileStamp } from '../../services/datetime';
@@ -547,10 +547,12 @@ export const InvoicePanel: React.FC<{ receipt: PaymentReceipt; canIssue: boolean
       </div>
       {/* DEC-112: hiện mã bảo mật để Văn phòng / Kế toán đối soát với phiếu khách mang tới */}
       {r.invoiceSecret && (
-        <p className="flex items-center justify-between rounded bg-slate-50 px-2 py-1.5" data-testid="invoice-secret-panel">
-          <span className="text-slate-500">Mã bảo mật</span>
-          <span className="font-mono text-sm font-black tracking-widest">{r.invoiceSecret}</span>
-        </p>
+        <dl className="grid grid-cols-[6rem_1fr] gap-x-2 gap-y-1 rounded bg-slate-50 px-2 py-1.5" data-testid="invoice-secret-panel">
+          <dt className="text-slate-500">Đường link</dt>
+          <dd className="break-all font-mono text-[11px]">{invoicePortalUrl()}</dd>
+          <dt className="text-slate-500">Mã bảo mật</dt>
+          <dd className="font-mono text-sm font-black tracking-widest">{r.invoiceSecret}</dd>
+        </dl>
       )}
       {req ? (
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1">

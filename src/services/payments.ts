@@ -73,6 +73,13 @@ function updateMaster(state: DepotState, id: string, patch: Partial<MasterPrepai
 }
 
 // Phát hành PHIẾU THU cho một giao dịch thành công — tối đa 1 phiếu / giao dịch
+// DEC-113: NGƯỜI THU TIỀN trên phiếu luôn là nhân viên tác nghiệp — ngân hàng / hệ thống chỉ là công cụ xác nhận.
+//   Khi ngân hàng báo có → lấy nhân viên Văn phòng đã lập yêu cầu thu (tx.createdBy).
+export function receiptCollectorName(state: DepotState, r: { issuedBy: string; transactionId: string }): string {
+  if (!r.issuedBy.startsWith(SYSTEM_ACTOR)) return r.issuedBy;
+  return state.paymentTransactions.find((t) => t.id === r.transactionId)?.createdBy || r.issuedBy;
+}
+
 function issueReceipt(state: DepotState, transactionId: string, issuedBy: string): DepotState {
   const tx = state.paymentTransactions.find((t) => t.id === transactionId);
   if (!tx || tx.status !== 'SUCCEEDED') {
@@ -104,7 +111,7 @@ function issueReceipt(state: DepotState, transactionId: string, issuedBy: string
     payerName: tx.payerName,
     providerTxRef: tx.providerTxRef,
     issuedAt: nowIso(),
-    issuedBy,
+    issuedBy: issuedBy.startsWith(SYSTEM_ACTOR) ? tx.createdBy || issuedBy : issuedBy, // DEC-113
     // DEC-111: mã bảo mật xuất hóa đơn — duy nhất trong toàn bộ phiếu thu
     invoiceSecret: generateInvoiceSecret(allocated.state.paymentReceipts.map((r) => r.invoiceSecret || '')),
     invoiceStatus: 'CHUA_XHD',
