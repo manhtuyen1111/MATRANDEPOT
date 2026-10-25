@@ -766,6 +766,11 @@ Quy ước trạng thái:
   - Tùy chọn: chỉ khi chọn mục này mới hiện 2 ô Từ - Đến (`dd/mm/yyyy hh:mm:ss`).
 - **Tuần bắt đầu Thứ Hai.** Khi mở màn lần đầu chọn sẵn **Hôm nay** (thay mặc định 24 giờ của DEC-056).
 
+### DEC-103 — Gọi tên "PHIẾU THU TRẢ TRƯỚC" thay cho "Phiếu thu mẹ"
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Mọi chữ hiển thị (màn hình, giấy in, Excel, thông báo) dùng **PHIẾU THU TRẢ TRƯỚC** thay cho "Phiếu thu mẹ". Mã `PTT-`, cách trừ dần và quy tắc thanh toán không đổi. Các mục DEC cũ còn chữ "Phiếu thu mẹ" được hiểu là Phiếu thu trả trước.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -855,6 +860,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-102 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-103 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
