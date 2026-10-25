@@ -780,6 +780,33 @@ Quy ước trạng thái:
   - TTS, chưa thanh toán, Nhập tàu: **để trống**.
 - **Không hiện chứng từ `CT-`** ở Tồn vỏ. Chứng từ vẫn tồn tại bên trong hệ thống (công nợ, đối soát), chỉ không hiển thị ở đây.
 
+### DEC-105 — Tồn vỏ: MÃ PHIẾU THU là link sang phiếu thu thực tế
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Bấm mã phiếu thu ở Tồn vỏ sẽ mở **Văn phòng → Phiếu thu** đúng phiếu đó, giống link trong hồ sơ container (DEC-051).
+  - TT: mở phiếu `PT-TT-…` của lượt.
+  - TTR: mở phiếu nạp tiền `PT-TTR-…` của phiếu thu trả trước.
+  - Chỉ hiện link khi người dùng được vào menu Phiếu thu; người không có quyền chỉ thấy mã, không bấm được.
+
+### DEC-106 — Xóa dữ liệu tác nghiệp để test lại từ đầu
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Ứng dụng Demo mở với **dữ liệu sạch** (`createCleanState`):
+  - **Giữ danh mục:** nhân viên, khách hàng / hãng tàu, block, size / type, biểu phí, tổ sửa chữa, thông tin công ty.
+  - **Xóa toàn bộ:** container, lệnh Hạ vỏ / Cấp vỏ, booking, chứng từ, giao dịch, phiếu thu, phiếu thu trả trước, K80, danh sách tàu, nhật ký và bộ đếm mã (mã bắt đầu lại từ 001 / 0001).
+- Đổi khóa lưu trình duyệt (v7 → v8), nên mọi máy tự bắt đầu lại từ dữ liệu sạch; dữ liệu cũ bị xóa khi mở app.
+- Nút đầu trang đổi thành **"Xóa dữ liệu"**, có hỏi xác nhận trước khi xóa.
+- Dữ liệu mẫu (`createInitialState`) chỉ còn dùng trong test.
+
+### DEC-107 — Văn phòng → Phiếu thu: bỏ thông tin chứng từ, số container cạnh tác nghiệp
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định:
+  - **Bỏ hẳn thông tin chứng từ `CT-`** ở màn Phiếu thu (bảng, cửa sổ chi tiết, bảng sử dụng phiếu thu trả trước) và ở Excel phiếu thu.
+  - **Số container đứng ngay sau Tác nghiệp**, cả trên bảng và trong Excel.
+  - Cột Excel "TRƯỜNG HỢP" đổi thành **HÌNH THỨC TT** và ghi chữ (TT — TRỰC TIẾP / TTR — TRẢ TRƯỚC).
+  - Cột "PHIẾU THU MẸ" đổi thành **PHIẾU THU TRẢ TRƯỚC**; "(TTT)" đổi thành "(TTR)".
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -869,6 +896,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-104 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-107 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

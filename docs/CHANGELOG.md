@@ -176,6 +176,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Sửa DEC-100 trong ngày: hình thức thanh toán là TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU, ký hiệu TT / TTR / TTS. Mã phiếu thu `PT-TT-…` / `PT-TTR-…` (bỏ TL / TR).
 - Đổi tên hiển thị "Phiếu thu mẹ" → **PHIẾU THU TRẢ TRƯỚC** trên màn hình, giấy in, Excel và thông báo (DEC-103). Kiểm thử: 100/100 pass, build PASS.
 - Tồn vỏ: cột **MÃ PHIẾU THU** chỉ hiện mã của lượt (TT `PT-TT-…`, TTR `PTT-…`); TTS / chưa thanh toán để trống; bỏ thông tin chứng từ (DEC-104).
+- Tồn vỏ: bấm MÃ PHIẾU THU mở đúng phiếu thu ở Văn phòng → Phiếu thu (DEC-105).
+- Ứng dụng mở với dữ liệu sạch (giữ danh mục, xóa dữ liệu tác nghiệp, mã đếm lại từ đầu); nút "Xóa dữ liệu" có xác nhận (DEC-106).
+- Văn phòng → Phiếu thu: bỏ chứng từ, số container ngay sau Tác nghiệp; Excel phiếu thu cùng thứ tự, cột HÌNH THỨC TT ghi chữ (DEC-107). Kiểm thử: 102/102 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
