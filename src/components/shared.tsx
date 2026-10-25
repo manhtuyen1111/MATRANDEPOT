@@ -250,17 +250,19 @@ export interface PaymentChoice {
   directMethod: DirectPaymentMethod;
 }
 
+// DEC-097: mặc định TTTT — Trực tiếp (hình thức dùng nhiều nhất)
 export const EMPTY_PAYMENT: PaymentChoice = {
-  paymentCategory: 'TTT',
+  paymentCategory: 'TTTT',
   scannedQrCode: '',
   ttsNote: '',
   directMethod: 'CASH',
 };
 
+// DEC-097: TTTT — Trực tiếp đứng đầu
 const PAYMENT_OPTIONS: { code: PaymentCategory; title: string; sub: string }[] = [
+  { code: 'TTTT', title: 'TTTT — Trực tiếp', sub: 'Chuyển khoản API QR / Tiền mặt' },
   { code: 'TTT', title: 'TTT — Thanh toán trước', sub: 'Quét QR Phiếu thu mẹ, trừ dần' },
   { code: 'TTS', title: 'TTS — Thanh toán sau', sub: 'Ghi chú TTS trên chứng từ (công nợ)' },
-  { code: 'TTTT', title: 'TTTT — Trực tiếp', sub: 'Chuyển khoản API QR / Tiền mặt' },
 ];
 
 export function paymentSubmitLabel(p: PaymentChoice): string {

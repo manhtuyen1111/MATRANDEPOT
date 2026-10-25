@@ -509,3 +509,16 @@ describe('DEC-093: ô Khách hàng gõ tay + gợi ý Danh mục', () => {
     expect(ha).not.toContain('<select value="" class') ;
   });
 });
+
+describe('DEC-097: Hình thức thanh toán — TTTT Trực tiếp đứng đầu và chọn sẵn', () => {
+  it('Thứ tự TTTT → TTT → TTS; mặc định TTTT + Tiền mặt', async () => {
+    const { PaymentPanel, EMPTY_PAYMENT } = await import('../src/components/shared');
+    expect(EMPTY_PAYMENT).toMatchObject({ paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const html = renderToString(<PaymentPanel state={base} value={EMPTY_PAYMENT} onChange={noop} />);
+    const iTTTT = html.indexOf('TTTT — Trực tiếp');
+    expect(iTTTT).toBeGreaterThan(-1);
+    expect(iTTTT).toBeLessThan(html.indexOf('TTT — Thanh toán trước'));
+    expect(html.indexOf('TTT — Thanh toán trước')).toBeLessThan(html.indexOf('TTS — Thanh toán sau'));
+    expect(html).toMatch(/aria-checked="true"[^>]*><span[^>]*>TTTT — Trực tiếp/);
+  });
+});
