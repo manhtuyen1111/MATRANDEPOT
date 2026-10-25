@@ -88,6 +88,14 @@ export function documentPackOf(state: DepotState, ticket: K80InternalTicket): Do
   };
 }
 
+// DEC-110: XEM TRƯỚC bộ chứng từ (EEIR + phiếu thu) — chỉ xem, KHÔNG ghi trả chứng từ, KHÔNG in, KHÔNG tăng số lần in
+export function previewDocumentPack(state: DepotState, input: { scannedQrCode: string }): DocumentPack {
+  assertPermission(state, 'GATE_IN_OFFICE', 'chỉ Văn phòng / Quản lý được xem chứng từ.');
+  const ticket = findTicketByQr(state, input.scannedQrCode);
+  if (!ticket) throw new Error('Không tìm thấy phiếu K80 khớp mã vừa quét.');
+  return documentPackOf(state, ticket);
+}
+
 // Văn phòng quét QR lần cuối: chỉ khi các bước trước đã xong; mỗi phiếu trả chứng từ 1 lần
 export function confirmDocumentsReturn(
   state: DepotState,

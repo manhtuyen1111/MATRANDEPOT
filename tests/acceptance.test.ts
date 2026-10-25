@@ -1207,3 +1207,24 @@ describe('DEC-109: HẠ KỆ GIÁM ĐỊNH', () => {
     expect(s.auditLogs[0].actionCode).toBe('ADMIN_SET_INSPECTION_RACK');
   });
 });
+
+describe('DEC-110: Trả chứng từ — Xem trước', () => {
+  it('xem được EEIR + phiếu thu mà không ghi trả chứng từ, không tăng lần in; sai quyền / sai mã bị từ chối', async () => {
+    const { previewDocumentPack, getDriverRoute } = await import('../src/services/driverRoute');
+    let s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    const ticket = s.k80Tickets[0];
+    const before = JSON.stringify(s);
+    // Xem trước được cả khi lái xe chưa đi hết lộ trình
+    const pack = previewDocumentPack(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode });
+    expect(pack.dossierCode).toBe(gi.masterDossierCode);
+    expect(pack.receipts).toHaveLength(1);
+    expect(JSON.stringify(s)).toBe(before);
+    expect(s.paymentReceipts[0].printLog?.length || 0).toBe(0);
+    expect(getDriverRoute(s, ticket).at(-1)!.done).toBe(false);
+    expect(() => previewDocumentPack(as(s, 'usr-forklift'), { scannedQrCode: ticket.qrCode })).toThrow(/Không đủ quyền/);
+    expect(() => previewDocumentPack(as(s, 'usr-office'), { scannedQrCode: 'QR-KHONG-CO' })).toThrow(/Không tìm thấy/);
+  });
+});

@@ -213,6 +213,8 @@ describe('DEC-062/064: mẫu in phiếu thu thống nhất; Trả chứng từ 2
     const ret = renderToString(<DocumentReturnWorkspace state={office} onUpdateState={noop} />);
     expect(ret.replace(/<!-- -->/g, '')).toContain('Đang chờ TRẢ CHỨNG TỪ HẠ VỎ');
     expect(ret.replace(/<!-- -->/g, '')).toContain('Đang chờ TRẢ CHỨNG TỪ CẤP VỎ');
+    // DEC-110: nút Xem trước nằm bên trái nút Trả chứng từ / Xác nhận & in
+    expect(ret).toMatch(/Xem trước<\/button><button[^>]*>(Trả chứng từ|Xác nhận &amp; in)<\/button>/);
     expect(renderToString(<CompanyCatalog state={as(base, 'usr-admin')} onUpdateState={noop} />)).toContain('Lưu thông tin công ty');
   });
 });
