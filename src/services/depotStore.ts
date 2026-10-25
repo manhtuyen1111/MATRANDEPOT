@@ -1,4 +1,5 @@
 import { renameLegacyCodes } from './codes';
+import { ensureInvoiceFields } from './invoice';
 import {
   AppRole,
   AuditLogEntry,
@@ -25,9 +26,9 @@ import {
   VesselList,
 } from '../types/depot';
 
-// DEC-106, DEC-108: đổi khóa để mọi máy nạp lại dữ liệu test mới; khóa cũ bị xóa khi nạp
-const STORAGE_KEY = 'matran_depot_erp_state_v9';
-const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7', 'matran_depot_erp_state_v8'];
+// DEC-106, DEC-108, DEC-111: đổi khóa để mọi máy nạp lại dữ liệu test mới; khóa cũ bị xóa khi nạp
+const STORAGE_KEY = 'matran_depot_erp_state_v10';
+const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7', 'matran_depot_erp_state_v8', 'matran_depot_erp_state_v9'];
 
 export interface DepotState {
   currentUser: StaffUser;
@@ -127,9 +128,9 @@ export const INITIAL_STAFF: StaffUser[] = [
   {
     id: 'usr-acc',
     staffCode: 'NV-007',
-    fullName: 'Đỗ Thị Thu (Văn phòng)',
+    fullName: 'Đỗ Thị Thu (Kế toán)',
     email: 'accounting@matrandepot.vn',
-    roles: ['OFFICE'],
+    roles: ['ACCOUNTANT'], // DEC-111
     isActive: true,
   },
 ];
@@ -791,9 +792,9 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
   // DEC-068: đổi mã cũ IN-/HS- → HV-, OUT-/GO- → CV-, PTM- → PTT-
   const raw = renameLegacyCodes(input);
   const base = createInitialState();
-  // DEC-047: nhân viên cổng / hiện trường → Giám định; Kế toán → Văn phòng
+  // DEC-047: nhân viên cổng / hiện trường → Giám định; DEC-111: Kế toán (ACCOUNTANT) được dùng lại, không đổi nữa
   // DEC-049: bỏ QC Sửa chữa → Sửa chữa
-  const LEGACY_ROLE: Record<string, AppRole> = { GATE_STAFF: 'INSPECTOR', YARD_STAFF: 'INSPECTOR', ACCOUNTANT: 'OFFICE', REPAIR_QC: 'REPAIR_STAFF' };
+  const LEGACY_ROLE: Record<string, AppRole> = { GATE_STAFF: 'INSPECTOR', YARD_STAFF: 'INSPECTOR', REPAIR_QC: 'REPAIR_STAFF' };
   const staffUsers = (raw.staffUsers || base.staffUsers).map((u) => ({
     ...u,
     roles: Array.from(new Set(u.roles.map((r) => LEGACY_ROLE[r as string] || r))) as AppRole[],
@@ -828,7 +829,7 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
     staffUsers,
     vouchers,
     paymentTransactions: raw.paymentTransactions || [],
-    paymentReceipts: raw.paymentReceipts || [],
+    paymentReceipts: ensureInvoiceFields(raw.paymentReceipts || []), // DEC-111
     repairTeams: raw.repairTeams || base.repairTeams,
     companyProfile: { ...base.companyProfile, ...(raw.companyProfile || {}) },
     vesselLists: raw.vesselLists || [],

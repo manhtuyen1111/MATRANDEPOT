@@ -555,10 +555,10 @@ describe('DEC-045 USER - PHÂN QUYỀN & Báo cáo Hạ vỏ', () => {
 });
 
 describe('DEC-047 / DEC-048', () => {
-  it('Vai trò cũ trong dữ liệu đã lưu: cổng / hiện trường → Giám định, Kế toán → Văn phòng', () => {
+  it('Vai trò cũ trong dữ liệu đã lưu: cổng / hiện trường → Giám định, Kế toán giữ nguyên (DEC-111 thêm lại)', () => {
     const legacy = createInitialState() as Partial<DepotState>;
     legacy.staffUsers = [{ id: 'u1', staffCode: 'X', fullName: 'A', email: 'a@b.vn', isActive: true, roles: ['GATE_STAFF', 'YARD_STAFF', 'ACCOUNTANT'] as never }];
-    expect(normalizeDepotState(legacy).staffUsers.find((u) => u.id === 'u1')!.roles).toEqual(['INSPECTOR', 'OFFICE']);
+    expect(normalizeDepotState(legacy).staffUsers.find((u) => u.id === 'u1')!.roles).toEqual(['INSPECTOR', 'ACCOUNTANT']);
   });
 
   it('Thêm user Sửa chữa có sẵn vào tổ; không thêm trùng; user bị khóa không thêm được', () => {

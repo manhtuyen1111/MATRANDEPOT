@@ -3,6 +3,9 @@ import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { createInitialState, DepotState } from '../src/services/depotStore';
 import { App } from '../src/app/App';
+import { InvoicePortal } from '../src/features/invoice/InvoicePortal';
+import { InvoicePanel } from '../src/features/receipts/ReceiptsWorkspace';
+import { createDemoState } from '../src/services/demoData';
 import { YardFeature } from '../src/features/yard/YardFeature';
 import { OfficeCapVoWorkspace, OfficeHaVoWorkspace } from '../src/features/office/OfficeWorkspaces';
 import { ExportPicker, OfficeVesselWorkspace } from '../src/features/vessel/OfficeVesselWorkspace';
@@ -32,7 +35,7 @@ const as = (s: DepotState, id: string) => ({ ...s, currentUser: s.staffUsers.fin
 describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
   it('App khung menu', () => {
     // DEC-106: App mở với dữ liệu sạch; smoke này cần dữ liệu mẫu → nạp qua localStorage giả
-    const store: Record<string, string> = { matran_depot_erp_state_v9: JSON.stringify(base) };
+    const store: Record<string, string> = { matran_depot_erp_state_v10: JSON.stringify(base) };
     const prev = (globalThis as { localStorage?: unknown }).localStorage;
     (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } };
     const html = renderToString(<App />);
@@ -555,5 +558,33 @@ describe('DEC-097: Hình thức thanh toán — TTTT Trực tiếp đứng đầ
     expect(iTTTT).toBeLessThan(html.indexOf('TTR — Trả trước'));
     expect(html.indexOf('TTR — Trả trước')).toBeLessThan(html.indexOf('TTS — Thanh toán sau'));
     expect(html).toMatch(/aria-checked="true"[^>]*><span[^>]*>TT — Trực tiếp/);
+  });
+});
+
+describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
+  const demo = createDemoState();
+  it('trang khách hàng: ô dán mã bảo mật, chưa hiện form khi chưa tra cứu', () => {
+    const html = renderToString(<InvoicePortal state={demo} onUpdateState={noop} />);
+    expect(html).toContain('Yêu cầu xuất hóa đơn');
+    expect(html).toContain('aria-label="Mã bảo mật"');
+    expect(html).not.toContain('Mã số thuế');
+  });
+  it('phiếu thu in kèm đường link + mã bảo mật', () => {
+    const r = demo.paymentReceipts.find((x) => x.invoiceSecret)!;
+    const html = renderToString(<ReceiptPrintSheet state={demo} receipt={r} printNo={1} />);
+    expect(html).toContain('data-testid="invoice-secret"');
+    expect(html).toContain(r.invoiceSecret!);
+    expect(html).toContain('#/hoa-don');
+  });
+  it('Phiếu thu có cột / lọc Hóa đơn; Kế toán thấy nút Đã xuất hóa đơn khi khách đã yêu cầu', () => {
+    const html = renderToString(<ReceiptsWorkspace state={as(demo, 'usr-acc')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('>Hóa đơn<');
+    expect(html).toContain('YÊU CẦU XHD');
+    const req = demo.paymentReceipts.find((x) => x.invoiceStatus === 'YEU_CAU_XHD')!;
+    const panel = renderToString(<InvoicePanel receipt={req} canIssue onIssue={noop} />);
+    expect(panel).toContain('Đã xuất hóa đơn');
+    expect(panel).toContain(req.invoiceRequest!.taxCode);
+    expect(panel).not.toContain(req.invoiceSecret!); // mã bảo mật không hiện trong màn nội bộ
+    expect(renderToString(<InvoicePanel receipt={req} canIssue={false} onIssue={noop} />)).not.toContain('Đã xuất hóa đơn</button>');
   });
 });

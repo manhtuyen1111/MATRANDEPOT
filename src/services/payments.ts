@@ -9,6 +9,7 @@ import {
   ReceiptOperation,
 } from '../types/depot';
 import { allocateCode } from './codes';
+import { generateInvoiceSecret } from './invoice';
 import { appendAudit, assertPermission, newId, nowIso, SYSTEM_ACTOR } from './core';
 import type { DepotState } from './depotStore';
 
@@ -104,6 +105,9 @@ function issueReceipt(state: DepotState, transactionId: string, issuedBy: string
     providerTxRef: tx.providerTxRef,
     issuedAt: nowIso(),
     issuedBy,
+    // DEC-111: mã bảo mật xuất hóa đơn — duy nhất trong toàn bộ phiếu thu
+    invoiceSecret: generateInvoiceSecret(allocated.state.paymentReceipts.map((r) => r.invoiceSecret || '')),
+    invoiceStatus: 'CHUA_XHD',
   };
   const next = updateTransaction(
     { ...allocated.state, paymentReceipts: [receipt, ...allocated.state.paymentReceipts] },

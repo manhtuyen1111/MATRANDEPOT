@@ -13,6 +13,8 @@ import { simulateDemoBankTransfer } from '../../services/depotOperations';
 import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, masterReceiptUsage, receiptOperationOf } from '../../services/payments';
 import { collectAllPages, queryReceipts, ReceiptQueryFilter, ReceiptRow, receiptsSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
+import { INVOICE_STATUS_LABELS, markInvoiceIssued } from '../../services/invoice';
+import type { InvoiceStatus, PaymentReceipt } from '../../types/depot';
 import { PrintPortal, PrintReceiptButton, ReceiptPrintSheet } from '../../components/ReceiptPrint';
 import { quickRange, fileStamp } from '../../services/datetime';
 import {
@@ -47,7 +49,7 @@ export const ReceiptsWorkspace: React.FC<{
   // Mở thẳng 1 phiếu thu (mã PT- hoặc id giao dịch) khi bấm từ hồ sơ container (DEC-051); nonce để mở lại cùng phiếu
   focus?: { key: string; nonce: number } | null;
 }> = ({ state, onUpdateState, onOpenDossier, focus }) => {
-  const [draft, setDraft] = useState<ReceiptQueryFilter>(() => ({ ...quickRange('TODAY'), keyword: '', method: 'ALL', status: 'ALL', operation: 'ALL' }));
+  const [draft, setDraft] = useState<ReceiptQueryFilter>(() => ({ ...quickRange('TODAY'), keyword: '', method: 'ALL', status: 'ALL', operation: 'ALL', invoiceStatus: 'ALL' }));
   const [applied, setApplied] = useState<ReceiptQueryFilter | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = usePageSize("receipts", 20); // DEC-080
@@ -163,6 +165,13 @@ export const ReceiptsWorkspace: React.FC<{
               ))}
             </select>
           </label>
+          <label>
+            <span className={labelCls}>Hóa đơn</span>
+            <select value={draft.invoiceStatus || 'ALL'} onChange={(e) => setDraft({ ...draft, invoiceStatus: e.target.value as ReceiptQueryFilter['invoiceStatus'] })} className={inputCls}>
+              <option value="ALL">Tất cả</option>
+              {(Object.keys(INVOICE_STATUS_LABELS) as InvoiceStatus[]).map((s) => <option key={s} value={s}>{INVOICE_STATUS_LABELS[s]}</option>)}
+            </select>
+          </label>
           <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-6">
             <button type="submit" className={primaryBtn}>
               <Search className="h-4 w-4" />
@@ -264,6 +273,7 @@ export const ReceiptsWorkspace: React.FC<{
                         <th className="whitespace-nowrap px-2 py-2">Thời gian</th>
                         <th className="whitespace-nowrap px-2 py-2">Nhân viên</th>
                         <th className="whitespace-nowrap px-2 py-2">Trạng thái</th>
+                        <th className="whitespace-nowrap px-2 py-2">Hóa đơn</th>
                         <th className="whitespace-nowrap px-2 py-2 text-center">Đã in</th>
                       </tr>
                     </thead>
@@ -295,6 +305,7 @@ export const ReceiptsWorkspace: React.FC<{
                           <td className="whitespace-nowrap px-2 py-2 font-mono text-[11px]">{formatViTime(t.createdAt)}</td>
                           <td className="px-2 py-2 text-[11px]">{t.createdBy}</td>
                           <td className="px-2 py-2"><span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[t.status]}`}>{PAYMENT_TX_STATUS_LABELS[t.status]}</span></td>
+                          <td className="px-2 py-2">{r ? <InvoiceBadge status={r.invoiceStatus || 'CHUA_XHD'} /> : '—'}</td>
                           <td className={`px-2 py-2 text-center font-bold ${(r?.printLog?.length || 0) > 1 ? "text-rose-700" : "text-slate-600"}`}>{r ? r.printLog?.length || 0 : "—"}</td>
                         </tr>
                         );
@@ -396,6 +407,13 @@ export const ReceiptsWorkspace: React.FC<{
                   </>
                 )}
               </dl>
+              {selected.receipt && (
+                <InvoicePanel
+                  receipt={selected.receipt}
+                  canIssue={can(state.currentUser, 'INVOICE_ISSUE')}
+                  onIssue={(invoiceNo) => run(() => markInvoiceIssued(state, { receiptNo: selected.receipt!.receiptNo, invoiceNo }), 'Đã cập nhật ĐÃ XHD.')}
+                />
+              )}
               {selected.transaction.purpose === "PREPAID_TOPUP" && (
                 <MasterUsagePanel state={state} code={selected.receipt?.masterReceiptCode || selected.transaction.paymentRef} onOpenDossier={onOpenDossier} />
               )}
@@ -499,6 +517,56 @@ export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpe
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// DEC-111: trạng thái xuất hóa đơn của phiếu thu
+const INVOICE_STYLE: Record<InvoiceStatus, string> = {
+  CHUA_XHD: 'bg-slate-100 text-slate-600',
+  YEU_CAU_XHD: 'bg-amber-100 text-amber-800',
+  DA_XHD: 'bg-emerald-100 text-emerald-800',
+};
+
+export const InvoiceBadge: React.FC<{ status: InvoiceStatus }> = ({ status }) => (
+  <span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-semibold ${INVOICE_STYLE[status]}`}>{INVOICE_STATUS_LABELS[status]}</span>
+);
+
+// Thông tin khách gửi + Kế toán cập nhật ĐÃ XHD (số hóa đơn MISA không bắt buộc). Mã bảo mật không hiển thị ở đây — chỉ in trên phiếu.
+export const InvoicePanel: React.FC<{ receipt: PaymentReceipt; canIssue: boolean; onIssue: (invoiceNo: string) => void }> = ({ receipt: r, canIssue, onIssue }) => {
+  const [invoiceNo, setInvoiceNo] = useState('');
+  const status = r.invoiceStatus || 'CHUA_XHD';
+  const req = r.invoiceRequest;
+  return (
+    <div className="mt-3 space-y-2 rounded-md border border-slate-200 p-3 text-xs" data-testid="invoice-panel">
+      <div className="flex items-center justify-between">
+        <span className="font-bold uppercase text-slate-700">Xuất hóa đơn</span>
+        <InvoiceBadge status={status} />
+      </div>
+      {req ? (
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
+          <dt className="text-slate-500">Mã số thuế</dt><dd className="font-mono font-bold">{req.taxCode}</dd>
+          <dt className="text-slate-500">Gmail nhận HĐ</dt><dd className="break-all">{req.email}</dd>
+          <dt className="text-slate-500">Tên công ty</dt><dd>{req.companyName}</dd>
+          <dt className="text-slate-500">Địa chỉ</dt><dd>{req.address}</dd>
+          {req.note && (<><dt className="text-slate-500">Ghi chú</dt><dd>{req.note}</dd></>)}
+          <dt className="text-slate-500">Khách gửi lúc</dt><dd className="font-mono">{formatViTime(req.updatedAt)}</dd>
+          {r.invoiceIssued && (
+            <>
+              <dt className="text-slate-500">Số hóa đơn</dt><dd className="font-mono font-bold">{r.invoiceIssued.invoiceNo || '-'}</dd>
+              <dt className="text-slate-500">Cập nhật XHD</dt><dd>{r.invoiceIssued.issuedBy} • {formatViTime(r.invoiceIssued.issuedAt)}</dd>
+            </>
+          )}
+        </dl>
+      ) : (
+        <p className="text-slate-500">Khách hàng chưa gửi yêu cầu (dùng mã bảo mật in trên phiếu thu).</p>
+      )}
+      {status === 'YEU_CAU_XHD' && canIssue && (
+        <div className="flex gap-2 border-t border-slate-200 pt-2">
+          <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Số hóa đơn MISA (không bắt buộc)" className={`${inputCls} font-mono`} />
+          <button type="button" onClick={() => onIssue(invoiceNo)} className={`${primaryBtn} shrink-0`}>Đã xuất hóa đơn</button>
         </div>
       )}
     </div>

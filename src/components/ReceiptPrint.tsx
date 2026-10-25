@@ -8,6 +8,7 @@ import { recordReceiptPrint } from '../services/depotOperations';
 import { formatDateTime } from '../services/datetime';
 import { ticketContext } from '../services/driverRoute';
 import { secondaryBtn } from './shared';
+import { invoicePortalUrl } from '../services/invoice';
 
 // ============================================================================
 // GIẤY TỜ IN DÙNG CHUNG (DEC-062, DEC-063, DEC-072)
@@ -134,6 +135,17 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
         </table>
       )}
       <p className="mt-2 text-right text-sm font-black">{isPrepaid ? "TỔNG THU TRƯỚC: " : "TỔNG THU: "}<span className="font-mono">{formatVnd(r.amount)}</span></p>
+      {/* DEC-111: mã bảo mật để khách yêu cầu xuất hóa đơn */}
+      {r.invoiceSecret && (
+        <div className="mt-3 border border-dashed border-slate-500 px-3 py-2 text-[11px]" data-testid="invoice-secret">
+          <p className="font-bold uppercase">Yêu cầu xuất hóa đơn</p>
+          <p>Truy cập: <span className="font-mono font-bold break-all">{invoicePortalUrl()}</span></p>
+          <p>
+            Mã bảo mật: <span className="font-mono text-sm font-black tracking-widest">{r.invoiceSecret}</span>
+            <span className="text-slate-600"> (phân biệt chữ hoa / thường — không chia sẻ cho người khác)</span>
+          </p>
+        </div>
+      )}
       <Signatures left="Người nộp tiền" right="Người thu tiền" rightName={r.issuedBy} />
       {state.companyProfile.bankAccount && <p className="mt-3 text-center text-[10px] text-slate-600">TK ngân hàng: {state.companyProfile.bankAccount}</p>}
       <PrintFooter note={printNo ? `lần in thứ ${printNo}` : undefined} />

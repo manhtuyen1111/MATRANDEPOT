@@ -11,7 +11,8 @@ export type AppRole =
   | 'CLEANING'
   | 'INSPECTOR'
   | 'QUOTATION'
-  | 'REPAIR_STAFF';
+  | 'REPAIR_STAFF'
+  | 'ACCOUNTANT'; // DEC-111: thêm lại Kế toán — chỉ cập nhật trạng thái hóa đơn từ phiếu thu
 
 export const ROLE_LABELS: Record<AppRole, string> = {
   ADMIN: 'Admin',
@@ -22,7 +23,11 @@ export const ROLE_LABELS: Record<AppRole, string> = {
   INSPECTOR: 'Giám định',
   QUOTATION: 'Báo giá',
   REPAIR_STAFF: 'Sửa chữa',
+  ACCOUNTANT: 'Kế toán',
 };
+
+// DEC-111: trạng thái xuất hóa đơn của phiếu thu
+export type InvoiceStatus = 'CHUA_XHD' | 'YEU_CAU_XHD' | 'DA_XHD';
 
 // Cấu trúc Menu tác nghiệp (CR-06, CR-09)
 export type WorkspaceMenuId =
@@ -416,6 +421,11 @@ export interface PaymentReceipt {
   issuedAt: string;
   issuedBy: string;
   printLog?: { at: string; by: string }[]; // DEC-063: mỗi lần in phiếu thu
+  // DEC-111: xuất hóa đơn — mã bảo mật 12 ký tự in trên phiếu; khách dùng để gửi yêu cầu
+  invoiceSecret?: string;
+  invoiceStatus?: InvoiceStatus;
+  invoiceRequest?: { taxCode: string; email: string; companyName: string; address: string; note?: string; requestedAt: string; updatedAt: string };
+  invoiceIssued?: { invoiceNo?: string; issuedAt: string; issuedBy: string };
 }
 
 export interface GateInOrder {

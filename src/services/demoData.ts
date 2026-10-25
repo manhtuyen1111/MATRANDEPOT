@@ -20,6 +20,7 @@ import {
   verifyGateInOfficeAndCreatePayment,
 } from './depotOperations';
 import { createVesselList, executeVesselExport, inspectVesselImportItem } from './vessel';
+import { markInvoiceIssued, submitInvoiceRequest } from './invoice';
 import type { ContainerSize, ContainerType } from '../types/depot';
 
 const as = (state: DepotState, userId: string): DepotState => ({
@@ -191,5 +192,17 @@ export function createDemoState(): DepotState {
   s = executeVesselExport(as(s, 'usr-forklift'), { listId: xt.listId, itemId: xtItems.find((i) => i.containerNo === 'MSKU3000011')!.id, truckNo: '15C-501.01' });
 
   // Vệ sinh: MSKU1000088 (Hạ vỏ) và MSKU4000022 (Nhập tàu) để ở hàng chờ
+
+  // ── XUẤT HÓA ĐƠN (DEC-111): 1 phiếu khách đã gửi yêu cầu, 1 phiếu Kế toán đã xuất; còn lại CHƯA XHD
+  const receiptOf = (no: string) => s.paymentReceipts.find((r) => r.containerNo === no)!;
+  s = submitInvoiceRequest(s, {
+    secret: receiptOf('MSKU1000011').invoiceSecret!,
+    taxCode: '0101234567', email: 'ketoan@vietlog.vn', companyName: 'CÔNG TY TIẾP VẬN VIỆT (VIETLOG)', address: 'Số 1 Lê Thánh Tông, Ngô Quyền, Hải Phòng', note: 'Gửi hóa đơn trong ngày',
+  });
+  s = submitInvoiceRequest(s, {
+    secret: receiptOf('MSKU1000022').invoiceSecret!,
+    taxCode: '0209876543-001', email: 'hoadon@namhai.vn', companyName: 'CÔNG TY VẬN TẢI NAM HẢI', address: 'Km 6 Đình Vũ, Hải An, Hải Phòng',
+  });
+  s = markInvoiceIssued(as(s, 'usr-acc'), { receiptNo: receiptOf('MSKU1000022').receiptNo, invoiceNo: '0000123' });
   return as(s, 'usr-admin');
 }

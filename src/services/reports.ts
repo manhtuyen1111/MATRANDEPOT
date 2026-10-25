@@ -17,6 +17,8 @@ import type { DepotState } from './depotStore';
 import { formatLocation, getContainerProgress, PROGRESS_LABELS, storageDays } from './core';
 import { containerPaymentInfo, masterReceiptUsage, PAYMENT_CATEGORY_FULL_LABELS, receiptOperationOf } from './payments';
 import { formatDateTime, parseDateTime } from './datetime';
+import { INVOICE_STATUS_LABELS } from './invoice';
+import type { InvoiceStatus } from '../types/depot';
 
 // ============================================================================
 // BÁO CÁO & TRA CỨU (CR-08, CR-04 PHIẾU THU)
@@ -144,6 +146,7 @@ export interface ReceiptQueryFilter extends DateRange {
   status?: PaymentTransactionStatus | 'ALL';
   operation?: ReceiptOperation | 'ALL';
   receiptNo?: string; // Mở thẳng 1 phiếu thu từ hồ sơ (DEC-051)
+  invoiceStatus?: InvoiceStatus | 'ALL'; // DEC-111
 }
 
 export interface ReceiptRow {
@@ -164,6 +167,7 @@ export function queryReceipts(state: DepotState, filter: ReceiptQueryFilter, pag
     .filter(({ transaction }) => !filter.method || filter.method === 'ALL' || transaction.method === filter.method)
     .filter(({ transaction }) => !filter.status || filter.status === 'ALL' || transaction.status === filter.status)
     .filter(({ transaction, receipt }) => !filter.receiptNo || receipt?.receiptNo === filter.receiptNo || transaction.id === filter.receiptNo)
+    .filter(({ receipt }) => !filter.invoiceStatus || filter.invoiceStatus === 'ALL' || (receipt && (receipt.invoiceStatus || 'CHUA_XHD') === filter.invoiceStatus))
     .filter(
       ({ transaction, receipt }) =>
         !filter.operation || filter.operation === 'ALL' || receiptOperationOf(state, { ...transaction, operation: receipt?.operation }) === filter.operation
@@ -405,7 +409,10 @@ export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData 
     columns: [
       'MÃ PHIẾU THU', 'TÁC NGHIỆP', 'SỐ CONTAINER', 'TRẠNG THÁI', 'SỐ TIỀN', 'HÌNH THỨC TT', 'PHƯƠNG THỨC TT', 'BÊN THANH TOÁN', 'MÃ HỒ SƠ',
       'PHIẾU THU TRẢ TRƯỚC', 'MÃ THAM CHIẾU', 'MÃ GD NGÂN HÀNG', 'TẠO LÚC', 'NGƯỜI TẠO',
-      'XÁC NHẬN THU LÚC', 'NGƯỜI XÁC NHẬN', 'LÝ DO HỦY', 'SỐ LẦN IN', 'IN GẦN NHẤT', 'SỐ LƯỢT ĐÃ DÙNG (TTR)', 'CÒN LẠI (TTR)',
+      'XÁC NHẬN THU LÚC', 'NGƯỜI XÁC NHẬN', 'LÝ DO HỦY', 'SỐ LẦN IN', 'IN GẦN NHẤT',
+      // DEC-111: xuất hóa đơn
+      'TRẠNG THÁI HĐ', 'MÃ SỐ THUẾ', 'GMAIL NHẬN HĐ', 'TÊN CÔNG TY', 'ĐỊA CHỈ', 'GHI CHÚ HĐ', 'SỐ HÓA ĐƠN', 'CẬP NHẬT XHD',
+      'SỐ LƯỢT ĐÃ DÙNG (TTR)', 'CÒN LẠI (TTR)',
     ],
     rows: rows.map(({ transaction: t, receipt: r }) => [
       r?.receiptNo || '', OP[receiptOperationOf(state, { ...t, operation: r?.operation })], t.containerNo || '', STATUS[t.status] || t.status, t.amount,
@@ -413,6 +420,9 @@ export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData 
       r?.masterReceiptCode || (t.purpose === 'PREPAID_TOPUP' ? t.paymentRef : ''), t.paymentRef,
       t.providerTxRef || '', fmt(t.createdAt), t.createdBy, fmt(t.confirmedAt), t.confirmedBy || '', t.cancelReason || '',
       r?.printLog?.length || 0, r?.printLog?.length ? `${fmt(r.printLog[r.printLog.length - 1].at)} • ${r.printLog[r.printLog.length - 1].by}` : '',
+      r ? INVOICE_STATUS_LABELS[r.invoiceStatus || 'CHUA_XHD'] : '', r?.invoiceRequest?.taxCode || '', r?.invoiceRequest?.email || '',
+      r?.invoiceRequest?.companyName || '', r?.invoiceRequest?.address || '', r?.invoiceRequest?.note || '', r?.invoiceIssued?.invoiceNo || '',
+      r?.invoiceIssued ? `${fmt(r.invoiceIssued.issuedAt)} • ${r.invoiceIssued.issuedBy}` : '',
       // DEC-079: phiếu thu trước — số lượt tác nghiệp đã trừ, số tiền còn lại
       ...(() => {
         const u = t.purpose === 'PREPAID_TOPUP' ? masterReceiptUsage(state, r?.masterReceiptCode || t.paymentRef) : undefined;
