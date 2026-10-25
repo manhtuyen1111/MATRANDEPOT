@@ -4,10 +4,10 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-24 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-096**), **đã push đầy đủ lên GitHub 2026-10-24 (tối)**, chưa merge vào `main`. Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-097**), **đã push đầy đủ lên GitHub 2026-10-24 (tối)**, chưa merge vào `main`. Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
 **Điểm dừng 2026-10-24 (phiên 2 — tạm nghỉ):** đã kiểm tra + **push đầy đủ lên GitHub** (DEC-050 → DEC-096). **Đọc mục I trước khi làm việc tiếp theo.** Để mở GĐ 4 Database cần bạn chốt: OPEN-003, Q-037 → Q-040 (xem `docs/DATABASE_PLATFORM_ADVICE.md`).
-Kiểm thử mới nhất: `npm test` **96/96 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
+Kiểm thử mới nhất: `npm test` **97/97 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
@@ -37,7 +37,7 @@ Kiểm thử mới nhất: `npm test` **96/96 pass** (3 file test) • `npm run 
 | User | Danh mục chung → User - Phân quyền (Admin): thêm, sửa vai trò, khóa; luôn còn ≥ 1 Admin | 045 |
 | Hạ vỏ | Giám định (mobile; được xóa hồ sơ khi Văn phòng chưa thao tác) → Văn phòng (số cont trùng Tồn vỏ bị chặn ngay khi nhập; SĐT lái xe, khách hàng, chi phí từ biểu giá, TTT/TTS/TTTT) → GATE IN OK → (Vệ sinh nếu có) → Xe nâng hạ vỏ → **Văn phòng trả chứng từ** (in EEIR + phiếu thu) | 020–025, 052, 059, 060 |
 | Phiếu K80 | Thông tin chung ở đầu → LỘ TRÌNH các bước (ô ☐ tích tay) → QR; lái xe đi theo thứ tự, quét mã tại từng bộ phận; Văn phòng → Trả chứng từ: 1 ô quét chung, danh sách chờ chia **2 cột HẠ VỎ / CẤP VỎ** (có số lượt) | 052, 064 |
-| Thanh toán | TTT trừ dần Phiếu thu mẹ; TTS = công nợ; Tiền mặt / Chuyển khoản mới phát hành phiếu thu `PT-YYYY-NNNNNN` | 031, 032 |
+| Thanh toán | **TTTT — Trực tiếp đứng đầu, chọn sẵn** (DEC-097); TTT trừ dần Phiếu thu mẹ; TTS = công nợ; Tiền mặt / Chuyển khoản mới phát hành phiếu thu `PT-YYYY-NNNNNN` | 031, 032 |
 | Phiếu thu | Văn phòng tạo phiếu thu TTT và xác nhận tiền mặt; phiếu thu ghi rõ **tác nghiệp** (Hạ vỏ / Cấp vỏ / Thu trước); hồ sơ container link thẳng về Phiếu thu; **mẫu in thống nhất** (thông tin công ty + tác nghiệp); **đếm số lần in**, in lại phải xác nhận + nhãn BẢN IN LẠI ; **EEIR cùng khung với phiếu thu**, in từ hồ sơ (In EEIR / In EEIR + phiếu thu) ; nút **Tạo phiếu thu TTT** cùng hàng Tra cứu; **in EEIR + phiếu thu = 1 tờ A4** (mỗi phiếu A5), EEIR ghi tình trạng vỏ Giám định ; danh sách full chiều ngang; **phiếu thu trước**: Khách hàng → Chi phí (**biểu giá × số lượng**) → Hình thức; in **PHIẾU THU TRƯỚC (TTT)** có khung PTT- nổi bật ; phiếu thu mẹ hiện **số lượt đã dùng / còn lại** + bảng từng lần trừ (chứng từ, hồ sơ) | 032, 047, 051, 062, 063, 072, 076, 077, 079 |
 | DAMAGE | Báo giá (**cập nhật tình trạng sửa chữa + giờ công → xác nhận chờ sửa chữa**, DEC-086) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → **AV** (không có QC) | 040–043, 049 |
 | Tổ sửa chữa | Danh mục chung → Sửa chữa: thêm tổ; thêm **user Sửa chữa có sẵn** hoặc nhập tên; ngưng thay vì xóa | 042, 048 |
@@ -111,6 +111,7 @@ Kiểm thử mới nhất: `npm test` **96/96 pass** (3 file test) • `npm run 
 | P7-23 | Đảo chuyển: ô trạng thái đầu dòng, tiến độ cuối ô | 2026-10-24 | DEC-094 | **96/96 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-24 | Đảo chuyển: tiến độ bên phải vị trí, dòng 2 ghi chú | 2026-10-24 | DEC-095 | **96/96 • build PASS** | agent/claude/p4-prep-xlsx |
 | P7-25 | Đảo chuyển: ô AV / DAMAGE đồng bộ kích thước ô tác nghiệp | 2026-10-24 | DEC-096 | **96/96 • build PASS** | agent/claude/p4-prep-xlsx |
+| P7-26 | Hình thức thanh toán: TTTT đứng đầu, chọn sẵn | 2026-10-25 | DEC-097 | **97/97 • build PASS** | agent/claude/p4-prep-xlsx |
 
 ## E. TÀI KHOẢN DEMO (đổi ở góc phải)
 | User | Vai trò | Màn hình thấy |
@@ -247,3 +248,4 @@ Chạy `npm run dev`, đổi người dùng ở góc phải:
 5. **Đã gặp lại 3 lần** lỗi khi sửa bằng perl / sed: mất `\` trong regex (`\s` → `s`), mất `${…}`, chèn lên đầu file khi dùng dấu phân cách `|`. Một số file dùng **CRLF**, nên chỉ mục / regex có thể không khớp. → **Dùng Edit / Write**; nếu bắt buộc dùng perl thì kiểm tra lại dòng vừa sửa bằng `grep` / `sed -n` ngay sau đó.
 6. **Database:** đọc `DATABASE_CONTRACT.md` mục 8–10 + `DATABASE_PLATFORM_ADVICE.md` mục 5 (11 tình huống: mất mạng hiện trường, thao tác đồng thời, webhook lặp, chuyển Demo → thật…) trước khi viết P4-01. **Chỉ viết migration, không apply.**
 - 2026-10-24 (phiên 2, tối) — Claude Code: tư vấn nền tảng database (docs/DATABASE_PLATFORM_ADVICE.md, Q-040); cập nhật tiến độ, bàn giao, mục I.2; kiểm tra + push đầy đủ (DEC-050 → DEC-096).
+- 2026-10-25 — Claude Code: P7-26 (DEC-097) TTTT đứng đầu. 97/97 • build PASS.

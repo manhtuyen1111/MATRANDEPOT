@@ -161,6 +161,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Docs (2026-10-24, phiên 2)
 - Tư vấn nền tảng database: docs/DATABASE_PLATFORM_ADVICE.md (Supabase Singapore + PITR, 3 môi trường, sao lưu 3-2-1, 11 tình huống vận hành, lộ trình); Q-040 mới.
 
+### Changed (2026-10-25, DEC-097)
+- Hình thức thanh toán (Hạ vỏ / Cấp vỏ): TTTT — Trực tiếp đứng đầu, chọn sẵn + Tiền mặt. Kiểm thử: 97/97 pass.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

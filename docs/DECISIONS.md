@@ -723,6 +723,11 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-24) — bổ sung DEC-094
 - Quyết định: Ô TRẠNG THÁI (AV / DAMAGE) ở Đảo chuyển dùng **đúng kích thước UI của ô tác nghiệp** ở Xe nâng → Chờ hạ vỏ (`QueueListRow`): cột 5rem, chữ 10px đậm in hoa, đệm px-1.5 py-1, bo góc, không kéo dài hết chiều cao thẻ.
 
+### DEC-097 — Hình thức thanh toán: TTTT — Trực tiếp đứng đầu và chọn sẵn
+
+- Trạng thái: CONFIRMED (2026-10-25)
+- Quyết định: Khối Hình thức thanh toán (Văn phòng → Hạ vỏ; dùng chung với Cấp vỏ) xếp **TTTT — Trực tiếp đầu tiên** → TTT → TTS, và **mặc định chọn sẵn TTTT + Tiền mặt** (hình thức dùng nhiều nhất). Quy tắc thanh toán không đổi (DEC-031, DEC-093).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -812,6 +817,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-096 đã xác nhận (cập nhật 2026-10-22).
+- Quyết định nghiệp vụ: DEC-001 → DEC-097 đã xác nhận (cập nhật 2026-10-22).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
