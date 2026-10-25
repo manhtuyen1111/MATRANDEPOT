@@ -390,7 +390,7 @@ export type ReceiptOperation = 'HA_VO' | 'CAP_VO' | 'THU_TRUOC' | 'KHAC';
 export const RECEIPT_OPERATION_LABELS: Record<ReceiptOperation, string> = {
   HA_VO: 'HẠ VỎ',
   CAP_VO: 'CẤP VỎ',
-  THU_TRUOC: 'THU TRƯỚC (TTT)',
+  THU_TRUOC: 'THU TRƯỚC (TR)',
   KHAC: 'KHÁC',
 };
 

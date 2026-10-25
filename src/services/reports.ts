@@ -399,7 +399,7 @@ export function collectAllPages<T>(query: (page: number) => PagedResult<T>): T[]
 // Sheet PHIẾU THU (DEC-055) — đủ cột tra cứu / đối soát
 export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData {
   const STATUS: Record<string, string> = { PENDING: 'Chờ thanh toán', SUCCEEDED: 'Thành công', FAILED: 'Thất bại', CANCELLED: 'Đã hủy' };
-  const OP: Record<string, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP VỎ', THU_TRUOC: 'THU TRƯỚC (TTT)', KHAC: 'KHÁC' };
+  const OP: Record<string, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP VỎ', THU_TRUOC: 'THU TRƯỚC (TR)', KHAC: 'KHÁC' };
   return {
     name: 'PHIẾU THU',
     columns: [

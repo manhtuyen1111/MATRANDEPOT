@@ -372,7 +372,7 @@ export function createMasterPrepaidReceipt(
     feeItems?: { catalogId: string; quantity: number }[];
   }
 ): DepotState {
-  assertPermission(state, 'PREPAID_RECEIPT_CREATE', 'chỉ Văn phòng được tạo phiếu thu TTT (Thanh toán trước).');
+  assertPermission(state, 'PREPAID_RECEIPT_CREATE', 'chỉ Văn phòng được tạo phiếu thu TR (Trả trước).');
   const partner = state.partners.find((p) => p.code === input.customerCode.trim().toUpperCase());
   if (!partner) throw new Error('Vui lòng chọn khách hàng / đối tác thanh toán từ Danh mục chung.');
   const feeLines = input.feeItems?.length ? buildPrepaidFeeLines(state, input.feeItems) : undefined;
@@ -424,7 +424,7 @@ export function createMasterPrepaidReceipt(
     'CREATE_MASTER_RECEIPT_TTT',
     'FINANCE',
     master.receiptCode,
-    `Tạo phiếu thu TTT ${master.receiptCode} cho ${partner.name}: ${amount.toLocaleString('vi-VN')}đ (${
+    `Tạo phiếu thu TR ${master.receiptCode} cho ${partner.name}: ${amount.toLocaleString('vi-VN')}đ (${
       input.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản QR'
     }) — Chờ thanh toán`
   );
@@ -434,7 +434,7 @@ export function createMasterPrepaidReceipt(
 export function confirmPrepaidCash(state: DepotState, input: { transactionId: string }): DepotState {
   assertPermission(state, 'PREPAID_CASH_CONFIRM', 'chỉ Văn phòng được xác nhận đã thu tiền mặt.');
   const tx = state.paymentTransactions.find((t) => t.id === input.transactionId);
-  if (!tx || tx.purpose !== 'PREPAID_TOPUP') throw new Error('Không tìm thấy phiếu thu TTT cần xác nhận.');
+  if (!tx || tx.purpose !== 'PREPAID_TOPUP') throw new Error('Không tìm thấy phiếu thu TR cần xác nhận.');
   if (tx.method !== 'CASH') throw new Error('Phiếu chuyển khoản chỉ được xác nhận bằng kết quả từ ngân hàng.');
   if (tx.status !== 'PENDING') throw new Error('Giao dịch không còn ở trạng thái chờ thanh toán.');
 
