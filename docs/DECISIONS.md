@@ -911,6 +911,15 @@ Quy ước trạng thái:
 - Thêm 1 dòng **"Ghi sai?"**: chưa xuất thì tra cứu lại → sửa → Cập nhật yêu cầu; đã xuất thì liên hệ Kế toán (SĐT công ty).
 - Khung hướng dẫn đặt **ngay dưới ô "Mã bảo mật trên phiếu thu (12 ký tự)"**.
 
+### DEC-115 — Xe nâng → Đảo chuyển: mỗi cont đúng 2 dòng trên mobile
+
+- Trạng thái: CONFIRMED (2026-10-25). Thay bố cục dòng của DEC-095. Giữ ô trạng thái của DEC-094 / DEC-096 và vị trí thẳng cột của DEC-092.
+- Vấn đề: trên điện thoại, 1 cont chiếm 3 dòng, vì dòng 1 (số cont + vị trí + tiến độ) rộng hơn màn hình.
+- Quyết định:
+  - **Dòng 1:** SỐ CONT | SIZE/TYPE | TIẾN ĐỘ (bên phải).
+  - **Dòng 2:** VỊ TRÍ `BLOCK-A / 17-02-02` (ô Block rộng cố định, thẳng cột) | GHI CHÚ (nền vàng khi có, cắt bớt nếu dài, để trống khi không có).
+  - Hai dòng **không xuống dòng**: phần dư bị cắt, không đẩy sang dòng thứ 3.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1000,6 +1009,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-114 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-115 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

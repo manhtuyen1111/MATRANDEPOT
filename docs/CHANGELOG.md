@@ -186,6 +186,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Phiếu thu: khối Xuất hóa đơn hiện **mã bảo mật** để đối soát (DEC-112). Kiểm thử: 115/115 pass, build PASS.
 - Phiếu thu in: "Người thu tiền" là nhân viên Văn phòng (không còn "HỆ THỐNG (Ngân hàng)"); trang yêu cầu xuất hóa đơn có **hướng dẫn từng bước** + cách xử lý khi sai thông tin / đã xuất; khối Xuất hóa đơn hiện cả đường link (DEC-113). Kiểm thử: 116/116 pass, build PASS.
 - Trang yêu cầu xuất hóa đơn: hướng dẫn rút gọn 3 bước + 1 dòng "Ghi sai?", đặt dưới ô Mã bảo mật (DEC-114).
+- Xe nâng → Đảo chuyển: mỗi cont đúng 2 dòng trên mobile — dòng 1 số cont | size/type | tiến độ; dòng 2 vị trí | ghi chú (DEC-115). Kiểm thử: 116/116 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
