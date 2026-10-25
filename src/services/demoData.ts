@@ -45,6 +45,7 @@ interface GateInCase {
   pay: Pay;
   damage?: string[];
   cleaning?: string[];
+  rack?: boolean; // DEC-109: Hạ kệ giám định
   truckNo: string;
 }
 
@@ -58,6 +59,7 @@ function gateIn(state: DepotState, c: GateInCase): DepotState {
     stuffingClass: 'E',
     cleaningItems: c.cleaning || ['KHÔNG VỆ SINH'],
     manufactureYear: 2019,
+    toInspectionRack: c.rack,
   });
   const order = s.gateInOrders[0];
   s = verifyGateInOfficeAndCreatePayment(as(s, 'usr-office'), {
@@ -116,6 +118,9 @@ export function createDemoState(): DepotState {
     { containerNo: 'MSKU1000088', size: '20', customer: NAM_HAI, pay: { kind: 'TT_CASH' }, cleaning: ['WW'], truckNo: '15C-108.08' },
     { containerNo: 'MSKU1000099', size: '45', customer: VIETLOG, pay: { kind: 'TTS' }, truckNo: '15C-109.09' },
     { containerNo: 'MSKU1000100', size: '20', customer: NAM_HAI, pay: { kind: 'NONE' }, truckNo: '15C-110.10' },
+    // DEC-109: chưa giám định ngay được → Hạ kệ giám định (1 cont đã lên kệ, 1 cont chờ Xe nâng)
+    { containerNo: 'MSKU1000111', size: '40', customer: VIETLOG, pay: { kind: 'TT_CASH' }, rack: true, truckNo: '15C-111.11' },
+    { containerNo: 'MSKU1000122', size: '20', customer: VIETLOG, pay: { kind: 'TTS' }, rack: true, cleaning: ['WP'], truckNo: '15C-112.12' },
     // Dùng cho Cấp vỏ / Xuất tàu
     { containerNo: 'MSKU2000011', size: '40', customer: VIETLOG, pay: { kind: 'TTS' }, truckNo: '15C-201.01' },
     { containerNo: 'MSKU2000022', size: '20', customer: VIETLOG, pay: { kind: 'TTS' }, truckNo: '15C-202.02' },
@@ -132,6 +137,7 @@ export function createDemoState(): DepotState {
   s = place(s, 'MSKU1000055', 'BLOCK-DAMAGE', '01', '01', '01');
   s = place(s, 'MSKU1000066', 'BLOCK-DAMAGE', '01', '02', '01');
   s = place(s, 'MSKU1000077', 'BLOCK-DAMAGE', '02', '01', '01');
+  s = place(s, 'MSKU1000111', 'BLOCK-DAMAGE', '03', '01', '01'); // Hạ kệ giám định
   for (const no of ['MSKU2000011', 'MSKU2000022', 'MSKU3000011', 'MSKU3000022']) s = place(s, no, 'BLOCK-B');
   // MSKU1000088: chờ Vệ sinh; MSKU1000099: đã thanh toán, chờ Xe nâng hạ; MSKU1000100: chờ thanh toán
 

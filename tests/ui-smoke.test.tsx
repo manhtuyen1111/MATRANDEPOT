@@ -64,6 +64,13 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).not.toContain('>Thao tác<');
   });
 
+  it('DEC-109: Danh mục Vị trí có cột / ô đánh dấu Kệ giám định', () => {
+    const html = renderToString(<MasterCatalogWorkspace state={as(base, 'usr-admin')} onUpdateState={noop} tab="VI_TRI" />);
+    expect(html).toContain('Kệ giám định');
+    expect(html).toContain('Đây là KỆ GIÁM ĐỊNH');
+    expect(html).toContain('aria-label="Kệ giám định BLOCK-DAMAGE"');
+  });
+
   it('DEC-105: mã phiếu thu ở Tồn vỏ là link mở phiếu thu thực tế', () => {
     // Dữ liệu mẫu chưa có phiếu nạp của PTT-2026-001 → thêm 1 giao dịch nạp + phiếu thu để có link
     const m = base.masterReceipts.find((x) => x.receiptCode === 'PTT-2026-001')!;

@@ -128,6 +128,7 @@ export function recordGateInFieldStep(
     stuffingClass: FieldStuffingClass;
     cleaningItems: (FieldCleaningItem | string)[];
     manufactureYear: number;
+    toInspectionRack?: boolean; // DEC-109
   }
 ): DepotState {
   assertPermission(
@@ -162,6 +163,7 @@ export function recordGateInFieldStep(
     stuffingClass: input.stuffingClass,
     cleaningItems: normalizedCleaning,
     manufactureYear: year,
+    toInspectionRack: Boolean(input.toInspectionRack),
     fieldStaffName: state.currentUser.fullName,
     fieldRecordedAt: nowIso(),
     feeAmount: 0,
@@ -176,7 +178,9 @@ export function recordGateInFieldStep(
     code,
     `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: Trạng thái ${input.conditionClass}${
       remarks.length ? ` (${remarks.join(', ')})` : ''
-    }, Đóng hàng ${input.stuffingClass}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}`,
+    }, Đóng hàng ${input.stuffingClass}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}${
+      input.toInspectionRack ? ' — HẠ KỆ GIÁM ĐỊNH' : ''
+    }`,
     code
   );
 }
@@ -428,7 +432,7 @@ function completeGateIn(state: DepotState, gateInId: string, actor?: Actor): Dep
     needsCleaning: requiresCleaning,
     needsQuotation: isDamage,
     needsRepair: false,
-    forkliftShiftTask: 'NONE',
+    forkliftShiftTask: order.toInspectionRack ? 'HA_KE_GIAM_DINH' : 'NONE', // DEC-109
     isOnHold: false,
     gateInAt: now,
   };
@@ -483,6 +487,14 @@ export function updateContainerLocation(
     throw new Error(
       `Container ${container.containerNo} có yêu cầu vệ sinh — Bộ phận Vệ sinh phải xác nhận hoàn tất trước khi Xe nâng hạ vỏ (CR-03).`
     );
+  }
+  // DEC-109: cont HẠ KỆ GIÁM ĐỊNH chỉ được hạ vào block Admin đánh dấu là Kệ giám định
+  if (container.forkliftShiftTask === 'HA_KE_GIAM_DINH') {
+    const racks = state.yardBlocks.filter((b) => b.isInspectionRack);
+    if (!racks.length) throw new Error('Chưa có KỆ GIÁM ĐỊNH trong Danh mục Vị trí — Admin cần đánh dấu block Kệ giám định.');
+    if (!racks.some((b) => b.blockCode === input.blockCode)) {
+      throw new Error(`Container ${container.containerNo} phải HẠ KỆ GIÁM ĐỊNH (${racks.map((b) => b.blockCode).join(' / ')}), không hạ về bay.`);
+    }
   }
   const slot = validateTargetSlot(state, container, input);
   const toLabel = formatLocation({
@@ -1421,6 +1433,7 @@ export function addYardBlockCatalogItem(
     maxRow?: number | null;
     maxTier?: number | null;
     description?: string;
+    isInspectionRack?: boolean; // DEC-109
   }
 ): DepotState {
   assertAdmin(state);
@@ -1453,6 +1466,7 @@ export function addYardBlockCatalogItem(
     maxTier,
     capacity,
     description: input.description?.trim() || '',
+    isInspectionRack: Boolean(input.isInspectionRack),
   };
   const dimsLabel = [maxBay && `Bay:${maxBay}`, maxRow && `Row:${maxRow}`, maxTier && `Tier:${maxTier}`].filter(Boolean).join(' / ') || 'chỉ Block';
 
@@ -1465,6 +1479,20 @@ export function addYardBlockCatalogItem(
     'CATALOG',
     cleanCode,
     `[Admin Danh mục chung] Thêm VỊ TRÍ [${cleanCode}] ${cleanName} (${dimsLabel})`
+  );
+}
+
+// DEC-109: Admin đánh dấu / bỏ đánh dấu block là KỆ GIÁM ĐỊNH
+export function setYardBlockInspectionRack(state: DepotState, blockCode: string, isInspectionRack: boolean): DepotState {
+  assertAdmin(state);
+  const block = state.yardBlocks.find((b) => b.blockCode === blockCode);
+  if (!block) throw new Error(`Không tìm thấy Vị trí ${blockCode}.`);
+  return appendAudit(
+    { ...state, yardBlocks: state.yardBlocks.map((b) => (b.blockCode === blockCode ? { ...b, isInspectionRack } : b)) },
+    'ADMIN_SET_INSPECTION_RACK',
+    'CATALOG',
+    blockCode,
+    `[Admin Danh mục chung] ${isInspectionRack ? 'Đánh dấu' : 'Bỏ đánh dấu'} [${blockCode}] là KỆ GIÁM ĐỊNH`
   );
 }
 

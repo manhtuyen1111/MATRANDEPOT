@@ -1174,3 +1174,36 @@ describe('DEC-106: dữ liệu sạch để test lại từ đầu', () => {
     expect(x.paymentReceipts[0].receiptNo).toMatch(/^PT-TT-[0-9]{6}-0001$/);
   });
 });
+
+describe('DEC-109: HẠ KỆ GIÁM ĐỊNH', () => {
+  it('Giám định đánh dấu → Xe nâng chỉ hạ vào Kệ giám định → Đảo chuyển về bay thì xóa cờ', async () => {
+    const { getDriverRoute } = await import('../src/services/driverRoute');
+    let { state: s } = gateInTts(createInitialState(), 'MSKU1234567', { toInspectionRack: true });
+    expect(s.gateInOrders[0].toInspectionRack).toBe(true);
+    const c = s.containers.find((x) => x.containerNo === 'MSKU1234567' && x.status === 'WAITING_PLACEMENT')!;
+    expect(c.forkliftShiftTask).toBe('HA_KE_GIAM_DINH');
+    const ticket = s.k80Tickets.find((t) => t.masterDossierCode === c.masterDossierCode)!;
+    expect(getDriverRoute(s, ticket).find((x) => x.key === 'FORKLIFT_PLACE')!.action).toMatch(/HẠ KỆ GIÁM ĐỊNH/);
+    // Không hạ về bay / block thường
+    expect(() => placeInYard(s, 'MSKU1234567', { blockCode: 'BLOCK-A', bay: '01', row: '01', tier: '01' })).toThrow(/HẠ KỆ GIÁM ĐỊNH/);
+    // Chưa có kệ trong danh mục → báo Admin cấu hình
+    const noRack = { ...s, yardBlocks: s.yardBlocks.map((b) => ({ ...b, isInspectionRack: false })) };
+    expect(() => placeInYard(noRack, 'MSKU1234567', { blockCode: 'BLOCK-DAMAGE', bay: '01', row: '01', tier: '01' })).toThrow(/Chưa có KỆ GIÁM ĐỊNH/);
+    s = placeInYard(s, 'MSKU1234567', { blockCode: 'BLOCK-DAMAGE', bay: '01', row: '01', tier: '01' });
+    expect(s.containers.find((x) => x.id === c.id)!).toMatchObject({ status: 'IN_YARD', currentBlock: 'BLOCK-DAMAGE', forkliftShiftTask: 'HA_KE_GIAM_DINH' });
+    // Giám định xong (thông báo ngoài) → Xe nâng ĐẢO CHUYỂN về vị trí phù hợp
+    s = shiftContainer(as(s, 'usr-forklift'), { containerId: c.id, blockCode: 'BLOCK-A', bay: '05', row: '01', tier: '01' });
+    expect(s.containers.find((x) => x.id === c.id)!).toMatchObject({ currentBlock: 'BLOCK-A', forkliftShiftTask: 'NONE' });
+  });
+
+  it('Cont không đánh dấu vẫn hạ bình thường; chỉ Admin đánh dấu Kệ giám định', async () => {
+    const { setYardBlockInspectionRack } = await import('../src/services/depotOperations');
+    let { state: s } = gateInTts(createInitialState(), 'MSKU1234567');
+    expect(s.containers.find((x) => x.containerNo === 'MSKU1234567' && x.status === 'WAITING_PLACEMENT')!.forkliftShiftTask).toBe('NONE');
+    s = placeInYard(s, 'MSKU1234567', { blockCode: 'BLOCK-B' });
+    expect(() => setYardBlockInspectionRack(as(s, 'usr-office'), 'BLOCK-B', true)).toThrow();
+    s = setYardBlockInspectionRack(as(s, 'usr-admin'), 'BLOCK-B', true);
+    expect(s.yardBlocks.find((b) => b.blockCode === 'BLOCK-B')!.isInspectionRack).toBe(true);
+    expect(s.auditLogs[0].actionCode).toBe('ADMIN_SET_INSPECTION_RACK');
+  });
+});

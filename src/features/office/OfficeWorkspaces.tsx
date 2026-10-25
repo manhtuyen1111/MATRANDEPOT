@@ -200,6 +200,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                       <span className={`block font-bold ${o.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>
                         {o.conditionClass}
                       </span>
+                      {o.toInspectionRack && <span className="block text-[10px] font-bold text-amber-700">HẠ KỆ GĐ</span>}
                       {o.status === 'PAYMENT_PENDING' && <span className="text-[10px] text-amber-700">Chờ thanh toán</span>}
                     </span>
                   </button>
@@ -232,6 +233,12 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                       {order.conditionClass}
                       {order.damageRemarks.length > 0 && <span className="font-normal text-slate-600"> — {order.damageRemarks.join(', ')}</span>}
                     </dd>
+                    {order.toInspectionRack && (
+                      <>
+                        <dt className="text-slate-500">Xe nâng</dt>
+                        <dd className="font-black text-amber-700">HẠ KỆ GIÁM ĐỊNH</dd>
+                      </>
+                    )}
                     <dt className="text-slate-500">Phân loại đóng hàng</dt>
                     <dd className="font-bold">{order.stuffingClass}</dd>
                     <dt className="text-slate-500">Vệ sinh</dt>

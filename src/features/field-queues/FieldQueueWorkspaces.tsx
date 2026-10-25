@@ -295,6 +295,11 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                   </div>
                 )}
               </div>
+              {mode === 'XN_CHO_HA_VO' && scanned.forkliftShiftTask === 'HA_KE_GIAM_DINH' && (
+                <div className="rounded bg-amber-400 px-2 py-1.5 text-center text-base font-black text-slate-900" data-testid="ha-ke-giam-dinh">
+                  HẠ KỆ GIÁM ĐỊNH — không hạ về bay
+                </div>
+              )}
             </div>
           )}
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
@@ -352,7 +357,12 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                 <MapPin className="h-4 w-4 text-slate-500" />
                 Vị trí hạ vỏ *
               </span>
-              <SlotPicker state={state} value={slot} onChange={setSlot} />
+              <SlotPicker
+                state={state}
+                value={slot}
+                onChange={setSlot}
+                onlyBlocks={scanned.forkliftShiftTask === 'HA_KE_GIAM_DINH' ? state.yardBlocks.filter((b) => b.isInspectionRack).map((b) => b.blockCode) : undefined}
+              />
             </div>
           )}
           {isRepair && (
@@ -411,6 +421,8 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                         ? `${c.allocatedTruckNo || '-'} • ${c.allocatedDriverPhone || '-'}`
                         : isRepair
                         ? `${repairWoOf(c)?.laborHours ?? c.quotationLaborHours ?? '-'} giờ công`
+                        : mode === 'XN_CHO_HA_VO' && c.forkliftShiftTask === 'HA_KE_GIAM_DINH'
+                        ? 'HẠ KỆ GIÁM ĐỊNH'
                         : undefined
                     }
                     onClick={() => lookup(c.activeQrCode)}

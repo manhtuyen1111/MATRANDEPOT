@@ -30,6 +30,7 @@ import {
   deleteDepotFeeCatalogItem,
   deletePartnerCatalogItem,
   deleteYardBlockCatalogItem,
+  setYardBlockInspectionRack,
 } from '../../services/depotOperations';
 import { FeeTariffCategory } from '../../types/depot';
 import { blockDimensions, SLOT_DIMENSION_LABELS } from '../../services/core';
@@ -94,6 +95,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
   const [maxRow, setMaxRow] = useState('');
   const [maxTier, setMaxTier] = useState('');
   const [blockDesc, setBlockDesc] = useState('');
+  const [blockIsRack, setBlockIsRack] = useState(false); // DEC-109
 
   // State form CONTAINER (SIZE - TYPE)
   const [newSize, setNewSize] = useState('');
@@ -181,8 +183,10 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
         maxRow: maxRow ? Number(maxRow) : null,
         maxTier: maxTier ? Number(maxTier) : null,
         description: blockDesc,
+        isInspectionRack: blockIsRack,
       });
       onUpdateState(next);
+      setBlockIsRack(false);
       setBlockCode('');
       setBlockName('');
       setBlockDesc('');
@@ -541,6 +545,13 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                   Chiều nào để trống thì khi đặt cont ở khu này sẽ không hiện và không yêu cầu nhập. Không nhập cả 3 → chỉ cần chọn Block, không giới hạn số cont.
                 </p>
               </div>
+              <label className="flex items-start gap-2 rounded-lg border border-slate-200 p-2.5">
+                <input type="checkbox" checked={blockIsRack} onChange={(e) => setBlockIsRack(e.target.checked)} className="mt-0.5" />
+                <span>
+                  <span className="block font-bold text-slate-700">Đây là KỆ GIÁM ĐỊNH</span>
+                  <span className="block text-[11px] text-slate-500">Cont Giám định đánh dấu "Hạ kệ giám định" chỉ được Xe nâng hạ vào các khu này.</span>
+                </span>
+              </label>
               <button
                 type="submit"
                 disabled={!isAdmin}
@@ -562,6 +573,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                   <th className="px-4 py-2.5">Mã Vị Trí</th>
                   <th className="px-4 py-2.5">Tên Khu Vực</th>
                   <th className="px-4 py-2.5">Cấu hình Ô (Bay / Row / Tier)</th>
+                  <th className="px-4 py-2.5 text-center">Kệ giám định</th>
                   <th className="px-4 py-2.5 text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -580,6 +592,22 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                       {blockDimensions(b).length === 0
                         ? 'Chỉ Block — không giới hạn số cont'
                         : `${blockDimensions(b).map((d) => `${SLOT_DIMENSION_LABELS[d.key]}: 01..${String(d.max).padStart(2, '0')}`).join(' • ')} (${b.capacity} vị trí)`}
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      <input
+                        type="checkbox"
+                        aria-label={`Kệ giám định ${b.blockCode}`}
+                        checked={Boolean(b.isInspectionRack)}
+                        disabled={!isAdmin}
+                        onChange={(e) => {
+                          clearFeedback();
+                          try {
+                            onUpdateState(setYardBlockInspectionRack(state, b.blockCode, e.target.checked));
+                          } catch (err) {
+                            setErrorMsg(err instanceof Error ? err.message : 'Lỗi cập nhật Kệ giám định');
+                          }
+                        }}
+                      />
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       <button

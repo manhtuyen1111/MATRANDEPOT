@@ -188,6 +188,7 @@ export interface YardBlock {
   maxTier: number;
   capacity: number;
   description: string;
+  isInspectionRack?: boolean; // DEC-109: KỆ GIÁM ĐỊNH — Admin đánh dấu; cont "Hạ kệ giám định" chỉ được hạ vào block này
 }
 
 // Dữ liệu in Phiếu TÁC NGHIỆP NỘI BỘ khổ K80 (80mm) kèm Mã QR
@@ -244,7 +245,8 @@ export interface ContainerRecord {
   needsCleaning: boolean;        // CHỜ VỆ SINH
   needsQuotation: boolean;       // CHỜ BÁO GIÁ (chỉ cont DAMAGE)
   needsRepair: boolean;          // CHỜ SỬA CHỮA (sau khi Báo giá)
-  // Cờ cũ của luồng đảo chuyển HẠ SỬA CHỮA / HẠ KỆ GIÁM ĐỊNH (menu đã gỡ theo CR-01; được xóa khi ĐẢO CHUYỂN)
+  // DEC-109: HA_KE_GIAM_DINH = cont phải hạ vào KỆ GIÁM ĐỊNH (đặt từ Giám định Hạ vỏ); xóa khi ĐẢO CHUYỂN về vị trí khác.
+  // HA_SUA_CHUA: cờ cũ (menu đã gỡ theo CR-01).
   forkliftShiftTask: 'NONE' | 'HA_SUA_CHUA' | 'HA_KE_GIAM_DINH';
   quotationAmount?: number;
   quotationItems?: string[];
@@ -429,6 +431,7 @@ export interface GateInOrder {
   stuffingClass: FieldStuffingClass;   // M | K | E
   cleaningItems: FieldCleaningItem[];  // KHÔNG VỆ SINH / WP / WW / CC / RM / ML
   manufactureYear: number;             // AGE: 2001, 2002...
+  toInspectionRack?: boolean;          // DEC-109: chưa giám định ngay được → Xe nâng HẠ KỆ GIÁM ĐỊNH
   fieldStaffName: string;
   fieldRecordedAt: string;
   // Bước 2: Văn phòng kiểm tra lệnh/chứng từ & bổ sung thông tin

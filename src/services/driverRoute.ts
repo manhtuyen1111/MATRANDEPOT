@@ -56,7 +56,7 @@ export function getDriverRoute(state: DepotState, ticket: K80InternalTicket): Ro
     steps.push({ key: 'CLEANING', dept: 'VỆ SINH', action: `Quét mã • ${ticket.cleaningItems.join(' + ')}`, done: cleaningWo.workStatus === 'COMPLETED', doneAt: cleaningWo.completedAt, doneBy: cleaningWo.completedBy });
   }
   steps.push(
-    { key: 'FORKLIFT_PLACE', dept: 'XE NÂNG', action: 'Quét mã • hạ vỏ', done: Boolean(placement), doneAt: placement?.performedAt, doneBy: placement?.performedBy },
+    { key: 'FORKLIFT_PLACE', dept: 'XE NÂNG', action: gateIn?.toInspectionRack ? 'Quét mã • HẠ KỆ GIÁM ĐỊNH' : 'Quét mã • hạ vỏ', done: Boolean(placement), doneAt: placement?.performedAt, doneBy: placement?.performedBy },
     { key: 'OFFICE_RETURN', dept: 'VĂN PHÒNG', action: 'Quét mã • nhận EEIR / phiếu thu', done: Boolean(gateIn?.documentsReturnedAt), doneAt: gateIn?.documentsReturnedAt, doneBy: gateIn?.documentsReturnedBy }
   );
   return steps;

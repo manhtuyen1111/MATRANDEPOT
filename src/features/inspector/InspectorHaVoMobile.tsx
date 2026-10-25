@@ -75,6 +75,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     useState<FieldStuffingClass | null>(null);
   const [cleaningItems, setCleaningItems] = useState<FieldCleaningItem[]>([]);
   const [manufactureYear, setManufactureYear] = useState<string>('');
+  const [toInspectionRack, setToInspectionRack] = useState(false); // DEC-109
 
   // Bước xác nhận cuối sau khi đã nhập đủ và bấm NEXT
   const [isReadyToConfirmStep, setIsReadyToConfirmStep] =
@@ -135,6 +136,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     setStuffingClass(null);
     setCleaningItems([]);
     setManufactureYear('');
+    setToInspectionRack(false);
     setIsReadyToConfirmStep(false);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -239,6 +241,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
         stuffingClass,
         cleaningItems,
         manufactureYear: parsedYear,
+        toInspectionRack,
       });
 
       onUpdateState(next);
@@ -712,6 +715,17 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   }}
                 />
 
+                {/* DEC-109: chưa giám định ngay được → Xe nâng HẠ KỆ GIÁM ĐỊNH (tình trạng trên là mô phỏng ban đầu) */}
+                {isAllFieldsValid && (
+                  <label className={`flex items-start gap-2 rounded-lg border p-3 text-xs ${toInspectionRack ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-white'}`}>
+                    <input type="checkbox" checked={toInspectionRack} onChange={(e) => setToInspectionRack(e.target.checked)} className="mt-0.5 h-4 w-4" />
+                    <span>
+                      <span className="block font-bold text-slate-900">HẠ KỆ GIÁM ĐỊNH</span>
+                      <span className="block text-[11px] text-slate-600">Chưa giám định được ngay — Xe nâng hạ cont lên kệ giám định, không hạ về bay.</span>
+                    </span>
+                  </label>
+                )}
+
                 {/* NÚT TIẾP TỤC (NEXT) -> CHỈ HIỂN THỊ KHI ĐÃ NHẬP XONG ĐỦ CẢ 4 MỤC */}
                 {isAllFieldsValid && (
                   <button
@@ -776,6 +790,11 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                         {cleaningItems.join(', ')}
                       </span>
                     </div>
+                    {toInspectionRack && (
+                      <div className="col-span-2 rounded border border-amber-500 bg-amber-50 p-2 text-center text-sm font-black text-amber-800">
+                        HẠ KỆ GIÁM ĐỊNH
+                      </div>
+                    )}
                   </div>
                 </div>
 

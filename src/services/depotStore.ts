@@ -214,6 +214,7 @@ export const INITIAL_YARD_BLOCKS: YardBlock[] = [
     maxTier: 3,
     capacity: 80,
     description: 'Khu vực container DAMAGE chờ Báo giá và Sửa chữa',
+    isInspectionRack: true, // DEC-109: mặc định là Kệ giám định, Admin đổi được
   },
 ];
 

@@ -19,6 +19,8 @@ describe('DEC-108: dữ liệu test đầy đủ trường hợp', () => {
     expect(s.paymentTransactions.some((t) => t.status === 'PENDING')).toBe(true);
     expect(s.gateOutOrders.some((o) => o.status === 'GATE_OUT_OK')).toBe(true);
     expect(s.gateOutOrders.some((o) => o.status === 'PENDING_FORKLIFT')).toBe(true);
+    expect(s.containers.some((c) => c.forkliftShiftTask === 'HA_KE_GIAM_DINH' && c.status === 'IN_YARD')).toBe(true);
+    expect(s.containers.some((c) => c.forkliftShiftTask === 'HA_KE_GIAM_DINH' && c.status === 'WAITING_PLACEMENT')).toBe(true);
     expect(s.vesselLists.map((l) => l.mode).sort()).toEqual(['NHAP_TAU', 'XUAT_TAU']);
   });
 });

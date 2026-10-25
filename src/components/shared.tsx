@@ -449,7 +449,8 @@ export const SlotPicker: React.FC<{
   state: DepotState;
   value: SlotValue;
   onChange: (next: SlotValue) => void;
-}> = ({ state, value, onChange }) => {
+  onlyBlocks?: string[]; // DEC-109: giới hạn block được chọn (VD: chỉ Kệ giám định)
+}> = ({ state, value, onChange, onlyBlocks }) => {
   const block = state.yardBlocks.find((b) => b.blockCode === value.blockCode);
   const dims = block ? blockDimensions(block) : [];
   const range = (n: number) => Array.from({ length: n }, (_, i) => String(i + 1).padStart(2, '0'));
@@ -463,7 +464,7 @@ export const SlotPicker: React.FC<{
           className={inputCls}
         >
           <option value="">-- Chọn --</option>
-          {state.yardBlocks.map((b) => (
+          {state.yardBlocks.filter((b) => !onlyBlocks || onlyBlocks.includes(b.blockCode)).map((b) => (
             <option key={b.blockCode} value={b.blockCode}>
               {b.blockCode}
             </option>
