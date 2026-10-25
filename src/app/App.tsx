@@ -157,6 +157,14 @@ export const App: React.FC = () => {
   const [activeDossierCode, setActiveDossierCode] = useState<string | null>(null);
   const [simulatedQr, setSimulatedQr] = useState('');
   const [receiptFocus, setReceiptFocus] = useState<{ key: string; nonce: number } | null>(null);
+  // DEC-051, DEC-105: mở thẳng Văn phòng → Phiếu thu (chỉ khi user được vào menu Phiếu thu)
+  const openReceipt = canOpenMenu(state.currentUser, 'VP_PHIEU_THU')
+    ? (key: string) => {
+        setActiveDossierCode(null);
+        setReceiptFocus({ key, nonce: Date.now() });
+        setActiveMenu('VP_PHIEU_THU');
+      }
+    : undefined;
   const [prefs, setPrefs] = useState(readPrefs);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -414,16 +422,16 @@ export const App: React.FC = () => {
                 ))}
               </select>
             </label>
-            <button type="button" onClick={() => setState(resetDepotState())} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
+            <button type="button" onClick={() => { if (window.confirm('Xóa toàn bộ dữ liệu tác nghiệp (container, lệnh, phiếu thu…)? Danh mục được giữ lại.')) setState(resetDepotState()); }} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
               <RefreshCw className="h-3 w-3" />
-              Reset demo
+              Xóa dữ liệu
             </button>
           </div>
         </header>
 
         <main className="flex-1 p-3 sm:p-4">
           {activeMenu === 'TON_VO' && (
-            <YardFeature state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} onOpenK80Ticket={setActiveK80Ticket} />
+            <YardFeature state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} onOpenK80Ticket={setActiveK80Ticket} onOpenReceipt={openReceipt} />
           )}
           {activeMenu === 'GD_HA_VO' && <InspectorHaVoMobile state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
           {activeMenu === 'VP_HA_VO' && (
@@ -465,16 +473,7 @@ export const App: React.FC = () => {
         onClose={() => setActiveDossierCode(null)}
         onOpenK80Ticket={setActiveK80Ticket}
         onUpdateState={handleUpdateState}
-        // DEC-051: link thẳng tới Văn phòng → Phiếu thu (chỉ khi user được vào menu Phiếu thu)
-        onOpenReceipt={
-          canOpenMenu(state.currentUser, 'VP_PHIEU_THU')
-            ? (key) => {
-                setActiveDossierCode(null);
-                setReceiptFocus({ key, nonce: Date.now() });
-                setActiveMenu('VP_PHIEU_THU');
-              }
-            : undefined
-        }
+        onOpenReceipt={openReceipt}
       />
 
       <K80TicketModal

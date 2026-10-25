@@ -256,12 +256,11 @@ export const ReceiptsWorkspace: React.FC<{
                       <tr>
                         <th className="whitespace-nowrap px-2 py-2">Mã phiếu thu</th>
                         <th className="whitespace-nowrap px-2 py-2">Tác nghiệp</th>
+                        <th className="whitespace-nowrap px-2 py-2">Số cont</th>
                         <th className="whitespace-nowrap px-2 py-2 text-right">Số tiền</th>
                         <th className="whitespace-nowrap px-2 py-2">Phương thức TT</th>
                         <th className="px-2 py-2">Bên thanh toán</th>
                         <th className="whitespace-nowrap px-2 py-2">Mã hồ sơ / Phiếu thu trả trước</th>
-                        <th className="whitespace-nowrap px-2 py-2">Số cont</th>
-                        <th className="whitespace-nowrap px-2 py-2">Chứng từ</th>
                         <th className="whitespace-nowrap px-2 py-2">Thời gian</th>
                         <th className="whitespace-nowrap px-2 py-2">Nhân viên</th>
                         <th className="whitespace-nowrap px-2 py-2">Trạng thái</th>
@@ -277,6 +276,7 @@ export const ReceiptsWorkspace: React.FC<{
                         <tr key={t.id} onClick={() => setSelectedTxId(t.id)} className={`cursor-pointer ${selectedTxId === t.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
                           <td className="whitespace-nowrap px-2 py-2 font-mono font-bold">{r?.receiptNo || '—'}</td>
                           <td className="whitespace-nowrap px-2 py-2 font-bold">{RECEIPT_OPERATION_LABELS[operationOf(row)]}</td>
+                          <td className="whitespace-nowrap px-2 py-2 font-mono font-bold">{t.containerNo || '-'}</td>
                           <td className="whitespace-nowrap px-2 py-2 text-right font-mono font-bold">{formatVnd(t.amount)}</td>
                           <td className="whitespace-nowrap px-2 py-2">{PAYMENT_METHOD_LABELS[t.method]}</td>
                           <td className="px-2 py-2">{t.payerName}</td>
@@ -292,8 +292,6 @@ export const ReceiptsWorkspace: React.FC<{
                               t.dossierCode || r?.masterReceiptCode || '-'
                             )}
                           </td>
-                          <td className="whitespace-nowrap px-2 py-2 font-mono">{t.containerNo || '-'}</td>
-                          <td className="whitespace-nowrap px-2 py-2 font-mono">{r?.voucherNo || '-'}</td>
                           <td className="whitespace-nowrap px-2 py-2 font-mono text-[11px]">{formatViTime(t.createdAt)}</td>
                           <td className="px-2 py-2 text-[11px]">{t.createdBy}</td>
                           <td className="px-2 py-2"><span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[t.status]}`}>{PAYMENT_TX_STATUS_LABELS[t.status]}</span></td>
@@ -385,15 +383,9 @@ export const ReceiptsWorkspace: React.FC<{
                     </dd>
                   </>
                 )}
-                {selected.receipt?.voucherNo && (
-                  <>
-                    <dt className="text-slate-500">Chứng từ</dt>
-                    <dd className="font-mono">{selected.receipt.voucherNo}</dd>
-                  </>
-                )}
                 {(selected.receipt?.masterReceiptCode || selected.transaction.purpose === 'PREPAID_TOPUP') && (
                   <>
-                    <dt className="text-slate-500">Phiếu thu trả trước (TTT)</dt>
+                    <dt className="text-slate-500">Phiếu thu trả trước (TTR)</dt>
                     <dd className="font-mono">
                       {selected.receipt?.masterReceiptCode || selected.transaction.paymentRef}
                       {(() => {
@@ -483,7 +475,6 @@ export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpe
                 <th className="py-1.5 pr-2">Tác nghiệp</th>
                 <th className="py-1.5 pr-2">Mã hồ sơ</th>
                 <th className="py-1.5 pr-2">Số cont</th>
-                <th className="py-1.5 pr-2">Chứng từ</th>
                 <th className="py-1.5 pr-2 text-right">Số tiền trừ</th>
                 <th className="py-1.5 pr-2 text-right">Số dư sau</th>
                 <th className="py-1.5">Nhân viên</th>
@@ -501,7 +492,6 @@ export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpe
                     ) : '-'}
                   </td>
                   <td className="py-1.5 pr-2 font-mono">{u.containerNo}</td>
-                  <td className="py-1.5 pr-2 font-mono">{u.voucherNo}</td>
                   <td className="py-1.5 pr-2 text-right font-mono font-bold">{formatVnd(u.amount)}</td>
                   <td className="py-1.5 pr-2 text-right font-mono">{formatVnd(u.balanceAfter)}</td>
                   <td className="py-1.5 text-[11px]">{u.performedBy}</td>

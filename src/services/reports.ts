@@ -15,7 +15,7 @@ import {
 } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { formatLocation, getContainerProgress, PROGRESS_LABELS, storageDays } from './core';
-import { containerPaymentInfo, masterReceiptUsage, receiptOperationOf } from './payments';
+import { containerPaymentInfo, masterReceiptUsage, PAYMENT_CATEGORY_FULL_LABELS, receiptOperationOf } from './payments';
 import { formatDateTime, parseDateTime } from './datetime';
 
 // ============================================================================
@@ -403,14 +403,14 @@ export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData 
   return {
     name: 'PHIẾU THU',
     columns: [
-      'MÃ PHIẾU THU', 'TÁC NGHIỆP', 'TRẠNG THÁI', 'SỐ TIỀN', 'TRƯỜNG HỢP', 'PHƯƠNG THỨC TT', 'BÊN THANH TOÁN', 'MÃ HỒ SƠ',
-      'SỐ CONTAINER', 'CHỨNG TỪ', 'PHIẾU THU MẸ', 'MÃ THAM CHIẾU', 'MÃ GD NGÂN HÀNG', 'TẠO LÚC', 'NGƯỜI TẠO',
-      'XÁC NHẬN THU LÚC', 'NGƯỜI XÁC NHẬN', 'LÝ DO HỦY', 'SỐ LẦN IN', 'IN GẦN NHẤT', 'SỐ LƯỢT ĐÃ DÙNG (TTT)', 'CÒN LẠI (TTT)',
+      'MÃ PHIẾU THU', 'TÁC NGHIỆP', 'SỐ CONTAINER', 'TRẠNG THÁI', 'SỐ TIỀN', 'HÌNH THỨC TT', 'PHƯƠNG THỨC TT', 'BÊN THANH TOÁN', 'MÃ HỒ SƠ',
+      'PHIẾU THU TRẢ TRƯỚC', 'MÃ THAM CHIẾU', 'MÃ GD NGÂN HÀNG', 'TẠO LÚC', 'NGƯỜI TẠO',
+      'XÁC NHẬN THU LÚC', 'NGƯỜI XÁC NHẬN', 'LÝ DO HỦY', 'SỐ LẦN IN', 'IN GẦN NHẤT', 'SỐ LƯỢT ĐÃ DÙNG (TTR)', 'CÒN LẠI (TTR)',
     ],
     rows: rows.map(({ transaction: t, receipt: r }) => [
-      r?.receiptNo || '', OP[receiptOperationOf(state, { ...t, operation: r?.operation })], STATUS[t.status] || t.status, t.amount,
-      t.paymentCategory, t.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản', t.payerName, t.dossierCode || '', t.containerNo || '',
-      r?.voucherNo || '', r?.masterReceiptCode || (t.purpose === 'PREPAID_TOPUP' ? t.paymentRef : ''), t.paymentRef,
+      r?.receiptNo || '', OP[receiptOperationOf(state, { ...t, operation: r?.operation })], t.containerNo || '', STATUS[t.status] || t.status, t.amount,
+      PAYMENT_CATEGORY_FULL_LABELS[t.paymentCategory] || t.paymentCategory, t.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản', t.payerName, t.dossierCode || '',
+      r?.masterReceiptCode || (t.purpose === 'PREPAID_TOPUP' ? t.paymentRef : ''), t.paymentRef,
       t.providerTxRef || '', fmt(t.createdAt), t.createdBy, fmt(t.confirmedAt), t.confirmedBy || '', t.cancelReason || '',
       r?.printLog?.length || 0, r?.printLog?.length ? `${fmt(r.printLog[r.printLog.length - 1].at)} • ${r.printLog[r.printLog.length - 1].by}` : '',
       // DEC-079: phiếu thu trước — số lượt tác nghiệp đã trừ, số tiền còn lại

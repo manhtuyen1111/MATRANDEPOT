@@ -25,7 +25,9 @@ import {
   VesselList,
 } from '../types/depot';
 
-const STORAGE_KEY = 'matran_depot_erp_state_v7';
+// DEC-106: đổi khóa để mọi máy bắt đầu lại từ dữ liệu sạch; khóa cũ bị xóa khi nạp
+const STORAGE_KEY = 'matran_depot_erp_state_v8';
+const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7'];
 
 export interface DepotState {
   currentUser: StaffUser;
@@ -833,13 +835,38 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
   } as DepotState;
 }
 
+// DEC-106: DỮ LIỆU SẠCH — giữ danh mục (nhân viên, khách hàng / hãng tàu, block, size / type, biểu phí, tổ sửa chữa, công ty),
+// xóa toàn bộ dữ liệu tác nghiệp (container, lệnh, chứng từ, giao dịch, phiếu thu, phiếu thu trả trước, K80, tàu, nhật ký, bộ đếm mã).
+// createInitialState() (có dữ liệu mẫu) chỉ còn dùng cho test.
+export function createCleanState(): DepotState {
+  return {
+    ...createInitialState(),
+    containers: [],
+    locationHistory: [],
+    masterReceipts: [],
+    receiptDeductions: [],
+    vouchers: [],
+    paymentTransactions: [],
+    paymentReceipts: [],
+    gateInOrders: [],
+    workOrders: [],
+    bookings: [],
+    gateOutOrders: [],
+    k80Tickets: [],
+    auditLogs: [],
+    vesselLists: [],
+    codeCounters: {},
+  };
+}
+
 export function loadDepotState(): DepotState {
   try {
+    for (const key of LEGACY_STORAGE_KEYS) localStorage.removeItem(key);
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createInitialState();
+    if (!raw) return createCleanState();
     return normalizeDepotState(JSON.parse(raw) as Partial<DepotState>);
   } catch {
-    return createInitialState();
+    return createCleanState();
   }
 }
 
@@ -852,7 +879,7 @@ export function saveDepotState(state: DepotState): void {
 }
 
 export function resetDepotState(): DepotState {
-  const initial = createInitialState();
+  const initial = createCleanState();
   saveDepotState(initial);
   return initial;
 }

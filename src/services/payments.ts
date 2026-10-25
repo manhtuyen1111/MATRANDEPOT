@@ -540,6 +540,7 @@ export interface ContainerPaymentInfo {
   category?: PaymentCategory;
   label: string;        // hình thức thanh toán (chữ đầy đủ) hoặc tình trạng
   receipt: string;      // mã phiếu thu (TT) / mã phiếu thu trả trước (TTR); trống nếu không có
+  receiptTarget?: string; // DEC-105: khóa mở đúng phiếu thu thực tế ở Văn phòng → Phiếu thu
 }
 
 export function containerPaymentInfo(state: DepotState, c: { masterDossierCode: string }): ContainerPaymentInfo {
@@ -551,8 +552,14 @@ export function containerPaymentInfo(state: DepotState, c: { masterDossierCode: 
   }
   const category = voucher.paymentCategory;
   if (category === 'TTS') return { category, label: PAYMENT_CATEGORY_FULL_LABELS.TTS, receipt: '' };
-  if (category === 'TTT') return { category, label: PAYMENT_CATEGORY_FULL_LABELS.TTT, receipt: voucher.masterReceiptCode || '' };
+  if (category === 'TTT') {
+    // TTR: link tới phiếu thu nạp tiền (PT-TTR-…) của phiếu thu trả trước
+    const m = state.masterReceipts.find((x) => x.receiptCode === voucher.masterReceiptCode);
+    const topup = m && state.paymentTransactions.find((t) => t.masterReceiptId === m.id && t.status === 'SUCCEEDED');
+    const r = topup && state.paymentReceipts.find((x) => x.transactionId === topup.id);
+    return { category, label: PAYMENT_CATEGORY_FULL_LABELS.TTT, receipt: voucher.masterReceiptCode || '', receiptTarget: r?.receiptNo || topup?.id };
+  }
   const txIds = state.paymentTransactions.filter((t) => t.voucherId === voucher.id && t.status === 'SUCCEEDED').map((t) => t.id);
   const receipts = state.paymentReceipts.filter((r) => txIds.includes(r.transactionId)).map((r) => r.receiptNo);
-  return { category: 'TTTT', label: PAYMENT_CATEGORY_FULL_LABELS.TTTT, receipt: receipts.join(', ') };
+  return { category: 'TTTT', label: PAYMENT_CATEGORY_FULL_LABELS.TTTT, receipt: receipts.join(', '), receiptTarget: receipts[0] };
 }

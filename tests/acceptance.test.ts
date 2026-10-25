@@ -699,6 +699,12 @@ describe('DEC-055: xuất Excel theo bộ lọc — Phiếu thu & mọi báo cá
     const sheet = receiptsSheet(s, collectAllPages((p) => queryReceipts(s, { keyword: 'MSKU1234567' }, p)));
     expect(sheet.columns).toContain('TÁC NGHIỆP');
     expect(sheet.rows[0][1]).toBe('HẠ VỎ');
+    // DEC-107: số cont ngay sau tác nghiệp; không còn cột chứng từ; hình thức TT ghi chữ
+    expect(sheet.columns.slice(0, 3)).toEqual(['MÃ PHIẾU THU', 'TÁC NGHIỆP', 'SỐ CONTAINER']);
+    expect(sheet.rows[0][2]).toBe('MSKU1234567');
+    expect(sheet.columns).not.toContain('CHỨNG TỪ');
+    expect(sheet.rows[0][sheet.columns.indexOf('HÌNH THỨC TT')]).toBe('TT — TRỰC TIẾP');
+    for (const row of sheet.rows) expect(row.length).toBe(sheet.columns.length);
     const inSheet = gateInSheet('HẠ VỎ', collectAllPages((p) => queryGateInReport(s, 'CUSTOMER_RETURN', { containerNo: 'MSKU1234567' }, p)));
     expect(inSheet.columns).toContain('SĐT LÁI XE');
 
@@ -943,7 +949,7 @@ describe('DEC-079: Excel phiếu thu', () => {
     const rows = collectAllPages((p) => queryReceipts(s, { receiptNo }, p));
     const sheet = receiptsSheet(s, rows);
     expect(sheet.columns).toContain('PHƯƠNG THỨC TT');
-    expect(sheet.columns.slice(-2)).toEqual(['SỐ LƯỢT ĐÃ DÙNG (TTT)', 'CÒN LẠI (TTT)']);
+    expect(sheet.columns.slice(-2)).toEqual(['SỐ LƯỢT ĐÃ DÙNG (TTR)', 'CÒN LẠI (TTR)']);
     expect(sheet.rows.length).toBeGreaterThan(0);
     for (const row of sheet.rows) expect(row.length).toBe(sheet.columns.length);
     expect(sheet.rows[0].slice(-2)).toEqual([0, office.feeCatalog[0].defaultAmountInclVat * 2]);
@@ -1109,6 +1115,7 @@ describe('DEC-099: Tồn vỏ — hình thức thanh toán + phiếu thu của l
     const tttt = containerPaymentInfo(s, { masterDossierCode: g.masterDossierCode });
     expect(tttt).toMatchObject({ category: 'TTTT', label: 'TT — TRỰC TIẾP' });
     expect(tttt.receipt).toMatch(/^PT-TT-\d{6}-\d{4}$/);
+    expect(tttt.receiptTarget).toBe(tttt.receipt); // DEC-105: link mở đúng phiếu thu
     // TTS
     const t = gateInTts(createInitialState(), 'MSKU7654321');
     const tts = containerPaymentInfo(t.state, { masterDossierCode: t.order.masterDossierCode });
@@ -1141,5 +1148,29 @@ describe('DEC-102: lọc nhanh thời gian', () => {
     // Thứ Hai là ngày đầu tuần; tháng 1 → tháng trước là tháng 12 năm trước
     expect(quickRange('THIS_WEEK', new Date(2026, 9, 19, 8)).dateFrom).toBe('19/10/2026 00:00:00');
     expect(quickRange('LAST_MONTH', new Date(2026, 0, 5)).dateFrom).toBe('01/12/2025 00:00:00');
+  });
+});
+
+
+describe('DEC-106: dữ liệu sạch để test lại từ đầu', () => {
+  it('giữ danh mục, xóa toàn bộ dữ liệu tác nghiệp và bộ đếm mã', async () => {
+    const { createCleanState } = await import('../src/services/depotStore');
+    const seed = createInitialState();
+    const s = createCleanState();
+    expect(s.staffUsers.length).toBe(seed.staffUsers.length);
+    expect(s.partners.length).toBe(seed.partners.length);
+    expect(s.yardBlocks.length).toBe(seed.yardBlocks.length);
+    expect(s.feeCatalog.length).toBe(seed.feeCatalog.length);
+    for (const k of ['containers', 'gateInOrders', 'gateOutOrders', 'bookings', 'vouchers', 'paymentTransactions', 'paymentReceipts', 'masterReceipts', 'receiptDeductions', 'workOrders', 'k80Tickets', 'vesselLists', 'auditLogs', 'locationHistory'] as const) {
+      expect(s[k]).toEqual([]);
+    }
+    expect(s.codeCounters).toEqual({});
+    // Bắt đầu lại: mã hồ sơ / phiếu thu đầu tiên là 001 / 0001
+    let x = fieldStep(s);
+    const g = x.gateInOrders[0];
+    expect(g.masterDossierCode).toMatch(/^HV-[0-9]{6}-001$/);
+    x = officeStep(x, g.id, 'MSKU1234567');
+    x = confirmGateInPaymentAndComplete(as(x, 'usr-office'), { gateInId: g.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    expect(x.paymentReceipts[0].receiptNo).toMatch(/^PT-TT-[0-9]{6}-0001$/);
   });
 });

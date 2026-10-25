@@ -31,7 +31,12 @@ const as = (s: DepotState, id: string) => ({ ...s, currentUser: s.staffUsers.fin
 
 describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
   it('App khung menu', () => {
+    // DEC-106: App mở với dữ liệu sạch; smoke này cần dữ liệu mẫu → nạp qua localStorage giả
+    const store: Record<string, string> = { matran_depot_erp_state_v8: JSON.stringify(base) };
+    const prev = (globalThis as { localStorage?: unknown }).localStorage;
+    (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } };
     const html = renderToString(<App />);
+    (globalThis as { localStorage?: unknown }).localStorage = prev;
     expect(html).toContain('MATRAN DEPOT');
     expect(html).toContain('Đảo chuyển');
     expect(html).not.toContain('HẠ SỬA CHỮA');
@@ -57,6 +62,19 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('>Mã phiếu thu<');
     expect(html).toContain('TTR — TRẢ TRƯỚC');
     expect(html).not.toContain('>Thao tác<');
+  });
+
+  it('DEC-105: mã phiếu thu ở Tồn vỏ là link mở phiếu thu thực tế', () => {
+    // Dữ liệu mẫu chưa có phiếu nạp của PTT-2026-001 → thêm 1 giao dịch nạp + phiếu thu để có link
+    const m = base.masterReceipts.find((x) => x.receiptCode === 'PTT-2026-001')!;
+    const s = {
+      ...base,
+      paymentTransactions: [...base.paymentTransactions, { id: 'tx-topup', masterReceiptId: m.id, status: 'SUCCEEDED' } as DepotState['paymentTransactions'][number]],
+      paymentReceipts: [...base.paymentReceipts, { id: 'rc-topup', transactionId: 'tx-topup', receiptNo: 'PT-TTR-261019-0001' } as DepotState['paymentReceipts'][number]],
+    };
+    const html = renderToString(<YardFeature state={s} onUpdateState={noop} onOpenReceipt={noop} />);
+    expect(html).toContain('title="Mở phiếu thu"');
+    expect(renderToString(<YardFeature state={base} onUpdateState={noop} />)).not.toContain('title="Mở phiếu thu"');
   });
 
   it('Văn phòng / Xe nâng / Vệ sinh / Báo giá / Sửa chữa / Phiếu thu / Báo cáo / Danh mục / Hồ sơ', () => {
@@ -329,7 +347,7 @@ describe('DEC-079: khối Sử dụng phiếu thu trả trước', () => {
     expect(html).toContain('Sử dụng phiếu thu trả trước PTT-2026-001');
     expect(html).toContain('1 lượt');
     expect(html).toContain('HV-261019-001');
-    expect(html).toContain('CT-GIN-261019-01');
+    expect(html).not.toContain('CT-GIN-261019-01'); // DEC-107: không hiện chứng từ
     expect(html).toContain('Còn lại');
   });
 });

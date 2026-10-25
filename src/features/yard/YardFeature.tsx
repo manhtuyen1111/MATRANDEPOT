@@ -34,6 +34,7 @@ interface Props {
   state: DepotState;
   onUpdateState: (next: DepotState) => void;
   onOpenDossier?: (code: string) => void;
+  onOpenReceipt?: (key: string) => void; // DEC-105: mở phiếu thu thực tế
   onOpenK80Ticket?: (ticket: K80InternalTicket) => void;
 }
 
@@ -41,7 +42,7 @@ type Panel = { id: string; kind: 'LOCATION' | 'LOCK' } | null;
 type BulkAction = 'LOCK' | 'UNLOCK' | 'NOTE';
 
 // TỒN VỎ (DEC-030, DEC-065, DEC-067): khóa tại icon cạnh số cont; sửa vị trí / ghi chú tại ô; tìm + khóa + ghi chú hàng loạt
-export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossier }) => {
+export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossier, onOpenReceipt }) => {
   const [search, setSearch] = useState('');
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkText, setBulkText] = useState('');
@@ -334,7 +335,13 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                         return (
                           <>
                             <td className={`whitespace-nowrap px-2 py-2.5 text-[11px] font-bold ${tone}`}>{pay.label}</td>
-                            <td className="px-2 py-2.5 font-mono text-[11px]">{pay.receipt}</td>
+                            <td className="px-2 py-2.5 font-mono text-[11px]">
+                              {pay.receipt && pay.receiptTarget && onOpenReceipt ? (
+                                <button type="button" onClick={(e) => { e.stopPropagation(); onOpenReceipt(pay.receiptTarget!); }} className="font-bold text-blue-700 underline hover:text-blue-900" title="Mở phiếu thu">
+                                  {pay.receipt}
+                                </button>
+                              ) : pay.receipt}
+                            </td>
                           </>
                         );
                       })()}
