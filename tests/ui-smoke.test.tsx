@@ -597,3 +597,13 @@ describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
     expect(renderToString(<InvoicePanel receipt={req} canIssue={false} onIssue={noop} />)).not.toContain('Đã xuất hóa đơn</button>');
   });
 });
+
+// DEC-116: quy tắc chữ 16px cho ô nhập trên màn nhỏ nằm ở src/index.css (môi trường test không nạp CSS — kiểm tra bằng tay trên điện thoại)
+describe('DEC-116: Đảo chuyển không có ghi chú tác nghiệp', () => {
+  it('Đảo chuyển: không còn ô Ghi chú tác nghiệp', () => {
+    const c = base.containers.find((x) => x.status === 'IN_YARD' && x.currentBlock)!;
+    const html = renderToString(<YardShiftWorkspace state={base} onUpdateState={noop} />);
+    expect(c).toBeTruthy();
+    expect(html).not.toContain('Ghi chú tác nghiệp');
+  });
+});

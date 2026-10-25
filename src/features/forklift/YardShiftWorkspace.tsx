@@ -37,7 +37,6 @@ export const YardShiftWorkspace: React.FC<{
   const blockCh = Math.max(5, ...state.yardBlocks.map((b) => b.blockCode.length));
   const [selectedId, setSelectedId] = useState('');
   const [slot, setSlot] = useState<SlotValue>(EMPTY_SLOT);
-  const [note, setNote] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -61,10 +60,9 @@ export const YardShiftWorkspace: React.FC<{
     setError(null);
     setSuccess(null);
     try {
-      onUpdateState(shiftContainer(state, { containerId: selected.id, ...slot, note }));
+      onUpdateState(shiftContainer(state, { containerId: selected.id, ...slot }));
       setSuccess(`Đã ĐẢO CHUYỂN ${selected.containerNo}: ${formatLocation(selected)} → ${slot.blockCode}${slot.bay ? ` / ${slot.bay}-${slot.row}-${slot.tier}` : ''}.`);
       setSlot(EMPTY_SLOT);
-      setNote('');
       setSelectedId('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lỗi đảo chuyển');
@@ -102,11 +100,8 @@ export const YardShiftWorkspace: React.FC<{
           </dl>
           <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
             <span className="block font-bold text-slate-800">Vị trí mới *</span>
+            {/* DEC-116: không nhập ghi chú tác nghiệp khi đảo chuyển */}
             <SlotPicker state={state} value={slot} onChange={setSlot} />
-            <label className="block">
-              <span className={labelCls}>Ghi chú tác nghiệp</span>
-              <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: Hạ khu sửa chữa" className={inputCls} />
-            </label>
           </div>
           <button type="button" disabled={!isSlotComplete(slot, state)} onClick={handleShift} className={`${primaryBtn} w-full py-3`}>
             <ArrowLeftRight className="h-4 w-4" />
