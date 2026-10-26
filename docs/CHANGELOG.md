@@ -194,6 +194,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Changed (2026-10-26, DEC-119)
 - Bỏ mã chứng từ `CT-`: số chứng từ = mã hồ sơ tác nghiệp (HV- / CV-), cũng là mã tham chiếu chuyển khoản; bỏ dòng / ô / cột "Chứng từ" trùng ở phiếu thu in, hồ sơ, Excel Hạ vỏ / Cấp vỏ. Kiểm thử: 118/118 pass, build PASS.
 
+### Added (2026-10-26, DEC-120)
+- **Góp ý**: nút ở góc trên bên phải (chọn menu / tính năng + nội dung, xem "Góp ý của tôi"); **Báo cáo → Góp ý** chỉ Admin — lọc, Excel, cập nhật trạng thái MỚI / ĐANG XỬ LÝ / ĐÃ XỬ LÝ / KHÔNG ÁP DỤNG + phản hồi. Kiểm thử: 124/124 pass, build PASS.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

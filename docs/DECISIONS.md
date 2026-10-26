@@ -966,6 +966,20 @@ Quy ước trạng thái:
   - Giữ cột "SỐ LỆNH / CHỨNG TỪ": đây là số EIR / lệnh của khách, không phải mã nội bộ.
 - Dữ liệu trình duyệt được nạp lại dữ liệu test mới (khóa lưu v11).
 
+### DEC-120 — GÓP Ý xây dựng hệ thống
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- **Gửi góp ý:** nút **Góp ý** ở góc trên bên phải, mọi người dùng đều thấy. Cửa sổ góp ý gồm:
+  - Chọn **Menu / tính năng**: các menu người dùng được thấy, cộng mục "Khác".
+  - **Nội dung**: 5 → 2000 ký tự.
+  - Gửi xong cấp mã **GY-YYMMDD-NNN** (qua `codes.ts`).
+  - Phía dưới là **Góp ý của tôi**: chỉ góp ý của chính mình, kèm trạng thái và phản hồi của Admin.
+- **Báo cáo → Góp ý** (chỉ **Admin** — `FEEDBACK_MANAGE`): lọc thời gian (lọc nhanh), trạng thái, menu, từ khóa; phân trang; xuất Excel. Bấm dòng mở cửa sổ chi tiết để cập nhật **trạng thái + phản hồi**:
+  - Trạng thái: **MỚI → ĐANG XỬ LÝ → ĐÃ XỬ LÝ / KHÔNG ÁP DỤNG**.
+  - Khi chuyển sang Đã xử lý / Không áp dụng thì bắt buộc ghi phản hồi.
+- Góp ý được **giữ lại khi bấm "Xóa dữ liệu"**. Dữ liệu test có 2 góp ý mẫu (1 MỚI, 1 ĐÃ XỬ LÝ).
+- Kỹ thuật: `src/services/feedback.ts`, `queryFeedback` / `feedbackSheet` (`reports.ts`), `src/components/FeedbackButton.tsx`, `src/features/reports/FeedbackReport.tsx`.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1055,6 +1069,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-119 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-120 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

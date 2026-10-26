@@ -58,6 +58,8 @@ Nguồn duy nhất trong code: `src/services/permissions.ts` (`PERMISSIONS`, `ME
 | Vệ sinh / Xe nâng hạ cont NHẬP TÀU | như Chờ vệ sinh / Chờ hạ vỏ (`CLEANING_COMPLETE`, `FORKLIFT_OPS`) | DEC-069 |
 | Menu: Giám định → Nhập tàu, Xuất tàu; Xe nâng → Nhập tàu, Xuất tàu (mobile). Vệ sinh không có menu Nhập tàu (dùng Chờ vệ sinh) | theo `MENU_ACCESS` | DEC-069, DEC-070 |
 | Quản lý User - Phân quyền | ADMIN | DEC-045 |
+| Gửi góp ý, xem góp ý của chính mình | Mọi người dùng đang hoạt động | DEC-120 |
+| Báo cáo → Góp ý: xem, lọc, Excel, cập nhật trạng thái + phản hồi | ADMIN (`FEEDBACK_MANAGE`) | DEC-120 |
 | Hiển thị menu | Theo `MENU_ACCESS`: mỗi vai trò chỉ thấy màn của mình. Kế toán chỉ thấy Văn phòng → Phiếu thu | DEC-045, DEC-111 |
 
 ## 3. Quy ước quyền
