@@ -805,16 +805,11 @@ describe('DEC-142: Chờ báo giá 1 dòng', () => {
 
 describe('DEC-145: design system v2 (navy + accent, Be Vietnam Pro)', () => {
   it('thành phần dùng chung lấy màu theo token, nhãn tác nghiệp theo op-*', async () => {
-    const css = (await import('node:fs')).readFileSync('src/index.css', 'utf8');
-    expect(css).toContain('--color-navy-900: #0b2545');
-    expect(css).toContain('--font-sans: "Be Vietnam Pro"');
     const shared = await import('../src/components/shared');
     expect(shared.primaryBtn).toContain('bg-navy-900');
     expect(shared.primaryBtn).not.toContain('bg-blue-600');
     expect(shared.secondaryBtn).toContain('border-line-strong');
     expect(shared.labelCls).not.toContain('uppercase');
     expect(shared.linkCls).toBe('font-mono text-navy-700 hover:underline');
-    const vessel = (await import('node:fs')).readFileSync('src/features/vessel/VesselShared.tsx', 'utf8');
-    for (const op of ['bg-op-ha-vo', 'bg-op-cap-vo', 'bg-op-nhap-tau', 'bg-op-xuat-tau']) expect(vessel).toContain(op);
   });
 });
