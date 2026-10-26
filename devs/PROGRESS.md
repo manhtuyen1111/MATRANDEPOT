@@ -369,3 +369,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-26 — Claude Code: DEC-142 Chờ báo giá mỗi cont 1 dòng như Tồn vỏ. 138/138 • build PASS.
 - 2026-10-26 — Claude Code: DEC-143 tài khoản do Admin tạo, đăng nhập, mật khẩu mặc định 123456 + bắt buộc đổi lần đầu. 144/144 • build PASS.
 - 2026-10-26 — Claude Code: DEC-144 User - Role (tên đăng nhập tuan.lv, mật khẩu độ dài tùy ý, bộ lọc + nút Thêm). 147/147 • build PASS.
+- 2026-10-26 — Claude Code: hoàn tác đăng nhập Demo (DEC-143/144) — giữ tài khoản demo + tên menu User - Role; quy tắc tài khoản chuyển thành việc của GĐ 4. 138/138 • build PASS.

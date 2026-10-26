@@ -1219,44 +1219,34 @@ Quy ước trạng thái:
 - **Tình trạng sửa chữa** và **Ghi chú** dài: cắt bớt (`CellText`, tối đa 40 ký tự), rê chuột xem đủ.
 - Thứ tự cột không đổi, nên Excel giữ nguyên.
 
-### DEC-143 — Tài khoản do Admin tạo; mật khẩu mặc định 123456, bắt buộc đổi ở lần đăng nhập đầu
+### DEC-143 — Tài khoản / đăng nhập: QUY TẮC CHO GIAI ĐOẠN 4 (chưa làm ở bản Demo)
 
-- Trạng thái: CONFIRMED (2026-10-26). Người dùng chọn làm luôn bản Demo, chưa chờ giai đoạn 4.
-- **Admin** (Danh mục → User) tạo tài khoản cho nhân viên:
-  - nhập **họ tên**, **tên đăng nhập** và gán **vai trò**; email không bắt buộc.
-  - Tên đăng nhập do Admin đặt: 3–30 ký tự, chữ thường không dấu, số và `. _ -` (VD `gd.tuan`). Không trùng.
-  - Admin khóa / mở khóa tài khoản, sửa vai trò, **Đặt lại mật khẩu** (về 123456).
-- Nhân viên chỉ nhận tài khoản và tác nghiệp; không tự đăng ký.
-- **Mật khẩu ban đầu = 123456** cho mọi tài khoản mới và sau khi Admin đặt lại.
-- **Lần đăng nhập đầu tiên** (hoặc sau khi đặt lại): bắt buộc đổi mật khẩu trước khi vào làm việc.
-  - Mật khẩu mới khác 123456, khác mật khẩu hiện tại, nhập lại phải khớp. ~~Tối thiểu 6 ký tự~~: đã bỏ theo DEC-144, bao nhiêu ký tự cũng được.
-  - Nhân viên tự đổi mật khẩu bất cứ lúc nào (nút **Đổi mật khẩu** góc phải).
-- **Đăng nhập** bằng tên đăng nhập + mật khẩu. Tài khoản bị khóa không đăng nhập được. Báo lỗi chung "Sai tên đăng nhập hoặc mật khẩu", không lộ tài khoản nào tồn tại. Có nút **Đăng xuất**.
-- Ô chọn người dùng Demo ở góc phải đã bỏ.
-- Nhật ký ghi: đăng nhập, đăng xuất, đổi mật khẩu, Admin đặt lại mật khẩu.
-- **Bản Demo:** mật khẩu lưu dạng băm SHA-256 + salt ngẫu nhiên trong trình duyệt. **Chưa phải bảo mật thật**, vì ai mở được máy là xem được dữ liệu trình duyệt.
-  - Giai đoạn 4 chuyển sang **Supabase Auth** (băm và kiểm tra phía máy chủ), giữ nguyên màn hình và quy tắc.
-  - Màn đăng nhập Demo có dòng nhắc các tài khoản có sẵn; dòng này **không** hiện khi đã nối Supabase.
-- Tài khoản test có sẵn: admin, office, inspector, quotation, forklift, cleaning, repair, accounting. Mật khẩu 123456, đăng nhập lần đầu phải đổi. "Xóa dữ liệu" / "Nạp dữ liệu test" đưa tài khoản về mặc định.
-- Kỹ thuật:
-  - `src/services/auth.ts`: `login`, `logout`, `changePassword`, `resetStaffPassword`, `mustChangePassword`, `isLoggedIn`, `validateUsername`.
-  - `StaffUser.username`, `passwordHash`, `mustChangePassword`; `DepotState.sessionUserId`.
-  - Màn hình: `src/features/auth/LoginScreen.tsx`.
+- Trạng thái: CONFIRMED (2026-10-26) — **chỉ thực hiện khi tạo database (GĐ 4, Supabase Auth)**.
+- Bản Demo **giữ nguyên tài khoản demo** (chọn người dùng ở góc phải, không có màn đăng nhập). Đã thử làm đăng nhập ở Demo rồi người dùng yêu cầu **hoàn tác** (commit `ffb341e`).
+- **Quy tắc sẽ làm ở GĐ 4:**
+  - **Admin** (Danh mục → User - Role) tạo tài khoản cho nhân viên: họ tên, **tên đăng nhập**, **vai trò**; email không bắt buộc. Nhân viên chỉ nhận tài khoản và tác nghiệp, không tự đăng ký.
+  - **Tên đăng nhập tự tạo** khi nhập họ tên, dạng `ten.hoten`: **tên + "." + chữ cái đầu của họ và tên đệm**, không dấu.
+    - Ví dụ: "Lê Văn Tuấn" → `tuan.lv`; "Đỗ Thị Thu" → `thu.dt`.
+    - Trùng thì thêm số: `tuan.lv2`…
+    - Admin **sửa được**. Ràng buộc: 3–30 ký tự, chữ thường không dấu, số và `. _ -`, không trùng.
+  - **Mật khẩu ban đầu = 123456** cho tài khoản mới và sau khi Admin **Đặt lại mật khẩu**.
+  - **Lần đăng nhập đầu tiên** (hoặc sau khi đặt lại): **bắt buộc đổi mật khẩu**.
+    - Bao nhiêu ký tự cũng được, không để trống.
+    - **Không được dùng 123456**, khác mật khẩu hiện tại, nhập lại phải khớp.
+  - Nhân viên tự đổi mật khẩu lúc nào cũng được; có nút **Đăng xuất**.
+  - Tài khoản bị khóa không đăng nhập được. Báo lỗi chung "Sai tên đăng nhập hoặc mật khẩu".
+  - Nhật ký ghi: đăng nhập, đăng xuất, đổi mật khẩu, đặt lại mật khẩu.
+  - **Không** cho Admin xem mật khẩu người dùng; người dùng đã cân nhắc và quyết định bỏ. Quên thì Admin đặt lại.
+  - Màn User - Role khi đó có thêm: **bộ lọc** (tìm kiếm họ tên / tên đăng nhập / mã NV, vai trò, trạng thái, mật khẩu mặc định / đã đổi) và nút **Thêm nhân viên mới (+)**; bấm mới mở khung thêm (giống Văn phòng → Phiếu thu).
+  - Câu hỏi mở cho GĐ 4: Q-041 (email nội bộ cho Supabase Auth, khóa khi sai nhiều lần, tự đăng xuất).
+- Code tham khảo (đã hoàn tác, xem lại bằng git):
+  - `07dc5f9`: `src/services/auth.ts`, `LoginScreen.tsx`, test `tests/auth.test.ts`;
+  - `40b1edb`: `suggestUsername` và màn User - Role có bộ lọc.
 
-### DEC-144 — User - Role: tên đăng nhập tự tạo, mật khẩu không giới hạn độ dài, bộ lọc + nút Thêm
+### DEC-144 — Đổi tên menu "User - Phân quyền" thành "User - Role"
 
-- Trạng thái: CONFIRMED (2026-10-26). Sửa DEC-143.
-- Menu **"User - Phân quyền"** đổi tên thành **"User - Role"**.
-- **Tên đăng nhập tự tạo** khi nhập họ tên, dạng `ten.hoten`: **tên + "." + chữ cái đầu của họ và tên đệm**, không dấu.
-  - Ví dụ: "Lê Văn Tuấn" → `tuan.lv`; "Đỗ Thị Thu" → `thu.dt`.
-  - Trùng thì thêm số: `tuan.lv2`, `tuan.lv3`…
-  - Người cấu hình **sửa được**; đã tự sửa thì đổi họ tên không ghi đè nữa.
-- **Mật khẩu mới**: bao nhiêu ký tự cũng được, không để trống. **Vẫn cấm 123456**, khác mật khẩu hiện tại, nhập lại phải khớp.
-- **Bố cục màn:**
-  - khu vực trên cùng là **bộ lọc** (Tìm kiếm họ tên / tên đăng nhập / mã NV, không phân biệt dấu; Vai trò; Trạng thái; Mật khẩu mặc định / đã đổi) + nút **Thêm nhân viên mới (+)**, giống Văn phòng → Phiếu thu;
-  - **bấm Thêm** mới mở khung "Thêm nhân viên mới"; tạo xong thì khung tự đóng.
-- Kỹ thuật: `suggestUsername`, `stripVietnamese` (`auth.ts`); `PASSWORD_MIN_LENGTH = 1`.
-- **Không** cho Admin xem mật khẩu người dùng (đã cân nhắc 2026-10-26, người dùng quyết định bỏ). Mật khẩu chỉ lưu dạng băm một chiều; quên mật khẩu thì Admin **Đặt lại mật khẩu** về 123456.
+- Trạng thái: CONFIRMED (2026-10-26). **Đã áp dụng** ở bản Demo (chỉ đổi tên hiển thị menu).
+- Các quy tắc tài khoản khác (tên đăng nhập `tuan.lv`, mật khẩu…) gộp vào DEC-143, chờ GĐ 4.
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 

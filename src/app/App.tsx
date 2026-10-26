@@ -119,7 +119,7 @@ const MENU: MenuGroup[] = [
       { id: 'DM_BIEU_GIA', label: 'Biểu giá' },
       { id: 'DM_CONG_TY', label: 'Công ty' },
       { id: 'DM_SUA_CHUA', label: 'Sửa chữa' },
-      { id: 'DM_USER', label: 'User - Phân quyền' },
+      { id: 'DM_USER', label: 'User - Role' }, // DEC-144: đổi tên menu (giữ lại)
     ],
   },
 ];

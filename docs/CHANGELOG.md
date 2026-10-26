@@ -220,6 +220,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Báo giá → Chờ báo giá: mỗi cont 1 dòng như Tồn vỏ (Date in cùng dòng, Tình trạng sửa chữa / Ghi chú cắt bớt) (DEC-142). Kiểm thử: 138/138 pass, build PASS.
 - Tài khoản & đăng nhập: Admin tạo tài khoản (tên đăng nhập + vai trò), mật khẩu mặc định 123456, đặt lại mật khẩu; màn Đăng nhập, bắt buộc đổi mật khẩu lần đầu (≥ 6 ký tự), Đổi mật khẩu / Đăng xuất; bỏ ô chọn người dùng Demo (DEC-143). Kiểm thử: 144/144 pass, build PASS.
 - User - Role (đổi tên menu): tên đăng nhập tự tạo dạng tuan.lv (sửa được); mật khẩu mới không giới hạn độ dài (vẫn cấm 123456); bộ lọc + tìm kiếm + nút Thêm nhân viên mới, bấm mới mở khung thêm (DEC-144). Kiểm thử: 147/147 pass, build PASS.
+- **Hoàn tác** đăng nhập / tài khoản bản Demo (DEC-143, DEC-144) theo yêu cầu: quay về tài khoản demo (chọn người dùng góc phải). Quy tắc tài khoản giữ trong DEC-143 để làm ở GĐ 4. Giữ tên menu **User - Role**. Kiểm thử: 138/138 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
