@@ -1185,9 +1185,9 @@ describe('DEC-106: dữ liệu sạch để test lại từ đầu', () => {
 });
 
 describe('DEC-109 / DEC-147: HẠ KỆ GIÁM ĐỊNH', () => {
-  it('GIÁM ĐỊNH SAU → Xe nâng chỉ hạ vào Kệ giám định → Đảo chuyển về bay thì xóa cờ', async () => {
+  it('W-SURVEY → Xe nâng chỉ hạ vào Kệ giám định → Đảo chuyển về bay thì xóa cờ', async () => {
     const { getDriverRoute } = await import('../src/services/driverRoute');
-    let { state: s } = gateInTts(createInitialState(), 'MSKU1234567', { conditionClass: 'GIÁM ĐỊNH SAU', stuffingClass: undefined, manufactureYear: undefined });
+    let { state: s } = gateInTts(createInitialState(), 'MSKU1234567', { conditionClass: 'W-SURVEY', stuffingClass: undefined, manufactureYear: undefined });
     expect(s.gateInOrders[0].toInspectionRack).toBe(true);
     const c = s.containers.find((x) => x.containerNo === 'MSKU1234567' && x.status === 'WAITING_PLACEMENT')!;
     expect(c.forkliftShiftTask).toBe('HA_KE_GIAM_DINH');
@@ -1263,32 +1263,32 @@ describe('DEC-119: số chứng từ = mã hồ sơ tác nghiệp (không còn m
   });
 });
 
-describe('DEC-147: GIÁM ĐỊNH SAU (LÊN KỆ) + giám định bổ sung trên kệ', () => {
-  const DEFER = { conditionClass: 'GIÁM ĐỊNH SAU', stuffingClass: undefined, manufactureYear: undefined } as const;
+describe('DEC-147: W-SURVEY (LÊN KỆ) + giám định bổ sung trên kệ', () => {
+  const DEFER = { conditionClass: 'W-SURVEY', stuffingClass: undefined, manufactureYear: undefined } as const;
 
-  it('Giám định chọn GIÁM ĐỊNH SAU: chỉ cần ảnh + Vệ sinh, không cần Đóng hàng / AGE; tự HẠ KỆ', () => {
+  it('Giám định chọn W-SURVEY: chỉ cần ảnh + Vệ sinh, không cần Đóng hàng / AGE; tự HẠ KỆ', () => {
     const s = fieldStep(createInitialState(), { ...DEFER, cleaningItems: ['WP'] });
-    expect(s.gateInOrders[0]).toMatchObject({ conditionClass: 'GIÁM ĐỊNH SAU', toInspectionRack: true, cleaningItems: ['WP'] });
+    expect(s.gateInOrders[0]).toMatchObject({ conditionClass: 'W-SURVEY', toInspectionRack: true, cleaningItems: ['WP'] });
     expect(s.gateInOrders[0].stuffingClass).toBeUndefined();
     expect(s.gateInOrders[0].manufactureYear).toBeUndefined();
-    expect(s.auditLogs[0].summary).toMatch(/GIÁM ĐỊNH SAU/);
+    expect(s.auditLogs[0].summary).toMatch(/W-SURVEY/);
     // AV / DAMAGE vẫn bắt buộc Đóng hàng + AGE
     expect(() => fieldStep(createInitialState(), { stuffingClass: undefined })).toThrow(/PHÂN LOẠI ĐÓNG HÀNG/);
     expect(() => fieldStep(createInitialState(), { manufactureYear: undefined })).toThrow(/AGE/);
   });
 
-  it('Văn phòng làm như thường; EEIR / K80 ghi GIÁM ĐỊNH SAU; Vệ sinh → Xe nâng chỉ hạ kệ; chưa cho Cấp vỏ', async () => {
+  it('Văn phòng làm như thường; EEIR / K80 ghi W-SURVEY; Vệ sinh → Xe nâng chỉ hạ kệ; chưa cho Cấp vỏ', async () => {
     const { releaseBlocker } = await import('../src/services/depotOperations');
     let { state: s } = gateInTts(createInitialState(), 'MSKU1234567', { ...DEFER, cleaningItems: ['WP'] });
     const c = s.containers.find((x) => x.containerNo === 'MSKU1234567')!;
-    expect(c).toMatchObject({ conditionClass: 'GIÁM ĐỊNH SAU', forkliftShiftTask: 'HA_KE_GIAM_DINH', needsCleaning: true, needsQuotation: false });
-    expect(s.k80Tickets[0].conditionClass).toBe('GIÁM ĐỊNH SAU');
+    expect(c).toMatchObject({ conditionClass: 'W-SURVEY', forkliftShiftTask: 'HA_KE_GIAM_DINH', needsCleaning: true, needsQuotation: false });
+    expect(s.k80Tickets[0].conditionClass).toBe('W-SURVEY');
     expect(pendingRackInspections(s).map((x) => x.id)).toEqual([c.id]);
     // Chưa hạ lên kệ → chưa giám định bổ sung được
     expect(() => completeRackInspection(as(s, 'usr-inspector'), { containerId: c.id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/chưa được Xe nâng hạ lên kệ/);
     s = completeCleaningTask(as(s, 'usr-cleaning'), { containerNo: 'MSKU1234567' });
     s = placeInYard(s, 'MSKU1234567', { blockCode: 'BLOCK-DAMAGE', bay: '01', row: '01', tier: '01' });
-    expect(releaseBlocker(s.containers.find((x) => x.id === c.id)!)).toMatch(/GIÁM ĐỊNH SAU/);
+    expect(releaseBlocker(s.containers.find((x) => x.id === c.id)!)).toMatch(/W-SURVEY/);
   });
 
   it('Giám định bổ sung DAMAGE → cập nhật phiếu + hàng chờ Báo giá; AV → hết chờ; bị từ chối khi sai quyền / thiếu dữ liệu', () => {
@@ -1300,7 +1300,7 @@ describe('DEC-147: GIÁM ĐỊNH SAU (LÊN KỆ) + giám định bổ sung trên
     const { s, id } = setup();
     const insp = as(s, 'usr-inspector');
     expect(() => completeRackInspection(as(s, 'usr-office'), { containerId: id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/Không đủ quyền|chỉ Bộ phận Giám định/);
-    expect(() => completeRackInspection(insp, { containerId: id, conditionClass: 'GIÁM ĐỊNH SAU', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/AV hoặc DAMAGE/);
+    expect(() => completeRackInspection(insp, { containerId: id, conditionClass: 'W-SURVEY', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/AV hoặc DAMAGE/);
     expect(() => completeRackInspection(insp, { containerId: id, conditionClass: 'DAMAGE', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/lỗi hư hỏng/);
     expect(() => completeRackInspection(insp, { containerId: id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 19 })).toThrow(/AGE/);
 
@@ -1313,7 +1313,7 @@ describe('DEC-147: GIÁM ĐỊNH SAU (LÊN KỆ) + giám định bổ sung trên
     expect(pendingRackInspections(d)).toEqual([]);
     expect(d.auditLogs[0].actionCode).toBe('GIAM_DINH_TREN_KE');
     // Không giám định bổ sung lần 2
-    expect(() => completeRackInspection(as(d, 'usr-inspector'), { containerId: id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/không ở trạng thái GIÁM ĐỊNH SAU/);
+    expect(() => completeRackInspection(as(d, 'usr-inspector'), { containerId: id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/không ở trạng thái W-SURVEY/);
 
     const a = completeRackInspection(insp, { containerId: id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 });
     expect(a.containers.find((x) => x.id === id)!).toMatchObject({ conditionClass: 'AV', needsQuotation: false, forkliftShiftTask: 'HA_KE_GIAM_DINH' });

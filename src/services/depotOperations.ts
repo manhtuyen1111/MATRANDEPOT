@@ -126,7 +126,7 @@ export function recordGateInFieldStep(
     initialContainerHint?: string;
     conditionClass: FieldConditionClass;
     damageRemarks?: string[];
-    // DEC-147: GIÁM ĐỊNH SAU → bỏ trống Đóng hàng / AGE (bổ sung trên kệ bằng completeRackInspection)
+    // DEC-147: W-SURVEY → bỏ trống Đóng hàng / AGE (bổ sung trên kệ bằng completeRackInspection)
     stuffingClass?: FieldStuffingClass;
     cleaningItems: (FieldCleaningItem | string)[];
     manufactureYear?: number;
@@ -140,7 +140,7 @@ export function recordGateInFieldStep(
   if (!input.doorPhotoUrl?.trim()) {
     throw new Error('Bắt buộc phải chụp 1 ảnh cửa container nhìn rõ số container.');
   }
-  // DEC-147: GIÁM ĐỊNH SAU (LÊN KỆ) thay ô tích HẠ KỆ GIÁM ĐỊNH (DEC-109) — chỉ cần ảnh + Vệ sinh
+  // DEC-147: W-SURVEY (LÊN KỆ) thay ô tích HẠ KỆ GIÁM ĐỊNH (DEC-109) — chỉ cần ảnh + Vệ sinh
   const deferred = input.conditionClass === CONDITION_DEFERRED;
   let year: number | undefined;
   if (!deferred) {
@@ -181,7 +181,7 @@ export function recordGateInFieldStep(
     'GATE_IN',
     code,
     deferred
-      ? `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: GIÁM ĐỊNH SAU (LÊN KỆ), Vệ sinh [${normalizedCleaning.join(', ')}] — HẠ KỆ GIÁM ĐỊNH`
+      ? `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: W-SURVEY (LÊN KỆ), Vệ sinh [${normalizedCleaning.join(', ')}] — HẠ KỆ GIÁM ĐỊNH`
       : `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: Trạng thái ${input.conditionClass}${
           remarks.length ? ` (${remarks.join(', ')})` : ''
         }, Đóng hàng ${input.stuffingClass}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}`,
@@ -198,9 +198,9 @@ function assertManufactureYear(value: number | undefined): number {
 }
 
 // ============================================================================
-// DEC-147: GIÁM ĐỊNH BỔ SUNG TRÊN KỆ — cont GIÁM ĐỊNH SAU đã hạ lên kệ → Giám định nhập AV / DAMAGE + Đóng hàng + AGE
+// DEC-147: GIÁM ĐỊNH BỔ SUNG TRÊN KỆ — cont W-SURVEY đã hạ lên kệ → Giám định nhập AV / DAMAGE + Đóng hàng + AGE
 // ============================================================================
-// Phiếu chờ giám định trên kệ: lượt lưu bãi đang GIÁM ĐỊNH SAU (Văn phòng đã nhập Số cont / Size / Type), mới nhất trước
+// Phiếu chờ giám định trên kệ: lượt lưu bãi đang W-SURVEY (Văn phòng đã nhập Số cont / Size / Type), mới nhất trước
 export function pendingRackInspections(state: DepotState): ContainerRecord[] {
   return state.containers
     .filter((c) => c.status !== 'GATED_OUT' && c.conditionClass === CONDITION_DEFERRED)
@@ -220,7 +220,7 @@ export function completeRackInspection(
   assertPermission(state, 'GATE_IN_FIELD', 'chỉ Bộ phận Giám định / Hiện trường / Quản lý mới được giám định bổ sung trên kệ.');
   const c = state.containers.find((x) => x.id === input.containerId);
   if (!c || c.status === 'GATED_OUT') throw new Error('Không tìm thấy container đang lưu bãi.');
-  if (c.conditionClass !== CONDITION_DEFERRED) throw new Error(`Container ${c.containerNo} không ở trạng thái GIÁM ĐỊNH SAU (đã giám định).`);
+  if (c.conditionClass !== CONDITION_DEFERRED) throw new Error(`Container ${c.containerNo} không ở trạng thái W-SURVEY (đã giám định).`);
   if (c.status !== 'IN_YARD') throw new Error(`Container ${c.containerNo} chưa được Xe nâng hạ lên kệ — chưa giám định bổ sung được.`);
   if (input.conditionClass !== 'AV' && input.conditionClass !== 'DAMAGE') throw new Error('Vui lòng chọn TRẠNG THÁI AV hoặc DAMAGE.');
   if (!input.stuffingClass) throw new Error('Vui lòng chọn PHÂN LOẠI ĐÓNG HÀNG (M / K / E).');
@@ -969,7 +969,7 @@ export function releaseBlocker(c: ContainerRecord): string | null {
   if (c.vesselExportItemId) return 'Đang trong danh sách XUẤT TÀU';
   if (c.isOnHold) return 'Container đang bị KHÓA';
   if (c.needsCleaning) return 'Chưa xác nhận vệ sinh';
-  if (c.conditionClass === CONDITION_DEFERRED) return 'Chưa giám định (GIÁM ĐỊNH SAU)'; // DEC-147
+  if (c.conditionClass === CONDITION_DEFERRED) return 'Chưa giám định (W-SURVEY)'; // DEC-147
   if (c.conditionClass === 'AV' && (c.needsQuotation || c.needsRepair)) return 'Chưa hoàn tất báo giá / sửa chữa';
   return null;
 }

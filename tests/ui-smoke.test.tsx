@@ -847,7 +847,7 @@ describe('DEC-146: Văn phòng → Nhập / Xuất tàu — bảng chi tiết t�
 });
 
 describe('DEC-147: Giám định – Hạ vỏ có tab Chờ giám định trên kệ', () => {
-  it('dữ liệu Demo có cont GIÁM ĐỊNH SAU → hiện tab với số đếm', () => {
+  it('dữ liệu Demo có cont W-SURVEY → hiện tab với số đếm', () => {
     const s = as(createDemoState(), 'usr-inspector');
     const html = renderToString(<InspectorHaVoMobile state={s} onUpdateState={noop} />).replace(/<!-- -->/g, '');
     expect(html).toContain('data-testid="inspector-tab-TREN_KE"');

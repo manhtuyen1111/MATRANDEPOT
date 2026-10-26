@@ -98,9 +98,9 @@ export const GATE_OUT_TYPE_LABELS: Record<GateOutType, string> = {
 };
 
 // Phân loại Giám định Hạ vỏ đã xác nhận (DEC-016, DEC-021)
-// DEC-147: 'GIÁM ĐỊNH SAU' = chưa giám định được → hạ lên kệ; Giám định bổ sung AV / DAMAGE + Đóng hàng + AGE sau (completeRackInspection)
-export type FieldConditionClass = 'DAMAGE' | 'AV' | 'GIÁM ĐỊNH SAU';
-export const CONDITION_DEFERRED = 'GIÁM ĐỊNH SAU' as const;
+// DEC-147: 'W-SURVEY' = chưa giám định được → hạ lên kệ; Giám định bổ sung AV / DAMAGE + Đóng hàng + AGE sau (completeRackInspection)
+export type FieldConditionClass = 'DAMAGE' | 'AV' | 'W-SURVEY';
+export const CONDITION_DEFERRED = 'W-SURVEY' as const;
 export type FieldStuffingClass = 'M' | 'K' | 'E';
 
 export type FieldCleaningItem =
@@ -230,7 +230,7 @@ export interface K80InternalTicket {
   type: ContainerType;
   conditionClass: FieldConditionClass; // DAMAGE / AV
   damageRemarks?: string[];
-  stuffingClass?: FieldStuffingClass;  // M / K / E — trống khi GIÁM ĐỊNH SAU (DEC-147)
+  stuffingClass?: FieldStuffingClass;  // M / K / E — trống khi W-SURVEY (DEC-147)
   cleaningItems: FieldCleaningItem[];
   manufactureYear?: number;            // AGE (Năm sinh cont)
   truckNo?: string;
@@ -248,7 +248,7 @@ export interface ContainerRecord {
   containerNo: string;
   size: ContainerSize;
   type: ContainerType;
-  manufactureYear?: number; // AGE: 2001, 2002... — trống khi GIÁM ĐỊNH SAU (DEC-147)
+  manufactureYear?: number; // AGE: 2001, 2002... — trống khi W-SURVEY (DEC-147)
   shippingLineCode: string;
   customerRep: string;     // Khách hàng (hạ vỏ)
   truckNo?: string;        // Số xe hạ vỏ
@@ -256,7 +256,7 @@ export interface ContainerRecord {
   status: ContainerStatus;
   conditionClass: FieldConditionClass;
   damageRemarks: string[];
-  stuffingClass?: FieldStuffingClass;  // M / K / E — trống khi GIÁM ĐỊNH SAU (DEC-147)
+  stuffingClass?: FieldStuffingClass;  // M / K / E — trống khi W-SURVEY (DEC-147)
   cleaningItems: FieldCleaningItem[];
   // Mã QR tác nghiệp nội bộ K80 hiện hành của container
   activeQrCode: string;
@@ -477,12 +477,12 @@ export interface GateInOrder {
   // Bước 1: Giám định Hạ vỏ chụp ảnh cửa cont & xác nhận tác nghiệp
   doorPhotoUrl: string;
   initialContainerHint?: string;
-  conditionClass: FieldConditionClass; // DAMAGE | AV | GIÁM ĐỊNH SAU (DEC-147)
+  conditionClass: FieldConditionClass; // DAMAGE | AV | W-SURVEY (DEC-147)
   damageRemarks: string[];             // Remark nhanh hư hỏng
-  stuffingClass?: FieldStuffingClass;  // M | K | E — trống khi GIÁM ĐỊNH SAU
+  stuffingClass?: FieldStuffingClass;  // M | K | E — trống khi W-SURVEY
   cleaningItems: FieldCleaningItem[];  // KHÔNG VỆ SINH / WP / WW / CC / RM / ML
-  manufactureYear?: number;            // AGE: 2001, 2002... — trống khi GIÁM ĐỊNH SAU
-  toInspectionRack?: boolean;          // DEC-109 / DEC-147: = GIÁM ĐỊNH SAU → Xe nâng HẠ KỆ GIÁM ĐỊNH
+  manufactureYear?: number;            // AGE: 2001, 2002... — trống khi W-SURVEY
+  toInspectionRack?: boolean;          // DEC-109 / DEC-147: = W-SURVEY → Xe nâng HẠ KỆ GIÁM ĐỊNH
   rackInspectedBy?: string;            // DEC-147: Giám định bổ sung trên kệ
   rackInspectedAt?: string;
   fieldStaffName: string;

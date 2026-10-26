@@ -41,7 +41,7 @@ interface Props {
 
 // DEC-147: màu ô trạng thái giám định
 const conditionTone = (c: string) =>
-  c === 'DAMAGE' ? 'bg-rose-100 text-rose-700' : c === 'GIÁM ĐỊNH SAU' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700';
+  c === 'DAMAGE' ? 'bg-rose-100 text-rose-700' : c === 'W-SURVEY' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700';
 
 export const InspectorHaVoMobile: React.FC<Props> = ({
   state,
@@ -82,7 +82,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     useState<FieldStuffingClass | null>(null);
   const [cleaningItems, setCleaningItems] = useState<FieldCleaningItem[]>([]);
   const [manufactureYear, setManufactureYear] = useState<string>('');
-  const isDeferred = conditionClass === 'GIÁM ĐỊNH SAU'; // DEC-147: GIÁM ĐỊNH SAU (LÊN KỆ)
+  const isDeferred = conditionClass === 'W-SURVEY'; // DEC-147: W-SURVEY (LÊN KỆ)
   // DEC-147: tab Chờ giám định trên kệ
   const [tab, setTab] = useState<'HA_VO' | 'TREN_KE'>('HA_VO');
   const rackQueue = pendingRackInspections(state);
@@ -212,7 +212,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
       return;
     }
     if (!conditionClass) {
-      setErrorMsg('Vui lòng chọn TRẠNG THÁI (AV, DAMAGE hoặc GIÁM ĐỊNH SAU).');
+      setErrorMsg('Vui lòng chọn TRẠNG THÁI (AV, DAMAGE hoặc W-SURVEY).');
       return;
     }
     if (isDeferred) {
