@@ -263,12 +263,12 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     <div className="relative mx-auto w-full max-w-lg space-y-4 pb-24">
       {/* TIÊU ĐỀ MÀN HẠ VỎ (TỐI ƯU MOBILE NGOÀI HIỆN TRƯỜNG) */}
       {/* Đồng bộ tiêu đề với các màn mobile khác (Vệ sinh, Xe nâng, Sửa chữa) */}
-      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5">
+      <div className="flex items-center justify-between rounded-lg border border-line bg-white px-4 py-2.5">
         <div>
-          <span className="block text-[11px] font-semibold uppercase text-slate-500">Bộ phận Giám định</span>
-          <h2 className="text-sm font-bold text-slate-900">Hạ vỏ</h2>
+          <span className="block text-[11px] font-semibold uppercase text-ink-muted">Bộ phận Giám định</span>
+          <h2 className="text-sm font-bold text-ink">Hạ vỏ</h2>
         </div>
-        <span className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">{recentOrders.length}</span>
+        <span className="rounded bg-navy-900 px-2.5 py-1 text-xs font-bold text-white">{recentOrders.length}</span>
       </div>
 
       {errorMsg && !activeKey && (
@@ -291,19 +291,19 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
       )}
 
       {/* BẢNG DANH SÁCH CÁC TÁC NGHIỆP GẦN NHẤT: SỐ PHIẾU - THỜI GIAN XÁC NHẬN GIÁM ĐỊNH - TRẠNG THÁI */}
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="grid grid-cols-12 border-b border-slate-200 bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700">
+      <div className="overflow-hidden rounded-lg border border-line bg-white">
+        <div className="grid grid-cols-12 border-b border-line bg-navy-50 px-4 py-2.5 text-xs font-bold text-ink">
           <div className="col-span-4">Số phiếu (Mã Hồ Sơ Chính)</div>
           <div className="col-span-5">Thời gian xác nhận giám định</div>
           <div className="col-span-3 text-right">Trạng thái</div>
         </div>
 
         {recentOrders.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-400">
+          <div className="p-8 text-center text-xs text-ink-muted">
             Chưa có tác nghiệp Hạ vỏ nào đang chờ. Bấm nút dấu (+) góc phải dưới màn hình để tạo tác nghiệp mới.
           </div>
         ) : (
-          <div className="divide-y divide-slate-200">
+          <div className="divide-y divide-line">
             {recentOrders.map((item, idx) => {
               const isSelected = selectedOrder?.id === item.id;
               return (
@@ -315,20 +315,20 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   }
                   className={`grid w-full grid-cols-12 items-center px-4 py-3.5 text-left text-xs transition ${
                     isSelected
-                      ? 'bg-blue-50/80 font-semibold'
-                      : 'hover:bg-slate-50'
+                      ? 'bg-navy-50/80 font-semibold'
+                      : 'hover:bg-canvas'
                   }`}
                 >
                   {/* Cột 1: Số phiếu */}
                   <div className="col-span-4 flex items-center gap-2">
-                    <span className="font-mono text-sm font-bold text-blue-700">
+                    <span className="font-mono text-sm font-bold text-navy-700">
                       {item.masterDossierCode || item.orderCode}
                     </span>
                   </div>
 
                   {/* Cột 2: Thời gian xác nhận giám định */}
-                  <div className="col-span-5 flex items-center gap-1.5 text-slate-700">
-                    <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <div className="col-span-5 flex items-center gap-1.5 text-ink">
+                    <Clock className="h-3.5 w-3.5 text-ink-muted shrink-0" />
                     <span className="font-mono">
                       {formatDateTime(item.fieldRecordedAt)}
                     </span>
@@ -345,7 +345,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                     >
                       {item.conditionClass}
                     </span>
-                    <Eye className="h-3.5 w-3.5 text-slate-400" />
+                    <Eye className="h-3.5 w-3.5 text-ink-muted" />
                   </div>
                 </button>
               );
@@ -356,13 +356,13 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
 
       {/* PANEL XEM CHI TIẾT KHI KÍCH VÀO 1 TÁC NGHIỆP TRONG DANH SÁCH */}
       {selectedOrder && (
-        <div className="rounded-lg border border-blue-200 bg-white p-4 shadow-xs">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+        <div className="rounded-lg border border-line-strong bg-white p-4 shadow-xs">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
             <div>
-              <span className="text-[11px] text-slate-500 block">
+              <span className="text-[11px] text-ink-muted block">
                 Chi tiết Mã Hồ Sơ Chính (Khởi tạo từ Giám định xuyên suốt đến khi Out bãi)
               </span>
-              <h3 className="font-mono text-base font-bold text-blue-700">
+              <h3 className="font-mono text-base font-bold text-navy-700">
                 {selectedOrder.masterDossierCode || selectedOrder.orderCode}
               </h3>
             </div>
@@ -375,7 +375,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                       selectedOrder.masterDossierCode || selectedOrder.orderCode
                     )
                   }
-                  className="rounded bg-blue-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-blue-700"
+                  className="rounded bg-navy-900 px-2.5 py-1 text-xs font-bold text-white hover:bg-navy-700"
                 >
                   Xem tiến độ liên thông
                 </button>
@@ -383,7 +383,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setSelectedOrder(null)}
-                className="rounded border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                className="rounded border border-line px-2.5 py-1 text-xs font-medium text-ink-muted hover:bg-canvas"
               >
                 Đóng chi tiết
               </button>
@@ -392,37 +392,37 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
             <div className="md:col-span-5">
-              <p className="mb-1 text-xs font-semibold text-slate-600">
+              <p className="mb-1 text-xs font-semibold text-ink-muted">
                 Ảnh chụp cửa Container:
               </p>
               <img
                 src={selectedOrder.doorPhotoUrl}
                 alt={`Ảnh cửa cont ${selectedOrder.orderCode}`}
-                className="h-48 w-full rounded-lg border border-slate-200 object-cover"
+                className="h-48 w-full rounded-lg border border-line object-cover"
               />
             </div>
 
             <div className="md:col-span-7 grid grid-cols-2 gap-2.5 text-xs">
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-2.5">
-                <span className="text-[11px] text-slate-500 block">
+              <div className="rounded-md border border-line bg-canvas p-2.5">
+                <span className="text-[11px] text-ink-muted block">
                   Số phiếu / Mã Hồ Sơ Chính
                 </span>
-                <span className="font-mono text-sm font-bold text-slate-900">
+                <span className="font-mono text-sm font-bold text-ink">
                   {selectedOrder.masterDossierCode || selectedOrder.orderCode}
                 </span>
               </div>
 
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-2.5">
-                <span className="text-[11px] text-slate-500 block">
+              <div className="rounded-md border border-line bg-canvas p-2.5">
+                <span className="text-[11px] text-ink-muted block">
                   Thời gian xác nhận giám định
                 </span>
-                <span className="font-mono font-semibold text-slate-900">
+                <span className="font-mono font-semibold text-ink">
                   {formatDateTime(selectedOrder.fieldRecordedAt)}
                 </span>
               </div>
 
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-2.5">
-                <span className="text-[11px] text-slate-500 block">
+              <div className="rounded-md border border-line bg-canvas p-2.5">
+                <span className="text-[11px] text-ink-muted block">
                   Trạng thái
                 </span>
                 <span
@@ -441,21 +441,21 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                 )}
               </div>
 
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-2.5">
-                <span className="text-[11px] text-slate-500 block">
+              <div className="rounded-md border border-line bg-canvas p-2.5">
+                <span className="text-[11px] text-ink-muted block">
                   Phân loại đóng hàng & AGE
                 </span>
-                <span className="font-bold text-slate-900">
+                <span className="font-bold text-ink">
                   Đóng hàng: {selectedOrder.stuffingClass} • AGE:{' '}
                   {selectedOrder.manufactureYear}
                 </span>
               </div>
 
-              <div className="col-span-2 rounded-md border border-slate-200 bg-slate-50 p-2.5">
-                <span className="text-[11px] text-slate-500 block">
+              <div className="col-span-2 rounded-md border border-line bg-canvas p-2.5">
+                <span className="text-[11px] text-ink-muted block">
                   Tình trạng vệ sinh
                 </span>
-                <span className="font-bold text-slate-900">
+                <span className="font-bold text-ink">
                   {selectedOrder.cleaningItems.join(', ')}
                 </span>
               </div>
@@ -464,12 +464,12 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
 
           {/* DEC-059: Giám định xóa hồ sơ khi Văn phòng chưa thao tác — xác nhận 2 bước */}
           {selectedOrder.status === 'FIELD_RECORDED' && !selectedOrder.officeVerifiedAt && !selectedOrder.voucherId && (
-            <div className="mt-3 border-t border-slate-100 pt-3">
+            <div className="mt-3 border-t border-line pt-3">
               {confirmDeleteId === selectedOrder.id ? (
                 <div className="flex flex-col gap-2 rounded-md border border-red-300 bg-red-50 p-3 text-xs text-red-800 sm:flex-row sm:items-center sm:justify-between">
                   <span>Xóa hẳn hồ sơ <strong className="font-mono">{selectedOrder.masterDossierCode}</strong>? Không lưu lịch sử, không khôi phục được.</span>
                   <span className="flex gap-2">
-                    <button type="button" onClick={() => setConfirmDeleteId(null)} className="rounded border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700">Hủy</button>
+                    <button type="button" onClick={() => setConfirmDeleteId(null)} className="rounded border border-line-strong bg-white px-3 py-2 font-semibold text-ink">Hủy</button>
                     <button
                       type="button"
                       onClick={() => {
@@ -507,7 +507,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
         type="button"
         onClick={handleCreateNewKey}
         title="Tạo tác nghiệp Hạ vỏ mới"
-        className="sticky bottom-6 z-30 ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 active:scale-95 transition"
+        className="sticky bottom-6 z-30 ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-navy-900 text-white shadow-lg hover:bg-navy-700 active:scale-95 transition"
       >
         <Plus className="h-7 w-7 stroke-[2.5]" />
       </button>
@@ -515,14 +515,14 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
       {/* MODAL TẠO TÁC NGHIỆP MỚI THEO TỪNG BƯỚC (STEP-BY-STEP) */}
       {activeKey && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-          <div className="my-auto w-full max-w-md rounded-lg border border-slate-200 bg-white p-4 shadow-xl max-h-[92vh] overflow-y-auto space-y-4">
+          <div className="my-auto w-full max-w-md rounded-lg border border-line bg-white p-4 shadow-xl max-h-[92vh] overflow-y-auto space-y-4">
             {/* HEADER MÃ HỒ SƠ CHÍNH */}
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+            <div className="flex items-center justify-between border-b border-line pb-2.5">
               <div>
-                <span className="text-[11px] text-slate-500 block">
+                <span className="text-[11px] text-ink-muted block">
                   MÃ HỒ SƠ HẠ VỎ (dự kiến — cấp chính thức khi xác nhận)
                 </span>
-                <span className="font-mono text-base font-bold text-blue-700">
+                <span className="font-mono text-base font-bold text-navy-700">
                   {activeKey}
                 </span>
               </div>
@@ -533,7 +533,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   setActiveKey(null);
                   setIsReadyToConfirmStep(false);
                 }}
-                className="rounded border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                className="rounded border border-line px-2.5 py-1 text-xs text-ink-muted hover:bg-canvas"
               >
                 Đóng
               </button>
@@ -544,7 +544,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
               <div
                 className={`rounded py-1.5 ${
                   !doorPhotoDataUrl
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-navy-900 text-white'
                     : 'bg-emerald-100 text-emerald-800'
                 }`}
               >
@@ -553,10 +553,10 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
               <div
                 className={`rounded py-1.5 ${
                   doorPhotoDataUrl && !isReadyToConfirmStep
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-navy-900 text-white'
                     : isReadyToConfirmStep
                     ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-slate-100 text-slate-400'
+                    : 'bg-navy-50 text-ink-muted'
                 }`}
               >
                 2. Chọn Thông Tin
@@ -564,8 +564,8 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
               <div
                 className={`rounded py-1.5 ${
                   isReadyToConfirmStep
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 text-slate-400'
+                    ? 'bg-navy-900 text-white'
+                    : 'bg-navy-50 text-ink-muted'
                 }`}
               >
                 3. Xác Nhận
@@ -594,12 +594,12 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                ============================================================== */}
             {!doorPhotoDataUrl ? (
               <div className="space-y-3 py-2">
-                <p className="text-center text-xs font-bold text-slate-800">
+                <p className="text-center text-xs font-bold text-ink">
                   Bước 1: Chụp ảnh cửa Container (Nhìn rõ số Cont) để bắt đầu tác nghiệp
                 </p>
 
                 {cameraOpen ? (
-                  <div className="space-y-2 rounded-lg border border-slate-300 bg-black p-2">
+                  <div className="space-y-2 rounded-lg border border-line-strong bg-black p-2">
                     <video
                       ref={videoRef}
                       autoPlay
@@ -611,7 +611,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={handleCaptureFrame}
-                        className="flex-1 rounded-lg bg-blue-600 py-3 text-xs font-bold text-white"
+                        className="flex-1 rounded-lg bg-navy-900 py-3 text-xs font-bold text-white"
                       >
                         Chụp Ảnh Ngay
                       </button>
@@ -629,18 +629,18 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={handleStartLiveCamera}
-                      className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-blue-500 bg-blue-50/50 py-10 text-sm font-bold text-blue-700 hover:bg-blue-50 active:scale-98"
+                      className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-navy-700 bg-navy-50/50 py-10 text-sm font-bold text-navy-700 hover:bg-navy-50 active:scale-98"
                     >
-                      <Camera className="h-9 w-9 text-blue-600" />
+                      <Camera className="h-9 w-9 text-navy-700" />
                       CHỤP ẢNH CỬA CONTAINER TẠI APP
                     </button>
 
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white py-3 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-line-strong bg-white py-3 text-xs font-bold text-ink hover:bg-canvas"
                     >
-                      <Upload className="h-4 w-4 text-slate-500" />
+                      <Upload className="h-4 w-4 text-ink-muted" />
                       Mở Camera Điện Thoại / Chọn Ảnh
                     </button>
 
@@ -651,7 +651,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                           'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80'
                         )
                       }
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 text-[11px] font-medium text-slate-600 hover:bg-slate-100"
+                      className="w-full rounded-lg border border-line bg-canvas py-2 text-[11px] font-medium text-ink-muted hover:bg-navy-50"
                     >
                       Dùng ảnh mẫu cửa Cont (khi kiểm thử trên máy tính)
                     </button>
@@ -665,18 +665,18 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                  ============================================================== */
               <div className="space-y-4">
                 {/* ẢNH ĐÃ CHỤP GỌN Ở TRÊN + NÚT CHỤP LẠI */}
-                <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-2">
+                <div className="flex items-center justify-between rounded-lg border border-line bg-canvas p-2">
                   <div className="flex items-center gap-2.5">
                     <img
                       src={doorPhotoDataUrl}
                       alt="Ảnh cửa container"
-                      className="h-14 w-20 rounded object-cover border border-slate-300"
+                      className="h-14 w-20 rounded object-cover border border-line-strong"
                     />
                     <div className="text-xs">
                       <span className="font-bold text-emerald-700 block">
                         ✓ Đã chụp ảnh cửa Cont
                       </span>
-                      <span className="text-[11px] text-slate-500">
+                      <span className="text-[11px] text-ink-muted">
                         Vui lòng chọn đủ 4 mục bên dưới
                       </span>
                     </div>
@@ -687,7 +687,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                       setDoorPhotoDataUrl('');
                       setIsReadyToConfirmStep(false);
                     }}
-                    className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                    className="inline-flex items-center gap-1 rounded border border-line-strong bg-white px-2.5 py-1.5 text-xs font-semibold text-ink hover:bg-navy-50"
                   >
                     <RefreshCw className="h-3 w-3" />
                     Chụp lại
@@ -717,11 +717,11 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
 
                 {/* DEC-109: chưa giám định ngay được → Xe nâng HẠ KỆ GIÁM ĐỊNH (tình trạng trên là mô phỏng ban đầu) */}
                 {isAllFieldsValid && (
-                  <label className={`flex items-start gap-2 rounded-lg border p-3 text-xs ${toInspectionRack ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-white'}`}>
+                  <label className={`flex items-start gap-2 rounded-lg border p-3 text-xs ${toInspectionRack ? 'border-amber-500 bg-amber-50' : 'border-line bg-white'}`}>
                     <input type="checkbox" checked={toInspectionRack} onChange={(e) => setToInspectionRack(e.target.checked)} className="mt-0.5 h-4 w-4" />
                     <span>
-                      <span className="block font-bold text-slate-900">HẠ KỆ GIÁM ĐỊNH</span>
-                      <span className="block text-[11px] text-slate-600">Chưa giám định được ngay — Xe nâng hạ cont lên kệ giám định, không hạ về bay.</span>
+                      <span className="block font-bold text-ink">HẠ KỆ GIÁM ĐỊNH</span>
+                      <span className="block text-[11px] text-ink-muted">Chưa giám định được ngay — Xe nâng hạ cont lên kệ giám định, không hạ về bay.</span>
                     </span>
                   </label>
                 )}
@@ -731,7 +731,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={handleNextToConfirm}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 active:scale-98"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-navy-700 active:scale-98"
                   >
                     <span>TIẾP TỤC (NEXT) ĐẾN XÁC NHẬN TÁC NGHIỆP</span>
                     <ArrowRight className="h-4 w-4" />
@@ -743,16 +743,16 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                  BƯỚC 3: ĐÃ NHẬP ĐỦ & BẤM NEXT -> HIỂN THỊ MÀN XÁC NHẬN TÁC NGHIỆP
                  ============================================================== */
               <div className="space-y-4">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2.5 text-xs">
+                <div className="rounded-lg border border-line bg-canvas p-3 space-y-2.5 text-xs">
                   <img
                     src={doorPhotoDataUrl}
                     alt="Ảnh cửa container"
-                    className="h-40 w-full rounded object-cover border border-slate-300"
+                    className="h-40 w-full rounded object-cover border border-line-strong"
                   />
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
-                    <div className="rounded bg-white p-2 border border-slate-200">
-                      <span className="text-[10px] text-slate-500 block">
+                    <div className="rounded bg-white p-2 border border-line">
+                      <span className="text-[10px] text-ink-muted block">
                         TRẠNG THÁI
                       </span>
                       <span
@@ -773,20 +773,20 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                       )}
                     </div>
 
-                    <div className="rounded bg-white p-2 border border-slate-200">
-                      <span className="text-[10px] text-slate-500 block">
+                    <div className="rounded bg-white p-2 border border-line">
+                      <span className="text-[10px] text-ink-muted block">
                         ĐÓNG HÀNG & AGE
                       </span>
-                      <span className="font-bold text-sm text-slate-900">
+                      <span className="font-bold text-sm text-ink">
                         {stuffingClass} • Năm {manufactureYear}
                       </span>
                     </div>
 
-                    <div className="col-span-2 rounded bg-white p-2 border border-slate-200">
-                      <span className="text-[10px] text-slate-500 block">
+                    <div className="col-span-2 rounded bg-white p-2 border border-line">
+                      <span className="text-[10px] text-ink-muted block">
                         TÌNH TRẠNG VỆ SINH
                       </span>
-                      <span className="font-bold text-slate-900">
+                      <span className="font-bold text-ink">
                         {cleaningItems.join(', ')}
                       </span>
                     </div>
@@ -802,7 +802,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => setIsReadyToConfirmStep(false)}
-                    className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3.5 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                    className="inline-flex items-center justify-center gap-1 rounded-lg border border-line-strong bg-white px-3.5 py-3 text-xs font-bold text-ink hover:bg-canvas"
                   >
                     <ArrowLeft className="h-4 w-4" />
                     Quay lại sửa

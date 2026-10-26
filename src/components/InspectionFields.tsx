@@ -46,14 +46,14 @@ export function isInspectionComplete(v: InspectionValue): boolean {
 }
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div className="space-y-1.5 rounded-lg border border-slate-200 bg-white p-3">
-    <span className="block text-xs font-bold text-slate-800">{title}</span>
+  <div className="space-y-1.5 rounded-lg border border-line bg-white p-3">
+    <span className="block text-xs font-bold text-ink">{title}</span>
     {children}
   </div>
 );
 
-const choiceCls = (on: boolean, onCls = 'border-blue-600 bg-blue-600 text-white') =>
-  `rounded-lg border py-2.5 text-sm font-bold transition ${on ? onCls : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`;
+const choiceCls = (on: boolean, onCls = 'border-navy-900 bg-navy-900 text-white') =>
+  `rounded-lg border py-2.5 text-sm font-bold transition ${on ? onCls : 'border-line-strong bg-white text-ink hover:bg-canvas'}`;
 
 export const InspectionFields: React.FC<{
   value: InspectionValue;
@@ -98,7 +98,7 @@ export const InspectionFields: React.FC<{
                     key={d}
                     type="button"
                     onClick={() => set({ damage: on ? v.damage.filter((x) => x !== d) : [...v.damage, d] })}
-                    className={`rounded border px-2 py-1 text-xs font-medium ${on ? 'border-rose-600 bg-rose-600 text-white' : 'border-slate-300 bg-white text-slate-700'}`}
+                    className={`rounded border px-2 py-1 text-xs font-medium ${on ? 'border-rose-600 bg-rose-600 text-white' : 'border-line-strong bg-white text-ink'}`}
                   >
                     {d}
                   </button>
@@ -110,7 +110,7 @@ export const InspectionFields: React.FC<{
               value={v.damageNote}
               onChange={(e) => set({ damageNote: e.target.value })}
               placeholder="Ghi chú thêm hư hỏng..."
-              className="w-full rounded border border-slate-300 bg-white px-2.5 py-1.5 text-xs"
+              className="w-full rounded border border-line-strong bg-white px-2.5 py-1.5 text-xs"
             />
           </div>
         )}
@@ -139,11 +139,11 @@ export const InspectionFields: React.FC<{
                   type="button"
                   onClick={() => toggleCleaning(item)}
                   className={`flex items-center justify-between rounded-lg border px-2.5 py-2 text-left text-xs font-semibold transition ${
-                    on ? 'border-blue-600 bg-blue-50 text-blue-900' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                    on ? 'border-navy-900 bg-navy-50 text-navy-900' : 'border-line-strong bg-white text-ink hover:bg-canvas'
                   }`}
                 >
                   <span>{item}</span>
-                  {on && <span className="font-bold text-blue-600">✓</span>}
+                  {on && <span className="font-bold text-navy-700">✓</span>}
                 </button>
               );
             })}
@@ -160,7 +160,7 @@ export const InspectionFields: React.FC<{
             value={v.year}
             onChange={(e) => set({ year: e.target.value })}
             placeholder="Chọn nhanh bên dưới hoặc nhập 4 chữ số..."
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm font-bold text-slate-900"
+            className="w-full rounded-lg border border-line-strong px-3 py-2 font-mono text-sm font-bold text-ink"
           />
           <div className="grid grid-cols-6 gap-1">
             {QUICK_YEARS.map((yr) => (
@@ -169,7 +169,7 @@ export const InspectionFields: React.FC<{
                 type="button"
                 onClick={() => set({ year: String(yr) })}
                 className={`rounded border py-1.5 font-mono text-xs font-semibold ${
-                  Number(v.year) === yr ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-slate-50 text-slate-700'
+                  Number(v.year) === yr ? 'border-slate-900 bg-navy-900 text-white' : 'border-line bg-canvas text-ink'
                 }`}
               >
                 {yr}

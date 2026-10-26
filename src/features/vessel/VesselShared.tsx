@@ -11,10 +11,10 @@ export const VesselProgressBar: React.FC<{ list: VesselList }> = ({ list }) => {
   const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
   return (
     <div className="space-y-1">
-      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+      <div className="h-2 overflow-hidden rounded-full bg-line">
         <div className="h-full bg-emerald-500" style={{ width: `${pct}%` }} />
       </div>
-      <p className="flex flex-wrap gap-x-3 text-[11px] text-slate-600">
+      <p className="flex flex-wrap gap-x-3 text-[11px] text-ink-muted">
         <span className="font-bold text-emerald-700">Xong {p.done}/{p.total}</span>
         {list.mode === 'NHAP_TAU' && <span>Đã giám định, chờ hạ: {p.inspected}</span>}
         <span>{list.mode === 'NHAP_TAU' ? 'Chờ xe về' : 'Chờ xuất'}: {p.pending}</span>
@@ -25,10 +25,10 @@ export const VesselProgressBar: React.FC<{ list: VesselList }> = ({ list }) => {
 
 export const VesselListTitle: React.FC<{ list: VesselList }> = ({ list }) => (
   <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-    <Ship className="h-4 w-4 text-slate-500" />
-    <span className="font-black text-slate-900">{list.vesselName}</span>
-    <span className="font-mono text-[11px] text-slate-600">{formatDateTime(list.plannedAt)}</span>
-    {list.shippingLineCode && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">{list.shippingLineCode}</span>}
+    <Ship className="h-4 w-4 text-ink-muted" />
+    <span className="font-black text-ink">{list.vesselName}</span>
+    <span className="font-mono text-[11px] text-ink-muted">{formatDateTime(list.plannedAt)}</span>
+    {list.shippingLineCode && <span className="rounded bg-navy-50 px-1.5 py-0.5 text-[10px] font-bold text-ink">{list.shippingLineCode}</span>}
     {list.status === 'APPROVED' && <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">ĐÃ DUYỆT</span>}
   </span>
 );
@@ -55,7 +55,7 @@ export function ChoiceButtons<T extends string>({
           type="button"
           onClick={() => onChange(o)}
           className={`rounded-lg border py-2.5 text-sm font-bold transition ${
-            value === o ? tone?.(o) || 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+            value === o ? tone?.(o) || 'border-navy-900 bg-navy-900 text-white' : 'border-line-strong bg-white text-ink hover:bg-canvas'
           }`}
         >
           {o}
