@@ -66,7 +66,7 @@ export const K80TicketModal: React.FC<Props> = ({ ticket, state, onClose, onSimu
             <Row label="SIZE / TYPE" value={`${ticket.size} / ${ticket.type}${ticket.manufactureYear ? ` • AGE ${ticket.manufactureYear}` : ''}`} />
             <Row label="SỐ XE" value={ticket.truckNo} big />
             <Row label="SĐT LÁI XE" value={ticket.driverPhone} />
-            <Row label="TRẠNG THÁI" value={`${ticket.conditionClass} • Đóng hàng ${ticket.stuffingClass}`} />
+            <Row label="TRẠNG THÁI" value={ticket.stuffingClass ? `${ticket.conditionClass} • Đóng hàng ${ticket.stuffingClass}` : ticket.conditionClass} />
             {ticket.damageRemarks && ticket.damageRemarks.length > 0 && <Row label="HƯ HỎNG" value={ticket.damageRemarks.join(', ')} />}
             <Row label="VỆ SINH" value={ticket.cleaningItems.join(' + ')} />
             <Row label="THANH TOÁN" value={`${ticket.isPaid ? '✓' : '✗'} ${ticket.paymentLabel}`} />

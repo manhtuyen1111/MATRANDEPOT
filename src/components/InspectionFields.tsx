@@ -41,7 +41,9 @@ export function isInspectionDamageValid(v: InspectionValue): boolean {
 }
 
 // Đã nhập đủ 4 mục bắt buộc (để bật nút tiếp tục) — service vẫn kiểm tra lại khi xác nhận
+// DEC-147: GIÁM ĐỊNH SAU chỉ cần mục 3 Vệ sinh
 export function isInspectionComplete(v: InspectionValue): boolean {
+  if (v.condition === 'GIÁM ĐỊNH SAU') return v.cleaning.length > 0;
   return Boolean(v.condition && isInspectionDamageValid(v) && v.stuffing && v.cleaning.length > 0 && isInspectionYearValid(v.year));
 }
 
@@ -60,33 +62,46 @@ export const InspectionFields: React.FC<{
   onChange: (v: InspectionValue) => void;
   // true: hiện lần lượt — xong mục trước mới hiện mục sau (Giám định → Hạ vỏ)
   progressive?: boolean;
-}> = ({ value: v, onChange, progressive }) => {
+  // DEC-147: Hạ vỏ có thêm lựa chọn GIÁM ĐỊNH SAU (LÊN KỆ) — chọn thì chỉ còn mục 3 Vệ sinh
+  allowDeferred?: boolean;
+  // DEC-147: Giám định bổ sung trên kệ — Vệ sinh đã khai lúc hạ vỏ, không hỏi lại
+  hideCleaning?: boolean;
+}> = ({ value: v, onChange, progressive, allowDeferred, hideCleaning }) => {
   const set = (patch: Partial<InspectionValue>) => onChange({ ...v, ...patch });
   const toggleCleaning = (item: FieldCleaningItem) => {
     if (item === 'KHÔNG VỆ SINH') return set({ cleaning: ['KHÔNG VỆ SINH'] });
     const rest = v.cleaning.filter((x) => x !== 'KHÔNG VỆ SINH');
     set({ cleaning: rest.includes(item) ? rest.filter((x) => x !== item) : normalizeCleaningItems([...rest, item]) });
   };
+  const deferred = v.condition === 'GIÁM ĐỊNH SAU';
   const step1 = Boolean(v.condition && isInspectionDamageValid(v));
-  const show2 = !progressive || step1;
-  const show3 = !progressive || (step1 && Boolean(v.stuffing));
-  const show4 = !progressive || (step1 && Boolean(v.stuffing) && v.cleaning.length > 0);
+  const show2 = !deferred && (!progressive || step1);
+  const show3 = !hideCleaning && (deferred || !progressive || (step1 && Boolean(v.stuffing)));
+  const show4 = !deferred && (!progressive || (step1 && Boolean(v.stuffing) && (hideCleaning || v.cleaning.length > 0)));
+  const choices: FieldConditionClass[] = allowDeferred ? ['AV', 'DAMAGE', 'GIÁM ĐỊNH SAU'] : ['AV', 'DAMAGE'];
 
   return (
     <div className="space-y-3">
-      <Section title="1. TRẠNG THÁI : DAMAGE / AV *">
+      <Section title={allowDeferred ? '1. TRẠNG THÁI : DAMAGE / AV / GIÁM ĐỊNH SAU *' : '1. TRẠNG THÁI : DAMAGE / AV *'}>
         <div className="grid grid-cols-2 gap-2">
-          {(['AV', 'DAMAGE'] as FieldConditionClass[]).map((cls) => (
+          {choices.map((cls) => (
             <button
               key={cls}
               type="button"
-              onClick={() => set({ condition: cls })}
-              className={choiceCls(v.condition === cls, cls === 'DAMAGE' ? 'border-rose-600 bg-rose-600 text-white' : 'border-emerald-600 bg-emerald-600 text-white')}
+              data-testid={cls === 'GIÁM ĐỊNH SAU' ? 'condition-deferred' : undefined}
+              onClick={() => set(cls === 'GIÁM ĐỊNH SAU' ? { condition: cls, damage: [], damageNote: '', stuffing: '', year: '' } : { condition: cls })}
+              className={`${cls === 'GIÁM ĐỊNH SAU' ? 'col-span-2 ' : ''}${choiceCls(
+                v.condition === cls,
+                cls === 'DAMAGE' ? 'border-rose-600 bg-rose-600 text-white' : cls === 'AV' ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-amber-500 bg-amber-500 text-ink'
+              )}`}
             >
-              {cls}
+              {cls === 'GIÁM ĐỊNH SAU' ? 'GIÁM ĐỊNH SAU (LÊN KỆ)' : cls}
             </button>
           ))}
         </div>
+        {deferred && (
+          <p className="mt-1 text-xs text-ink-muted">Chưa giám định được ngay — chỉ chọn Vệ sinh rồi gửi. Xe nâng hạ cont lên kệ; Giám định bổ sung trạng thái, đóng hàng, AGE sau.</p>
+        )}
         {v.condition === 'DAMAGE' && (
           <div className="mt-2 space-y-2 rounded-lg border border-rose-200 bg-rose-50/40 p-2.5">
             <p className="text-xs font-semibold text-rose-900">Chọn lỗi hư hỏng hoặc nhập ghi chú *:</p>

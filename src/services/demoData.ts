@@ -47,7 +47,7 @@ interface GateInCase {
   pay: Pay;
   damage?: string[];
   cleaning?: string[];
-  rack?: boolean; // DEC-109: Hạ kệ giám định
+  rack?: boolean; // DEC-147: GIÁM ĐỊNH SAU (lên kệ)
   truckNo: string;
 }
 
@@ -56,12 +56,11 @@ function gateIn(state: DepotState, c: GateInCase): DepotState {
   let s = recordGateInFieldStep(as(state, 'usr-inspector'), {
     gateInType: 'CUSTOMER_RETURN',
     doorPhotoUrl: 'data:image/jpeg;base64,AAA',
-    conditionClass: c.damage ? 'DAMAGE' : 'AV',
+    conditionClass: c.rack ? 'GIÁM ĐỊNH SAU' : c.damage ? 'DAMAGE' : 'AV',
     damageRemarks: c.damage,
-    stuffingClass: 'E',
+    stuffingClass: c.rack ? undefined : 'E',
     cleaningItems: c.cleaning || ['KHÔNG VỆ SINH'],
-    manufactureYear: 2019,
-    toInspectionRack: c.rack,
+    manufactureYear: c.rack ? undefined : 2019,
   });
   const order = s.gateInOrders[0];
   s = verifyGateInOfficeAndCreatePayment(as(s, 'usr-office'), {

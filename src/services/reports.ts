@@ -207,8 +207,8 @@ export function gateInSheet(name: string, orders: GateInOrder[], state?: DepotSt
     rows: orders.map((o) => [
       o.masterDossierCode, o.containerNo || '', o.size || '', o.type || '', o.shippingLineCode || '',
       o.gateInType, o.status, o.customerRep || '', o.truckNo || '', o.driverPhone || '', o.orderDocNo || '',
-      o.conditionClass, o.damageRemarks.join('; '), o.stuffingClass, o.cleaningItems.join(' + '),
-      o.manufactureYear, o.fieldStaffName, fmt(o.fieldRecordedAt), o.officeStaffName || '', fmt(o.officeVerifiedAt),
+      o.conditionClass, o.damageRemarks.join('; '), o.stuffingClass || '', o.cleaningItems.join(' + '),
+      o.manufactureYear || '', o.fieldStaffName, fmt(o.fieldRecordedAt), o.officeStaffName || '', fmt(o.officeVerifiedAt),
       o.feeAmount || 0,
       // DEC-126: thanh toán + mã phiếu thu (như Tồn vỏ)
       ...(() => { const p = state ? voucherPaymentInfo(state, state.vouchers.find((v) => v.id === o.voucherId)) : undefined; return [p?.label || '', p?.receipt || '']; })(),
@@ -250,8 +250,8 @@ function stockSheet(containers: ContainerRecord[]): SheetData {
       'SĐT LÁI XE HẠ', 'GATE IN LÚC', 'GHI CHÚ VĂN PHÒNG',
     ],
     rows: containers.map((c) => [
-      c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, c.conditionClass, c.stuffingClass,
-      c.manufactureYear, c.cleaningItems.join(' + '), c.damageRemarks.join('; '), formatLocation(c), c.status,
+      c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, c.conditionClass, c.stuffingClass || '',
+      c.manufactureYear || '', c.cleaningItems.join(' + '), c.damageRemarks.join('; '), formatLocation(c), c.status,
       c.needsCleaning ? 'X' : '', c.needsQuotation ? 'X' : '', c.needsRepair ? 'X' : '', c.isOnHold ? 'X' : '',
       c.holdReason || '', c.allocatedBookingNo || '', c.outDossierCode || '', c.customerRep, c.truckNo || '',
       c.driverPhone || '', fmt(c.gateInAt), c.officeNote || '',
@@ -465,7 +465,7 @@ export function yardStockSheet(rows: ContainerRecord[], state?: DepotState): She
       const pay = state ? containerPaymentInfo(state, c) : undefined;
       return [
         c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, c.manufactureYear || '', fmt(c.gateInAt), c.masterDossierCode.startsWith('NT-') ? 'NHẬP TÀU' : 'HẠ VỎ',
-        c.conditionClass, c.stuffingClass, storageDays(c.gateInAt), formatLocation(c),
+        c.conditionClass, c.stuffingClass || '', storageDays(c.gateInAt), formatLocation(c),
         pay?.label || '', pay?.receipt || '', getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', '),
         c.customerRep || '', c.truckNo || '', c.isOnHold ? 'ĐANG KHÓA' : '', c.holdBy || '', fmt(c.holdAt),
         c.officeNote || '', c.officeNoteUpdatedBy || '', fmt(c.officeNoteUpdatedAt),

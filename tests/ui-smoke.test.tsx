@@ -845,3 +845,13 @@ describe('DEC-146: Văn phòng → Nhập / Xuất tàu — bảng chi tiết t�
     expect(renderToString(<ListDetail list={both.vesselLists.find((l) => l.mode === 'NHAP_TAU')!} mode="NHAP_TAU" state={both} canManage run={() => true} onDeleted={noop} />)).toContain('MAERSK');
   });
 });
+
+describe('DEC-147: Giám định – Hạ vỏ có tab Chờ giám định trên kệ', () => {
+  it('dữ liệu Demo có cont GIÁM ĐỊNH SAU → hiện tab với số đếm', () => {
+    const s = as(createDemoState(), 'usr-inspector');
+    const html = renderToString(<InspectorHaVoMobile state={s} onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('data-testid="inspector-tab-TREN_KE"');
+    expect(html).toMatch(/Chờ giám định trên kệ \([1-9]/);
+    expect(html).toContain('max-w-lg');
+  });
+});

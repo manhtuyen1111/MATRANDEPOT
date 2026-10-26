@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { InspectionFields } from '../../components/InspectionFields';
+import { EMPTY_INSPECTION, InspectionFields, InspectionValue, inspectionRemarks, isInspectionComplete } from '../../components/InspectionFields';
+import { ContainerNo, LocationText, linkCls } from '../../components/shared';
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,7 +23,9 @@ import {
 } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import {
+  completeRackInspection,
   deleteGateInFieldRecord,
+  pendingRackInspections,
   recordGateInFieldStep,
 } from '../../services/depotOperations';
 import { peekNextCode } from '../../services/codes';
@@ -35,6 +38,10 @@ interface Props {
 }
 
 
+
+// DEC-147: màu ô trạng thái giám định
+const conditionTone = (c: string) =>
+  c === 'DAMAGE' ? 'bg-rose-100 text-rose-700' : c === 'GIÁM ĐỊNH SAU' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700';
 
 export const InspectorHaVoMobile: React.FC<Props> = ({
   state,
@@ -75,7 +82,12 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     useState<FieldStuffingClass | null>(null);
   const [cleaningItems, setCleaningItems] = useState<FieldCleaningItem[]>([]);
   const [manufactureYear, setManufactureYear] = useState<string>('');
-  const [toInspectionRack, setToInspectionRack] = useState(false); // DEC-109
+  const isDeferred = conditionClass === 'GIÁM ĐỊNH SAU'; // DEC-147: GIÁM ĐỊNH SAU (LÊN KỆ)
+  // DEC-147: tab Chờ giám định trên kệ
+  const [tab, setTab] = useState<'HA_VO' | 'TREN_KE'>('HA_VO');
+  const rackQueue = pendingRackInspections(state);
+  const [rackId, setRackId] = useState<string | null>(null);
+  const [rackInsp, setRackInsp] = useState<InspectionValue>(EMPTY_INSPECTION);
 
   // Bước xác nhận cuối sau khi đã nhập đủ và bấm NEXT
   const [isReadyToConfirmStep, setIsReadyToConfirmStep] =
@@ -83,6 +95,11 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const onDossierLink = (code: string) =>
+    onOpenDossier ? (
+      <button type="button" onClick={() => onOpenDossier(code)} className={linkCls}>Xem hồ sơ {code}</button>
+    ) : null;
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -136,7 +153,6 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     setStuffingClass(null);
     setCleaningItems([]);
     setManufactureYear('');
-    setToInspectionRack(false);
     setIsReadyToConfirmStep(false);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -185,10 +201,8 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
   const isAllFieldsValid = Boolean(
     doorPhotoDataUrl &&
       conditionClass &&
-      isDamageValid &&
-      stuffingClass &&
       cleaningItems.length > 0 &&
-      isYearValid
+      (isDeferred || (isDamageValid && stuffingClass && isYearValid))
   );
 
   const handleNextToConfirm = () => {
@@ -198,7 +212,15 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
       return;
     }
     if (!conditionClass) {
-      setErrorMsg('Vui lòng chọn TRẠNG THÁI (AV hoặc DAMAGE).');
+      setErrorMsg('Vui lòng chọn TRẠNG THÁI (AV, DAMAGE hoặc GIÁM ĐỊNH SAU).');
+      return;
+    }
+    if (isDeferred) {
+      if (cleaningItems.length === 0) {
+        setErrorMsg('Vui lòng chọn TÌNH TRẠNG VỆ SINH.');
+        return;
+      }
+      setIsReadyToConfirmStep(true);
       return;
     }
     if (!isDamageValid) {
@@ -223,7 +245,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
   };
 
   const handleConfirmOperation = () => {
-    if (!isAllFieldsValid || !conditionClass || !stuffingClass) return;
+    if (!isAllFieldsValid || !conditionClass) return;
     setErrorMsg(null);
     setSuccessMsg(null);
 
@@ -238,10 +260,9 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
         doorPhotoUrl: doorPhotoDataUrl,
         conditionClass,
         damageRemarks: remarks,
-        stuffingClass,
+        stuffingClass: isDeferred ? undefined : stuffingClass || undefined,
         cleaningItems,
-        manufactureYear: parsedYear,
-        toInspectionRack,
+        manufactureYear: isDeferred ? undefined : parsedYear,
       });
 
       onUpdateState(next);
@@ -268,8 +289,72 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
           <span className="block text-[11px] font-semibold uppercase text-ink-muted">Bộ phận Giám định</span>
           <h2 className="text-sm font-bold text-ink">Hạ vỏ</h2>
         </div>
-        <span className="rounded bg-navy-900 px-2.5 py-1 text-xs font-bold text-white">{recentOrders.length}</span>
+        <span className="rounded bg-navy-900 px-2.5 py-1 text-xs font-bold text-white">{recentOrders.length + rackQueue.length}</span>
       </div>
+
+      {/* DEC-147: tab Hạ vỏ | Chờ giám định trên kệ */}
+      <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-white p-1" role="tablist">
+        {([['HA_VO', `Hạ vỏ (${recentOrders.length})`], ['TREN_KE', `Chờ giám định trên kệ (${rackQueue.length})`]] as const).map(([k, label]) => (
+          <button key={k} type="button" role="tab" aria-selected={tab === k} data-testid={`inspector-tab-${k}`} onClick={() => { setTab(k); setRackId(null); }}
+            className={`rounded-md py-2.5 text-xs font-bold ${tab === k ? 'bg-navy-900 text-white' : k === 'TREN_KE' && rackQueue.length ? 'bg-amber-50 text-amber-800' : 'text-ink-muted'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'TREN_KE' && (
+        <div className="space-y-2" data-testid="rack-inspection-list">
+          {rackQueue.length === 0 && <div className="rounded-lg border border-line bg-white p-8 text-center text-xs text-ink-muted">Không có phiếu nào chờ giám định trên kệ.</div>}
+          {rackQueue.map((c) => {
+            const open = rackId === c.id;
+            const onRack = c.status === 'IN_YARD';
+            return (
+              <div key={c.id} className={`rounded-lg border bg-white ${open ? 'border-navy-900' : 'border-line'}`}>
+                <button type="button" onClick={() => { setRackId(open ? null : c.id); setRackInsp(EMPTY_INSPECTION); setErrorMsg(null); }} className="grid w-full grid-cols-[1fr_auto] items-center gap-2 p-3 text-left text-xs">
+                  <span className="space-y-0.5">
+                    <span className="flex items-center gap-2"><ContainerNo no={c.containerNo} className="text-sm" /><span className="font-semibold">{c.size} {c.type}</span></span>
+                    <span className="block font-mono text-ink-muted">{c.masterDossierCode}</span>
+                  </span>
+                  <span className="text-right">
+                    {onRack ? <LocationText loc={c} className="font-mono font-semibold" /> : <span className="rounded bg-amber-100 px-2 py-1 font-bold text-amber-800">Chờ Xe nâng hạ kệ</span>}
+                  </span>
+                </button>
+                {open && (
+                  <div className="space-y-3 border-t border-line p-3">
+                    {onDossierLink(c.masterDossierCode)}
+                    <InspectionFields value={rackInsp} onChange={setRackInsp} hideCleaning />
+                    {errorMsg && <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-800">{errorMsg}</div>}
+                    <button
+                      type="button"
+                      disabled={!onRack || !isInspectionComplete({ ...rackInsp, cleaning: c.cleaningItems })}
+                      onClick={() => {
+                        setErrorMsg(null);
+                        try {
+                          onUpdateState(completeRackInspection(state, {
+                            containerId: c.id,
+                            conditionClass: rackInsp.condition as 'AV' | 'DAMAGE',
+                            damageRemarks: inspectionRemarks(rackInsp),
+                            stuffingClass: rackInsp.stuffing as FieldStuffingClass,
+                            manufactureYear: Number(rackInsp.year),
+                          }));
+                          setSuccessMsg(`Đã giám định bổ sung ${c.containerNo} (${rackInsp.condition}).`);
+                          setRackId(null);
+                        } catch (err) {
+                          setErrorMsg(err instanceof Error ? err.message : 'Không lưu được giám định');
+                        }
+                      }}
+                      className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-navy-900 text-sm font-bold text-white hover:bg-navy-700 disabled:opacity-45"
+                    >
+                      <Send className="h-4 w-4" />
+                      {onRack ? 'XÁC NHẬN GIÁM ĐỊNH' : 'Chờ Xe nâng hạ lên kệ'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {errorMsg && !activeKey && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">{errorMsg}</div>
@@ -291,6 +376,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
       )}
 
       {/* BẢNG DANH SÁCH CÁC TÁC NGHIỆP GẦN NHẤT: SỐ PHIẾU - THỜI GIAN XÁC NHẬN GIÁM ĐỊNH - TRẠNG THÁI */}
+      {tab === 'HA_VO' && (<>
       <div className="overflow-hidden rounded-lg border border-line bg-white">
         <div className="grid grid-cols-12 border-b border-line bg-navy-50 px-4 py-2.5 text-xs font-bold text-ink">
           <div className="col-span-4">Số phiếu (Mã Hồ Sơ Chính)</div>
@@ -337,11 +423,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   {/* Cột 3: Trạng thái */}
                   <div className="col-span-3 flex items-center justify-end gap-2">
                     <span
-                      className={`rounded px-2.5 py-1 text-xs font-bold ${
-                        item.conditionClass === 'DAMAGE'
-                          ? 'bg-rose-100 text-rose-700'
-                          : 'bg-emerald-100 text-emerald-700'
-                      }`}
+                      className={`rounded px-2.5 py-1 text-xs font-bold ${conditionTone(item.conditionClass)}`}
                     >
                       {item.conditionClass}
                     </span>
@@ -426,11 +508,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   Trạng thái
                 </span>
                 <span
-                  className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${
-                    selectedOrder.conditionClass === 'DAMAGE'
-                      ? 'bg-rose-100 text-rose-700'
-                      : 'bg-emerald-100 text-emerald-700'
-                  }`}
+                  className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${conditionTone(selectedOrder.conditionClass)}`}
                 >
                   {selectedOrder.conditionClass}
                 </span>
@@ -446,8 +524,8 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   Phân loại đóng hàng & AGE
                 </span>
                 <span className="font-bold text-ink">
-                  Đóng hàng: {selectedOrder.stuffingClass} • AGE:{' '}
-                  {selectedOrder.manufactureYear}
+                  Đóng hàng: {selectedOrder.stuffingClass || '-'} • AGE:{' '}
+                  {selectedOrder.manufactureYear || '-'}
                 </span>
               </div>
 
@@ -501,6 +579,8 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
           )}
         </div>
       )}
+
+      </>)}
 
       {/* NÚT DẤU (+) BÊN PHẢI DƯỚI MÀN HÌNH ĐỂ TẠO TÁC NGHIỆP MỚI */}
       <button
@@ -697,6 +777,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                 {/* UI-02: form Giám định dùng chung (hiện lần lượt từng mục) */}
                 <InspectionFields
                   progressive
+                  allowDeferred
                   value={{
                     condition: conditionClass || '',
                     damage: selectedDamageRemarks,
@@ -714,17 +795,6 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                     setManufactureYear(x.year);
                   }}
                 />
-
-                {/* DEC-109: chưa giám định ngay được → Xe nâng HẠ KỆ GIÁM ĐỊNH (tình trạng trên là mô phỏng ban đầu) */}
-                {isAllFieldsValid && (
-                  <label className={`flex items-start gap-2 rounded-lg border p-3 text-xs ${toInspectionRack ? 'border-amber-500 bg-amber-50' : 'border-line bg-white'}`}>
-                    <input type="checkbox" checked={toInspectionRack} onChange={(e) => setToInspectionRack(e.target.checked)} className="mt-0.5 h-4 w-4" />
-                    <span>
-                      <span className="block font-bold text-ink">HẠ KỆ GIÁM ĐỊNH</span>
-                      <span className="block text-[11px] text-ink-muted">Chưa giám định được ngay — Xe nâng hạ cont lên kệ giám định, không hạ về bay.</span>
-                    </span>
-                  </label>
-                )}
 
                 {/* NÚT TIẾP TỤC (NEXT) -> CHỈ HIỂN THỊ KHI ĐÃ NHẬP XONG ĐỦ CẢ 4 MỤC */}
                 {isAllFieldsValid && (
@@ -759,6 +829,8 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                         className={`font-bold text-sm ${
                           conditionClass === 'DAMAGE'
                             ? 'text-rose-600'
+                            : isDeferred
+                            ? 'text-amber-700'
                             : 'text-emerald-600'
                         }`}
                       >
@@ -778,7 +850,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                         ĐÓNG HÀNG & AGE
                       </span>
                       <span className="font-bold text-sm text-ink">
-                        {stuffingClass} • Năm {manufactureYear}
+                        {isDeferred ? 'Bổ sung trên kệ' : `${stuffingClass} • Năm ${manufactureYear}`}
                       </span>
                     </div>
 
@@ -790,7 +862,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                         {cleaningItems.join(', ')}
                       </span>
                     </div>
-                    {toInspectionRack && (
+                    {isDeferred && (
                       <div className="col-span-2 rounded border border-amber-500 bg-amber-50 p-2 text-center text-sm font-black text-amber-800">
                         HẠ KỆ GIÁM ĐỊNH
                       </div>

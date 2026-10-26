@@ -37,6 +37,7 @@ import { ReportSection, ReportsWorkspace } from '../features/reports/ReportsWork
 import { ReceiptsWorkspace } from '../features/receipts/ReceiptsWorkspace';
 import { DocumentReturnWorkspace } from '../features/office/DocumentReturnWorkspace';
 import { ticketsAwaitingReturn } from '../services/driverRoute';
+import { pendingRackInspections } from '../services/depotOperations';
 import { RepairTeamCatalog } from '../features/catalog/RepairTeamCatalog';
 import { UserRoleCatalog } from '../features/catalog/UserRoleCatalog';
 import { CompanyCatalog } from '../features/catalog/CompanyCatalog';
@@ -200,7 +201,8 @@ export const App: React.FC = () => {
 
   const badges: Partial<Record<WorkspaceMenuId, number>> = {
     TON_VO: state.containers.filter((c) => c.status !== 'GATED_OUT').length,
-    GD_HA_VO: state.gateInOrders.filter((o) => o.status === 'FIELD_RECORDED').length,
+    // DEC-147: + phiếu chờ giám định trên kệ (cont đã hạ lên kệ)
+    GD_HA_VO: state.gateInOrders.filter((o) => o.status === 'FIELD_RECORDED').length + pendingRackInspections(state).filter((c) => c.status === 'IN_YARD').length,
     VP_HA_VO: state.gateInOrders.filter((o) => o.status !== 'GATE_IN_OK' && o.status !== 'CANCELLED').length,
     VP_CAP_VO: state.gateOutOrders.filter((o) => o.status === 'PAYMENT_PENDING').length,
     VP_PHIEU_THU: state.paymentTransactions.filter((t) => t.status === 'PENDING').length,
