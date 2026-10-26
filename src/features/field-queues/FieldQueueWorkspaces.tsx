@@ -224,9 +224,9 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
       <QueueHeader dept={title.dept} name={title.name} count={queue.length} />
       <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
 
-      <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-        <span className="flex items-center gap-1.5 text-xs font-bold uppercase text-slate-700">
-          <QrCode className="h-4 w-4 text-slate-500" />
+      <div className="space-y-3 rounded-lg border border-line bg-white p-4">
+        <span className="flex items-center gap-1.5 text-xs font-bold uppercase text-ink">
+          <QrCode className="h-4 w-4 text-ink-muted" />
           Quét mã QR trên phiếu K80
         </span>
         {cameraOpen ? (
@@ -245,7 +245,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
               className={`${inputCls} font-mono uppercase`}
             />
             <button type="submit" className={`${primaryBtn} shrink-0`}>Quét</button>
-            <button type="button" onClick={openCamera} aria-label="Mở camera quét QR" className="shrink-0 rounded-md border border-slate-300 px-3 text-slate-600 hover:bg-slate-50">
+            <button type="button" onClick={openCamera} aria-label="Mở camera quét QR" className="shrink-0 rounded-md border border-line-strong px-3 text-ink-muted hover:bg-canvas">
               <Camera className="h-4 w-4" />
             </button>
           </form>
@@ -253,7 +253,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
       </div>
 
       {scanned && (
-        <div className="space-y-3 rounded-lg border border-blue-600 bg-white p-4 text-xs">
+        <div className="space-y-3 rounded-lg border border-navy-900 bg-white p-4 text-xs">
           <div className="flex items-center justify-between">
             {isForklift ? (
               <OperationBadge state={state} container={scanned} large />
@@ -263,13 +263,13 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                 <ContainerNo no={scanned.containerNo} locked={scanned.isOnHold} lockReason={scanned.holdReason} className="text-base" />
               </span>
             )}
-            <button type="button" onClick={() => setScanned(null)} aria-label="Bỏ chọn" className="text-slate-400 hover:text-slate-700">
+            <button type="button" onClick={() => setScanned(null)} aria-label="Bỏ chọn" className="text-ink-muted hover:text-ink">
               <X className="h-4 w-4" />
             </button>
           </div>
           {/* DEC-061: khung nổi bật dùng chung cho Xe nâng (Chờ hạ vỏ / Chờ cấp vỏ) — tối ưu đọc nhanh trên điện thoại */}
           {(mode === 'XN_CHO_HA_VO' || mode === 'XN_CHO_CAP_VO') && (
-            <div className="space-y-2 rounded-lg bg-slate-900 p-3 text-white" data-testid="forklift-focus">
+            <div className="space-y-2 rounded-lg bg-navy-900 p-3 text-white" data-testid="forklift-focus">
               <div>
                 <span className="block text-[10px] font-semibold uppercase text-slate-300">Số container</span>
                 <span className="block break-all font-mono text-2xl font-black leading-tight tracking-wide">
@@ -297,7 +297,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                 )}
               </div>
               {mode === 'XN_CHO_HA_VO' && scanned.forkliftShiftTask === 'HA_KE_GIAM_DINH' && (
-                <div className="rounded bg-amber-400 px-2 py-1.5 text-center text-base font-black text-slate-900" data-testid="ha-ke-giam-dinh">
+                <div className="rounded bg-amber-400 px-2 py-1.5 text-center text-base font-black text-ink" data-testid="ha-ke-giam-dinh">
                   HẠ KỆ GIÁM ĐỊNH — không hạ về bay
                 </div>
               )}
@@ -306,46 +306,46 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
             {isForklift ? (
               <>
-                <dt className="text-slate-500">AGE</dt>
+                <dt className="text-ink-muted">AGE</dt>
                 <dd className="font-semibold">{scanned.manufactureYear}</dd>
               </>
             ) : (
               <>
-                <dt className="text-slate-500">Size / Type / AGE</dt>
+                <dt className="text-ink-muted">Size / Type / AGE</dt>
                 <dd className="font-semibold">{scanned.size}/{scanned.type} • {scanned.manufactureYear}</dd>
-                <dt className="text-slate-500">Trạng thái / Đóng hàng</dt>
+                <dt className="text-ink-muted">Trạng thái / Đóng hàng</dt>
                 <dd className="font-semibold">{scanned.conditionClass} • {scanned.stuffingClass}</dd>
               </>
             )}
-            <dt className="text-slate-500">Vệ sinh</dt>
+            <dt className="text-ink-muted">Vệ sinh</dt>
             <dd className="font-semibold">{scanned.cleaningItems.join(', ')}</dd>
             {mode !== "XN_CHO_CAP_VO" && (
               <>
-                <dt className="text-slate-500">Vị trí hiện tại</dt>
+                <dt className="text-ink-muted">Vị trí hiện tại</dt>
                 <dd className="font-mono font-semibold"><LocationText loc={scanned} /></dd>
               </>
             )}
             {mode === 'XN_CHO_CAP_VO' && (
               <>
-                <dt className="text-slate-500">Số xe nhận vỏ</dt>
-                <dd className="font-bold text-slate-900">{scanned.allocatedTruckNo || '-'}</dd>
-                <dt className="text-slate-500">SĐT lái xe</dt>
-                <dd className="font-bold text-slate-900">
-                  {scanned.allocatedDriverPhone ? <a href={`tel:${scanned.allocatedDriverPhone}`} className="text-blue-700">{scanned.allocatedDriverPhone}</a> : '-'}
+                <dt className="text-ink-muted">Số xe nhận vỏ</dt>
+                <dd className="font-bold text-ink">{scanned.allocatedTruckNo || '-'}</dd>
+                <dt className="text-ink-muted">SĐT lái xe</dt>
+                <dd className="font-bold text-ink">
+                  {scanned.allocatedDriverPhone ? <a href={`tel:${scanned.allocatedDriverPhone}`} className="text-navy-700">{scanned.allocatedDriverPhone}</a> : '-'}
                 </dd>
-                <dt className="text-slate-500">Booking</dt>
+                <dt className="text-ink-muted">Booking</dt>
                 <dd className="font-mono">{scanned.allocatedBookingNo || '-'}</dd>
               </>
             )}
             {isRepair && (
               <>
-                <dt className="text-slate-500">Remark sửa chữa</dt>
+                <dt className="text-ink-muted">Remark sửa chữa</dt>
                 <dd className="font-semibold">{(scannedRepair?.items || scanned.quotationItems || []).join(', ') || '-'}</dd>
-                <dt className="text-slate-500">Giờ công</dt>
+                <dt className="text-ink-muted">Giờ công</dt>
                 <dd className="font-semibold">{scannedRepair?.laborHours ?? scanned.quotationLaborHours ?? '-'}</dd>
               </>
             )}
-            <dt className="text-slate-500">Hồ sơ</dt>
+            <dt className="text-ink-muted">Hồ sơ</dt>
             <dd>
               <button type="button" onClick={() => onOpenDossier?.(scanned.masterDossierCode)} className={linkCls}>
                 {scanned.outDossierCode || scanned.masterDossierCode}
@@ -353,9 +353,9 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
             </dd>
           </dl>
           {needsSlot && (
-            <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
-              <span className="flex items-center gap-1.5 font-bold text-slate-800">
-                <MapPin className="h-4 w-4 text-slate-500" />
+            <div className="space-y-2 rounded-md border border-line bg-canvas p-3">
+              <span className="flex items-center gap-1.5 font-bold text-ink">
+                <MapPin className="h-4 w-4 text-ink-muted" />
                 Vị trí hạ vỏ *
               </span>
               <SlotPicker
@@ -367,7 +367,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
             </div>
           )}
           {isRepair && (
-            <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+            <div className="space-y-2 rounded-md border border-line bg-canvas p-3">
               <label className="block">
                 <span className={labelCls}>Tổ sửa chữa *</span>
                 <select value={teamId} onChange={(e) => chooseTeam(e.target.value)} className={inputCls}>
@@ -381,7 +381,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                   <legend className={labelCls}>Nhân viên thực hiện * ({memberIds.length}/{selectedTeam.members.filter((m) => m.isActive).length})</legend>
                   <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
                     {selectedTeam.members.filter((m) => m.isActive).map((m) => (
-                      <label key={m.id} className="flex items-center gap-2 rounded border border-slate-200 bg-white px-2 py-1.5">
+                      <label key={m.id} className="flex items-center gap-2 rounded border border-line bg-white px-2 py-1.5">
                         <input
                           type="checkbox"
                           checked={memberIds.includes(m.id)}
@@ -402,15 +402,15 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
         </div>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <button type="button" onClick={() => setShowList((v) => !v)} className="flex w-full items-center justify-between px-4 py-3 text-left text-xs font-bold text-slate-700 hover:bg-slate-50">
+      <div className="overflow-hidden rounded-lg border border-line bg-white">
+        <button type="button" onClick={() => setShowList((v) => !v)} className="flex w-full items-center justify-between px-4 py-3 text-left text-xs font-bold text-ink hover:bg-canvas">
           <span>Danh sách chờ ({queue.length})</span>
           {showList ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
         {showList && (
-          <ul className="divide-y divide-slate-100 border-t border-slate-200">
+          <ul className="divide-y divide-line border-t border-line">
             {queue.length === 0 ? (
-              <li className="p-6 text-center text-xs text-slate-500">Không có container nào trong danh sách chờ.</li>
+              <li className="p-6 text-center text-xs text-ink-muted">Không có container nào trong danh sách chờ.</li>
             ) : (
               queue.map((c) => (
                 <li key={c.id}>
@@ -439,12 +439,12 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
 };
 
 const QueueHeader: React.FC<{ dept: string; name: string; count: number }> = ({ dept, name, count }) => (
-  <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5">
+  <div className="flex items-center justify-between rounded-lg border border-line bg-white px-4 py-2.5">
     <div>
-      <span className="block text-[11px] font-semibold uppercase text-slate-500">{dept}</span>
-      <h2 className="text-sm font-bold text-slate-900">{name}</h2>
+      <span className="block text-[11px] font-semibold uppercase text-ink-muted">{dept}</span>
+      <h2 className="text-sm font-bold text-ink">{name}</h2>
     </div>
-    <span className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">{count}</span>
+    <span className="rounded bg-navy-900 px-2.5 py-1 text-xs font-bold text-white">{count}</span>
   </div>
 );
 
@@ -453,15 +453,15 @@ const QueueHeader: React.FC<{ dept: string; name: string; count: number }> = ({ 
 export const QueueListRow: React.FC<{ state: DepotState; container: ContainerRecord; extra?: string; onClick: () => void }> = ({ state, container: c, extra, onClick }) => {
   const op = containerOperation(state, c);
   return (
-    <button type="button" onClick={onClick} className="grid w-full grid-cols-[5rem_1fr] items-center gap-2.5 px-3 py-2.5 text-left text-xs hover:bg-slate-50" data-testid="queue-row">
+    <button type="button" onClick={onClick} className="grid w-full grid-cols-[5rem_1fr] items-center gap-2.5 px-3 py-2.5 text-left text-xs hover:bg-canvas" data-testid="queue-row">
       <OperationBadge state={state} container={c} hideVessel block />
       <span className="min-w-0">
         <span className="grid grid-cols-[8.5rem_3rem_1fr] items-center gap-2">
           <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
-          <span className="font-mono text-slate-600">{c.size}/{c.type}</span>
-          <LocationText loc={c} className="truncate text-right font-mono text-[11px] text-slate-600" />
+          <span className="font-mono text-ink-muted">{c.size}/{c.type}</span>
+          <LocationText loc={c} className="truncate text-right font-mono text-[11px] text-ink-muted" />
         </span>
-        <span className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-slate-600">
+        <span className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-ink-muted">
           <span className="min-w-0 truncate font-semibold">{op.vesselName ? `Tàu ${op.vesselName}` : ''}</span>
           {extra && <span className="shrink-0">{extra}</span>}
         </span>

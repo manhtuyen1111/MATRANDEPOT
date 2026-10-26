@@ -9,7 +9,7 @@ description: Tạo hoặc sửa màn hình giao diện MATRAN DEPOT (React + Tai
 - Giao diện KHÔNG tự đặt quy tắc nghiệp vụ. Mọi kiểm tra nằm trong `src/services/`; UI gọi hàm, `try/catch`, hiển thị `err.message` bằng `<Feedback>`.
 - Ẩn/hiện nút theo quyền dùng `can(state.currentUser, 'KEY')` — chỉ để hiển thị.
 - Tái sử dụng `src/components/shared.tsx`: `SectionCard`, `Feedback`, `FeeLinesEditor`, `PaymentPanel`, `PendingTransferPanel`, `SlotPicker`, `Pager`, `DetailDrawer`, `usePageSize`, `ContainerNo` (có biểu tượng khóa), `inputCls/labelCls/primaryBtn/secondaryBtn`.
-- Phong cách: nền trắng/slate, 1 màu nhấn xanh `blue-600`, chữ `text-xs`, không emoji trang trí. Màn hiện trường tối ưu mobile (`max-w-lg`).
+- **Phong cách: theo `docs/DESIGN_SYSTEM.md` (DEC-145) — đọc trước khi làm màn.** Màu chỉ dùng token (`bg-navy-900`, `text-ink`, `text-ink-muted`, `border-line`, `bg-canvas`, `bg-op-*`…); cấm `blue-600` / `slate-*` cũ (test DEC-145 chặn). Chữ thường cho tiêu đề / nhãn, IN HOA chỉ ở nhãn tác nghiệp. Không emoji trang trí. Màn hiện trường theo mẫu mobile (`max-w-lg`), màn văn phòng theo mẫu danh sách; mẫu ở `docs/design/components/*Page/preview.html`.
 - Danh sách lớn: theo **`docs/UI_DATA_LIST_STANDARD.md` (DEC-080)** — full chiều ngang, có lọc, `Pager` chọn 20 / 50 / 100 dòng (`usePageSize`), bấm dòng mở `DetailDrawer` (trượt bên phải, không hiện chi tiết bên dưới); báo cáo không tự tải trước khi bấm Tra cứu.
 - Hiển thị đủ trạng thái: rỗng, lỗi, thành công.
 

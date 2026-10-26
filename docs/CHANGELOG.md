@@ -217,6 +217,16 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Cố định cột đầu khi kéo ngang: Tồn vỏ, Báo cáo Hạ vỏ / Cấp vỏ / Sửa chữa (Mã hồ sơ | Số container | Size | Type | Hãng tàu); Báo cáo Nhập / Xuất tàu thêm Tên tàu (6 cột). Excel cùng thứ tự (DEC-139). Kiểm thử: 137/137 pass, build PASS.
 - Báo cáo Nhập / Xuất tàu: tách cột Trạng thái | Phân loại; Excel đổi ĐÓNG HÀNG → PHÂN LOẠI (DEC-140). Kiểm thử: 138/138 pass, build PASS.
 - Bỏ cố định cột khi kéo ngang (Tồn vỏ + 5 báo cáo); giữ nguyên thứ tự cột đồng bộ và Excel (DEC-141). Kiểm thử: 137/137 pass, build PASS.
+- Báo giá → Chờ báo giá: mỗi cont 1 dòng như Tồn vỏ (Date in cùng dòng, Tình trạng sửa chữa / Ghi chú cắt bớt) (DEC-142). Kiểm thử: 138/138 pass, build PASS.
+- Tài khoản & đăng nhập: Admin tạo tài khoản (tên đăng nhập + vai trò), mật khẩu mặc định 123456, đặt lại mật khẩu; màn Đăng nhập, bắt buộc đổi mật khẩu lần đầu (≥ 6 ký tự), Đổi mật khẩu / Đăng xuất; bỏ ô chọn người dùng Demo (DEC-143). Kiểm thử: 144/144 pass, build PASS.
+- User - Role (đổi tên menu): tên đăng nhập tự tạo dạng tuan.lv (sửa được); mật khẩu mới không giới hạn độ dài (vẫn cấm 123456); bộ lọc + tìm kiếm + nút Thêm nhân viên mới, bấm mới mở khung thêm (DEC-144). Kiểm thử: 147/147 pass, build PASS.
+- **Hoàn tác** đăng nhập / tài khoản bản Demo (DEC-143, DEC-144) theo yêu cầu: quay về tài khoản demo (chọn người dùng góc phải). Quy tắc tài khoản giữ trong DEC-143 để làm ở GĐ 4. Giữ tên menu **User - Role**. Kiểm thử: 138/138 pass, build PASS.
+- Giao diện **design system v2** bước 1 (DEC-145): token màu navy + accent ở `src/index.css`, font Be Vietnam Pro / JetBrains Mono, nút / ô nhập / nhãn / thẻ / thông báo / link / nhãn tác nghiệp theo token; tiêu đề thẻ và nhãn chữ thường. Bước 2–5: khung App / menu, Tồn vỏ, màn mobile, văn phòng / báo cáo / danh mục / phiếu thu / giấy tờ in đổi class slate / blue sang token. Kiểm thử: 139/139 pass, build PASS.
+- Lưu design system vào repo: `docs/DESIGN_SYSTEM.md`, `docs/design/` (tokens + mẫu); skill `matran-ui-screen` trỏ tới; test chặn class màu cũ (DEC-145). Kiểm thử: 140/140 pass, build PASS.
+- Văn phòng → Nhập / Xuất tàu: bảng chi tiết tàu mỗi cột 1 thông tin, 1 dòng (tách Size / Type / Hãng tàu / Trạng thái / Phân loại / Người thực hiện / Thời gian — DEC-146). Kiểm thử: 141/141 pass, build PASS.
+- Giám định → Hạ vỏ: lựa chọn **W-SURVEY (LÊN KỆ)** thay ô tích Hạ kệ; tab **Chờ giám định trên kệ** để giám định bổ sung AV / DAMAGE + Đóng hàng + AGE; EEIR ghi W-SURVEY; DAMAGE sau bổ sung vào Chờ báo giá (DEC-147, Q-042). Kiểm thử: 145/145 pass, build PASS.
+- Dữ liệu test: hãng tàu MSK, 10 khách hàng, công ty CÔNG TY CỔ PHẦN MATRAN, biểu giá 20DC / 40DC / 40HC / 45HC + rác LV1 / LV2; thêm danh sách lớn cho mọi tác nghiệp (DEC-148). Kiểm thử: 147/147 pass, build PASS.
+- Khóa lưu localStorage nâng lên v14 → trình duyệt tự nạp dữ liệu test mới (dữ liệu Demo cũ bị thay).
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

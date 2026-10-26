@@ -57,7 +57,7 @@ Nguồn duy nhất trong code: `src/services/permissions.ts` (`PERMISSIONS`, `ME
 | Tác nghiệp XUẤT TÀU (gán xe, OUT) | INSPECTOR, FORKLIFT, MANAGER (`VESSEL_EXPORT_EXECUTE`) | DEC-069 |
 | Vệ sinh / Xe nâng hạ cont NHẬP TÀU | như Chờ vệ sinh / Chờ hạ vỏ (`CLEANING_COMPLETE`, `FORKLIFT_OPS`) | DEC-069 |
 | Menu: Giám định → Nhập tàu, Xuất tàu; Xe nâng → Nhập tàu, Xuất tàu (mobile). Vệ sinh không có menu Nhập tàu (dùng Chờ vệ sinh) | theo `MENU_ACCESS` | DEC-069, DEC-070 |
-| Quản lý User - Phân quyền | ADMIN | DEC-045 |
+| Quản lý User - Role | ADMIN | DEC-045, DEC-144 |
 | Gửi góp ý, xem góp ý của chính mình | Mọi người dùng đang hoạt động | DEC-120 |
 | Báo cáo → Góp ý: xem, lọc, Excel, cập nhật trạng thái + phản hồi | ADMIN (`FEEDBACK_MANAGE`) | DEC-120 |
 | Hiển thị menu | Theo `MENU_ACCESS`: mỗi vai trò chỉ thấy màn của mình. Kế toán chỉ thấy Văn phòng → Phiếu thu | DEC-045, DEC-111 |
@@ -124,3 +124,8 @@ Ma trận trên là bản nháp để thảo luận, không phải cấu hình q
 - Quyền thao tác: mục 2A đã áp dụng ở tầng nghiệp vụ chế độ Demo; ma trận mục 4 vẫn là bản tham khảo cho các phân hệ chưa làm.
 - Quy tắc phân tách nhiệm vụ: không tách người làm / người duyệt cho Vệ sinh, Xe nâng, Báo giá, Sửa chữa (DEC-035); các thao tác khác chưa chốt.
 - Cấu hình RLS và quyền backend Supabase: chưa triển khai (migration 0001 là bản nháp, sẽ viết lại).
+
+## Tài khoản & đăng nhập (DEC-143) — áp dụng ở GĐ 4, bản Demo chưa có đăng nhập
+
+- Chỉ **Admin** tạo tài khoản, gán vai trò, khóa / mở khóa, **đặt lại mật khẩu** (về 123456).
+- Mọi người dùng: đăng nhập, **tự đổi mật khẩu**, đăng xuất. Lần đăng nhập đầu (hoặc sau khi đặt lại) bắt buộc đổi mật khẩu (độ dài tùy ý, không được dùng 123456 — DEC-144).

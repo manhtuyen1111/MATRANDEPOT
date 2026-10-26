@@ -157,17 +157,17 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
 
   return (
     <div className="w-full space-y-3">
-      <div className="space-y-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs">
+      <div className="space-y-3 rounded-lg border border-line bg-white px-4 py-3 text-xs">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold text-slate-900">Tồn vỏ ({filtered.length} / {active.length})</h2>
-            <p className="text-[11px] text-slate-500">Bấm vào dòng để mở hồ sơ container.</p>
+            <h2 className="text-sm font-bold text-ink">Tồn vỏ ({filtered.length} / {active.length})</h2>
+            <p className="text-[11px] text-ink-muted">Bấm vào dòng để mở hồ sơ container.</p>
           </div>
           <div className="flex flex-wrap items-end gap-2">
             <label>
               <span className={labelCls}>Số container</span>
               <div className="relative">
-                <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
                 <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} w-44 pl-7 font-mono uppercase`} />
               </div>
             </label>
@@ -193,7 +193,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                 <option value="DAMAGE">DAMAGE</option>
               </select>
             </label>
-            <button type="button" onClick={() => setBulkOpen(!bulkOpen)} className={`${secondaryBtn} ${bulkList.length ? 'border-blue-600 text-blue-700' : ''}`}>
+            <button type="button" onClick={() => setBulkOpen(!bulkOpen)} className={`${secondaryBtn} ${bulkList.length ? 'border-navy-900 text-navy-700' : ''}`}>
               <ListChecks className="h-3.5 w-3.5" />
               Tìm hàng loạt{bulkList.length ? ` (${bulkList.length})` : ''}
             </button>
@@ -202,7 +202,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
         </div>
 
         {bulkOpen && (
-          <div className="flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-end">
+          <div className="flex flex-col gap-2 border-t border-line pt-3 sm:flex-row sm:items-end">
             <label className="flex-1">
               <span className={labelCls}>Danh sách số container (mỗi dòng 1 số, hoặc cách nhau bởi dấu phẩy / khoảng trắng)</span>
               <textarea value={bulkText} onChange={(e) => setBulkText(e.target.value)} rows={3} placeholder={'MSKU4089123\nTGHU2211457'} className={`${inputCls} font-mono uppercase`} />
@@ -225,8 +225,8 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
       <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
 
       {canBulk && selectedIds.length > 0 && (
-        <div className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs sm:flex-row sm:items-end">
-          <p className="font-bold text-blue-900 sm:self-center">Đã chọn {selectedIds.length} container</p>
+        <div className="flex flex-col gap-2 rounded-lg border border-line-strong bg-navy-50 px-4 py-3 text-xs sm:flex-row sm:items-end">
+          <p className="font-bold text-navy-900 sm:self-center">Đã chọn {selectedIds.length} container</p>
           <label>
             <span className={labelCls}>Thao tác</span>
             <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value as BulkAction)} className={inputCls}>
@@ -244,9 +244,9 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-line bg-white">
         <table className="w-full min-w-[1640px] text-left text-xs">
-          <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
+          <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
             <tr>
               {canBulk && (
                 <th className="px-2 py-2.5">
@@ -275,9 +275,9 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
               <th className="min-w-[14rem] px-2 py-2.5">Ghi chú</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line">
             {rows.length === 0 ? (
-              <tr><td colSpan={colCount} className="px-4 py-8 text-center text-slate-500">Không có container khớp bộ lọc.</td></tr>
+              <tr><td colSpan={colCount} className="px-4 py-8 text-center text-ink-muted">Không có container khớp bộ lọc.</td></tr>
             ) : (
               rows.map((c) => {
                 const hasNote = Boolean(c.officeNote?.trim());
@@ -285,7 +285,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                 const panelOpen = panel?.id === c.id;
                 return (
                   <React.Fragment key={c.id}>
-                    <tr onClick={() => onOpenDossier?.(c.masterDossierCode)} className={`cursor-pointer whitespace-nowrap hover:bg-slate-50 ${selected.has(c.id) ? 'bg-blue-50/60' : ''}`} data-testid="yard-row">{/* DEC-132: mỗi cont 1 dòng */}
+                    <tr onClick={() => onOpenDossier?.(c.masterDossierCode)} className={`cursor-pointer whitespace-nowrap hover:bg-canvas ${selected.has(c.id) ? 'bg-navy-50/60' : ''}`} data-testid="yard-row">{/* DEC-132: mỗi cont 1 dòng */}
                       {canBulk && (
                         <td className="px-2 py-2.5" onClick={(e) => e.stopPropagation()}>
                           <input type="checkbox" aria-label={`Chọn ${c.containerNo}`} checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
@@ -295,14 +295,14 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                         <button type="button" onClick={(e) => { e.stopPropagation(); onOpenDossier?.(c.masterDossierCode); }} className={linkCls}>{c.masterDossierCode}</button>
                       </td>
                       <td className="whitespace-nowrap px-2 py-2.5">
-                        <span className="inline-flex items-center gap-1.5 font-mono text-sm font-bold text-slate-900">
+                        <span className="inline-flex items-center gap-1.5 font-mono text-sm font-bold text-ink">
                           {c.containerNo}
                           <button
                             type="button"
                             disabled={!canLock}
                             onClick={(e) => { e.stopPropagation(); openPanel(c, panelOpen && panel!.kind === 'LOCK' ? '' : 'LOCK'); }}
                             title={c.isOnHold ? `Đang khóa: ${c.holdReason || ''}${canLock ? ' — bấm để mở khóa' : ''}` : canLock ? 'Bấm để khóa container' : 'Không khóa'}
-                            className={`inline-flex disabled:cursor-default ${c.isOnHold ? 'text-rose-600' : 'text-slate-300 hover:text-slate-500'}`}
+                            className={`inline-flex disabled:cursor-default ${c.isOnHold ? 'text-rose-600' : 'text-slate-300 hover:text-ink-muted'}`}
                           >
                             {c.isOnHold ? (
                               <Lock className="h-3.5 w-3.5" aria-label="Container đang bị khóa" />
@@ -317,7 +317,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                       <td className="whitespace-nowrap px-2 py-2.5">{c.shippingLineCode}</td>
                       <td className="px-2 py-2.5 text-center font-mono">{c.manufactureYear || '-'}</td>
                       <td className="whitespace-nowrap px-2 py-2.5 font-mono" title="Thời gian vào bãi (Hạ vỏ / Nhập tàu)">
-                        {formatDateTime(c.gateInAt).slice(0, 10)} <span className="text-slate-500">{formatDateTime(c.gateInAt).slice(11)}</span>
+                        {formatDateTime(c.gateInAt).slice(0, 10)} <span className="text-ink-muted">{formatDateTime(c.gateInAt).slice(11)}</span>
                       </td>
                       <td className={`px-2 py-2.5 text-center font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
                       <td className="px-2 py-2.5 text-center font-mono font-bold">{c.stuffingClass}</td>
@@ -331,7 +331,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                               aria-label={`Sửa vị trí ${c.containerNo}`}
                               title="Sửa vị trí bãi"
                               onClick={() => openPanel(c, panelOpen && panel!.kind === 'LOCATION' ? '' : 'LOCATION')}
-                              className="text-slate-500 hover:text-slate-800"
+                              className="text-ink-muted hover:text-ink"
                             >
                               <Pencil className="h-3 w-3" />
                             </button>
@@ -349,58 +349,58 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                               type="button"
                               aria-label="Lưu ghi chú"
                               onClick={() => { run(() => updateContainerOfficeNote(state, { containerId: c.id, officeNote: noteDraft }), 'Đã lưu ghi chú.'); setEditingNoteId(null); }}
-                              className="rounded bg-blue-600 p-1.5 text-white"
+                              className="rounded bg-navy-900 p-1.5 text-white"
                             >
                               <Check className="h-3.5 w-3.5" />
                             </button>
-                            <button type="button" aria-label="Hủy" onClick={() => setEditingNoteId(null)} className="rounded border border-slate-300 p-1.5 text-slate-600">
+                            <button type="button" aria-label="Hủy" onClick={() => setEditingNoteId(null)} className="rounded border border-line-strong p-1.5 text-ink-muted">
                               <X className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         ) : hasNote ? (
                           <div className="flex items-center justify-between gap-2">
-                            <CellText text={c.officeNote} max={CELL_MAX.LONG} className="font-semibold text-slate-900" />
+                            <CellText text={c.officeNote} max={CELL_MAX.LONG} className="font-semibold text-ink" />
                             {canNote && (
-                              <button type="button" aria-label="Sửa ghi chú" onClick={() => { setEditingNoteId(c.id); setNoteDraft(c.officeNote || ''); }} className="text-slate-600 hover:text-slate-900">
+                              <button type="button" aria-label="Sửa ghi chú" onClick={() => { setEditingNoteId(c.id); setNoteDraft(c.officeNote || ''); }} className="text-ink-muted hover:text-ink">
                                 <Pencil className="h-3 w-3" />
                               </button>
                             )}
                           </div>
                         ) : canNote ? (
-                          <button type="button" onClick={() => { setEditingNoteId(c.id); setNoteDraft(''); }} className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800">
+                          <button type="button" onClick={() => { setEditingNoteId(c.id); setNoteDraft(''); }} className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink">
                             <MessageSquarePlus className="h-3.5 w-3.5" />
                             Thêm ghi chú
                           </button>
                         ) : (
-                          <span className="text-slate-400">-</span>
+                          <span className="text-ink-muted">-</span>
                         )}
                       </td>
                     </tr>
                     {panelOpen && (
-                      <tr className="bg-slate-50">
+                      <tr className="bg-canvas">
                         <td colSpan={colCount} className="px-4 py-3">
                           {panel!.kind === 'LOCATION' ? (
                             /* DEC-138: khung SỬA VỊ TRÍ gọn như Đảo chuyển — thẻ rộng tối đa max-w-lg, dính trái (sticky) để không bị đẩy ra ngoài khi bảng cuộn ngang; nút Lưu full chiều rộng ở cuối */
-                            <div className="sticky left-4 w-full max-w-lg space-y-3 whitespace-normal rounded-lg border border-blue-600 bg-white p-4 text-xs" data-testid="yard-location-editor">
+                            <div className="sticky left-4 w-full max-w-lg space-y-3 whitespace-normal rounded-lg border border-navy-900 bg-white p-4 text-xs" data-testid="yard-location-editor">
                               <div className="flex items-center justify-between">
                                 <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.officeNote || c.holdReason} className="text-base" />
-                                <button type="button" onClick={() => setPanel(null)} aria-label="Đóng" className="p-1 text-slate-400 hover:text-slate-700">
+                                <button type="button" onClick={() => setPanel(null)} aria-label="Đóng" className="p-1 text-ink-muted hover:text-ink">
                                   <X className="h-4 w-4" />
                                 </button>
                               </div>
                               <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
-                                <dt className="text-slate-500">Size / Type</dt>
+                                <dt className="text-ink-muted">Size / Type</dt>
                                 <dd className="font-semibold">{c.size}/{c.type}</dd>
-                                <dt className="text-slate-500">Trạng thái</dt>
+                                <dt className="text-ink-muted">Trạng thái</dt>
                                 <dd className="font-semibold">{c.conditionClass} • {getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</dd>
-                                <dt className="text-slate-500">Vị trí hiện tại</dt>
+                                <dt className="text-ink-muted">Vị trí hiện tại</dt>
                                 <dd className="font-mono font-bold"><LocationText loc={c} /></dd>
                               </dl>
-                              <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
-                                <span className="block font-bold text-slate-800">Vị trí mới *</span>
+                              <div className="space-y-2 rounded-md border border-line bg-canvas p-3">
+                                <span className="block font-bold text-ink">Vị trí mới *</span>
                                 <SlotPicker state={state} value={slot} onChange={setSlot} />
                               </div>
-                              <p className="text-[11px] text-slate-500">Sửa vị trí hành chính — không ghi nhận là tác nghiệp ĐẢO CHUYỂN.</p>
+                              <p className="text-[11px] text-ink-muted">Sửa vị trí hành chính — không ghi nhận là tác nghiệp ĐẢO CHUYỂN.</p>
                               <button
                                 type="button"
                                 disabled={!isSlotComplete(slot, state)}

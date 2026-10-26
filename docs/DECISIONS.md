@@ -827,7 +827,7 @@ Quy ước trạng thái:
 
 ### DEC-109 — Hạ vỏ: HẠ KỆ GIÁM ĐỊNH khi chưa giám định được ngay
 
-- Trạng thái: CONFIRMED (2026-10-25)
+- Trạng thái: CONFIRMED (2026-10-25). **Điểm 1 và 6 được thay bởi DEC-147** (lựa chọn W-SURVEY thay ô tích; có bước giám định bổ sung trên kệ trong hệ thống).
 - Tình huống: Giám định kiểm tra cont, chụp ảnh và gửi thông tin vào Văn phòng, nhưng chưa thể giám định ngay.
 - Quyết định:
   1. **Giám định:** chọn AV / DAMAGE như thường (tình trạng mô phỏng ban đầu), rồi tích ô **HẠ KỆ GIÁM ĐỊNH**.
@@ -1211,6 +1211,119 @@ Quy ước trạng thái:
 - **Giữ nguyên** thứ tự cột đồng bộ của DEC-139 (5 cột đầu Mã hồ sơ | Số container | Size | Type | Hãng tàu; báo cáo tàu thêm Tên tàu đầu tiên), cả trên màn hình lẫn Excel.
 - Đã gỡ `frozenCols` / `FROZEN_W` / `FROZEN_STANDARD` khỏi `shared.tsx`.
 
+### DEC-142 — Báo giá → Chờ báo giá: mỗi cont 1 dòng như Tồn vỏ
+
+- Trạng thái: CONFIRMED (2026-10-26). Áp DEC-132, DEC-134, DEC-135 cho menu Báo giá.
+- Cả dòng **không xuống dòng**; bảng rộng thì cuộn ngang.
+- **Date in**: ngày + giờ trên cùng 1 dòng.
+- **Tình trạng sửa chữa** và **Ghi chú** dài: cắt bớt (`CellText`, tối đa 40 ký tự), rê chuột xem đủ.
+- Thứ tự cột không đổi, nên Excel giữ nguyên.
+
+### DEC-143 — Tài khoản / đăng nhập: QUY TẮC CHO GIAI ĐOẠN 4 (chưa làm ở bản Demo)
+
+- Trạng thái: CONFIRMED (2026-10-26) — **chỉ thực hiện khi tạo database (GĐ 4, Supabase Auth)**.
+- Bản Demo **giữ nguyên tài khoản demo** (chọn người dùng ở góc phải, không có màn đăng nhập). Đã thử làm đăng nhập ở Demo rồi người dùng yêu cầu **hoàn tác** (commit `ffb341e`).
+- **Quy tắc sẽ làm ở GĐ 4:**
+  - **Admin** (Danh mục → User - Role) tạo tài khoản cho nhân viên: họ tên, **tên đăng nhập**, **vai trò**; email không bắt buộc. Nhân viên chỉ nhận tài khoản và tác nghiệp, không tự đăng ký.
+  - **Tên đăng nhập tự tạo** khi nhập họ tên, dạng `ten.hoten`: **tên + "." + chữ cái đầu của họ và tên đệm**, không dấu.
+    - Ví dụ: "Lê Văn Tuấn" → `tuan.lv`; "Đỗ Thị Thu" → `thu.dt`.
+    - Trùng thì thêm số: `tuan.lv2`…
+    - Admin **sửa được**. Ràng buộc: 3–30 ký tự, chữ thường không dấu, số và `. _ -`, không trùng.
+  - **Mật khẩu ban đầu = 123456** cho tài khoản mới và sau khi Admin **Đặt lại mật khẩu**.
+  - **Lần đăng nhập đầu tiên** (hoặc sau khi đặt lại): **bắt buộc đổi mật khẩu**.
+    - Bao nhiêu ký tự cũng được, không để trống.
+    - **Không được dùng 123456**, khác mật khẩu hiện tại, nhập lại phải khớp.
+  - Nhân viên tự đổi mật khẩu lúc nào cũng được; có nút **Đăng xuất**.
+  - Tài khoản bị khóa không đăng nhập được. Báo lỗi chung "Sai tên đăng nhập hoặc mật khẩu".
+  - Nhật ký ghi: đăng nhập, đăng xuất, đổi mật khẩu, đặt lại mật khẩu.
+  - **Không** cho Admin xem mật khẩu người dùng; người dùng đã cân nhắc và quyết định bỏ. Quên thì Admin đặt lại.
+  - Màn User - Role khi đó có thêm: **bộ lọc** (tìm kiếm họ tên / tên đăng nhập / mã NV, vai trò, trạng thái, mật khẩu mặc định / đã đổi) và nút **Thêm nhân viên mới (+)**; bấm mới mở khung thêm (giống Văn phòng → Phiếu thu).
+  - Câu hỏi mở cho GĐ 4: Q-041 (email nội bộ cho Supabase Auth, khóa khi sai nhiều lần, tự đăng xuất).
+- Code tham khảo (đã hoàn tác, xem lại bằng git):
+  - `07dc5f9`: `src/services/auth.ts`, `LoginScreen.tsx`, test `tests/auth.test.ts`;
+  - `40b1edb`: `suggestUsername` và màn User - Role có bộ lọc.
+
+### DEC-144 — Đổi tên menu "User - Phân quyền" thành "User - Role"
+
+- Trạng thái: CONFIRMED (2026-10-26). **Đã áp dụng** ở bản Demo (chỉ đổi tên hiển thị menu).
+- Các quy tắc tài khoản khác (tên đăng nhập `tuan.lv`, mật khẩu…) gộp vào DEC-143, chờ GĐ 4.
+
+### DEC-145 — Giao diện: design system v2 (tối giản, navy + một màu nhấn)
+
+- Trạng thái: CONFIRMED (2026-10-26). Người dùng duyệt phương án trên Claude Design "MATRAN DEPOT" (https://claude.ai/artifact/EvcTG1G1NN8EmHAp8j5t8E).
+- Phong cách tối giản, thân thiện, lấy cảm hứng bố cục từ cổng tài khoản ngành vận tải biển; **không** dùng logo / font / màu nhận diện của thương hiệu khác.
+- **Token** khai báo một chỗ ở `src/index.css` (`@theme`), dùng bằng class Tailwind: `canvas`, `surface`, `line`, `line-strong`, `ink`, `ink-muted`, `navy-900/700/50`, `accent`, `accent-soft`, `op-ha-vo`, `op-cap-vo`, `op-nhap-tau`, `op-xuat-tau`, `success-*`, `danger-*`.
+  - Màu chính `navy-900` (nút chính, menu, khung quét Xe nâng); link dữ liệu `navy-700`.
+  - `accent` dùng ít: focus, mục đang mở, tiến độ — không làm màu chữ.
+  - Màu tác nghiệp giữ nguyên nghĩa (DEC-083), chỉ đổi tông.
+- **Chữ:** Be Vietnam Pro (giao diện), JetBrains Mono (số cont, mã) — tải từ Google Fonts, có font dự phòng của hệ thống. Cỡ mặc định máy tính 14px; ô nhập điện thoại vẫn 16px (DEC-116).
+- **Chữ thường** cho tiêu đề thẻ và nhãn ô nhập; IN HOA chỉ còn ở nhãn tác nghiệp.
+- Nút / ô nhập cao tối thiểu 40px, bo 8px; thẻ bo 12px, không bóng đổ.
+- **Áp dần theo từng bước** (mỗi bước một commit): (1) token + font + thành phần dùng chung; (2) khung App / menu; (3) Tồn vỏ; (4) màn mobile hiện trường; (5) văn phòng, báo cáo, danh mục, phiếu thu, giấy tờ in — **đã làm cả 5 bước** (đổi class slate / blue sang token). Còn giữ ~20 chỗ màu slate trên nền đậm (chữ / viền phụ).
+- **Lưu vào code làm chuẩn bắt buộc:** `docs/DESIGN_SYSTEM.md` + `docs/design/` (tokens, mẫu thành phần, 2 màn mẫu); skill `matran-ui-screen` trỏ tới; test chặn class màu cũ trong `src/`. Màn mới phải dùng token, không viết thêm `blue-600` / `slate-*` cho màu chính.
+
+### DEC-146 — Văn phòng → Nhập / Xuất tàu: bảng chi tiết tàu không gộp cột
+
+- Trạng thái: CONFIRMED (2026-10-26). Áp quy tắc chung DEC-134 / DEC-139.
+- Bảng cont trong chi tiết tàu: **# | Mã hồ sơ | Số container | Size | Type | Hãng tàu | Trạng thái | Phân loại | Vệ sinh (NT) / Vị trí lúc lập (XT) | Số xe | Tiến độ | Người thực hiện | Thời gian**; mỗi ô 1 thông tin, `whitespace-nowrap`, chữ dài dùng `CellText`.
+- Bỏ cột gộp: Size/Type, "Giám định" / "Trạng thái • Phân loại", "Người / giờ". Hãng tàu: NT lấy của danh sách, XT lấy từ lượt lưu bãi.
+- Danh sách tàu: tách "Lập bởi" và "Thời gian lập". Khung dán cont: tách Size | Type.
+- Vị trí lúc lập hiển thị icon định vị thay chữ BLOCK- (DEC-136).
+
+### DEC-147 — Giám định → Hạ vỏ: W-SURVEY (LÊN KỆ) + giám định bổ sung trên kệ
+
+- Trạng thái: CONFIRMED (2026-10-26). Thay điểm 1 và 6 của DEC-109.
+- Tên hiển thị và giá trị lưu: **W-SURVEY** (người dùng đổi từ "GIÁM ĐỊNH SAU" cho chuyên nghiệp); nút ghi "W-SURVEY (LÊN KỆ)".
+- **Giám định:** mục 1 TRẠNG THÁI có 3 lựa chọn **DAMAGE / AV / W-SURVEY (LÊN KỆ)**; bỏ ô tích "HẠ KỆ GIÁM ĐỊNH".
+  - Chọn W-SURVEY → bỏ qua mục 2 (Đóng hàng) và 4 (AGE), chỉ chọn **mục 3 Vệ sinh** (1 hoặc nhiều) rồi gửi.
+  - Hệ thống tự đánh dấu HẠ KỆ GIÁM ĐỊNH.
+- **Văn phòng / Vệ sinh:** làm như thường (Văn phòng nhập Số cont, Size, Type…, thu phí, in K80 / EEIR). **EEIR ghi Trạng thái "W-SURVEY"**; Đóng hàng / AGE để trống ("-").
+- **Xe nâng:** sau Vệ sinh, chỉ hạ vào block Kệ giám định (như DEC-109).
+- **Giám định bổ sung:** màn Giám định → Hạ vỏ có tab **"Chờ giám định trên kệ (N)"**.
+  - Danh sách phiếu W-SURVEY, đã có Số cont + Size + Type từ Văn phòng.
+  - Cont chưa hạ lên kệ hiện "Chờ Xe nâng hạ kệ", chưa giám định được.
+  - Giám định nhập **AV / DAMAGE (+ lỗi) + Đóng hàng + AGE** (không hỏi lại Vệ sinh).
+  - Hệ thống cập nhật hồ sơ Hạ vỏ, K80 (EEIR in lại sẽ có thông tin mới), lượt lưu bãi.
+- **Sau giám định bổ sung — như Hạ vỏ thường:** DAMAGE → hàng chờ Báo giá → Sửa chữa; Xe nâng **Đảo chuyển** đưa cont khỏi kệ (xóa cờ kệ). AV → chỉ Đảo chuyển.
+- Số đếm menu Giám định – Hạ vỏ (DEC-075) tính cả phiếu trên kệ đã hạ.
+- **Claude bổ sung — cần người dùng xác nhận:** cont đang W-SURVEY **chưa cho Cấp vỏ** (`releaseBlocker`: "Chưa giám định (W-SURVEY)"). Ghi ở Q-042.
+- Kỹ thuật:
+  - `FieldConditionClass` thêm `'W-SURVEY'` (`CONDITION_DEFERRED`).
+  - `stuffingClass` / `manufactureYear` được để trống khi W-SURVEY.
+  - `pendingRackInspections`, `completeRackInspection` (`depotOperations.ts`); `GateInOrder.rackInspectedBy / rackInspectedAt`.
+  - Nhật ký `GIAM_DINH_TREN_KE`.
+  - `InspectionFields` prop `allowDeferred` (chỉ Hạ vỏ, không có ở Nhập tàu), `hideCleaning`.
+
+### DEC-148 — Dữ liệu test (Demo): danh mục theo người dùng + danh sách lớn
+
+- Trạng thái: CONFIRMED (2026-10-26). Bổ sung DEC-106 / DEC-108.
+  - Chỉ áp cho `createDemoState()` (nút Nạp dữ liệu test).
+  - `createCleanState()` và `createInitialState()` (dùng cho test) không đổi.
+- **Danh mục** (tạo bằng hàm Danh mục của Admin):
+  - Hãng tàu: chỉ **MSK**.
+  - Khách hàng: **10 khách** `KH01` → `KH10`, tên "Khách hàng 01…10" (tên chung — người dùng chưa cung cấp tên thật). KH09, KH10 không cho TTS để thử chặn.
+  - Công ty: **CÔNG TY CỔ PHẦN MATRAN** / MATRAN DEPOT / Số 189, đường Đình Vũ, phường Hải An, thành phố Hải Phòng. / 0912907980 / Matran@gmail.com. MST và tài khoản ngân hàng để trống (chưa có).
+  - Biểu giá (đã gồm VAT, mọi hãng tàu):
+
+    | Mục | Giá (đồng) |
+    |---|---|
+    | 20DC | 1.000.000 |
+    | 40DC | 1.500.000 |
+    | 40HC | 1.500.000 |
+    | 45HC | 1.500.000 |
+    | THU GOM RÁC LV1 | 200.000 |
+    | THU GOM RÁC LV2 | 500.000 |
+
+  - Phí rác: cont 20 / 40 dùng LV1, cont 45 dùng LV2.
+- **Danh sách lớn** cho mọi tác nghiệp (`bulkData`):
+  - Hạ vỏ: thêm 80 lượt, đủ size / type / khách / thanh toán (TT tiền mặt, chuyển khoản, TTS), DAMAGE, vệ sinh, W-SURVEY, chờ thanh toán.
+  - Vệ sinh; Xe nâng hạ vào Block A / B / DAMAGE; một số chờ hạ.
+  - Báo giá → Sửa chữa → AV; Giám định trên kệ.
+  - Khóa container; Đảo chuyển.
+  - Cấp vỏ: 24 lệnh (đã xuất / TTS chờ Xe nâng / chờ thanh toán).
+  - Nhập tàu: 3 tàu × 20 cont (xong / dở / chưa làm). Xuất tàu: 1 tàu 12 cont, xuất một nửa.
+  - Góp ý: nhiều màn.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1300,6 +1413,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-141 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-148 đã xác nhận (cập nhật 2026-10-26).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

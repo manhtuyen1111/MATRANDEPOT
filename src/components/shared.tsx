@@ -40,15 +40,15 @@ export const Feedback: React.FC<{
   return (
     <div
       role={isError ? 'alert' : 'status'}
-      className={`flex items-start justify-between gap-3 rounded-lg border px-3.5 py-2.5 text-xs ${
-        isError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+      className={`flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
+        isError ? 'border-danger-bg bg-danger-bg text-danger-fg' : 'border-success-bg bg-success-bg text-success-fg'
       }`}
     >
       <div className="flex items-start gap-2">
         {isError ? (
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-danger-fg" />
         ) : (
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-fg" />
         )}
         <span className="font-medium">{error || success}</span>
       </div>
@@ -68,9 +68,9 @@ export const SectionCard: React.FC<{
   children: React.ReactNode;
   className?: string;
 }> = ({ title, icon, right, children, className = '' }) => (
-  <section className={`rounded-lg border border-slate-200 bg-white ${className}`}>
-    <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-2.5">
-      <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-800">
+  <section className={`rounded-xl border border-line bg-surface ${className}`}>
+    <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+      <h3 className="flex items-center gap-1.5 text-base font-semibold text-ink">
         {icon}
         {title}
       </h3>
@@ -81,7 +81,7 @@ export const SectionCard: React.FC<{
 );
 
 export const LockIcon: React.FC<{ reason?: string }> = ({ reason }) => (
-  <span title={reason ? `Đang khóa: ${reason}` : 'Đang khóa'} className="inline-flex text-rose-600">
+  <span title={reason ? `Đang khóa: ${reason}` : 'Đang khóa'} className="inline-flex text-danger-fg">
     <Lock className="h-3.5 w-3.5" aria-label="Container đang bị khóa" />
   </span>
 );
@@ -92,17 +92,17 @@ export const ContainerNo: React.FC<{ no: string; locked?: boolean; lockReason?: 
   lockReason,
   className = '',
 }) => (
-  <span className={`inline-flex items-center gap-1 font-mono font-bold text-slate-900 ${className}`}>
+  <span className={`inline-flex items-center gap-1 font-mono font-bold text-ink ${className}`}>
     {no}
     {locked && <LockIcon reason={lockReason} />}
   </span>
 );
 
 export const inputCls =
-  'w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-hidden focus:ring-1 focus:ring-blue-600';
-export const labelCls = 'mb-1 block text-[11px] font-semibold uppercase text-slate-600';
+  'w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-ink focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-accent/40';
+export const labelCls = 'mb-1 block text-xs font-medium text-ink-muted';
 // DEC-117: KIỂU LINK DỮ LIỆU THỐNG NHẤT toàn app (mã hồ sơ, mã phiếu thu, mã cấp vỏ, NT- / XT-…) — giống Mã hồ sơ ở Tồn vỏ
-export const linkCls = 'font-mono text-blue-700 hover:underline';
+export const linkCls = 'font-mono text-navy-700 hover:underline';
 
 // DEC-135: GIỚI HẠN CHỮ MỖI Ô BẢNG — tối đa N ký tự, dư thì "…", rê chuột xem đủ (dữ liệu lưu vẫn đầy đủ)
 export const CELL_MAX = { SHORT: 20, MEDIUM: 30, LONG: 40 } as const; // tên người / khách: 20–30, ghi chú / remark / nội dung: 40
@@ -137,9 +137,9 @@ export const CellText: React.FC<{ text?: string | null; max?: number; className?
 };
 
 export const primaryBtn =
-  'inline-flex items-center justify-center gap-1.5 rounded-md bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-navy-900 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-700 focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45';
 export const secondaryBtn =
-  'inline-flex items-center justify-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm font-medium text-ink hover:bg-canvas focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45';
 
 // ---------------------------------------------------------------------------
 // CHI PHÍ (ĐÃ BAO GỒM VAT) — chỉ chọn từ biểu giá Danh mục chung (dùng chung Hạ vỏ / Cấp vỏ)
@@ -187,8 +187,8 @@ export const FeeLinesEditor: React.FC<{
   return (
     <SectionCard
       title="Chi phí (đã bao gồm VAT)"
-      icon={<Receipt className="h-4 w-4 text-slate-500" />}
-      right={<span className="font-mono text-xs font-bold text-slate-900">{formatVnd(total)}</span>}
+      icon={<Receipt className="h-4 w-4 text-ink-muted" />}
+      right={<span className="font-mono text-xs font-bold text-ink">{formatVnd(total)}</span>}
     >
       <div className="flex flex-col gap-2 sm:flex-row">
         <select
@@ -228,14 +228,14 @@ export const FeeLinesEditor: React.FC<{
 
       {lines.length > 0 && (
         <table className="mt-3 w-full text-left text-xs">
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line">
             {lines.map(({ index, item }) => (
               <tr key={`${item.id}-${index}`}>
-                <td className="py-1.5 pr-2 font-mono text-[11px] text-slate-500">{item.code}</td>
-                <td className="py-1.5 pr-2 text-slate-900">{item.name}</td>
+                <td className="py-1.5 pr-2 font-mono text-[11px] text-ink-muted">{item.code}</td>
+                <td className="py-1.5 pr-2 text-ink">{item.name}</td>
                 {withQty && (
                   <>
-                    <td className="py-1.5 pr-2 text-right font-mono text-[11px] text-slate-500">{formatVnd(item.defaultAmountInclVat)} ×</td>
+                    <td className="py-1.5 pr-2 text-right font-mono text-[11px] text-ink-muted">{formatVnd(item.defaultAmountInclVat)} ×</td>
                     <td className="w-20 py-1.5 pr-2">
                       <input
                         type="number"
@@ -260,7 +260,7 @@ export const FeeLinesEditor: React.FC<{
                         onChange(selectedIds.filter((_, i) => i !== index));
                         if (withQty) onQuantitiesChange!(selectedIds.map((_, i) => qtyAt(i)).filter((_, i) => i !== index));
                       }}
-                      className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                      className="rounded p-1 text-ink-muted hover:bg-rose-50 hover:text-rose-600"
                       aria-label={`Xóa ${item.name}`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -321,7 +321,7 @@ export const PaymentPanel: React.FC<{
   const activeMasters = state.masterReceipts.filter((r) => r.status === 'ACTIVE');
   const set = (patch: Partial<PaymentChoice>) => onChange({ ...value, ...patch });
   return (
-    <SectionCard title="Hình thức thanh toán" icon={<CreditCard className="h-4 w-4 text-slate-500" />}>
+    <SectionCard title="Hình thức thanh toán" icon={<CreditCard className="h-4 w-4 text-ink-muted" />}>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Hình thức thanh toán">
         {PAYMENT_OPTIONS.map((opt) => {
           const active = value.paymentCategory === opt.code;
@@ -333,11 +333,11 @@ export const PaymentPanel: React.FC<{
               aria-checked={active}
               onClick={() => set({ paymentCategory: opt.code })}
               className={`rounded-md border px-3 py-2 text-left text-xs transition ${
-                active ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600' : 'border-slate-200 hover:bg-slate-50'
+                active ? 'border-navy-900 bg-navy-50 ring-1 ring-accent' : 'border-line hover:bg-canvas'
               }`}
             >
-              <span className="block font-bold text-slate-900">{opt.title}</span>
-              <span className="text-[11px] text-slate-500">{opt.sub}</span>
+              <span className="block font-bold text-ink">{opt.title}</span>
+              <span className="text-[11px] text-ink-muted">{opt.sub}</span>
             </button>
           );
         })}
@@ -348,7 +348,7 @@ export const PaymentPanel: React.FC<{
           <label className="block">
             <span className={labelCls}>Mã QR Phiếu thu trả trước</span>
             <div className="flex items-center gap-2">
-              <QrCode className="h-4 w-4 shrink-0 text-slate-500" />
+              <QrCode className="h-4 w-4 shrink-0 text-ink-muted" />
               <input
                 list="ttt-qr-list"
                 value={value.scannedQrCode}
@@ -370,7 +370,7 @@ export const PaymentPanel: React.FC<{
           <label className="block">
             <span className={labelCls}>Ghi chú TTS trên chứng từ</span>
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 shrink-0 text-slate-500" />
+              <FileText className="h-4 w-4 shrink-0 text-ink-muted" />
               <input
                 value={value.ttsNote}
                 onChange={(e) => set({ ttsNote: e.target.value })}
@@ -391,8 +391,8 @@ export const PaymentPanel: React.FC<{
                 onClick={() => set({ directMethod: m })}
                 className={`rounded-md border py-2 text-xs font-semibold ${
                   value.directMethod === m
-                    ? 'border-blue-600 bg-blue-600 text-white'
-                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                    ? 'border-navy-900 bg-navy-900 text-white'
+                    : 'border-line-strong bg-white text-ink hover:bg-canvas'
                 }`}
               >
                 {m === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản (API QR)'}
@@ -506,20 +506,20 @@ export const SlotPicker: React.FC<{
     onChange(next);
   };
   const btn = (active: boolean) =>
-    `min-h-[2.75rem] rounded-md border px-2 py-2 text-center font-mono text-sm font-bold ${active ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white text-slate-900 hover:border-blue-400 active:bg-blue-50'}`;
+    `min-h-[2.75rem] rounded-md border px-2 py-2 text-center font-mono text-sm font-bold ${active ? 'border-navy-900 bg-navy-900 text-white' : 'border-line-strong bg-white text-ink hover:border-blue-400 active:bg-navy-50'}`;
   const seg = (filled: boolean, active: boolean) =>
-    `rounded px-1.5 py-0.5 font-mono font-black ${filled ? 'bg-slate-900 text-white' : active ? 'border border-dashed border-blue-600 text-blue-700' : 'text-slate-400'}`;
+    `rounded px-1.5 py-0.5 font-mono font-black ${filled ? 'bg-navy-900 text-white' : active ? 'border border-dashed border-navy-900 text-navy-700' : 'text-ink-muted'}`;
   return (
     <div className="space-y-2" data-testid="slot-picker">
       {/* Dòng tóm tắt: giá trị đã chọn */}
-      <div className="flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs" data-testid="slot-summary">
-        <span className="mr-1 text-[11px] font-semibold uppercase text-slate-500">Vị trí</span>
+      <div className="flex flex-wrap items-center gap-1 rounded-md border border-line bg-white px-2 py-1.5 text-xs" data-testid="slot-summary">
+        <span className="mr-1 text-[11px] font-semibold uppercase text-ink-muted">Vị trí</span>
         <button type="button" onClick={() => resetFrom('block')} disabled={!block} className={seg(Boolean(block), step === 'block')} title="Chọn lại Block">
           {block ? <span className="inline-flex items-center gap-0.5"><BlockIcon />{blockLabel(block.blockCode)}</span> : 'Block'}
         </button>
         {dims.map((d, i) => (
           <React.Fragment key={d.key}>
-            <span className="text-slate-400">{i === 0 ? '/' : '-'}</span>
+            <span className="text-ink-muted">{i === 0 ? '/' : '-'}</span>
             <button type="button" onClick={() => resetFrom(d.key)} disabled={!value[d.key]} className={seg(Boolean(value[d.key]), step === d.key)} title={`Chọn lại ${SLOT_DIMENSION_LABELS[d.key]}`}>
               {value[d.key] || SLOT_DIMENSION_LABELS[d.key]}
             </button>
@@ -562,7 +562,7 @@ export const SlotPicker: React.FC<{
         </div>
       )}
       {block && dims.length === 0 && (
-        <p className="text-[11px] text-slate-500">{block.blockCode} chỉ quản lý theo Block — không cần Bay / Row / Tier.</p>
+        <p className="text-[11px] text-ink-muted">{block.blockCode} chỉ quản lý theo Block — không cần Bay / Row / Tier.</p>
       )}
     </div>
   );
@@ -578,11 +578,11 @@ export const Pager: React.FC<{
   pageSize?: number;
   onPageSize?: (n: number) => void;
 }> = ({ page, pageCount, total, onPage, pageSize, onPageSize }) => (
-  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-3 py-2 text-[11px] text-slate-600">
+  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-3 py-2 text-[11px] text-ink-muted">
     <span className="flex items-center gap-2">
       {total} bản ghi
       {onPageSize && (
-        <select value={pageSize} onChange={(e) => { onPageSize(Number(e.target.value)); onPage(1); }} aria-label="Số dòng mỗi trang" className="rounded border border-slate-300 bg-white px-1.5 py-1 text-[11px]">
+        <select value={pageSize} onChange={(e) => { onPageSize(Number(e.target.value)); onPage(1); }} aria-label="Số dòng mỗi trang" className="rounded border border-line-strong bg-white px-1.5 py-1 text-[11px]">
           {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n} dòng / trang</option>)}
         </select>
       )}
@@ -744,10 +744,10 @@ export const DetailDrawer: React.FC<{
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-label="Chi tiết">
-      <button type="button" aria-label="Đóng chi tiết" onClick={onClose} className="absolute inset-0 cursor-default bg-slate-900/30" />
+      <button type="button" aria-label="Đóng chi tiết" onClick={onClose} className="absolute inset-0 cursor-default bg-navy-900/30" />
       <aside className={`relative flex h-full w-full flex-col bg-white shadow-2xl ${wide ? 'sm:w-[min(960px,75vw)]' : 'sm:w-[min(760px,60vw)]'}`}>
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
-          <h3 className="min-w-0 flex-1 text-sm font-black text-slate-900">{title}</h3>
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+          <h3 className="min-w-0 flex-1 text-sm font-black text-ink">{title}</h3>
           <div className="flex flex-wrap items-center gap-2">
             {actions}
             <button type="button" onClick={onClose} aria-label="Đóng" className={secondaryBtn}>

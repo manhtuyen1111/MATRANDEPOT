@@ -41,7 +41,7 @@ export const CompanyCatalog: React.FC<{ state: DepotState; onUpdateState: (next:
       <div className="space-y-3 lg:col-span-7">
         <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
         {!isAdmin && <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">Chế độ chỉ xem — chỉ Admin cấu hình thông tin công ty.</p>}
-        <SectionCard title="Thông tin công ty" icon={<Building2 className="h-4 w-4 text-slate-500" />}>
+        <SectionCard title="Thông tin công ty" icon={<Building2 className="h-4 w-4 text-ink-muted" />}>
           <form onSubmit={save} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {FIELDS.map((f) => (
               <label key={f.key} className={f.wide ? 'sm:col-span-2' : ''}>
@@ -65,7 +65,7 @@ export const CompanyCatalog: React.FC<{ state: DepotState; onUpdateState: (next:
       </div>
       <div className="lg:col-span-5">
         <SectionCard title="Xem trước phần đầu giấy tờ in">
-          <div className="border border-dashed border-slate-300 p-3 text-xs">
+          <div className="border border-dashed border-line-strong p-3 text-xs">
             <CompanyHeader company={{ ...form, shortName: form.shortName || form.name }} title="PHIẾU THU" subtitle={<p className="font-mono">Số: PT-TT-YYMMDD-NNNN</p>} />
           </div>
         </SectionCard>

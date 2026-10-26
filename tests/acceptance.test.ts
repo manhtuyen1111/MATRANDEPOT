@@ -8,6 +8,8 @@ import {
   approveDamageQuotation,
   setRepairTeamMemberActive,
   completeCleaningTask,
+  completeRackInspection,
+  pendingRackInspections,
   completeRepairTask,
   confirmGateInPaymentAndComplete,
   confirmPrepaidCash,
@@ -1182,10 +1184,10 @@ describe('DEC-106: dữ liệu sạch để test lại từ đầu', () => {
   });
 });
 
-describe('DEC-109: HẠ KỆ GIÁM ĐỊNH', () => {
-  it('Giám định đánh dấu → Xe nâng chỉ hạ vào Kệ giám định → Đảo chuyển về bay thì xóa cờ', async () => {
+describe('DEC-109 / DEC-147: HẠ KỆ GIÁM ĐỊNH', () => {
+  it('W-SURVEY → Xe nâng chỉ hạ vào Kệ giám định → Đảo chuyển về bay thì xóa cờ', async () => {
     const { getDriverRoute } = await import('../src/services/driverRoute');
-    let { state: s } = gateInTts(createInitialState(), 'MSKU1234567', { toInspectionRack: true });
+    let { state: s } = gateInTts(createInitialState(), 'MSKU1234567', { conditionClass: 'W-SURVEY', stuffingClass: undefined, manufactureYear: undefined });
     expect(s.gateInOrders[0].toInspectionRack).toBe(true);
     const c = s.containers.find((x) => x.containerNo === 'MSKU1234567' && x.status === 'WAITING_PLACEMENT')!;
     expect(c.forkliftShiftTask).toBe('HA_KE_GIAM_DINH');
@@ -1258,5 +1260,63 @@ describe('DEC-119: số chứng từ = mã hồ sơ tác nghiệp (không còn m
     expect(s.vouchers.every((x) => !x.voucherNo.startsWith('CT-'))).toBe(true);
     expect(gateInSheet('HẠ VỎ', s.gateInOrders).columns).not.toContain('SỐ CHỨNG TỪ');
     expect(gateOutSheet('CẤP VỎ', s, s.gateOutOrders).columns).not.toContain('SỐ CHỨNG TỪ');
+  });
+});
+
+describe('DEC-147: W-SURVEY (LÊN KỆ) + giám định bổ sung trên kệ', () => {
+  const DEFER = { conditionClass: 'W-SURVEY', stuffingClass: undefined, manufactureYear: undefined } as const;
+
+  it('Giám định chọn W-SURVEY: chỉ cần ảnh + Vệ sinh, không cần Đóng hàng / AGE; tự HẠ KỆ', () => {
+    const s = fieldStep(createInitialState(), { ...DEFER, cleaningItems: ['WP'] });
+    expect(s.gateInOrders[0]).toMatchObject({ conditionClass: 'W-SURVEY', toInspectionRack: true, cleaningItems: ['WP'] });
+    expect(s.gateInOrders[0].stuffingClass).toBeUndefined();
+    expect(s.gateInOrders[0].manufactureYear).toBeUndefined();
+    expect(s.auditLogs[0].summary).toMatch(/W-SURVEY/);
+    // AV / DAMAGE vẫn bắt buộc Đóng hàng + AGE
+    expect(() => fieldStep(createInitialState(), { stuffingClass: undefined })).toThrow(/PHÂN LOẠI ĐÓNG HÀNG/);
+    expect(() => fieldStep(createInitialState(), { manufactureYear: undefined })).toThrow(/AGE/);
+  });
+
+  it('Văn phòng làm như thường; EEIR / K80 ghi W-SURVEY; Vệ sinh → Xe nâng chỉ hạ kệ; chưa cho Cấp vỏ', async () => {
+    const { releaseBlocker } = await import('../src/services/depotOperations');
+    let { state: s } = gateInTts(createInitialState(), 'MSKU1234567', { ...DEFER, cleaningItems: ['WP'] });
+    const c = s.containers.find((x) => x.containerNo === 'MSKU1234567')!;
+    expect(c).toMatchObject({ conditionClass: 'W-SURVEY', forkliftShiftTask: 'HA_KE_GIAM_DINH', needsCleaning: true, needsQuotation: false });
+    expect(s.k80Tickets[0].conditionClass).toBe('W-SURVEY');
+    expect(pendingRackInspections(s).map((x) => x.id)).toEqual([c.id]);
+    // Chưa hạ lên kệ → chưa giám định bổ sung được
+    expect(() => completeRackInspection(as(s, 'usr-inspector'), { containerId: c.id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/chưa được Xe nâng hạ lên kệ/);
+    s = completeCleaningTask(as(s, 'usr-cleaning'), { containerNo: 'MSKU1234567' });
+    s = placeInYard(s, 'MSKU1234567', { blockCode: 'BLOCK-DAMAGE', bay: '01', row: '01', tier: '01' });
+    expect(releaseBlocker(s.containers.find((x) => x.id === c.id)!)).toMatch(/W-SURVEY/);
+  });
+
+  it('Giám định bổ sung DAMAGE → cập nhật phiếu + hàng chờ Báo giá; AV → hết chờ; bị từ chối khi sai quyền / thiếu dữ liệu', () => {
+    const setup = () => {
+      let { state: s } = gateInTts(createInitialState(), 'MSKU1234567', DEFER);
+      s = placeInYard(s, 'MSKU1234567', { blockCode: 'BLOCK-DAMAGE', bay: '01', row: '01', tier: '01' });
+      return { s, id: s.containers.find((x) => x.containerNo === 'MSKU1234567')!.id };
+    };
+    const { s, id } = setup();
+    const insp = as(s, 'usr-inspector');
+    expect(() => completeRackInspection(as(s, 'usr-office'), { containerId: id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/Không đủ quyền|chỉ Bộ phận Giám định/);
+    expect(() => completeRackInspection(insp, { containerId: id, conditionClass: 'W-SURVEY', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/AV hoặc DAMAGE/);
+    expect(() => completeRackInspection(insp, { containerId: id, conditionClass: 'DAMAGE', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/lỗi hư hỏng/);
+    expect(() => completeRackInspection(insp, { containerId: id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 19 })).toThrow(/AGE/);
+
+    const d = completeRackInspection(insp, { containerId: id, conditionClass: 'DAMAGE', damageRemarks: ['Móp vách'], stuffingClass: 'M', manufactureYear: 2018 });
+    const dc = d.containers.find((x) => x.id === id)!;
+    expect(dc).toMatchObject({ conditionClass: 'DAMAGE', stuffingClass: 'M', manufactureYear: 2018, needsQuotation: true, damageRemarks: ['Móp vách'] });
+    expect(d.gateInOrders[0]).toMatchObject({ conditionClass: 'DAMAGE', stuffingClass: 'M', manufactureYear: 2018, rackInspectedBy: insp.currentUser.fullName });
+    expect(d.k80Tickets[0]).toMatchObject({ conditionClass: 'DAMAGE', stuffingClass: 'M' });
+    expect(d.workOrders.some((w) => w.category === 'INSPECTION' && w.masterDossierCode === dc.masterDossierCode)).toBe(true);
+    expect(pendingRackInspections(d)).toEqual([]);
+    expect(d.auditLogs[0].actionCode).toBe('GIAM_DINH_TREN_KE');
+    // Không giám định bổ sung lần 2
+    expect(() => completeRackInspection(as(d, 'usr-inspector'), { containerId: id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/không ở trạng thái W-SURVEY/);
+
+    const a = completeRackInspection(insp, { containerId: id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 });
+    expect(a.containers.find((x) => x.id === id)!).toMatchObject({ conditionClass: 'AV', needsQuotation: false, forkliftShiftTask: 'HA_KE_GIAM_DINH' });
+    expect(a.workOrders.some((w) => w.category === 'INSPECTION' && w.masterDossierCode === dc.masterDossierCode)).toBe(false);
   });
 });

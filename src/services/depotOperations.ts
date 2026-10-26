@@ -15,6 +15,7 @@ import {
   K80InternalTicket,
   ReleaseBooking,
   ServiceWorkOrder,
+  CONDITION_DEFERRED,
 } from '../types/depot';
 import { DepotState, hasRolePermission } from './depotStore';
 import { allocateCode } from './codes';
@@ -125,10 +126,10 @@ export function recordGateInFieldStep(
     initialContainerHint?: string;
     conditionClass: FieldConditionClass;
     damageRemarks?: string[];
-    stuffingClass: FieldStuffingClass;
+    // DEC-147: W-SURVEY → bỏ trống Đóng hàng / AGE (bổ sung trên kệ bằng completeRackInspection)
+    stuffingClass?: FieldStuffingClass;
     cleaningItems: (FieldCleaningItem | string)[];
-    manufactureYear: number;
-    toInspectionRack?: boolean; // DEC-109
+    manufactureYear?: number;
   }
 ): DepotState {
   assertPermission(
@@ -139,9 +140,12 @@ export function recordGateInFieldStep(
   if (!input.doorPhotoUrl?.trim()) {
     throw new Error('Bắt buộc phải chụp 1 ảnh cửa container nhìn rõ số container.');
   }
-  const year = Number(input.manufactureYear);
-  if (!Number.isInteger(year) || year < 1980 || year > new Date().getFullYear() + 1) {
-    throw new Error('Năm sinh container (AGE) phải theo định dạng 4 chữ số hợp lệ (VD: 2001, 2002...).');
+  // DEC-147: W-SURVEY (LÊN KỆ) thay ô tích HẠ KỆ GIÁM ĐỊNH (DEC-109) — chỉ cần ảnh + Vệ sinh
+  const deferred = input.conditionClass === CONDITION_DEFERRED;
+  let year: number | undefined;
+  if (!deferred) {
+    if (!input.stuffingClass) throw new Error('Vui lòng chọn PHÂN LOẠI ĐÓNG HÀNG (M / K / E).');
+    year = assertManufactureYear(input.manufactureYear);
   }
 
   const normalizedCleaning = normalizeCleaningItems(input.cleaningItems);
@@ -160,10 +164,10 @@ export function recordGateInFieldStep(
     initialContainerHint: hint && !/^(HS|GD|IN)-/.test(hint) ? hint : undefined,
     conditionClass: input.conditionClass,
     damageRemarks: remarks,
-    stuffingClass: input.stuffingClass,
+    stuffingClass: deferred ? undefined : input.stuffingClass,
     cleaningItems: normalizedCleaning,
     manufactureYear: year,
-    toInspectionRack: Boolean(input.toInspectionRack),
+    toInspectionRack: deferred,
     fieldStaffName: state.currentUser.fullName,
     fieldRecordedAt: nowIso(),
     feeAmount: 0,
@@ -176,12 +180,95 @@ export function recordGateInFieldStep(
     'GIAM_DINH_HA_VO',
     'GATE_IN',
     code,
-    `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: Trạng thái ${input.conditionClass}${
-      remarks.length ? ` (${remarks.join(', ')})` : ''
-    }, Đóng hàng ${input.stuffingClass}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}${
-      input.toInspectionRack ? ' — HẠ KỆ GIÁM ĐỊNH' : ''
-    }`,
+    deferred
+      ? `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: W-SURVEY (LÊN KỆ), Vệ sinh [${normalizedCleaning.join(', ')}] — HẠ KỆ GIÁM ĐỊNH`
+      : `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: Trạng thái ${input.conditionClass}${
+          remarks.length ? ` (${remarks.join(', ')})` : ''
+        }, Đóng hàng ${input.stuffingClass}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}`,
     code
+  );
+}
+
+function assertManufactureYear(value: number | undefined): number {
+  const year = Number(value);
+  if (!Number.isInteger(year) || year < 1980 || year > new Date().getFullYear() + 1) {
+    throw new Error('Năm sinh container (AGE) phải theo định dạng 4 chữ số hợp lệ (VD: 2001, 2002...).');
+  }
+  return year;
+}
+
+// ============================================================================
+// DEC-147: GIÁM ĐỊNH BỔ SUNG TRÊN KỆ — cont W-SURVEY đã hạ lên kệ → Giám định nhập AV / DAMAGE + Đóng hàng + AGE
+// ============================================================================
+// Phiếu chờ giám định trên kệ: lượt lưu bãi đang W-SURVEY (Văn phòng đã nhập Số cont / Size / Type), mới nhất trước
+export function pendingRackInspections(state: DepotState): ContainerRecord[] {
+  return state.containers
+    .filter((c) => c.status !== 'GATED_OUT' && c.conditionClass === CONDITION_DEFERRED)
+    .sort((a, b) => new Date(b.gateInAt).getTime() - new Date(a.gateInAt).getTime());
+}
+
+export function completeRackInspection(
+  state: DepotState,
+  input: {
+    containerId: string;
+    conditionClass: FieldConditionClass;
+    damageRemarks?: string[];
+    stuffingClass: FieldStuffingClass;
+    manufactureYear: number;
+  }
+): DepotState {
+  assertPermission(state, 'GATE_IN_FIELD', 'chỉ Bộ phận Giám định / Hiện trường / Quản lý mới được giám định bổ sung trên kệ.');
+  const c = state.containers.find((x) => x.id === input.containerId);
+  if (!c || c.status === 'GATED_OUT') throw new Error('Không tìm thấy container đang lưu bãi.');
+  if (c.conditionClass !== CONDITION_DEFERRED) throw new Error(`Container ${c.containerNo} không ở trạng thái W-SURVEY (đã giám định).`);
+  if (c.status !== 'IN_YARD') throw new Error(`Container ${c.containerNo} chưa được Xe nâng hạ lên kệ — chưa giám định bổ sung được.`);
+  if (input.conditionClass !== 'AV' && input.conditionClass !== 'DAMAGE') throw new Error('Vui lòng chọn TRẠNG THÁI AV hoặc DAMAGE.');
+  if (!input.stuffingClass) throw new Error('Vui lòng chọn PHÂN LOẠI ĐÓNG HÀNG (M / K / E).');
+  const year = assertManufactureYear(input.manufactureYear);
+  const isDamage = input.conditionClass === 'DAMAGE';
+  const remarks = isDamage ? (input.damageRemarks || []).map((r) => r.trim()).filter(Boolean) : [];
+  if (isDamage && remarks.length === 0) throw new Error('Container DAMAGE: chọn ít nhất 1 lỗi hư hỏng hoặc nhập ghi chú.');
+
+  const patch = { conditionClass: input.conditionClass, damageRemarks: remarks, stuffingClass: input.stuffingClass, manufactureYear: year };
+  const actor = state.currentUser.fullName;
+  const now = nowIso();
+  let next = updateContainerById(state, c.id, { ...patch, needsQuotation: isDamage });
+  next = {
+    ...next,
+    gateInOrders: next.gateInOrders.map((o) =>
+      o.masterDossierCode === c.masterDossierCode ? { ...o, ...patch, rackInspectedBy: actor, rackInspectedAt: now } : o
+    ),
+    k80Tickets: next.k80Tickets.map((t) => (t.masterDossierCode === c.masterDossierCode ? { ...t, ...patch } : t)),
+    // Như Hạ vỏ thường: DAMAGE → hàng chờ Báo giá
+    workOrders: isDamage
+      ? [
+          {
+            id: newId('wo'),
+            masterDossierCode: c.masterDossierCode,
+            workOrderCode: `INSP-${c.masterDossierCode}`,
+            containerNo: c.containerNo,
+            category: 'INSPECTION' as const,
+            sourceOrderCode: c.masterDossierCode,
+            items: [...remarks],
+            estimateCost: 0,
+            approvalStatus: 'NOT_REQUIRED' as const,
+            workStatus: 'OPEN' as const,
+            assignedTo: 'Bộ phận Báo giá',
+            createdAt: now,
+          },
+          ...next.workOrders,
+        ]
+      : next.workOrders,
+  };
+  return appendAudit(
+    next,
+    'GIAM_DINH_TREN_KE',
+    'GATE_IN',
+    c.masterDossierCode,
+    `[Hồ sơ ${c.masterDossierCode}] Giám định bổ sung trên kệ ${c.containerNo}: Trạng thái ${input.conditionClass}${
+      remarks.length ? ` (${remarks.join(', ')})` : ''
+    }, Đóng hàng ${input.stuffingClass}, AGE ${year}${isDamage ? ' → BÁO GIÁ - CHỜ BÁO GIÁ' : ''}`,
+    c.masterDossierCode
   );
 }
 
@@ -882,6 +969,7 @@ export function releaseBlocker(c: ContainerRecord): string | null {
   if (c.vesselExportItemId) return 'Đang trong danh sách XUẤT TÀU';
   if (c.isOnHold) return 'Container đang bị KHÓA';
   if (c.needsCleaning) return 'Chưa xác nhận vệ sinh';
+  if (c.conditionClass === CONDITION_DEFERRED) return 'Chưa giám định (W-SURVEY)'; // DEC-147
   if (c.conditionClass === 'AV' && (c.needsQuotation || c.needsRepair)) return 'Chưa hoàn tất báo giá / sửa chữa';
   return null;
 }

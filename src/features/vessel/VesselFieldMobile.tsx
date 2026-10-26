@@ -147,22 +147,22 @@ export const VesselFieldMobile: React.FC<{
 
   return (
     <div className="mx-auto w-full max-w-lg space-y-3 pb-16">
-      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5">
+      <div className="flex items-center justify-between rounded-lg border border-line bg-white px-4 py-2.5">
         <div>
-          <span className="block text-[11px] font-semibold uppercase text-slate-500">{t.dept}</span>
-          <h2 className="text-sm font-bold text-slate-900">{t.name}</h2>
+          <span className="block text-[11px] font-semibold uppercase text-ink-muted">{t.dept}</span>
+          <h2 className="text-sm font-bold text-ink">{t.name}</h2>
         </div>
-        <span className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-white" title="Số cont chờ làm">{sum?.todo ?? 0}</span>
+        <span className="rounded bg-navy-900 px-2.5 py-1 text-xs font-bold text-white" title="Số cont chờ làm">{sum?.todo ?? 0}</span>
       </div>
 
       {!list || !sum ? (
-        <p className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-xs text-slate-500">
+        <p className="rounded-lg border border-dashed border-line-strong bg-white p-8 text-center text-xs text-ink-muted">
           Chưa có danh sách {t.name.toLowerCase()} nào — chờ Văn phòng lập danh sách.
         </p>
       ) : (
         <>
           {/* TIẾN ĐỘ — luôn ở trên: tàu, xong / tổng, bạn đã làm, theo xe */}
-          <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 text-xs">
+          <div className="space-y-2 rounded-lg border border-line bg-white p-3 text-xs">
             {lists.length > 1 ? (
               <select value={list.id} onChange={(e) => { setListId(e.target.value); resetForm(); setError(null); }} className={`${inputCls} py-2 text-sm font-black`} aria-label="Chọn tàu">
                 {lists.map((l) => {
@@ -171,28 +171,28 @@ export const VesselFieldMobile: React.FC<{
                 })}
               </select>
             ) : (
-              <p className="text-sm font-black text-slate-900">Tàu {list.vesselName} <span className="font-mono text-[11px] font-normal text-slate-500">{formatDateTime(list.plannedAt)}</span></p>
+              <p className="text-sm font-black text-ink">Tàu {list.vesselName} <span className="font-mono text-[11px] font-normal text-ink-muted">{formatDateTime(list.plannedAt)}</span></p>
             )}
             <div className="flex items-end justify-between">
               <p>
                 <span className="font-mono text-2xl font-black text-emerald-700">{sum.done}</span>
-                <span className="font-mono text-base font-bold text-slate-500"> / {sum.total}</span>
-                <span className="ml-1 text-[11px] text-slate-600">đã {t.doneWord}</span>
+                <span className="font-mono text-base font-bold text-ink-muted"> / {sum.total}</span>
+                <span className="ml-1 text-[11px] text-ink-muted">đã {t.doneWord}</span>
               </p>
-              <p className="text-right text-[11px] text-slate-600">
-                Chờ làm <strong className="text-slate-900">{sum.todo}</strong>
+              <p className="text-right text-[11px] text-ink-muted">
+                Chờ làm <strong className="text-ink">{sum.todo}</strong>
                 {sum.wait > 0 && <> • chưa tới lượt <strong className="text-amber-700">{sum.wait}</strong></>}
                 <br />
-                Bạn đã làm <strong className="text-blue-700">{sum.mine}</strong>
+                Bạn đã làm <strong className="text-navy-700">{sum.mine}</strong>
               </p>
             </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
+            <div className="h-2.5 overflow-hidden rounded-full bg-line">
               <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
             </div>
             {!isPlace && sum.byTruck.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-0.5">
                 {sum.byTruck.map((b) => (
-                  <span key={b.truckNo} className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-semibold ${b.count ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-slate-200 text-slate-500'}`}>
+                  <span key={b.truckNo} className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-semibold ${b.count ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-line text-ink-muted'}`}>
                     <Truck className="h-3 w-3" />
                     {b.truckNo}: {b.count}
                   </span>
@@ -218,7 +218,7 @@ export const VesselFieldMobile: React.FC<{
 
           <Feedback error={error} onClose={() => setError(null)} />
 
-          <form onSubmit={lookup} className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+          <form onSubmit={lookup} className="space-y-2 rounded-lg border border-line bg-white p-3">
             <span className={labelCls}>{isInspect ? 'Số container về thực tế *' : 'Tìm số container'} (gõ vài số cuối để lọc)</span>
             <div className="flex gap-2">
               <input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); if (item) setItemId(''); }} placeholder="TCLU1234567" className={`${inputCls} py-2.5 font-mono text-base font-bold uppercase`} />
@@ -227,8 +227,8 @@ export const VesselFieldMobile: React.FC<{
           </form>
 
           {item && (
-            <div className="space-y-3 rounded-lg border-2 border-blue-600 bg-white p-3 text-xs">
-              <div className="relative rounded-lg bg-slate-900 px-4 py-3 text-white">
+            <div className="space-y-3 rounded-lg border-2 border-navy-900 bg-white p-3 text-xs">
+              <div className="relative rounded-lg bg-navy-900 px-4 py-3 text-white">
                 <button type="button" onClick={resetForm} aria-label="Bỏ chọn" className="absolute right-2 top-2 text-slate-300 hover:text-white"><X className="h-4 w-4" /></button>
                 <p className="text-[11px] font-black uppercase text-amber-300">Đang tác nghiệp: {t.name} • Tàu {list.vesselName}</p>
                 <p className="font-mono text-3xl font-black tracking-wider">{item.containerNo}</p>
@@ -241,12 +241,12 @@ export const VesselFieldMobile: React.FC<{
 
               {isPlace ? (
                 <div className="space-y-1.5">
-                  <span className="block text-xs font-bold text-slate-800">VỊ TRÍ HẠ *</span>
+                  <span className="block text-xs font-bold text-ink">VỊ TRÍ HẠ *</span>
                   <SlotPicker state={state} value={slot} onChange={setSlot} />
                 </div>
               ) : (
                 <div className="space-y-1.5">
-                  <span className="block text-xs font-bold text-slate-800">SỐ XE *</span>
+                  <span className="block text-xs font-bold text-ink">SỐ XE *</span>
                   <ChoiceButtons options={list.truckNos} value={truckNo} onChange={setTruckNo} />
                 </div>
               )}
@@ -261,25 +261,25 @@ export const VesselFieldMobile: React.FC<{
           )}
 
           {/* DANH SÁCH: Chờ làm / Đã xong / Tất cả — xếp size 20 → 40, số cont A→Z */}
-          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-            <div className="grid grid-cols-3 border-b border-slate-200 text-xs font-bold" role="tablist">
+          <div className="overflow-hidden rounded-lg border border-line bg-white">
+            <div className="grid grid-cols-3 border-b border-line text-xs font-bold" role="tablist">
               {([
                 ['TODO', `Chờ làm (${sum.todo + sum.wait})`],
                 ['DONE', `Đã xong (${sum.done})`],
                 ['ALL', `Tất cả (${sum.total})`],
               ] as [Tab, string][]).map(([k, lbl]) => (
                 <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => { setTab(k); setShown(PAGE); }}
-                  className={`py-2.5 ${tab === k ? 'border-b-2 border-blue-600 text-blue-700' : 'text-slate-500'}`}>
+                  className={`py-2.5 ${tab === k ? 'border-b-2 border-navy-900 text-navy-700' : 'text-ink-muted'}`}>
                   {lbl}
                 </button>
               ))}
             </div>
             {shownRows.length === 0 ? (
-              <p className="p-6 text-center text-xs text-slate-500">
+              <p className="p-6 text-center text-xs text-ink-muted">
                 {q ? `Không có cont khớp "${q}" trong mục này.` : tab === 'TODO' ? `Đã ${t.doneWord} hết danh sách — chờ Văn phòng duyệt.` : 'Chưa có cont nào.'}
               </p>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-line">
                 {shownRows.slice(0, shown).map(({ item: i, info }) => {
                   const mine = info.status === 'DONE' && info.by === state.currentUser.fullName;
                   const Icon = info.status === 'DONE' ? CheckCircle2 : info.status === 'WAIT' ? Clock : Circle;
@@ -289,13 +289,13 @@ export const VesselFieldMobile: React.FC<{
                         type="button"
                         onClick={() => (info.status === 'TODO' ? pick(i) : i.dossierCode && info.status === 'DONE' ? onOpenDossier?.(i.dossierCode) : undefined)}
                         className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-xs ${
-                          i.id === itemId ? 'bg-blue-50' : info.status === 'DONE' ? 'bg-emerald-50/50' : info.status === 'WAIT' ? 'bg-slate-50 text-slate-500' : 'hover:bg-slate-50'
+                          i.id === itemId ? 'bg-navy-50' : info.status === 'DONE' ? 'bg-emerald-50/50' : info.status === 'WAIT' ? 'bg-canvas text-ink-muted' : 'hover:bg-canvas'
                         }`}
                       >
                         <Icon className={`h-5 w-5 shrink-0 ${info.status === 'DONE' ? 'text-emerald-600' : info.status === 'WAIT' ? 'text-amber-500' : 'text-slate-300'}`} />
                         <span className="min-w-0 flex-1">
-                          <span className={`block font-mono text-sm font-black ${info.status === 'DONE' ? 'text-emerald-800' : 'text-slate-900'}`}>{i.containerNo}</span>
-                          <span className="block text-[11px] text-slate-500">
+                          <span className={`block font-mono text-sm font-black ${info.status === 'DONE' ? 'text-emerald-800' : 'text-ink'}`}>{i.containerNo}</span>
+                          <span className="block text-[11px] text-ink-muted">
                             {i.size}/{i.type}
                             {t.mode === 'XUAT_TAU' && i.locationAtList && info.status !== 'DONE' ? ` • ${i.locationAtList}` : ''}
                             {' • '}{info.note}
@@ -303,8 +303,8 @@ export const VesselFieldMobile: React.FC<{
                         </span>
                         {info.status === 'DONE' && (
                           <span className="shrink-0 text-right text-[11px]">
-                            {info.truckNo && <span className="block font-bold text-slate-800">{info.truckNo}</span>}
-                            <span className={`block ${mine ? 'font-bold text-blue-700' : 'text-slate-500'}`}>{mine ? 'Bạn' : info.by} • {formatDateTime(info.at).slice(11, 16)}</span>
+                            {info.truckNo && <span className="block font-bold text-ink">{info.truckNo}</span>}
+                            <span className={`block ${mine ? 'font-bold text-navy-700' : 'text-ink-muted'}`}>{mine ? 'Bạn' : info.by} • {formatDateTime(info.at).slice(11, 16)}</span>
                           </span>
                         )}
                       </button>
@@ -314,7 +314,7 @@ export const VesselFieldMobile: React.FC<{
               </ul>
             )}
             {shownRows.length > shown && (
-              <button type="button" onClick={() => setShown(shown + PAGE)} className="w-full border-t border-slate-200 py-2.5 text-xs font-semibold text-blue-700">
+              <button type="button" onClick={() => setShown(shown + PAGE)} className="w-full border-t border-line py-2.5 text-xs font-semibold text-navy-700">
                 Xem thêm ({shownRows.length - shown})
               </button>
             )}

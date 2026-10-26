@@ -10,7 +10,7 @@ import { InvoicePanel } from '../src/features/receipts/ReceiptsWorkspace';
 import { createDemoState } from '../src/services/demoData';
 import { YardFeature } from '../src/features/yard/YardFeature';
 import { OfficeCapVoWorkspace, OfficeHaVoWorkspace } from '../src/features/office/OfficeWorkspaces';
-import { ExportPicker, OfficeVesselWorkspace } from '../src/features/vessel/OfficeVesselWorkspace';
+import { ExportPicker, ListDetail, OfficeVesselWorkspace } from '../src/features/vessel/OfficeVesselWorkspace';
 import { VesselFieldMobile } from '../src/features/vessel/VesselFieldMobile';
 import { createVesselList, inspectVesselImportItem } from '../src/services/vessel';
 import { FieldQueueWorkspaces, FieldQueueMode, getFieldQueue, QueueListRow } from '../src/features/field-queues/FieldQueueWorkspaces';
@@ -61,7 +61,7 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     // DEC-074: cột Date in nằm giữa Hãng tàu và Trạng thái
     // DEC-132: mỗi cont 1 dòng (không xuống dòng), Date in ngày + giờ cùng 1 dòng
     expect(html).toMatch(/cursor-pointer whitespace-nowrap[^"]*" data-testid="yard-row"/);
-    expect(html).not.toContain('block text-[10px] text-slate-500');
+    expect(html).not.toContain('block text-[10px] text-ink-muted');
     // DEC-129: AGE ngay sau Hãng tàu; Date in vẫn trước Trạng thái
     expect(html).toMatch(/Hãng tàu<\/th><th[^>]*>AGE<\/th><th[^>]*>Date in<\/th><th[^>]*>Trạng thái/);
     expect(html).toMatch(/>Mã phiếu thu<\/th><th[^>]*>Tiến độ<\/th>/);
@@ -95,9 +95,9 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     const html = renderToString(<YardFeature state={s} onUpdateState={noop} onOpenReceipt={noop} />);
     expect(html).toContain('title="Mở phiếu thu"');
     // DEC-117: link dữ liệu cùng kiểu Mã hồ sơ (font-mono text-blue-700, gạch chân khi rê chuột)
-    expect(html).toContain('class="font-mono text-blue-700 hover:underline" title="Mở phiếu thu"');
+    expect(html).toContain('class="font-mono text-navy-700 hover:underline" title="Mở phiếu thu"');
     // DEC-118: mã hồ sơ ở Tồn vỏ cũng là link (cùng kiểu)
-    expect(html).toMatch(/<button type="button" class="font-mono text-blue-700 hover:underline">HV-/);
+    expect(html).toMatch(/<button type="button" class="font-mono text-navy-700 hover:underline">HV-/);
     expect(renderToString(<YardFeature state={base} onUpdateState={noop} />)).not.toContain('title="Mở phiếu thu"');
   });
 
@@ -170,11 +170,11 @@ describe('DEC-051: hồ sơ container link về Phiếu thu', () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(withLink.match(/Thanh toán — Hạ vỏ/g)).toHaveLength(1);
     expect(withLink).toContain('Hoàn thành');
-    expect(withLink).toContain("font-mono text-blue-700 hover:underline");
+    expect(withLink).toContain("font-mono text-navy-700 hover:underline");
     expect(withLink).toContain(`Phiếu thu ${ptNo}`);
     const noLink = renderToString(<MasterDossierModal masterDossierCode={gi.masterDossierCode} state={s} onClose={noop} />);
     expect(noLink).toContain(ptNo);
-    expect(noLink).not.toContain("font-mono text-blue-700 hover:underline");
+    expect(noLink).not.toContain("font-mono text-navy-700 hover:underline");
   });
 });
 
@@ -789,5 +789,69 @@ describe('DEC-140: báo cáo tàu tách Trạng thái / Phân loại', () => {
       expect(cols.indexOf('PHÂN LOẠI')).toBe(cols.indexOf('TRẠNG THÁI') + 1);
       expect(cols).not.toContain('ĐÓNG HÀNG');
     }
+  });
+});
+
+// DEC-142: Báo giá → Chờ báo giá — mỗi cont 1 dòng như Tồn vỏ
+describe('DEC-142: Chờ báo giá 1 dòng', () => {
+  it('bảng whitespace-nowrap, Date in ngày + giờ cùng dòng', () => {
+    const demo = createDemoState();
+    const html = renderToString(<FieldQueueWorkspaces mode="BG_CHO_BAO_GIA" state={as(demo, 'usr-quotation')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    expect(html).toMatch(/<table class="[^"]*whitespace-nowrap/);
+    expect(html).toContain('data-testid="quote-row"');
+    expect(html).not.toContain('block text-[10px] text-ink-muted');
+  });
+});
+
+describe('DEC-145: design system v2 (navy + accent, Be Vietnam Pro)', () => {
+  it('thành phần dùng chung lấy màu theo token, nhãn tác nghiệp theo op-*', async () => {
+    const shared = await import('../src/components/shared');
+    expect(shared.primaryBtn).toContain('bg-navy-900');
+    expect(shared.primaryBtn).not.toContain('bg-blue-600');
+    expect(shared.secondaryBtn).toContain('border-line-strong');
+    expect(shared.labelCls).not.toContain('uppercase');
+    expect(shared.linkCls).toBe('font-mono text-navy-700 hover:underline');
+  });
+});
+
+describe('DEC-145: code giao diện chỉ dùng token design system (docs/DESIGN_SYSTEM.md)', () => {
+  it('không còn class màu cũ bị cấm trong src/', () => {
+    const files = import.meta.glob('../src/**/*.tsx', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+    expect(Object.keys(files).length).toBeGreaterThan(10);
+    const banned = /(^|[\s"'`:])(bg-blue-600|text-blue-700|bg-slate-900|text-slate-(900|700|500)|border-slate-(200|300)|bg-slate-50)(?=$|[\s"'`])/m;
+    const offenders = Object.entries(files).filter(([, src]) => banned.test(src)).map(([f]) => f);
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('DEC-146: Văn phòng → Nhập / Xuất tàu — bảng chi tiết tàu mỗi cột 1 thông tin, 1 dòng', () => {
+  it('tách Size | Type | Hãng tàu | Trạng thái | Phân loại | Người thực hiện | Thời gian; không còn cột gộp', () => {
+    const office = as(createInitialState(), 'usr-office');
+    const nt = createVesselList(office, {
+      mode: 'NHAP_TAU', vesselName: 'Ever Gentle', plannedAt: new Date().toISOString(), truckNos: ['15C-111.11'], shippingLineCode: 'MAERSK',
+      importItems: [{ containerNo: 'TCLU1234567', size: '40', type: 'HC' }],
+    }).state;
+    const yardId = nt.containers.find((c) => c.status === 'IN_YARD')!.id;
+    const both = createVesselList(nt, { mode: 'XUAT_TAU', vesselName: 'Wan Hai', plannedAt: new Date().toISOString(), truckNos: ['15C-333.33'], exportContainerIds: [yardId] }).state;
+    for (const mode of ['NHAP_TAU', 'XUAT_TAU'] as const) {
+      const list = both.vesselLists.find((l) => l.mode === mode)!;
+      const html = renderToString(<ListDetail list={list} mode={mode} state={both} canManage run={() => true} onDeleted={noop} />).replace(/<!-- -->/g, '');
+      expect(html).toMatch(/<table class="[^"]*whitespace-nowrap[^"]*" data-testid="vessel-detail-table"/);
+      expect(html).toMatch(/Mã hồ sơ<\/th><th[^>]*>Số container<\/th><th[^>]*>Size<\/th><th[^>]*>Type<\/th><th[^>]*>Hãng tàu<\/th><th[^>]*>Trạng thái<\/th><th[^>]*>Phân loại<\/th>/);
+      expect(html).toContain('>Người thực hiện</th>');
+      expect(html).toContain('>Thời gian</th>');
+      for (const merged of ['Size/Type', 'Trạng thái • Phân loại', 'Người / giờ', '>Giám định</th>']) expect(html).not.toContain(merged);
+    }
+    expect(renderToString(<ListDetail list={both.vesselLists.find((l) => l.mode === 'NHAP_TAU')!} mode="NHAP_TAU" state={both} canManage run={() => true} onDeleted={noop} />)).toContain('MAERSK');
+  });
+});
+
+describe('DEC-147: Giám định – Hạ vỏ có tab Chờ giám định trên kệ', () => {
+  it('dữ liệu Demo có cont W-SURVEY → hiện tab với số đếm', () => {
+    const s = as(createDemoState(), 'usr-inspector');
+    const html = renderToString(<InspectorHaVoMobile state={s} onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('data-testid="inspector-tab-TREN_KE"');
+    expect(html).toMatch(/Chờ giám định trên kệ \([1-9]/);
+    expect(html).toContain('max-w-lg');
   });
 });
