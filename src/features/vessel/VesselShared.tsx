@@ -67,10 +67,10 @@ export function ChoiceButtons<T extends string>({
 
 // DEC-083: nhãn TÁC NGHIỆP (Hạ vỏ / Cấp vỏ / Nhập tàu + tàu / Xuất tàu + tàu) cho màn Vệ sinh / Xe nâng
 const OP_TONE: Record<ContainerOperationCode, string> = {
-  HA_VO: 'bg-blue-600 text-white',
-  CAP_VO: 'bg-violet-600 text-white',
-  NHAP_TAU: 'bg-emerald-600 text-white',
-  XUAT_TAU: 'bg-amber-500 text-slate-900',
+  HA_VO: 'bg-op-ha-vo text-white',
+  CAP_VO: 'bg-op-cap-vo text-white',
+  NHAP_TAU: 'bg-op-nhap-tau text-white',
+  XUAT_TAU: 'bg-op-xuat-tau text-ink',
 };
 
 export const OperationBadge: React.FC<{ state: DepotState; container: ContainerRecord; large?: boolean; hideVessel?: boolean; block?: boolean }> = ({ state, container, large, hideVessel, block }) => {

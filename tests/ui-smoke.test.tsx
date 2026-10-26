@@ -95,9 +95,9 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     const html = renderToString(<YardFeature state={s} onUpdateState={noop} onOpenReceipt={noop} />);
     expect(html).toContain('title="Mở phiếu thu"');
     // DEC-117: link dữ liệu cùng kiểu Mã hồ sơ (font-mono text-blue-700, gạch chân khi rê chuột)
-    expect(html).toContain('class="font-mono text-blue-700 hover:underline" title="Mở phiếu thu"');
+    expect(html).toContain('class="font-mono text-navy-700 hover:underline" title="Mở phiếu thu"');
     // DEC-118: mã hồ sơ ở Tồn vỏ cũng là link (cùng kiểu)
-    expect(html).toMatch(/<button type="button" class="font-mono text-blue-700 hover:underline">HV-/);
+    expect(html).toMatch(/<button type="button" class="font-mono text-navy-700 hover:underline">HV-/);
     expect(renderToString(<YardFeature state={base} onUpdateState={noop} />)).not.toContain('title="Mở phiếu thu"');
   });
 
@@ -170,11 +170,11 @@ describe('DEC-051: hồ sơ container link về Phiếu thu', () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(withLink.match(/Thanh toán — Hạ vỏ/g)).toHaveLength(1);
     expect(withLink).toContain('Hoàn thành');
-    expect(withLink).toContain("font-mono text-blue-700 hover:underline");
+    expect(withLink).toContain("font-mono text-navy-700 hover:underline");
     expect(withLink).toContain(`Phiếu thu ${ptNo}`);
     const noLink = renderToString(<MasterDossierModal masterDossierCode={gi.masterDossierCode} state={s} onClose={noop} />);
     expect(noLink).toContain(ptNo);
-    expect(noLink).not.toContain("font-mono text-blue-700 hover:underline");
+    expect(noLink).not.toContain("font-mono text-navy-700 hover:underline");
   });
 });
 
@@ -800,5 +800,21 @@ describe('DEC-142: Chờ báo giá 1 dòng', () => {
     expect(html).toMatch(/<table class="[^"]*whitespace-nowrap/);
     expect(html).toContain('data-testid="quote-row"');
     expect(html).not.toContain('block text-[10px] text-slate-500');
+  });
+});
+
+describe('DEC-145: design system v2 (navy + accent, Be Vietnam Pro)', () => {
+  it('thành phần dùng chung lấy màu theo token, nhãn tác nghiệp theo op-*', async () => {
+    const css = (await import('node:fs')).readFileSync('src/index.css', 'utf8');
+    expect(css).toContain('--color-navy-900: #0b2545');
+    expect(css).toContain('--font-sans: "Be Vietnam Pro"');
+    const shared = await import('../src/components/shared');
+    expect(shared.primaryBtn).toContain('bg-navy-900');
+    expect(shared.primaryBtn).not.toContain('bg-blue-600');
+    expect(shared.secondaryBtn).toContain('border-line-strong');
+    expect(shared.labelCls).not.toContain('uppercase');
+    expect(shared.linkCls).toBe('font-mono text-navy-700 hover:underline');
+    const vessel = (await import('node:fs')).readFileSync('src/features/vessel/VesselShared.tsx', 'utf8');
+    for (const op of ['bg-op-ha-vo', 'bg-op-cap-vo', 'bg-op-nhap-tau', 'bg-op-xuat-tau']) expect(vessel).toContain(op);
   });
 });
