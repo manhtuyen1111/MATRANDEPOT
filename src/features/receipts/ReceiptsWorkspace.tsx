@@ -299,22 +299,10 @@ export const ReceiptsWorkspace: React.FC<{
                           <td className="px-2 py-2">{t.payerName}</td>
                           <td className="whitespace-nowrap px-2 py-2 font-mono">
                             {usage ? (
-                              <>
-                                {/* DEC-121: phiếu thu trả trước → MÃ HỒ SƠ các tác nghiệp đã dùng phiếu (link hồ sơ) */}
-                                {usage.rows.length === 0 ? (
-                                  <span className="block text-slate-400">Chưa dùng</span>
-                                ) : (
-                                  <span className="flex flex-wrap gap-x-2">
-                                    {usage.rows.slice(0, 3).map((u) => (
-                                      <button key={u.dossierCode + u.performedAt} type="button" onClick={(e) => { e.stopPropagation(); onOpenDossier?.(u.dossierCode); }} className={linkCls}>{u.dossierCode}</button>
-                                    ))}
-                                    {usage.rows.length > 3 && <span className="font-sans text-[11px] text-slate-500">+{usage.rows.length - 3}</span>}
-                                  </span>
-                                )}
-                                <span className="block font-sans text-[11px] text-slate-600">
-                                  Dùng <strong className="text-blue-700">{usage.usedCount} lượt</strong> • còn <strong className="text-emerald-700">{formatVnd(usage.remainingAmount)}</strong>
-                                </span>
-                              </>
+                              // DEC-122: thu trước chỉ hiện tóm tắt — bấm để xem chi tiết (cửa sổ phiếu + bảng các lượt đã dùng)
+                              <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedTxId(t.id); }} className={`${linkCls} font-sans text-[11px]`} data-testid="prepaid-usage-link">
+                                Dùng {usage.usedCount} lượt • còn {formatVnd(usage.remainingAmount)}
+                              </button>
                             ) : (
                               t.dossierCode ? (
                                 <button type="button" onClick={(e) => { e.stopPropagation(); onOpenDossier?.(t.dossierCode!); }} className={linkCls}>{t.dossierCode}</button>
