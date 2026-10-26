@@ -276,7 +276,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 18. **Dữ liệu test (DEC-148):** Danh mục → Công ty = CÔNG TY CỔ PHẦN MATRAN; Đối tác = 1 hãng MSK + 10 khách; Biểu giá 6 dòng. Tồn vỏ / Phiếu thu / Báo cáo có nhiều dòng → thử bộ lọc, phân trang 20 / 50 / 100, Excel. Nhập tàu: 4 tàu (MSK ALPHA xong, BRAVO dở, CHARLIE chưa làm); Xuất tàu MSK DELTA làm một nửa.
 
 **Cho agent:**
-1. Hiện tới **DEC-152**. **GĐ 4 đã mở lại** (DEC-149) trên nhánh `agent/claude/p4-database`; mốc Demo ở tag `demo-truoc-database-2026-10-26`. Bước đầu: người dùng duyệt `docs/STATUS_CATALOG.md`, rồi mới viết schema (P4-01).
+1. Hiện tới **DEC-153**. **GĐ 4 đã mở lại** (DEC-149) trên nhánh `agent/claude/p4-database`; mốc Demo ở tag `demo-truoc-database-2026-10-26`. Bước đầu: người dùng duyệt `docs/STATUS_CATALOG.md`, rồi mới viết schema (P4-01).
 2. **Mã:** không còn `CT-` (số chứng từ = mã hồ sơ — DEC-119) và `PTT-` (phiếu trả trước = `PT-TTR-` cấp ngay khi tạo — DEC-124); thêm `GY-` (góp ý).
 3. **Hóa đơn:** trạng thái phiếu luôn lấy `receiptInvoiceStatus` / `receiptInvoiceLabel`; phiếu trả trước dùng `invoiceGroups` (`submitPrepaidInvoiceGroup`, `cancelPrepaidInvoiceGroup`, `markInvoiceIssued({ groupId })`).
 4. **Thanh toán hiển thị:** `PaymentInfoCells` + `containerPaymentInfo` / `voucherPaymentInfo`; nhãn ngắn `PAYMENT_CATEGORY_SHORT_LABELS` (TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU).
@@ -393,3 +393,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-26 (khuya) — Claude Code: DEC-150 chốt quy mô / ảnh / thời gian lưu / trạng thái / W-SURVEY; bắt đầu P4-01 thiết kế schema.
 - 2026-10-26 (khuya) — Claude Code: DEC-151 (đăng nhập, mất mạng, partition); viết `docs/DATABASE_SCHEMA.md` v1 chờ duyệt (P4-01 phần thiết kế).
 - 2026-10-26 (khuya) — Claude Code: DEC-152; P4-01 migration bước 1/5 (`supabase/migrations/20261027000001` → `000005`, pgTAP 0001, seed, README). Chưa chạy thử SQL (chưa có Docker / Postgres). npm test / build không đổi.
+- 2026-10-27 — Claude Code: Docker + Supabase local; migration bước 1 apply OK, pgTAP 18/18 (DEC-153). Tiếp: bước 2.

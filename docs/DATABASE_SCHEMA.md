@@ -233,7 +233,7 @@ Quy tắc truy vấn (giữ DEC-066):
   - tạo `auth.users` với email `username@matrandepot.local`, mật khẩu `123456`, `must_change_password = true`;
   - tạo dòng `staff`, `staff_roles`.
 - Đăng nhập lần đầu bắt buộc đổi mật khẩu. Mật khẩu mới không trống, khác 123456; độ dài tùy ý.
-  - **Lưu ý:** Supabase mặc định đòi tối thiểu 6 ký tự. Phải chỉnh cài đặt Auth của project về tối thiểu 1.
+  - Supabase bắt buộc tối thiểu 6 ký tự → app ghép thêm chuỗi cố định vào sau mật khẩu trước khi gửi (DEC-153); cài đặt Auth giữ 6.
 - **Không khóa** khi nhập sai nhiều lần; **không tự đăng xuất** (DEC-151). Phiên được làm mới tự động.
 - Admin không xem được mật khẩu; chỉ **Đặt lại** về 123456.
 - Tài khoản khóa (`is_active = false`) thì RPC từ chối mọi thao tác dù phiên còn hạn.

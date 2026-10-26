@@ -1384,6 +1384,18 @@ Quy ước trạng thái:
   - Thay bản nháp cũ `20261021000001` (chưa từng apply, không khớp nghiệp vụ).
   - **Chưa chạy thử**: máy chưa có Docker / Postgres.
 
+### DEC-153 — Mật khẩu ngắn hơn 6 ký tự trên Supabase; kết quả chạy thử bước 1
+
+- Trạng thái: CONFIRMED (2026-10-27).
+- **Vấn đề:** Supabase Auth bắt buộc mật khẩu **tối thiểu 6 ký tự** (không chỉnh xuống thấp hơn). Điều này trái DEC-143 ("bao nhiêu ký tự cũng được").
+- **Người dùng chọn giữ DEC-143.** App tự ghép thêm một **chuỗi cố định** vào sau mật khẩu người dùng gõ, rồi mới gửi Supabase (cả lúc đăng nhập và lúc đổi mật khẩu), nên luôn đủ 6 ký tự.
+  - Nhân viên chỉ thấy và gõ mật khẩu của mình.
+  - Chuỗi ghép là hằng số trong code frontend, không phải bí mật.
+  - Kiểm tra "không được dùng 123456" làm trên mật khẩu **trước khi ghép**.
+  - Claude đã cảnh báo: mật khẩu ngắn dễ bị dò hơn. Người dùng chấp nhận.
+- Làm ở phần đăng nhập frontend GĐ 4 (chưa làm).
+- **Chạy thử migration bước 1 trên Supabase local (Docker, 2026-10-27):** 5 file apply không lỗi; pgTAP **18/18 PASS**. Thêm `supabase/config.toml` (cấu hình local, không chứa khóa bí mật).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1473,6 +1485,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-152 đã xác nhận (cập nhật 2026-10-26).
+- Quyết định nghiệp vụ: DEC-001 → DEC-153 đã xác nhận (cập nhật 2026-10-26).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

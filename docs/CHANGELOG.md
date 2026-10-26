@@ -231,6 +231,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - DEC-150: quy mô 50–70 nhân viên / 10–15 nghìn cont mỗi tháng; bỏ 12 mã trạng thái chưa dùng; ảnh nén ~200 KB giữ 24 tháng; dữ liệu trực tuyến 3 năm rồi chuyển kho; W-SURVEY không cho Cấp vỏ (Q-037, Q-038, Q-042 đã chốt).
 - DEC-151: đăng nhập bằng tên đăng nhập (email nội bộ), không khóa / không tự đăng xuất, mất mạng thì báo lỗi; partition chỉ 2 bảng nhật ký. Thiết kế database v1: `docs/DATABASE_SCHEMA.md` (chờ duyệt).
 - DEC-152: duyệt thiết kế; sao lưu PITR 7 ngày + bản sao đêm; ngân hàng làm sau; hoàn tiền giữ chặn. **Migration bước 1** (enum, nhân viên, danh mục, mã, nhật ký, quyền, RLS) + pgTAP + seed + README; xóa bản nháp cũ. Chưa chạy thử (chưa có Docker / Postgres).
+- DEC-153: chạy thử bước 1 trên Supabase local — apply OK, pgTAP 18/18; thêm `supabase/config.toml`. Mật khẩu: giữ "bao nhiêu ký tự cũng được" bằng cách app ghép chuỗi cố định (Supabase tối thiểu 6).
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
