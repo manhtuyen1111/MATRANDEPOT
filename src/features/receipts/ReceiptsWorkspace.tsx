@@ -267,7 +267,7 @@ export const ReceiptsWorkspace: React.FC<{
             ) : (
               result && (
                 <>
-                  <table className="w-full min-w-[1180px] text-left text-xs">
+                  <table className="w-full min-w-[1180px] whitespace-nowrap text-left text-xs">
                     <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                       <tr>
                         <th className="whitespace-nowrap px-2 py-2">Mã phiếu thu</th>

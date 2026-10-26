@@ -697,3 +697,19 @@ describe('DEC-129: Tồn vỏ — thứ tự cột màn hình = thứ tự cột
     for (let i = 1; i < positions.length; i++) expect(positions[i], `Sai thứ tự cột "${screen[i]}"`).toBeGreaterThan(positions[i - 1]);
   });
 });
+
+// DEC-134: bảng / danh sách — mỗi thông tin chỉ 1 dòng (không xuống dòng, cuộn ngang khi rộng)
+describe('DEC-134: bảng 1 dòng', () => {
+  const demo = createDemoState();
+  it('Phiếu thu + Báo cáo Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu / Sửa chữa: bảng whitespace-nowrap', () => {
+    const screens = [
+      <ReceiptsWorkspace state={as(demo, 'usr-office')} onUpdateState={noop} />,
+      ...(['BC_HA_VO', 'BC_CAP_VO', 'BC_NHAP_TAU', 'BC_XUAT_TAU', 'BC_SUA_CHUA'] as const).map((s) => <ReportsWorkspace state={demo} section={s} onOpenDossier={noop} />),
+    ];
+    for (const el of screens) {
+      const html = renderToString(el);
+      const tables = html.match(/<table[^>]*>/g) || [];
+      for (const tb of tables) expect(tb).toContain('whitespace-nowrap');
+    }
+  });
+});

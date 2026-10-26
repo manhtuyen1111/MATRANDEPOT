@@ -72,7 +72,7 @@ export const FeedbackReport: React.FC<{ state: DepotState; onUpdateState: (next:
           <p className="p-8 text-center text-xs text-slate-500">Không có góp ý phù hợp.</p>
         ) : (
           <>
-            <table className="w-full min-w-[960px] text-left text-xs">
+            <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                 <tr>
                   <th className="px-3 py-2">Mã góp ý</th>

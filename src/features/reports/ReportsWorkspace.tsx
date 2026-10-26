@@ -158,7 +158,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
         ) : (
           <>
             {outRows && (
-              <table className="w-full min-w-[860px] text-left text-xs">
+              <table className="w-full min-w-[860px] whitespace-nowrap text-left text-xs">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                   <tr>
                     <th className="px-3 py-2">Mã hồ sơ</th>
@@ -195,7 +195,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
               </table>
             )}
             {inRows && (
-              <table className="w-full min-w-[960px] text-left text-xs">
+              <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                   <tr>
                     <th className="px-3 py-2">Mã hồ sơ</th>
@@ -383,7 +383,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
           <p className="p-8 text-center text-xs text-slate-500">Không có dữ liệu phù hợp.</p>
         ) : (
           <>
-            <table className="w-full min-w-[960px] text-left text-xs">
+            <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                 <tr>
                   <th className="px-3 py-2">Mã hồ sơ</th>
@@ -406,11 +406,11 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
                     </td>
                     <td className="px-3 py-2 font-mono font-bold">{w.containerNo}</td>
                     <td className="px-3 py-2">{c?.shippingLineCode || '-'}</td>
-                    <td className="px-3 py-2">{w.items.join(', ')}</td>
+                    <td className="max-w-[20rem] truncate px-3 py-2" title={w.items.join(', ')}>{w.items.join(', ')}</td>
                     <td className="px-3 py-2 text-right font-mono">{w.laborHours ?? '-'}</td>
                     <td className="px-3 py-2">{REPAIR_STATUS[w.workStatus] || w.workStatus}</td>
                     <td className="px-3 py-2">{w.repairTeamName || '-'}</td>
-                    <td className="px-3 py-2">{(w.repairMembers || []).join(', ') || '-'}</td>
+                    <td className="max-w-[14rem] truncate px-3 py-2" title={(w.repairMembers || []).join(', ')}>{(w.repairMembers || []).join(', ') || '-'}</td>
                     <td className="px-3 py-2">{w.approvedBy || '-'} • {formatViTime(w.createdAt)}</td>
                     <td className="px-3 py-2">{w.completedBy ? `${w.completedBy} • ${formatViTime(w.completedAt)}` : '-'}</td>
                   </tr>
