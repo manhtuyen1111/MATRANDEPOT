@@ -212,6 +212,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Phiếu thu + Báo cáo Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu / Sửa chữa / Góp ý: mỗi thông tin 1 dòng, cuộn ngang, ô dài cắt bớt; quy tắc chung cho mọi bảng (DEC-134). Kiểm thử: 131/131 pass, build PASS.
 - Giới hạn chữ mỗi ô bảng: `CellText` / `clipText` / `CELL_MAX` (20 / 30 / 40 ký tự, dư "…", rê chuột xem đủ) — áp cho khách hàng, remark, nhân viên, góp ý, ghi chú Tồn vỏ (DEC-135). Kiểm thử: 132/132 pass, build PASS.
 - Vị trí: icon định vị thay chữ "BLOCK-" trên màn hình (Tồn vỏ, Xe nâng, Đảo chuyển, chọn vị trí, Báo giá, Văn phòng, Xuất tàu); Danh mục / Excel / in vẫn ghi đủ BLOCK-… (DEC-136). Kiểm thử: 133/133 pass, build PASS.
+- Văn phòng → Cấp vỏ: "Container được chọn" thành 6 ô có nhãn (Số container, Size/Type, Hãng tàu, Trạng thái, Đóng hàng, Vị trí), tự điền khi chọn ở danh sách (DEC-137). Kiểm thử: 134/134 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

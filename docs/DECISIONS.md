@@ -1170,6 +1170,13 @@ Quy ước trạng thái:
   - Excel, giấy in, hồ sơ container, nhật ký và thông báo vẫn ghi đủ.
 - Kỹ thuật (`shared.tsx`): `<LocationText loc />`, `BlockIcon`, `blockLabel(code)`. Màn mới hiển thị vị trí phải dùng `LocationText`, không in thẳng `formatLocation`.
 
+### DEC-137 — Văn phòng → Cấp vỏ: "Container được chọn" chia ô rõ ràng
+
+- Trạng thái: CONFIRMED (2026-10-26).
+- Khu vực **Container được chọn** (khối 1. Booking & container) hiển thị thành **6 ô có nhãn**, chỉ đọc: **Số container | Size/Type | Hãng tàu | Trạng thái | Đóng hàng | Vị trí**. Trước đây là một dòng chữ nối bằng "•".
+- Các ô **tự điền** khi bấm chọn container ở danh sách bên trái; không gõ tay. Chưa chọn thì ô hiện "-" kèm nhắc "bấm chọn ở danh sách bên trái".
+- Không đổi nghiệp vụ chọn container: cont khóa vẫn không chọn được.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1259,6 +1266,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-136 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-137 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
