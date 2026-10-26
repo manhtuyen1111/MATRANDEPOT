@@ -1262,6 +1262,14 @@ Quy ước trạng thái:
 - **Áp dần theo từng bước** (mỗi bước một commit): (1) token + font + thành phần dùng chung; (2) khung App / menu; (3) Tồn vỏ; (4) màn mobile hiện trường; (5) văn phòng, báo cáo, danh mục, phiếu thu, giấy tờ in — **đã làm cả 5 bước** (đổi class slate / blue sang token). Còn giữ ~20 chỗ màu slate trên nền đậm (chữ / viền phụ).
 - **Lưu vào code làm chuẩn bắt buộc:** `docs/DESIGN_SYSTEM.md` + `docs/design/` (tokens, mẫu thành phần, 2 màn mẫu); skill `matran-ui-screen` trỏ tới; test chặn class màu cũ trong `src/`. Màn mới phải dùng token, không viết thêm `blue-600` / `slate-*` cho màu chính.
 
+### DEC-146 — Văn phòng → Nhập / Xuất tàu: bảng chi tiết tàu không gộp cột
+
+- Trạng thái: CONFIRMED (2026-10-26). Áp quy tắc chung DEC-134 / DEC-139.
+- Bảng cont trong chi tiết tàu: **# | Mã hồ sơ | Số container | Size | Type | Hãng tàu | Trạng thái | Phân loại | Vệ sinh (NT) / Vị trí lúc lập (XT) | Số xe | Tiến độ | Người thực hiện | Thời gian**; mỗi ô 1 thông tin, `whitespace-nowrap`, chữ dài dùng `CellText`.
+- Bỏ cột gộp: Size/Type, "Giám định" / "Trạng thái • Phân loại", "Người / giờ". Hãng tàu: NT lấy của danh sách, XT lấy từ lượt lưu bãi.
+- Danh sách tàu: tách "Lập bởi" và "Thời gian lập". Khung dán cont: tách Size | Type.
+- Vị trí lúc lập hiển thị icon định vị thay chữ BLOCK- (DEC-136).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1351,6 +1359,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-145 đã xác nhận (cập nhật 2026-10-26).
+- Quyết định nghiệp vụ: DEC-001 → DEC-146 đã xác nhận (cập nhật 2026-10-26).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
