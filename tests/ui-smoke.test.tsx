@@ -759,26 +759,14 @@ describe('DEC-137: Cấp vỏ — container được chọn chia ô', () => {
 });
 
 // DEC-139: cố định cột đầu khi cuộn ngang — Mã hồ sơ | Số container | Size | Type | Hãng tàu (tàu: Tên tàu + 5 cột); Excel cùng thứ tự
-describe('DEC-139: cố định cột đầu', () => {
+describe('DEC-139 / DEC-141: thứ tự 5 cột đầu (không cố định cột)', () => {
   const demo = createDemoState();
   const head = (html: string) => (html.match(/<th[^>]*>[\s\S]*?<\/th>/g) || []).map((th) => ({ sticky: /class="[^"]*sticky/.test(th), label: th.replace(/<[^>]+>/g, '').trim() }));
   const STD = ['Mã hồ sơ', 'Số container', 'Size', 'Type', 'Hãng tàu'];
-  it('Tồn vỏ: 5 cột đầu đúng thứ tự, cố định (sticky); cột AGE trở đi không cố định', () => {
+  it('Tồn vỏ: 5 cột đầu đúng thứ tự; không cố định cột (DEC-141)', () => {
     const cols = head(renderToString(<YardFeature state={as(demo, 'usr-office')} onUpdateState={noop} />).replace(/<!-- -->/g, '')).filter((c) => c.label);
     expect(cols.slice(0, 5).map((c) => c.label)).toEqual(STD);
-    expect(cols.slice(0, 5).every((c) => c.sticky)).toBe(true);
-    expect(cols[5].sticky).toBe(false);
-  });
-  it('frozenCols: left = tổng độ rộng các cột trước; cột cuối có viền phân cách', async () => {
-    const { frozenCols, FROZEN_W } = await import('../src/components/shared');
-    const fz = frozenCols(['vessel', 'code', 'cont', 'size', 'type', 'line']); // báo cáo tàu: 6 cột
-    expect(fz.count).toBe(6);
-    expect(fz.style(0).left).toBe(0);
-    expect(fz.style(1).left).toBe(FROZEN_W.vessel);
-    expect(fz.style(5).left).toBe(FROZEN_W.vessel + FROZEN_W.code + FROZEN_W.cont + FROZEN_W.size + FROZEN_W.type);
-    expect(fz.th(5)).toContain('shadow-');
-    expect(fz.td(0)).toContain('sticky');
-    expect(fz.td(0)).not.toContain('shadow-');
+    expect(cols.some((c) => c.sticky)).toBe(false);
   });
   it('Excel cùng thứ tự 5 / 6 cột đầu', async () => {
     const r = await import('../src/services/reports');
