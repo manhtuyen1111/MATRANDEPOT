@@ -998,6 +998,15 @@ Quy ước trạng thái:
 - Bấm vào tóm tắt sẽ mở cửa sổ chi tiết phiếu, có bảng **Sử dụng phiếu thu trả trước**: từng lượt, mã hồ sơ (link), số cont, số tiền trừ, số dư.
 - **Excel giữ như DEC-121:** cột MÃ HỒ SƠ ghi đủ các mã hồ sơ đã dùng phiếu.
 
+### DEC-123 — Góp ý: chọn Menu chính → Tính năng → Nội dung
+
+- Trạng thái: CONFIRMED (2026-10-26). Bổ sung DEC-120.
+- Quyết định: Form góp ý đi theo **3 bước**, bước sau chỉ hiện khi bước trước đã chọn:
+  1. **Menu chính** (Văn phòng, Xe nâng, Báo cáo…, và "Khác").
+  2. **Tính năng** trong menu đó. Menu chỉ có 1 tính năng (VD: Khác) thì chọn sẵn.
+  3. **Nội dung góp ý**.
+- Báo cáo vẫn lưu và hiển thị dạng "Menu chính → Tính năng".
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1087,6 +1096,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-122 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-123 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
