@@ -444,6 +444,26 @@ export interface PaymentReceipt {
   invoiceStatus?: InvoiceStatus;
   invoiceRequest?: { taxCode: string; email: string; companyName: string; address: string; note?: string; requestedAt: string; updatedAt: string };
   invoiceIssued?: { invoiceNo?: string; issuedAt: string; issuedBy: string };
+  // DEC-130: phiếu thu TRẢ TRƯỚC — khách tự gộp các LƯỢT đã dùng thành từng yêu cầu hóa đơn
+  invoiceGroups?: InvoiceGroup[];
+}
+
+// DEC-130: 1 yêu cầu hóa đơn = 1 nhóm lượt trừ tiền của phiếu thu trả trước (1 MST / 1 địa chỉ)
+export interface InvoiceGroup {
+  id: string;
+  deductionIds: string[];
+  amount: number;
+  taxCode: string;
+  email: string;
+  companyName: string;
+  address: string;
+  note?: string;
+  status: 'YEU_CAU_XHD' | 'DA_XHD';
+  requestedAt: string;
+  updatedAt: string;
+  invoiceNo?: string;
+  issuedAt?: string;
+  issuedBy?: string;
 }
 
 export interface GateInOrder {

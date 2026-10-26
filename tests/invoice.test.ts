@@ -140,3 +140,56 @@ describe('DEC-113: người thu tiền trên phiếu là nhân viên, không ph�
     expect(receiptCollectorName(s, r)).toBe(office);
   });
 });
+
+describe('DEC-130: phiếu thu trả trước — hóa đơn theo từng lượt, khách tự gộp', () => {
+  it('chọn lượt → gộp yêu cầu; 1 lượt chỉ thuộc 1 yêu cầu; sửa / hủy khi chưa xuất; Kế toán xuất theo yêu cầu; trạng thái tổng hợp', async () => {
+    const { createDemoState } = await import('../src/services/demoData');
+    const { cancelPrepaidInvoiceGroup, prepaidInvoiceView, receiptInvoiceLabel, receiptInvoiceStatus, submitPrepaidInvoiceGroup } = await import('../src/services/invoice');
+    let s = createDemoState();
+    const find = () => s.paymentReceipts.find((r) => r.purpose === 'PREPAID_TOPUP' && (r.invoiceGroups || []).length > 0)!;
+    let r = find();
+    const secret = r.invoiceSecret!;
+    let view = prepaidInvoiceView(s, r)!;
+    expect(view.lots).toHaveLength(2);
+    expect(view.groups).toHaveLength(1);
+    expect(receiptInvoiceStatus(s, r)).toBe('YEU_CAU_XHD');
+    // Phiếu trả trước không cho yêu cầu cả phiếu
+    expect(() => submitInvoiceRequest(s, { secret, ...REQ })).toThrow(/LƯỢT/);
+    // Lượt đã nằm trong yêu cầu khác → từ chối; chưa chọn lượt → từ chối; lượt lạ → từ chối
+    const taken = view.groups[0].deductionIds[0];
+    const free = view.lots.find((l) => !l.groupId)!.deductionId;
+    expect(() => submitPrepaidInvoiceGroup(s, { secret, ...REQ, deductionIds: [taken, free] })).toThrow(/yêu cầu hóa đơn khác/);
+    expect(() => submitPrepaidInvoiceGroup(s, { secret, ...REQ, deductionIds: [] })).toThrow(/ít nhất 1 LƯỢT/);
+    expect(() => submitPrepaidInvoiceGroup(s, { secret, ...REQ, deductionIds: ['ded-x'] })).toThrow(/không thuộc/);
+    // Hủy yêu cầu cũ → gộp cả 2 lượt vào 1 hóa đơn
+    s = cancelPrepaidInvoiceGroup(s, { secret, groupId: view.groups[0].id });
+    expect(receiptInvoiceStatus(s, find() || s.paymentReceipts.find((x) => x.invoiceSecret === secret)!)).toBe('CHUA_XHD');
+    s = submitPrepaidInvoiceGroup(s, { secret, ...REQ, deductionIds: [taken, free] });
+    r = s.paymentReceipts.find((x) => x.invoiceSecret === secret)!;
+    view = prepaidInvoiceView(s, r)!;
+    expect(view.groups).toHaveLength(1);
+    expect(view.groups[0].amount).toBe(view.lots.reduce((a, l) => a + l.amount, 0));
+    // Tách lại: sửa yêu cầu chỉ còn 1 lượt, lượt kia tạo yêu cầu riêng với MST khác
+    s = submitPrepaidInvoiceGroup(s, { secret, ...REQ, groupId: view.groups[0].id, deductionIds: [taken] });
+    s = submitPrepaidInvoiceGroup(s, { secret, ...REQ, taxCode: '0209876543', companyName: 'Đơn vị B', deductionIds: [free] });
+    r = s.paymentReceipts.find((x) => x.invoiceSecret === secret)!;
+    view = prepaidInvoiceView(s, r)!;
+    expect(view.groups.map((g) => g.taxCode).sort()).toEqual(['0101234567', '0209876543']);
+    // Kế toán: phải chọn yêu cầu; xuất từng yêu cầu
+    expect(() => markInvoiceIssued(as(s, 'usr-acc'), { receiptNo: r.receiptNo })).toThrow(/chọn YÊU CẦU/);
+    expect(() => markInvoiceIssued(as(s, 'usr-office'), { receiptNo: r.receiptNo, groupId: view.groups[0].id })).toThrow(/Không đủ quyền/);
+    s = markInvoiceIssued(as(s, 'usr-acc'), { receiptNo: r.receiptNo, groupId: view.groups[0].id, invoiceNo: '0000501' });
+    r = s.paymentReceipts.find((x) => x.invoiceSecret === secret)!;
+    expect(receiptInvoiceLabel(s, r)).toBe('YÊU CẦU XHD • đã xuất 1/2 lượt');
+    expect(() => submitPrepaidInvoiceGroup(s, { secret, ...REQ, groupId: view.groups[0].id, deductionIds: [taken] })).toThrow(/đã xuất hóa đơn/);
+    expect(() => cancelPrepaidInvoiceGroup(s, { secret, groupId: view.groups[0].id })).toThrow(/đã xuất hóa đơn/);
+    s = markInvoiceIssued(as(s, 'usr-acc'), { receiptNo: r.receiptNo, groupId: view.groups[1].id });
+    r = s.paymentReceipts.find((x) => x.invoiceSecret === secret)!;
+    expect(receiptInvoiceStatus(s, r)).toBe('DA_XHD');
+    expect(receiptInvoiceLabel(s, r)).toBe('ĐÃ XHD • đã xuất 2/2 lượt');
+    // Excel ghép theo từng yêu cầu
+    const sheet = receiptsSheet(s, collectAllPages((p) => queryReceipts(as(s, 'usr-acc'), { receiptNo: r.receiptNo }, p)));
+    expect(String(sheet.rows[0][sheet.columns.indexOf('MÃ SỐ THUẾ')])).toBe('0101234567; 0209876543');
+    expect(collectAllPages((p) => queryReceipts(s, { receiptNo: r.receiptNo, invoiceStatus: 'DA_XHD' }, p))).toHaveLength(1);
+  });
+});

@@ -20,7 +20,7 @@ import {
   verifyGateInOfficeAndCreatePayment,
 } from './depotOperations';
 import { createVesselList, executeVesselExport, inspectVesselImportItem } from './vessel';
-import { markInvoiceIssued, submitInvoiceRequest } from './invoice';
+import { markInvoiceIssued, prepaidInvoiceView, submitInvoiceRequest, submitPrepaidInvoiceGroup } from './invoice';
 import { respondFeedback, submitFeedback } from './feedback';
 import type { ContainerSize, ContainerType } from '../types/depot';
 
@@ -205,6 +205,14 @@ export function createDemoState(): DepotState {
     taxCode: '0209876543-001', email: 'hoadon@namhai.vn', companyName: 'CÔNG TY VẬN TẢI NAM HẢI', address: 'Km 6 Đình Vũ, Hải An, Hải Phòng',
   });
   s = markInvoiceIssued(as(s, 'usr-acc'), { receiptNo: receiptOf('MSKU1000022').receiptNo, invoiceNo: '0000123' });
+
+  // DEC-130: phiếu thu TRẢ TRƯỚC — khách yêu cầu hóa đơn cho 1 trong 2 lượt đã dùng (lượt còn lại chưa yêu cầu)
+  const topup = s.paymentReceipts.find((r) => r.purpose === 'PREPAID_TOPUP' && r.receiptNo === prepaid.receiptCode)!;
+  const lots = prepaidInvoiceView(s, topup)!.lots;
+  s = submitPrepaidInvoiceGroup(s, {
+    secret: topup.invoiceSecret!, deductionIds: [lots[lots.length - 1].deductionId],
+    taxCode: '0101234567', email: 'ketoan@vietlog.vn', companyName: 'CÔNG TY TIẾP VẬN VIỆT (VIETLOG)', address: 'Số 1 Lê Thánh Tông, Ngô Quyền, Hải Phòng',
+  });
 
   // ── GÓP Ý (DEC-120): 1 góp ý mới, 1 góp ý Admin đã phản hồi
   s = submitFeedback(as(s, 'usr-forklift'), { menuId: 'XN_DAO_CHUYEN', menuLabel: 'Xe nâng → Đảo chuyển', content: 'Muốn lọc nhanh theo Block khi đảo chuyển.' });

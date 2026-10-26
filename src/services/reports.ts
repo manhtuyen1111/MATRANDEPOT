@@ -17,7 +17,7 @@ import type { DepotState } from './depotStore';
 import { formatLocation, getContainerProgress, PROGRESS_LABELS, storageDays } from './core';
 import { containerPaymentInfo, masterReceiptUsage, PAYMENT_CATEGORY_FULL_LABELS, receiptOperationOf, voucherPaymentInfo } from './payments';
 import { formatDateTime, parseDateTime } from './datetime';
-import { INVOICE_STATUS_LABELS } from './invoice';
+import { receiptInvoiceLabel, receiptInvoiceStatus } from './invoice';
 import { FEEDBACK_STATUS_LABELS } from './feedback';
 import { assertPermission } from './core';
 import type { FeedbackItem, FeedbackStatus, InvoiceStatus } from '../types/depot';
@@ -169,7 +169,7 @@ export function queryReceipts(state: DepotState, filter: ReceiptQueryFilter, pag
     .filter(({ transaction }) => !filter.method || filter.method === 'ALL' || transaction.method === filter.method)
     .filter(({ transaction }) => !filter.status || filter.status === 'ALL' || transaction.status === filter.status)
     .filter(({ transaction, receipt }) => !filter.receiptNo || receipt?.receiptNo === filter.receiptNo || transaction.id === filter.receiptNo)
-    .filter(({ receipt }) => !filter.invoiceStatus || filter.invoiceStatus === 'ALL' || (receipt && (receipt.invoiceStatus || 'CHUA_XHD') === filter.invoiceStatus))
+    .filter(({ receipt }) => !filter.invoiceStatus || filter.invoiceStatus === 'ALL' || (receipt && receiptInvoiceStatus(state, receipt) === filter.invoiceStatus)) // DEC-130
     .filter(
       ({ transaction, receipt }) =>
         !filter.operation || filter.operation === 'ALL' || receiptOperationOf(state, { ...transaction, operation: receipt?.operation }) === filter.operation
@@ -406,6 +406,20 @@ export function collectAllPages<T>(query: (page: number) => PagedResult<T>): T[]
 }
 
 // Sheet PHIẾU THU (DEC-055) — đủ cột tra cứu / đối soát
+// DEC-111, DEC-130: 8 cột hóa đơn của phiếu thu — phiếu thu trả trước ghép các yêu cầu theo lượt (ngăn cách "; ")
+function invoiceCells(state: DepotState, r: PaymentReceipt | undefined): string[] {
+  if (!r) return ['', '', '', '', '', '', '', ''];
+  const groups = r.invoiceGroups || [];
+  if (groups.length) {
+    const j = (f: (g: (typeof groups)[number]) => string | undefined) => groups.map((g) => f(g) || '-').join('; ');
+    return [receiptInvoiceLabel(state, r), j((g) => g.taxCode), j((g) => g.email), j((g) => g.companyName), j((g) => g.address), j((g) => g.note),
+      j((g) => g.invoiceNo), j((g) => (g.issuedAt ? `${fmt(g.issuedAt)} • ${g.issuedBy}` : undefined))];
+  }
+  const q = r.invoiceRequest;
+  return [receiptInvoiceLabel(state, r), q?.taxCode || '', q?.email || '', q?.companyName || '', q?.address || '', q?.note || '', r.invoiceIssued?.invoiceNo || '',
+    r.invoiceIssued ? `${fmt(r.invoiceIssued.issuedAt)} • ${r.invoiceIssued.issuedBy}` : ''];
+}
+
 export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData {
   const STATUS: Record<string, string> = { PENDING: 'Chờ thanh toán', SUCCEEDED: 'Thành công', FAILED: 'Thất bại', CANCELLED: 'Đã hủy' };
   const OP: Record<string, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP VỎ', THU_TRUOC: 'THU TRƯỚC (TTR)', KHAC: 'KHÁC' };
@@ -427,9 +441,7 @@ export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData 
       r?.masterReceiptCode || (t.purpose === 'PREPAID_TOPUP' ? t.paymentRef : ''), t.paymentRef,
       t.providerTxRef || '', fmt(t.createdAt), t.createdBy, fmt(t.confirmedAt), t.confirmedBy || '', t.cancelReason || '',
       r?.printLog?.length || 0, r?.printLog?.length ? `${fmt(r.printLog[r.printLog.length - 1].at)} • ${r.printLog[r.printLog.length - 1].by}` : '',
-      r ? INVOICE_STATUS_LABELS[r.invoiceStatus || 'CHUA_XHD'] : '', r?.invoiceRequest?.taxCode || '', r?.invoiceRequest?.email || '',
-      r?.invoiceRequest?.companyName || '', r?.invoiceRequest?.address || '', r?.invoiceRequest?.note || '', r?.invoiceIssued?.invoiceNo || '',
-      r?.invoiceIssued ? `${fmt(r.invoiceIssued.issuedAt)} • ${r.invoiceIssued.issuedBy}` : '',
+      ...invoiceCells(state, r),
       // DEC-079: phiếu thu trước — số lượt tác nghiệp đã trừ, số tiền còn lại
       ...(() => {
         const u = t.purpose === 'PREPAID_TOPUP' ? masterReceiptUsage(state, r?.masterReceiptCode || t.paymentRef) : undefined;

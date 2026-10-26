@@ -37,7 +37,7 @@ const as = (s: DepotState, id: string) => ({ ...s, currentUser: s.staffUsers.fin
 describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
   it('App khung menu', () => {
     // DEC-106: App mở với dữ liệu sạch; smoke này cần dữ liệu mẫu → nạp qua localStorage giả
-    const store: Record<string, string> = { matran_depot_erp_state_v12: JSON.stringify(base) };
+    const store: Record<string, string> = { matran_depot_erp_state_v13: JSON.stringify(base) };
     const prev = (globalThis as { localStorage?: unknown }).localStorage;
     (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } };
     const html = renderToString(<App />);
@@ -618,7 +618,7 @@ describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
     expect(html).toContain(r.invoiceSecret!);
     expect(html).toContain('#/hoa-don');
   });
-  it('Phiếu thu có cột / lọc Hóa đơn; Kế toán thấy nút Đã xuất hóa đơn khi khách đã yêu cầu', () => {
+  it('Phiếu thu có cột / lọc Hóa đơn; Kế toán thấy nút Đã xuất hóa đơn khi khách đã yêu cầu', async () => {
     const html = renderToString(<ReceiptsWorkspace state={as(demo, 'usr-acc')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
     expect(html).toContain('>Hóa đơn<');
     expect(html).toContain('YÊU CẦU XHD');
@@ -629,6 +629,13 @@ describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
     expect(panel).toContain(req.invoiceSecret!); // DEC-112: hiện mã bảo mật để đối soát
     expect(panel).toContain('#/hoa-don'); // DEC-113: kèm đường link
     expect(renderToString(<InvoicePanel receipt={req} canIssue={false} onIssue={noop} />)).not.toContain('Đã xuất hóa đơn</button>');
+    // DEC-130: phiếu trả trước → các yêu cầu theo lượt, Kế toán xuất từng yêu cầu
+    const { prepaidInvoiceView } = await import('../src/services/invoice');
+    const topup = demo.paymentReceipts.find((x) => x.purpose === 'PREPAID_TOPUP' && (x.invoiceGroups || []).length)!;
+    const pp = renderToString(<InvoicePanel receipt={topup} canIssue onIssue={noop} prepaid={prepaidInvoiceView(demo, topup)} />).replace(/<!-- -->/g, '');
+    expect(pp).toContain('data-testid="prepaid-invoice-groups"');
+    expect(pp).toContain('Yêu cầu 1 — 1 lượt');
+    expect(pp).toContain('Đã xuất hóa đơn</button>');
   });
 });
 
