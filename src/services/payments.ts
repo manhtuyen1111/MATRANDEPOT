@@ -546,6 +546,13 @@ export function masterReceiptUsage(state: DepotState, receiptCode: string): Mast
 //   (DEC-100: ký hiệu hiển thị TT / TTS / TTR; mã nội bộ vẫn TTTT / TTS / TTT)
 //   DEC-104: chỉ hiện MÃ PHIẾU THU của lượt — TT → PT-TT-…; TTR → mã phiếu thu trả trước PT-TTR-… (DEC-124; dữ liệu cũ PTT-);
 //   TTS (không có phiếu thu) / chưa thanh toán / Nhập tàu → để trống. Số chứng từ = mã hồ sơ (DEC-119).
+// DEC-127: cột THANH TOÁN ở Tồn vỏ / Báo cáo Hạ vỏ / Cấp vỏ — chỉ tên hình thức, không kèm ký hiệu (gọn hiển thị)
+export const PAYMENT_CATEGORY_SHORT_LABELS: Record<PaymentCategory, string> = {
+  TTTT: 'TRỰC TIẾP',
+  TTS: 'THANH TOÁN SAU',
+  TTT: 'TRẢ TRƯỚC',
+};
+
 export const PAYMENT_CATEGORY_FULL_LABELS: Record<PaymentCategory, string> = {
   TTTT: 'TT — TRỰC TIẾP',
   TTS: 'TTS — THANH TOÁN SAU',
@@ -571,15 +578,15 @@ export function voucherPaymentInfo(state: DepotState, voucher: PaymentVoucher | 
     return { label: 'Chưa thanh toán', receipt: '' };
   }
   const category = voucher.paymentCategory;
-  if (category === 'TTS') return { category, label: PAYMENT_CATEGORY_FULL_LABELS.TTS, receipt: '' };
+  if (category === 'TTS') return { category, label: PAYMENT_CATEGORY_SHORT_LABELS.TTS, receipt: '' };
   if (category === 'TTT') {
     // TTR: link tới phiếu thu nạp tiền (PT-TTR-…) của phiếu thu trả trước
     const m = state.masterReceipts.find((x) => x.receiptCode === voucher.masterReceiptCode);
     const topup = m && state.paymentTransactions.find((t) => t.masterReceiptId === m.id && t.status === 'SUCCEEDED');
     const r = topup && state.paymentReceipts.find((x) => x.transactionId === topup.id);
-    return { category, label: PAYMENT_CATEGORY_FULL_LABELS.TTT, receipt: voucher.masterReceiptCode || '', receiptTarget: r?.receiptNo || topup?.id };
+    return { category, label: PAYMENT_CATEGORY_SHORT_LABELS.TTT, receipt: voucher.masterReceiptCode || '', receiptTarget: r?.receiptNo || topup?.id };
   }
   const txIds = state.paymentTransactions.filter((t) => t.voucherId === voucher.id && t.status === 'SUCCEEDED').map((t) => t.id);
   const receipts = state.paymentReceipts.filter((r) => txIds.includes(r.transactionId)).map((r) => r.receiptNo);
-  return { category: 'TTTT', label: PAYMENT_CATEGORY_FULL_LABELS.TTTT, receipt: receipts.join(', '), receiptTarget: receipts[0] };
+  return { category: 'TTTT', label: PAYMENT_CATEGORY_SHORT_LABELS.TTTT, receipt: receipts.join(', '), receiptTarget: receipts[0] };
 }

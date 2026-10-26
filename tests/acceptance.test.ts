@@ -1107,7 +1107,7 @@ describe('DEC-099: Tồn vỏ — hình thức thanh toán + phiếu thu của l
     const { yardStockSheet } = await import('../src/services/reports');
     // TTT — dữ liệu mẫu HV-261019-001 trừ phiếu thu trả trước PTT-2026-001
     const s0 = createInitialState();
-    expect(containerPaymentInfo(s0, { masterDossierCode: 'HV-261019-001' })).toMatchObject({ category: 'TTT', label: 'TTR — TRẢ TRƯỚC', receipt: 'PTT-2026-001' });
+    expect(containerPaymentInfo(s0, { masterDossierCode: 'HV-261019-001' })).toMatchObject({ category: 'TTT', label: 'TRẢ TRƯỚC', receipt: 'PTT-2026-001' });
     // TTTT tiền mặt
     let s = fieldStep(s0);
     const g = s.gateInOrders[0];
@@ -1115,13 +1115,13 @@ describe('DEC-099: Tồn vỏ — hình thức thanh toán + phiếu thu của l
     expect(containerPaymentInfo(s, { masterDossierCode: g.masterDossierCode }).label).toBe('Chưa thanh toán');
     s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: g.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
     const tttt = containerPaymentInfo(s, { masterDossierCode: g.masterDossierCode });
-    expect(tttt).toMatchObject({ category: 'TTTT', label: 'TT — TRỰC TIẾP' });
+    expect(tttt).toMatchObject({ category: 'TTTT', label: 'TRỰC TIẾP' });
     expect(tttt.receipt).toMatch(/^PT-TT-\d{6}-\d{4}$/);
     expect(tttt.receiptTarget).toBe(tttt.receipt); // DEC-105: link mở đúng phiếu thu
     // TTS
     const t = gateInTts(createInitialState(), 'MSKU7654321');
     const tts = containerPaymentInfo(t.state, { masterDossierCode: t.order.masterDossierCode });
-    expect(tts).toMatchObject({ category: 'TTS', label: 'TTS — THANH TOÁN SAU' });
+    expect(tts).toMatchObject({ category: 'TTS', label: 'THANH TOÁN SAU' });
     expect(tts.receipt).toBe(''); // DEC-104: TTS không có phiếu thu → để trống, không hiện chứng từ
     // Nhập tàu
     expect(containerPaymentInfo(s, { masterDossierCode: 'NT-261025-001' })).toEqual({ label: 'Không thu phí', receipt: '' });
@@ -1130,7 +1130,7 @@ describe('DEC-099: Tồn vỏ — hình thức thanh toán + phiếu thu của l
     const sheet = yardStockSheet([c], s);
     const i = sheet.columns.indexOf('THANH TOÁN');
     expect(sheet.columns.slice(i, i + 2)).toEqual(['THANH TOÁN', 'MÃ PHIẾU THU']);
-    expect(sheet.rows[0][i]).toBe('TT — TRỰC TIẾP');
+    expect(sheet.rows[0][i]).toBe('TRỰC TIẾP');
     expect(String(sheet.rows[0][i + 1])).toMatch(/^PT-TT-/);
     for (const row of sheet.rows) expect(row.length).toBe(sheet.columns.length);
   });

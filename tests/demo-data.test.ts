@@ -54,10 +54,10 @@ describe('DEC-126: Báo cáo Hạ vỏ / Cấp vỏ có cột THANH TOÁN + MÃ 
     const iIn = gin.columns.indexOf('THANH TOÁN');
     expect(gin.columns[iIn + 1]).toBe('MÃ PHIẾU THU');
     const rowTT = gin.rows.find((r) => r.includes('MSKU1000011'))!;
-    expect(rowTT[iIn]).toBe('TT — TRỰC TIẾP');
+    expect(rowTT[iIn]).toBe('TRỰC TIẾP');
     expect(String(rowTT[iIn + 1])).toMatch(/^PT-TT-/);
     const rowTTS = gin.rows.find((r) => r.includes('MSKU1000044'))!;
-    expect(rowTTS[iIn]).toBe('TTS — THANH TOÁN SAU');
+    expect(rowTTS[iIn]).toBe('THANH TOÁN SAU');
     expect(rowTTS[iIn + 1]).toBe('');
     const gout = gateOutSheet('CẤP VỎ', s, s.gateOutOrders);
     const iOut = gout.columns.indexOf('THANH TOÁN');
