@@ -235,6 +235,8 @@ Các quan hệ một-nhiều, nhiều-nhiều và điều kiện bắt buộc ph
 > Nơi đặt database, gói, sao lưu 3-2-1, tình huống vận hành (mất mạng hiện trường, thao tác đồng thời, chuyển từ Demo sang thật…): xem `docs/DATABASE_PLATFORM_ADVICE.md` (đề xuất, chờ chốt Q-037 → Q-040).
 
 ### 10.1. Quy mô thiết kế
+
+> **Cập nhật DEC-150:** 50–70 nhân viên; 10.000–15.000 container ra vào / tháng. Các con số dưới đây nhân ~1,5 cho mức cao.
 | Bảng | Mỗi tháng | 10 năm |
 |---|---|---|
 | Hồ sơ Hạ vỏ + Cấp vỏ | ~10.000 | ~1,2 triệu |
@@ -265,7 +267,8 @@ Dung lượng dữ liệu (không ảnh) ước 5–15 GB / 10 năm.
 - Thay `collectAllPages` (Demo) bằng hàm lấy theo lô từ RPC; giữ nguyên cột của các hàm `*Sheet` trong `src/services/reports.ts`.
 
 ### 10.5. Lưu trữ
-- Giữ **đủ 10 năm, không xóa** hồ sơ, chứng từ, phiếu thu.
-- `audit_logs` **chia partition theo năm**; partition cũ có thể chuyển kho lưu trữ khi cần, vẫn tra cứu được. Bảng khác không cần partition.
-- Ảnh lưu ở Supabase Storage; database chỉ lưu đường dẫn.
+- **Sửa theo DEC-150:**
+  - Dữ liệu trực tuyến **3 năm**; quá 3 năm chuyển ra kho lưu trữ (file nén, mã hóa) theo từng tháng, vẫn đủ thời hạn chứng từ kế toán.
+  - Các bảng lớn (hồ sơ, chứng từ, giao dịch, phiếu thu, lịch sử vị trí, nhật ký) **chia partition theo tháng**.
+- Ảnh lưu ở Supabase Storage, nén ~200 KB, **giữ 24 tháng** rồi tự xóa; database chỉ lưu đường dẫn + ngày hết hạn.
 - Chế độ Demo (localStorage ~5 MB) chỉ để chạy thử — không dùng cho dữ liệu thật.

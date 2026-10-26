@@ -276,7 +276,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 18. **Dữ liệu test (DEC-148):** Danh mục → Công ty = CÔNG TY CỔ PHẦN MATRAN; Đối tác = 1 hãng MSK + 10 khách; Biểu giá 6 dòng. Tồn vỏ / Phiếu thu / Báo cáo có nhiều dòng → thử bộ lọc, phân trang 20 / 50 / 100, Excel. Nhập tàu: 4 tàu (MSK ALPHA xong, BRAVO dở, CHARLIE chưa làm); Xuất tàu MSK DELTA làm một nửa.
 
 **Cho agent:**
-1. Hiện tới **DEC-149**. **GĐ 4 đã mở lại** (DEC-149) trên nhánh `agent/claude/p4-database`; mốc Demo ở tag `demo-truoc-database-2026-10-26`. Bước đầu: người dùng duyệt `docs/STATUS_CATALOG.md`, rồi mới viết schema (P4-01).
+1. Hiện tới **DEC-150**. **GĐ 4 đã mở lại** (DEC-149) trên nhánh `agent/claude/p4-database`; mốc Demo ở tag `demo-truoc-database-2026-10-26`. Bước đầu: người dùng duyệt `docs/STATUS_CATALOG.md`, rồi mới viết schema (P4-01).
 2. **Mã:** không còn `CT-` (số chứng từ = mã hồ sơ — DEC-119) và `PTT-` (phiếu trả trước = `PT-TTR-` cấp ngay khi tạo — DEC-124); thêm `GY-` (góp ý).
 3. **Hóa đơn:** trạng thái phiếu luôn lấy `receiptInvoiceStatus` / `receiptInvoiceLabel`; phiếu trả trước dùng `invoiceGroups` (`submitPrepaidInvoiceGroup`, `cancelPrepaidInvoiceGroup`, `markInvoiceIssued({ groupId })`).
 4. **Thanh toán hiển thị:** `PaymentInfoCells` + `containerPaymentInfo` / `voucherPaymentInfo`; nhãn ngắn `PAYMENT_CATEGORY_SHORT_LABELS` (TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU).
@@ -390,3 +390,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-26 — Claude Code: DEC-148 dữ liệu test (MSK, 10 khách, công ty MATRAN, biểu giá mới, danh sách lớn ~96 Hạ vỏ / 26 Cấp vỏ / 6 tàu). 147/147 • build PASS.
 - 2026-10-26 (khuya) — Claude Code: cập nhật tiến độ, A (1b, 1c), F5, bàn giao I.4 mục 15–18, khóa lưu v14; kiểm tra + push đầy đủ nhánh `agent/claude/ui-design-v2` (DEC-050 → DEC-148).
 - 2026-10-26 (khuya) — Claude Code: lưu mốc Demo (nhánh backup + tag), mở GĐ 4 (DEC-149: Supabase Singapore, trạng thái theo Demo), viết `docs/STATUS_CATALOG.md` chờ duyệt.
+- 2026-10-26 (khuya) — Claude Code: DEC-150 chốt quy mô / ảnh / thời gian lưu / trạng thái / W-SURVEY; bắt đầu P4-01 thiết kế schema.

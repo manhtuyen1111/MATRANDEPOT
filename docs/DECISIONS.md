@@ -1286,7 +1286,7 @@ Quy ước trạng thái:
   - Hệ thống cập nhật hồ sơ Hạ vỏ, K80 (EEIR in lại sẽ có thông tin mới), lượt lưu bãi.
 - **Sau giám định bổ sung — như Hạ vỏ thường:** DAMAGE → hàng chờ Báo giá → Sửa chữa; Xe nâng **Đảo chuyển** đưa cont khỏi kệ (xóa cờ kệ). AV → chỉ Đảo chuyển.
 - Số đếm menu Giám định – Hạ vỏ (DEC-075) tính cả phiếu trên kệ đã hạ.
-- **Claude bổ sung — cần người dùng xác nhận:** cont đang W-SURVEY **chưa cho Cấp vỏ** (`releaseBlocker`: "Chưa giám định (W-SURVEY)"). Ghi ở Q-042.
+- **Đã xác nhận (DEC-150):** cont đang W-SURVEY **không cho Cấp vỏ** (`releaseBlocker`: "Chưa giám định (W-SURVEY)"). Ghi ở Q-042.
 - Kỹ thuật:
   - `FieldConditionClass` thêm `'W-SURVEY'` (`CONDITION_DEFERRED`).
   - `stuffingClass` / `manufactureYear` được để trống khi W-SURVEY.
@@ -1336,6 +1336,25 @@ Quy ước trạng thái:
 - **Danh mục trạng thái (OPEN-003):** lấy theo bản Demo. Bảng ở `docs/STATUS_CATALOG.md` — **chờ người dùng duyệt** các mã ⚪ (chưa dùng) trước khi viết schema.
 - Việc database làm trên nhánh `agent/claude/p4-database`.
 - Vẫn mở: Q-037 (lưu ảnh), Q-038 (số người dùng cùng lúc), Q-039 (sao lưu — đã có đề xuất), Q-041 (tài khoản), Q-042.
+
+### DEC-150 — Database: quy mô, ảnh, thời gian lưu, trạng thái, W-SURVEY
+
+- Trạng thái: CONFIRMED (2026-10-26). Trả lời Q-037, Q-038, Q-042 và duyệt `docs/STATUS_CATALOG.md`. **Sửa DEC-066 mục 10.5** (thời gian lưu).
+- **Quy mô (Q-038):** **50–70 nhân viên** dùng đồng thời; **10.000–15.000 container ra vào / tháng** (~500 lượt / ngày, 120–180 nghìn lượt / năm).
+- **Trạng thái:** dùng các mã ✅ trong `STATUS_CATALOG.md`; **bỏ hết 12 mã ⚪**:
+  - `PENDING_GATE_IN`, `OFFICE_VERIFIED`, `SPECIAL_RETURN`;
+  - `IN_PROGRESS`, `REWORK_REQUIRED`, `REJECTED`, `REFUNDED`, `HA_SUA_CHUA`;
+  - `YARD_MOVE`, `SHIFT_REPAIR`, `SHIFT_INSPECTION_RACK`.
+  - Cần thì thêm sau bằng migration.
+- **Ảnh cửa container (Q-037):**
+  - Nén trên thiết bị còn ~200 KB / ảnh trước khi gửi (~2 GB / tháng).
+  - Lưu Supabase Storage **24 tháng**, quá hạn tự xóa ảnh. Hồ sơ vẫn giữ, ghi "ảnh đã hết hạn lưu".
+- **Dữ liệu tác nghiệp:**
+  - Giữ **trực tuyến 3 năm** (tra cứu / báo cáo trên app).
+  - Quá 3 năm → **chuyển ra kho lưu trữ** (file nén + mã hóa, ngoài database) và xóa khỏi bảng trực tuyến.
+  - Phần lưu kho vẫn giữ đủ thời hạn chứng từ kế toán theo luật; không tra trên app, khôi phục khi cần.
+  - Bảng lớn chia partition theo tháng để chuyển kho theo từng tháng.
+- **W-SURVEY (Q-042):** **không được Cấp vỏ** khi chưa giám định bổ sung — chưa có tình trạng thì không cấp (giữ chặn ở `releaseBlocker`, DEC-147).
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
@@ -1426,6 +1445,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-149 đã xác nhận (cập nhật 2026-10-26).
+- Quyết định nghiệp vụ: DEC-001 → DEC-150 đã xác nhận (cập nhật 2026-10-26).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

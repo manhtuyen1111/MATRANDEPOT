@@ -2,7 +2,7 @@
 
 Nguồn: bản Demo đang chạy (`src/types/depot.ts`, `src/services/`), mốc `demo-truoc-database-2026-10-26`. Người dùng chọn "lấy theo bản Demo" (2026-10-26).
 
-**Trạng thái: CHỜ DUYỆT.** Sau khi người dùng duyệt, mỗi bảng dưới đây thành một kiểu `enum` (hoặc bảng tra cứu) trong Postgres, giữ nguyên **mã**.
+**Trạng thái: ĐÃ DUYỆT 2026-10-26 (DEC-150) — dùng các mã ✅, bỏ hết mã ⚪.** Sau khi người dùng duyệt, mỗi bảng dưới đây thành một kiểu `enum` (hoặc bảng tra cứu) trong Postgres, giữ nguyên **mã**.
 
 Cột **Dùng ở Demo**:
 - ✅ = có luồng nghiệp vụ đặt giá trị này.
