@@ -209,6 +209,8 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Xuất tàu: cont vào danh sách tự khóa + ghi chú "XUẤT TÀU <tàu>" (chặn cấp vỏ, vẫn xuất tàu được); bỏ khỏi danh sách / không kịp → tự mở khóa, xóa ghi chú. Duyệt Nhập / Xuất tàu khi chưa đủ (bắt buộc lý do), cont không kịp bị gạch (DEC-131). Kiểm thử: 130/130 pass, build PASS.
 - Tồn vỏ: mỗi cont 1 dòng — Date in ngày + giờ cùng dòng, cột Date in / Vị trí / Tiến độ đủ rộng, ghi chú dài cắt bớt (rê chuột xem đủ) (DEC-132).
 - Phiếu thu trả trước: bảng Sử dụng có cột HÓA ĐƠN từng lượt, bấm xem yêu cầu của khách + nút Đã xuất hóa đơn; khối Xuất hóa đơn chỉ còn tóm tắt (DEC-133). Kiểm thử: 130/130 pass, build PASS.
+- Phiếu thu + Báo cáo Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu / Sửa chữa / Góp ý: mỗi thông tin 1 dòng, cuộn ngang, ô dài cắt bớt; quy tắc chung cho mọi bảng (DEC-134). Kiểm thử: 131/131 pass, build PASS.
+- Giới hạn chữ mỗi ô bảng: `CellText` / `clipText` / `CELL_MAX` (20 / 30 / 40 ký tự, dư "…", rê chuột xem đủ) — áp cho khách hàng, remark, nhân viên, góp ý, ghi chú Tồn vỏ (DEC-135). Kiểm thử: 132/132 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

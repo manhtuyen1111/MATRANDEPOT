@@ -4,7 +4,7 @@ import type { DepotState } from '../../services/depotStore';
 import { collectAllPages, feedbackSheet, FeedbackFilter, queryFeedback } from '../../services/reports';
 import { FEEDBACK_STATUS_LABELS, respondFeedback } from '../../services/feedback';
 import { fileStamp, formatDateTime, quickRange } from '../../services/datetime';
-import { DateRangeFilter, DetailDrawer, ExportExcelButton, Feedback, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
+import { DateRangeFilter, DetailDrawer, ExportExcelButton, Feedback, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize, CellText, CELL_MAX} from '../../components/shared';
 import { FeedbackMenuOption, FeedbackStatusBadge } from '../../components/FeedbackButton';
 import type { FeedbackItem, FeedbackStatus } from '../../types/depot';
 
@@ -72,7 +72,7 @@ export const FeedbackReport: React.FC<{ state: DepotState; onUpdateState: (next:
           <p className="p-8 text-center text-xs text-slate-500">Không có góp ý phù hợp.</p>
         ) : (
           <>
-            <table className="w-full min-w-[960px] text-left text-xs">
+            <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                 <tr>
                   <th className="px-3 py-2">Mã góp ý</th>
@@ -91,9 +91,9 @@ export const FeedbackReport: React.FC<{ state: DepotState; onUpdateState: (next:
                     <td className="whitespace-nowrap px-3 py-2 font-mono">{formatDateTime(f.createdAt)}</td>
                     <td className="px-3 py-2">{f.createdBy}</td>
                     <td className="px-3 py-2">{f.menuLabel}</td>
-                    <td className="max-w-[24rem] truncate px-3 py-2" title={f.content}>{f.content}</td>
+                    <td className="px-3 py-2"><CellText text={f.content} max={CELL_MAX.LONG} /></td>
                     <td className="px-3 py-2"><FeedbackStatusBadge status={f.status} /></td>
-                    <td className="max-w-[16rem] truncate px-3 py-2 text-slate-600" title={f.response || ''}>{f.response || '-'}</td>
+                    <td className="px-3 py-2 text-slate-600"><CellText text={f.response} max={CELL_MAX.MEDIUM} /></td>
                   </tr>
                 ))}
               </tbody>

@@ -697,3 +697,33 @@ describe('DEC-129: Tồn vỏ — thứ tự cột màn hình = thứ tự cột
     for (let i = 1; i < positions.length; i++) expect(positions[i], `Sai thứ tự cột "${screen[i]}"`).toBeGreaterThan(positions[i - 1]);
   });
 });
+
+// DEC-134: bảng / danh sách — mỗi thông tin chỉ 1 dòng (không xuống dòng, cuộn ngang khi rộng)
+describe('DEC-135: giới hạn chữ mỗi ô', () => {
+  it('clipText cắt đúng N ký tự + "…"; CellText có title khi bị cắt', async () => {
+    const { clipText, CellText, CELL_MAX } = await import('../src/components/shared');
+    expect(clipText('ABC', 5)).toBe('ABC');
+    const long = 'X'.repeat(60);
+    expect(clipText(long, CELL_MAX.LONG)).toHaveLength(CELL_MAX.LONG);
+    expect(clipText(long, CELL_MAX.LONG).endsWith('…')).toBe(true);
+    const html = renderToString(<CellText text={long} max={CELL_MAX.LONG} />);
+    expect(html).toContain(`title="${long}"`);
+    expect(renderToString(<CellText text="Ngắn" />)).not.toContain('title=');
+    expect(renderToString(<CellText text="" />)).toBe('-');
+  });
+});
+
+describe('DEC-134: bảng 1 dòng', () => {
+  const demo = createDemoState();
+  it('Phiếu thu + Báo cáo Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu / Sửa chữa: bảng whitespace-nowrap', () => {
+    const screens = [
+      <ReceiptsWorkspace state={as(demo, 'usr-office')} onUpdateState={noop} />,
+      ...(['BC_HA_VO', 'BC_CAP_VO', 'BC_NHAP_TAU', 'BC_XUAT_TAU', 'BC_SUA_CHUA'] as const).map((s) => <ReportsWorkspace state={demo} section={s} onOpenDossier={noop} />),
+    ];
+    for (const el of screens) {
+      const html = renderToString(el);
+      const tables = html.match(/<table[^>]*>/g) || [];
+      for (const tb of tables) expect(tb).toContain('whitespace-nowrap');
+    }
+  });
+});

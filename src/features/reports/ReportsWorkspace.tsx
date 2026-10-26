@@ -19,7 +19,7 @@ import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportShe
 import { can } from '../../services/permissions';
 import { quickRange, fileStamp } from '../../services/datetime';
 import { VesselReport } from './VesselReport';
-import { linkCls, DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
+import { linkCls, DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize, CellText, CELL_MAX} from '../../components/shared';
 import { PaymentInfoCells } from '../../components/PaymentInfoCells';
 import { voucherPaymentInfo } from '../../services/payments';
 
@@ -158,7 +158,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
         ) : (
           <>
             {outRows && (
-              <table className="w-full min-w-[860px] text-left text-xs">
+              <table className="w-full min-w-[860px] whitespace-nowrap text-left text-xs">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                   <tr>
                     <th className="px-3 py-2">Mã hồ sơ</th>
@@ -181,7 +181,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
                       <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.gateOutCode)} className={linkCls}>{o.gateOutCode}</button></td>
                       <td className="px-3 py-2 font-mono font-bold">{o.containerNo}</td>
                       <td className="px-3 py-2 font-mono">{o.bookingNo}</td>
-                      <td className="px-3 py-2">{o.receiverRep}</td>
+                      <td className="px-3 py-2"><CellText text={o.receiverRep} max={CELL_MAX.MEDIUM} /></td>
                       <td className="px-3 py-2">{o.truckNo}</td>
                       <td className="px-3 py-2">{o.driverPhone || '-'}</td>
                       <td className="px-3 py-2">{GATE_OUT_STATUS[o.status]}</td>
@@ -195,7 +195,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
               </table>
             )}
             {inRows && (
-              <table className="w-full min-w-[960px] text-left text-xs">
+              <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                   <tr>
                     <th className="px-3 py-2">Mã hồ sơ</th>
@@ -221,7 +221,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
                       <td className="px-3 py-2 font-mono font-bold">{o.containerNo || '-'}</td>
                       <td className="px-3 py-2">{o.size || '-'}/{o.type || '-'}</td>
                       <td className="px-3 py-2">{o.shippingLineCode || '-'}</td>
-                      <td className="px-3 py-2">{o.customerRep || '-'}</td>
+                      <td className="px-3 py-2"><CellText text={o.customerRep} max={CELL_MAX.MEDIUM} /></td>
                       <td className="px-3 py-2">{o.truckNo || '-'}</td>
                       <td className="px-3 py-2">{o.driverPhone || '-'}</td>
                       <td className="px-3 py-2">{o.conditionClass}</td>
@@ -383,7 +383,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
           <p className="p-8 text-center text-xs text-slate-500">Không có dữ liệu phù hợp.</p>
         ) : (
           <>
-            <table className="w-full min-w-[960px] text-left text-xs">
+            <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                 <tr>
                   <th className="px-3 py-2">Mã hồ sơ</th>
@@ -406,11 +406,11 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
                     </td>
                     <td className="px-3 py-2 font-mono font-bold">{w.containerNo}</td>
                     <td className="px-3 py-2">{c?.shippingLineCode || '-'}</td>
-                    <td className="px-3 py-2">{w.items.join(', ')}</td>
+                    <td className="px-3 py-2"><CellText text={w.items.join(', ')} max={CELL_MAX.LONG} /></td>
                     <td className="px-3 py-2 text-right font-mono">{w.laborHours ?? '-'}</td>
                     <td className="px-3 py-2">{REPAIR_STATUS[w.workStatus] || w.workStatus}</td>
                     <td className="px-3 py-2">{w.repairTeamName || '-'}</td>
-                    <td className="px-3 py-2">{(w.repairMembers || []).join(', ') || '-'}</td>
+                    <td className="px-3 py-2"><CellText text={(w.repairMembers || []).join(', ')} max={CELL_MAX.MEDIUM} /></td>
                     <td className="px-3 py-2">{w.approvedBy || '-'} • {formatViTime(w.createdAt)}</td>
                     <td className="px-3 py-2">{w.completedBy ? `${w.completedBy} • ${formatViTime(w.completedAt)}` : '-'}</td>
                   </tr>
