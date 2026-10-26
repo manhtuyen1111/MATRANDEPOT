@@ -647,16 +647,26 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
               </div>
             )}
 
-            <div className="mt-3 text-xs">
-              <span className={labelCls}>Container được chọn</span>
-              {selected ? (
-                <span>
-                  <ContainerNo no={selected.containerNo} /> • {selected.size}/{selected.type} • {selected.shippingLineCode} •{' '}
-                  <strong className={selected.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}>{selected.conditionClass}</strong>
-                </span>
-              ) : (
-                <span className="text-slate-500">Chọn container ở danh sách bên trái.</span>
-              )}
+            {/* DEC-137: container được chọn — chia ô rõ ràng (chỉ đọc), tự điền khi bấm chọn ở danh sách bên trái */}
+            <div className="mt-3 text-xs" data-testid="selected-container">
+              <span className={labelCls}>Container được chọn {!selected && <span className="normal-case font-normal text-slate-500">— bấm chọn ở danh sách bên trái</span>}</span>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {([
+                  ['Số container', selected ? <ContainerNo no={selected.containerNo} /> : null],
+                  ['Size/Type', selected ? `${selected.size}/${selected.type}` : null],
+                  ['Hãng tàu', selected?.shippingLineCode],
+                  ['Trạng thái', selected ? <strong className={selected.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}>{selected.conditionClass}</strong> : null],
+                  ['Đóng hàng', selected?.stuffingClass],
+                  ['Vị trí', selected ? <LocationText loc={selected} /> : null],
+                ] as [string, React.ReactNode][]).map(([label, value]) => (
+                  <div key={label}>
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-500">{label}</span>
+                    <div className="flex min-h-[2.25rem] items-center whitespace-nowrap rounded-md border border-slate-200 bg-slate-50 px-2.5 font-mono text-xs font-semibold text-slate-900">
+                      {value || <span className="font-normal text-slate-400">-</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </SectionCard>
 

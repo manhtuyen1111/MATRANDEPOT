@@ -745,3 +745,15 @@ describe('DEC-136: vị trí dùng icon thay chữ BLOCK', () => {
     expect(yard).toContain('data-testid="block-icon"');
   });
 });
+
+// DEC-137: Cấp vỏ — "Container được chọn" chia ô rõ ràng (chỉ đọc, tự điền khi chọn ở danh sách)
+describe('DEC-137: Cấp vỏ — container được chọn chia ô', () => {
+  it('có đủ 6 ô: Số container, Size/Type, Hãng tàu, Trạng thái, Đóng hàng, Vị trí', () => {
+    const html = renderToString(<OfficeCapVoWorkspace state={as(base, 'usr-office')} onUpdateState={noop} onOpenK80Ticket={noop} />).replace(/<!-- -->/g, '');
+    const i = html.indexOf('data-testid="selected-container"');
+    expect(i).toBeGreaterThan(0);
+    const box = html.slice(i, i + 4000);
+    for (const l of ['Số container', 'Size/Type', 'Hãng tàu', 'Trạng thái', 'Đóng hàng', 'Vị trí']) expect(box).toContain(`>${l}</span>`);
+    expect(box).toContain('bấm chọn ở danh sách bên trái');
+  });
+});
