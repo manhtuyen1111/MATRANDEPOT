@@ -813,3 +813,13 @@ describe('DEC-145: design system v2 (navy + accent, Be Vietnam Pro)', () => {
     expect(shared.linkCls).toBe('font-mono text-navy-700 hover:underline');
   });
 });
+
+describe('DEC-145: code giao diện chỉ dùng token design system (docs/DESIGN_SYSTEM.md)', () => {
+  it('không còn class màu cũ bị cấm trong src/', () => {
+    const files = import.meta.glob('../src/**/*.tsx', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+    expect(Object.keys(files).length).toBeGreaterThan(10);
+    const banned = /(^|[\s"'`:])(bg-blue-600|text-blue-700|bg-slate-900|text-slate-(900|700|500)|border-slate-(200|300)|bg-slate-50)(?=$|[\s"'`])/m;
+    const offenders = Object.entries(files).filter(([, src]) => banned.test(src)).map(([f]) => f);
+    expect(offenders).toEqual([]);
+  });
+});
