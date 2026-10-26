@@ -200,14 +200,14 @@ export function gateInSheet(name: string, orders: GateInOrder[]): SheetData {
       'MÃ HỒ SƠ', 'LOẠI', 'TRẠNG THÁI HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'KHÁCH HÀNG',
       'SỐ XE', 'SĐT LÁI XE', 'SỐ LỆNH / CHỨNG TỪ', 'TRẠNG THÁI', 'GHI CHÚ HƯ HỎNG', 'PHÂN LOẠI ĐÓNG HÀNG',
       'TÌNH TRẠNG VỆ SINH', 'AGE', 'GIÁM ĐỊNH', 'THỜI GIAN GIÁM ĐỊNH', 'VĂN PHÒNG', 'THỜI GIAN VĂN PHÒNG',
-      'SỐ CHỨNG TỪ', 'CHI PHÍ (ĐÃ GỒM VAT)', 'GATE IN OK LÚC', 'GATE IN OK BỞI', 'LÝ DO HỦY',
+      'CHI PHÍ (ĐÃ GỒM VAT)', 'GATE IN OK LÚC', 'GATE IN OK BỞI', 'LÝ DO HỦY',
     ],
     rows: orders.map((o) => [
       o.masterDossierCode, o.gateInType, o.status, o.containerNo || '', o.size || '', o.type || '',
       o.shippingLineCode || '', o.customerRep || '', o.truckNo || '', o.driverPhone || '', o.orderDocNo || '',
       o.conditionClass, o.damageRemarks.join('; '), o.stuffingClass, o.cleaningItems.join(' + '),
       o.manufactureYear, o.fieldStaffName, fmt(o.fieldRecordedAt), o.officeStaffName || '', fmt(o.officeVerifiedAt),
-      o.voucherNo || '', o.feeAmount || 0, fmt(o.gateInOkAt), o.gateInOkBy || '', o.cancelReason || '',
+      o.feeAmount || 0, fmt(o.gateInOkAt), o.gateInOkBy || '', o.cancelReason || '',
     ]),
   };
 }
@@ -217,7 +217,7 @@ export function gateOutSheet(name: string, state: DepotState, orders: GateOutOrd
     name,
     columns: [
       'MÃ HỒ SƠ CẤP', 'MÃ HỒ SƠ HẠ VỎ', 'LOẠI', 'TRẠNG THÁI HỒ SƠ', 'BOOKING', 'SỐ CONTAINER', 'SIZE', 'TYPE',
-      'HÃNG TÀU', 'TRẠNG THÁI', 'PHÂN LOẠI ĐÓNG HÀNG', 'KHÁCH HÀNG', 'SỐ XE', 'SĐT LÁI XE', 'SỐ CHỨNG TỪ',
+      'HÃNG TÀU', 'TRẠNG THÁI', 'PHÂN LOẠI ĐÓNG HÀNG', 'KHÁCH HÀNG', 'SỐ XE', 'SĐT LÁI XE',
       'CHI PHÍ (ĐÃ GỒM VAT)', 'HÌNH THỨC THANH TOÁN', 'LẬP LỆNH LÚC', 'LẬP LỆNH BỞI', 'OUT LÚC', 'XÁC NHẬN OUT BỞI',
       'LÝ DO HỦY',
     ],
@@ -227,7 +227,7 @@ export function gateOutSheet(name: string, state: DepotState, orders: GateOutOrd
       return [
         o.gateOutCode, o.masterDossierCode, o.gateOutType, o.status, o.bookingNo, o.containerNo, c?.size || '',
         c?.type || '', c?.shippingLineCode || '', c?.conditionClass || '', c?.stuffingClass || '', o.receiverRep,
-        o.truckNo, o.driverPhone || '', o.voucherNo || '', o.feeAmount || 0,
+        o.truckNo, o.driverPhone || '', o.feeAmount || 0,
         v ? `${v.paymentCategory || ''}${v.directMethod ? ` / ${v.directMethod}` : ''} (${v.status})` : '',
         fmt(o.createdAt), o.createdBy || '', fmt(o.confirmedAt), o.confirmedBy || '', o.cancelReason || '',
       ];

@@ -236,12 +236,8 @@ export function verifyGateInOfficeAndCreatePayment(
   const amount = sumFees(feeLines);
 
   let next = state;
-  let voucherNo = existingVoucher?.voucherNo;
-  if (!voucherNo) {
-    const allocated = allocateCode(next, 'CT');
-    voucherNo = allocated.code;
-    next = allocated.state;
-  }
+  // DEC-119: số chứng từ = MÃ HỒ SƠ của tác nghiệp (không cấp mã CT- riêng)
+  const voucherNo = order.masterDossierCode;
   const voucher = {
     id: existingVoucher?.id || newId('vch'),
     masterDossierCode: order.masterDossierCode,
@@ -976,13 +972,11 @@ export function createReleaseOrder(
 
   const outCode = allocateCode(next, 'CV');
   next = outCode.state;
-  const voucherCode = allocateCode(next, 'CT');
-  next = voucherCode.state;
 
   const voucher = {
     id: newId('vch'),
     masterDossierCode: container.masterDossierCode,
-    voucherNo: voucherCode.code,
+    voucherNo: outCode.code, // DEC-119: số chứng từ = mã hồ sơ CẤP VỎ
     serviceType: 'GATE_OUT' as const,
     referenceCode: outCode.code,
     containerNo: container.containerNo,

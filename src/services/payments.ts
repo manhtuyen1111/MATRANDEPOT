@@ -540,7 +540,7 @@ export function masterReceiptUsage(state: DepotState, receiptCode: string): Mast
 // DEC-099: THÔNG TIN THANH TOÁN của lượt cont vào bãi (dùng ở Tồn vỏ + Excel)
 //   (DEC-100: ký hiệu hiển thị TT / TTS / TTR; mã nội bộ vẫn TTTT / TTS / TTT)
 //   DEC-104: chỉ hiện MÃ PHIẾU THU của lượt — TT → PT-TT-…; TTR → mã phiếu thu trả trước PTT-…;
-//   TTS (không có phiếu thu) / chưa thanh toán / Nhập tàu → để trống. Không hiện chứng từ CT-.
+//   TTS (không có phiếu thu) / chưa thanh toán / Nhập tàu → để trống. Số chứng từ = mã hồ sơ (DEC-119).
 export const PAYMENT_CATEGORY_FULL_LABELS: Record<PaymentCategory, string> = {
   TTTT: 'TT — TRỰC TIẾP',
   TTS: 'TTS — THANH TOÁN SAU',

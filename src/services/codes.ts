@@ -8,7 +8,7 @@ import type { DepotState } from './depotStore';
 //   Phiếu thu      : PT-TT-YYMMDD-NNNN (TT trực tiếp) / PT-TTR-YYMMDD-NNNN (nạp quỹ thu trước) — DEC-098
 //                    (dữ liệu cũ PT-YYYY-NNNNNN giữ nguyên)
 //   Phiếu thu trước: PTT-YYYY-NNN    (phiếu thu trả trước TTT)
-//   Chứng từ       : CT-YYMMDD-NNNN
+//   Chứng từ       : KHÔNG cấp mã riêng — số chứng từ = mã hồ sơ tác nghiệp (HV- / CV-) (DEC-119)
 // Mã cũ (IN-/HS-, OUT-/GO-, PTM-) được đổi khi nạp dữ liệu: renameLegacyCodes
 // Chế độ Demo: bộ đếm nằm trong state và chỉ an toàn trong một phiên trình duyệt.
 // Chế độ Supabase: bắt buộc cấp trong database (bảng bộ đếm + khóa dòng trong cùng transaction).
@@ -16,14 +16,13 @@ import type { DepotState } from './depotStore';
 
 // DEC-098: phiếu thu theo hình thức + ngày — PT-TT-YYMMDD-NNNN (TT trực tiếp), PT-TTR-YYMMDD-NNNN (nạp quỹ thu trước).
 // Dãy PT (PT-YYYY-NNNNNN) giữ cho dữ liệu cũ, không cấp mới.
-export type CodeSeries = 'HV' | 'CV' | 'NT' | 'XT' | 'PT' | 'PT-TT' | 'PT-TTR' | 'PTT' | 'CT';
+export type CodeSeries = 'HV' | 'CV' | 'NT' | 'XT' | 'PT' | 'PT-TT' | 'PT-TTR' | 'PTT';
 
 const SERIES_FORMAT: Record<CodeSeries, { period: 'day' | 'year'; digits: number }> = {
   HV: { period: 'day', digits: 3 },
   CV: { period: 'day', digits: 3 },
   NT: { period: 'day', digits: 3 },
   XT: { period: 'day', digits: 3 },
-  CT: { period: 'day', digits: 4 },
   PT: { period: 'year', digits: 6 },
   'PT-TT': { period: 'day', digits: 4 },
   'PT-TTR': { period: 'day', digits: 4 },
@@ -54,8 +53,6 @@ function existingCodes(state: DepotState, series: CodeSeries): string[] {
       return (state.paymentReceipts || []).map((r) => r.receiptNo);
     case 'PTT':
       return state.masterReceipts.map((r) => r.receiptCode);
-    case 'CT':
-      return state.vouchers.map((v) => v.voucherNo);
   }
 }
 

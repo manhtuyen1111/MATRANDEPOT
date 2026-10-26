@@ -924,7 +924,7 @@ describe('DEC-079: phiếu thu trả trước liên kết từng lần trừ ti�
     let s = createInitialState();
     const before = masterReceiptUsage(s, 'PTT-2026-001')!;
     expect(before.usedCount).toBe(1);
-    expect(before.rows[0]).toMatchObject({ voucherNo: 'CT-GIN-261019-01', dossierCode: 'HV-261019-001', operation: 'HẠ VỎ', amount: 1200000 });
+    expect(before.rows[0]).toMatchObject({ voucherNo: 'HV-261019-001', dossierCode: 'HV-261019-001', operation: 'HẠ VỎ', amount: 1200000 });
     s = fieldStep(s);
     const gi = s.gateInOrders[0];
     s = officeStep(s, gi.id, 'MSKU1234567');
@@ -1226,5 +1226,30 @@ describe('DEC-110: Trả chứng từ — Xem trước', () => {
     expect(getDriverRoute(s, ticket).at(-1)!.done).toBe(false);
     expect(() => previewDocumentPack(as(s, 'usr-forklift'), { scannedQrCode: ticket.qrCode })).toThrow(/Không đủ quyền/);
     expect(() => previewDocumentPack(as(s, 'usr-office'), { scannedQrCode: 'QR-KHONG-CO' })).toThrow(/Không tìm thấy/);
+  });
+});
+
+describe('DEC-119: số chứng từ = mã hồ sơ tác nghiệp (không còn mã CT-)', () => {
+  it('Hạ vỏ: chứng từ + mã tham chiếu chuyển khoản = HV-; Cấp vỏ: chứng từ = CV-; Excel không còn cột SỐ CHỨNG TỪ', async () => {
+    const { gateInSheet, gateOutSheet } = await import('../src/services/reports');
+    let s = fieldStep(createInitialState());
+    const gi = s.gateInOrders[0];
+    s = officeStep(s, gi.id, 'MSKU1234567');
+    const v = s.vouchers.find((x) => x.masterDossierCode === gi.masterDossierCode && x.serviceType === 'GATE_IN')!;
+    expect(v.voucherNo).toBe(gi.masterDossierCode);
+    expect(v.voucherNo.startsWith('CT-')).toBe(false);
+    s = confirmGateInPaymentAndComplete(as(s, 'usr-office'), { gateInId: gi.id, paymentCategory: 'TTTT', directMethod: 'BANK_TRANSFER_API' });
+    expect(s.paymentTransactions[0].paymentRef).toBe(gi.masterDossierCode);
+    s = simulateDemoBankTransfer(as(s, 'usr-office'), { transactionId: s.paymentTransactions[0].id });
+    expect(s.paymentReceipts[0].voucherNo).toBe(gi.masterDossierCode);
+
+    s = createReleaseOrder(as(createInitialState(), 'usr-office'), {
+      bookingNo: 'BK-119', customerName: VIETLOG, containerNo: 'MSKU4089123', truckNo: '15H-1', driverPhone: '0912345678', feeCatalogIds: [FEE_LOLO_40HC_MSK],
+    });
+    const go = s.gateOutOrders[0];
+    expect(s.vouchers.find((x) => x.id === go.voucherId)!.voucherNo).toBe(go.gateOutCode);
+    expect(s.vouchers.every((x) => !x.voucherNo.startsWith('CT-'))).toBe(true);
+    expect(gateInSheet('HẠ VỎ', s.gateInOrders).columns).not.toContain('SỐ CHỨNG TỪ');
+    expect(gateOutSheet('CẤP VỎ', s, s.gateOutOrders).columns).not.toContain('SỐ CHỨNG TỪ');
   });
 });

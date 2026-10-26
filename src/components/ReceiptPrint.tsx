@@ -109,7 +109,7 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
       <InfoGrid
         rows={[
           ["Bên thanh toán", r.payerName],
-          ...(isPrepaid ? [] : ([["Mã hồ sơ", r.dossierCode || r.masterReceiptCode, true], ["Số container", r.containerNo, true], ["Chứng từ", r.voucherNo, true]] as [string, React.ReactNode, boolean][])),
+          ...(isPrepaid ? [] : ([["Mã hồ sơ", r.dossierCode || r.masterReceiptCode, true], ["Số container", r.containerNo, true]] as [string, React.ReactNode, boolean][])),
           ['Hình thức', `${PAYMENT_METHOD_LABELS[r.method]}${r.providerTxRef ? ` • Mã GD ${r.providerTxRef}` : ''}`],
           ['Thời gian thu', formatDateTime(tx?.confirmedAt || r.issuedAt), true],
         ]}

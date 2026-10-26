@@ -35,7 +35,7 @@ const as = (s: DepotState, id: string) => ({ ...s, currentUser: s.staffUsers.fin
 describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
   it('App khung menu', () => {
     // DEC-106: App mở với dữ liệu sạch; smoke này cần dữ liệu mẫu → nạp qua localStorage giả
-    const store: Record<string, string> = { matran_depot_erp_state_v10: JSON.stringify(base) };
+    const store: Record<string, string> = { matran_depot_erp_state_v11: JSON.stringify(base) };
     const prev = (globalThis as { localStorage?: unknown }).localStorage;
     (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } };
     const html = renderToString(<App />);
@@ -363,7 +363,6 @@ describe('DEC-079: khối Sử dụng phiếu thu trả trước', () => {
     expect(html).toContain('Sử dụng phiếu thu trả trước PTT-2026-001');
     expect(html).toContain('1 lượt');
     expect(html).toContain('HV-261019-001');
-    expect(html).not.toContain('CT-GIN-261019-01'); // DEC-107: không hiện chứng từ
     expect(html).toContain('Còn lại');
   });
 });
