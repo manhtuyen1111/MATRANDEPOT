@@ -1094,6 +1094,22 @@ Quy ước trạng thái:
   - `prepaidInvoiceView`, `submitPrepaidInvoiceGroup`, `cancelPrepaidInvoiceGroup`, `receiptInvoiceStatus` / `receiptInvoiceLabel`, `markInvoiceIssued({ groupId })` trong `invoice.ts`.
   - Dữ liệu trình duyệt nạp lại (khóa lưu v13).
 
+### DEC-131 — Xuất tàu tự khóa + ghi chú tên tàu; duyệt Nhập / Xuất tàu khi chưa đủ (gạch cont không kịp)
+
+- Trạng thái: CONFIRMED (2026-10-26). Bổ sung DEC-069.
+- **Khóa xuất tàu tự động:**
+  - Khi cont được đưa vào danh sách **XUẤT TÀU** (lập mới hoặc thêm cont), cont **tự KHÓA** và **Ghi chú = "XUẤT TÀU <tên tàu>"**. Ghi chú cũ bị thay hẳn.
+  - **Không cấp vỏ được, chỉ xuất tàu được**: Xuất tàu cho phép cont đang mang khóa xuất tàu; cont có khóa thường thì vẫn phải mở khóa trước.
+  - Văn phòng **không tự mở khóa / sửa ghi chú** loại khóa này. Muốn gỡ thì bỏ cont khỏi danh sách.
+  - Đổi tên tàu thì ghi chú các cont đang chờ đổi theo.
+  - **Bỏ cont khỏi danh sách / xóa danh sách / duyệt mà cont chưa kịp xuất** → cont **tự mở khóa + xóa ghi chú**, trở lại tồn bãi bình thường. Nhật ký vẫn ghi lại.
+- **Duyệt khi chưa đủ:**
+  - Nút Duyệt bấm được cả khi chưa xuất / nhập đủ; khi đó **bắt buộc ghi lý do**.
+  - Cont chưa tác nghiệp chuyển trạng thái **KHÔNG KỊP** và hiện **gạch ngang** trong danh sách, báo cáo, Excel.
+  - Nhập tàu: cont đã Giám định (đang chờ hạ) vẫn tiếp tục luồng hạ bãi; chỉ cont chưa về bị gạch.
+  - Lý do được lưu (`approveNote`) và hiện ở đầu danh sách.
+- Kỹ thuật: `ContainerRecord.holdSource = 'VESSEL_EXPORT'`, `vesselLock` / `vesselUnlock` (`vessel.ts`), `VesselItemStatus 'SKIPPED'`, `approveVesselList({ reason })`.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1183,6 +1199,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-130 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-131 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
