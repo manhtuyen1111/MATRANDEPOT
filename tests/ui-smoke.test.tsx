@@ -699,6 +699,20 @@ describe('DEC-129: Tồn vỏ — thứ tự cột màn hình = thứ tự cột
 });
 
 // DEC-134: bảng / danh sách — mỗi thông tin chỉ 1 dòng (không xuống dòng, cuộn ngang khi rộng)
+describe('DEC-135: giới hạn chữ mỗi ô', () => {
+  it('clipText cắt đúng N ký tự + "…"; CellText có title khi bị cắt', async () => {
+    const { clipText, CellText, CELL_MAX } = await import('../src/components/shared');
+    expect(clipText('ABC', 5)).toBe('ABC');
+    const long = 'X'.repeat(60);
+    expect(clipText(long, CELL_MAX.LONG)).toHaveLength(CELL_MAX.LONG);
+    expect(clipText(long, CELL_MAX.LONG).endsWith('…')).toBe(true);
+    const html = renderToString(<CellText text={long} max={CELL_MAX.LONG} />);
+    expect(html).toContain(`title="${long}"`);
+    expect(renderToString(<CellText text="Ngắn" />)).not.toContain('title=');
+    expect(renderToString(<CellText text="" />)).toBe('-');
+  });
+});
+
 describe('DEC-134: bảng 1 dòng', () => {
   const demo = createDemoState();
   it('Phiếu thu + Báo cáo Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu / Sửa chữa: bảng whitespace-nowrap', () => {

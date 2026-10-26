@@ -30,6 +30,8 @@ import {
   secondaryBtn,
   SlotPicker,
   SlotValue,
+  CellText,
+  CELL_MAX,
 } from '../../components/shared';
 
 interface Props {
@@ -355,7 +357,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                           </div>
                         ) : hasNote ? (
                           <div className="flex items-center justify-between gap-2">
-                            <span className="block max-w-[18rem] truncate font-semibold text-slate-900" title={c.officeNote}>{c.officeNote}</span>
+                            <CellText text={c.officeNote} max={CELL_MAX.LONG} className="font-semibold text-slate-900" />
                             {canNote && (
                               <button type="button" aria-label="Sửa ghi chú" onClick={() => { setEditingNoteId(c.id); setNoteDraft(c.officeNote || ''); }} className="text-slate-600 hover:text-slate-900">
                                 <Pencil className="h-3 w-3" />

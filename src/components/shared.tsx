@@ -102,6 +102,18 @@ export const inputCls =
 export const labelCls = 'mb-1 block text-[11px] font-semibold uppercase text-slate-600';
 // DEC-117: KIỂU LINK DỮ LIỆU THỐNG NHẤT toàn app (mã hồ sơ, mã phiếu thu, mã cấp vỏ, NT- / XT-…) — giống Mã hồ sơ ở Tồn vỏ
 export const linkCls = 'font-mono text-blue-700 hover:underline';
+
+// DEC-135: GIỚI HẠN CHỮ MỖI Ô BẢNG — tối đa N ký tự, dư thì "…", rê chuột xem đủ (dữ liệu lưu vẫn đầy đủ)
+export const CELL_MAX = { SHORT: 20, MEDIUM: 30, LONG: 40 } as const; // tên người / khách: 20–30, ghi chú / remark / nội dung: 40
+export const clipText = (text: string | undefined | null, max: number): string => {
+  const s = (text || '').trim();
+  return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s;
+};
+export const CellText: React.FC<{ text?: string | null; max?: number; className?: string }> = ({ text, max = CELL_MAX.MEDIUM, className = '' }) => {
+  const s = (text || '').trim();
+  if (!s) return <>-</>;
+  return <span className={className} title={s.length > max ? s : undefined}>{clipText(s, max)}</span>;
+};
 export const primaryBtn =
   'inline-flex items-center justify-center gap-1.5 rounded-md bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
 export const secondaryBtn =
