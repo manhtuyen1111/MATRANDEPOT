@@ -1045,6 +1045,19 @@ Quy ước trạng thái:
 - Kỹ thuật: 2 ô dùng chung `PaymentInfoCells` (`src/components/PaymentInfoCells.tsx`).
 - Sửa kèm: ô Mã hồ sơ ở bảng Báo cáo Hạ vỏ / Cấp vỏ bị mất khoảng đệm, do lần đổi kiểu link ở DEC-117 gắn nhầm class vào ô thay vì vào nút.
 
+### DEC-127 — Cột THANH TOÁN chỉ ghi tên hình thức, không kèm ký hiệu
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- Quyết định: Cột **Thanh toán** ở Tồn vỏ, Báo cáo Hạ vỏ, Báo cáo Cấp vỏ (màn hình và Excel) chỉ ghi một trong các giá trị:
+  - **TRỰC TIẾP**
+  - **TRẢ TRƯỚC**
+  - **THANH TOÁN SAU**
+  - **Không thu phí** (Nhập tàu)
+  - **Chưa thanh toán** / **Chưa lập chứng từ** (khi chưa có thanh toán)
+- Bỏ ký hiệu đứng trước ("TT —", "TTR —", "TTS —") cho gọn.
+- Các chỗ khác giữ ký hiệu: khối chọn hình thức thanh toán, Excel Phiếu thu.
+- Kỹ thuật: `PAYMENT_CATEGORY_SHORT_LABELS` (`payments.ts`), dùng trong `voucherPaymentInfo`.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1134,6 +1147,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-126 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-127 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

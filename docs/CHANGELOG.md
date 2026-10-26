@@ -202,6 +202,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Phiếu thu trả trước chỉ còn **một mã** `PT-TTR-YYMMDD-NNNN` (cấp ngay khi tạo, chờ thanh toán; thu xong là số phiếu thu; QR = `QR-<mã>`); bỏ mã PTT- (DEC-124). Kiểm thử: 125/125 pass, build PASS.
 - Chọn / sửa vị trí từng bước Block → Bay → Row → Tier bằng nút lớn, tóm tắt giá trị đã chọn ở trên (bấm để chọn lại) — áp dụng Xe nâng, Đảo chuyển, Nhập tàu, Tồn vỏ (DEC-125). Kiểm thử: 126/126 pass, build PASS.
 - Báo cáo Hạ vỏ / Cấp vỏ (màn + Excel) thêm cột Thanh toán + Mã phiếu thu như Tồn vỏ; đổi "Hình thức TT" → "Thanh toán"; sửa khoảng đệm ô Mã hồ sơ ở báo cáo (DEC-126). Kiểm thử: 127/127 pass, build PASS.
+- Cột Thanh toán chỉ ghi TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU / Không thu phí (bỏ ký hiệu TT —, TTR —, TTS —) (DEC-127).
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
