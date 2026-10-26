@@ -7,7 +7,7 @@ describe('DEC-108: dữ liệu test đầy đủ trường hợp', () => {
     const s = createDemoState();
     const yard = s.containers.filter((c) => c.status !== 'GATED_OUT');
     expect(new Set(yard.map((c) => c.size))).toEqual(new Set(['20', '40', '45']));
-    expect(yard.every((c) => c.shippingLineCode === 'MAERSK')).toBe(true);
+    expect(yard.every((c) => c.shippingLineCode === 'MSK')).toBe(true);
     const cats = new Set(yard.map((c) => containerPaymentInfo(s, c).category).filter(Boolean));
     expect(cats).toEqual(new Set(['TTTT', 'TTT', 'TTS']));
     expect(yard.some((c) => c.isOnHold)).toBe(true);
@@ -22,8 +22,32 @@ describe('DEC-108: dữ liệu test đầy đủ trường hợp', () => {
     expect(s.containers.some((c) => c.forkliftShiftTask === 'HA_KE_GIAM_DINH' && c.status === 'IN_YARD')).toBe(true);
     expect(s.containers.some((c) => c.forkliftShiftTask === 'HA_KE_GIAM_DINH' && c.status === 'WAITING_PLACEMENT')).toBe(true);
     expect(new Set(s.paymentReceipts.map((r) => r.invoiceStatus))).toEqual(new Set(['CHUA_XHD', 'YEU_CAU_XHD', 'DA_XHD']));
-    expect(s.feedbacks.map((f) => f.status).sort()).toEqual(['DA_XU_LY', 'MOI']);
-    expect(s.vesselLists.map((l) => l.mode).sort()).toEqual(['NHAP_TAU', 'XUAT_TAU']);
+    expect(new Set(s.feedbacks.map((f) => f.status))).toEqual(new Set(['DA_XU_LY', 'MOI']));
+    expect(new Set(s.vesselLists.map((l) => l.mode))).toEqual(new Set(['NHAP_TAU', 'XUAT_TAU']));
+  });
+});
+
+describe('DEC-148: dữ liệu test — danh mục theo người dùng + danh sách lớn', () => {
+  it('1 hãng tàu MSK, 10 khách hàng, công ty MATRAN, biểu giá 20DC / 40DC / 40HC / 45HC + rác LV1 / LV2', () => {
+    const s = createDemoState();
+    expect(s.partners.filter((p) => p.isShippingLine).map((p) => p.code)).toEqual(['MSK']);
+    expect(s.partners.filter((p) => p.isCustomer)).toHaveLength(10);
+    expect(s.companyProfile).toMatchObject({ name: 'CÔNG TY CỔ PHẦN MATRAN', shortName: 'MATRAN DEPOT', phone: '0912907980', email: 'Matran@gmail.com' });
+    const lolo = s.feeCatalog.filter((f) => f.category === 'NANG_HA').map((f) => String(f.size) + f.type + '=' + f.defaultAmountInclVat).sort();
+    expect(lolo).toEqual(['20DC=1000000', '40DC=1500000', '40HC=1500000', '45HC=1500000']);
+    expect(s.feeCatalog.filter((f) => f.category === 'THU_GOM_RAC').map((f) => [f.name, f.defaultAmountInclVat])).toEqual([['THU GOM RÁC LV1', 200000], ['THU GOM RÁC LV2', 500000]]);
+    expect(s.feeCatalog).toHaveLength(6);
+  });
+
+  it('nhiều lượt cho mọi tác nghiệp (đủ để thử lọc / phân trang)', () => {
+    const s = createDemoState();
+    expect(s.gateInOrders.length).toBeGreaterThanOrEqual(90);
+    expect(s.gateOutOrders.length).toBeGreaterThanOrEqual(25);
+    expect(s.containers.filter((c) => c.status === 'IN_YARD').length).toBeGreaterThanOrEqual(50);
+    expect(s.paymentReceipts.length).toBeGreaterThanOrEqual(50);
+    expect(s.vesselLists.length).toBeGreaterThanOrEqual(6);
+    expect(new Set(s.gateInOrders.map((o) => o.customerRep).filter(Boolean)).size).toBe(10);
+    expect(s.containers.some((c) => c.conditionClass === 'W-SURVEY')).toBe(true);
   });
 });
 
