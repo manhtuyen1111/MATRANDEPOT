@@ -23,6 +23,7 @@ import { linkCls,
   primaryBtn,
   SlotPicker,
   SlotValue,
+  LocationText,
 } from '../../components/shared';
 
 export type FieldQueueMode = 'VS_CHO_VE_SINH' | 'XN_CHO_HA_VO' | 'XN_CHO_CAP_VO' | 'BG_CHO_BAO_GIA' | 'SC_CHO_SUA_CHUA';
@@ -291,7 +292,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                 ) : (
                   <div className="text-right">
                     <span className="block text-[10px] font-semibold uppercase text-slate-300">Vị trí hiện tại</span>
-                    <span className="font-mono text-lg font-black text-amber-300">{formatLocation(scanned)}</span>
+                    <LocationText loc={scanned} className="font-mono text-lg font-black text-amber-300" iconClassName="h-5 w-5" />
                   </div>
                 )}
               </div>
@@ -321,7 +322,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
             {mode !== "XN_CHO_CAP_VO" && (
               <>
                 <dt className="text-slate-500">Vị trí hiện tại</dt>
-                <dd className="font-mono font-semibold">{formatLocation(scanned)}</dd>
+                <dd className="font-mono font-semibold"><LocationText loc={scanned} /></dd>
               </>
             )}
             {mode === 'XN_CHO_CAP_VO' && (
@@ -458,7 +459,7 @@ export const QueueListRow: React.FC<{ state: DepotState; container: ContainerRec
         <span className="grid grid-cols-[8.5rem_3rem_1fr] items-center gap-2">
           <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />
           <span className="font-mono text-slate-600">{c.size}/{c.type}</span>
-          <span className="truncate text-right font-mono text-[11px] text-slate-600">{formatLocation(c)}</span>
+          <LocationText loc={c} className="truncate text-right font-mono text-[11px] text-slate-600" />
         </span>
         <span className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-slate-600">
           <span className="min-w-0 truncate font-semibold">{op.vesselName ? `Tàu ${op.vesselName}` : ''}</span>

@@ -15,6 +15,9 @@ import {
   secondaryBtn,
   SlotPicker,
   SlotValue,
+  LocationText,
+  BlockIcon,
+  blockLabel,
 } from '../../components/shared';
 
 const PAGE_SIZE = 20;
@@ -34,7 +37,7 @@ export const YardShiftWorkspace: React.FC<{
   const [progress, setProgress] = useState<'ALL' | ContainerProgress>('ALL');
   const [shown, setShown] = useState(PAGE_SIZE);
   // DEC-092: ô tên Block rộng đúng bằng mã Block dài nhất (đơn vị ch, chữ đều nét) → các phần Bay-Row-Tier thẳng cột
-  const blockCh = Math.max(5, ...state.yardBlocks.map((b) => b.blockCode.length));
+  const blockCh = Math.max(4, ...state.yardBlocks.map((b) => blockLabel(b.blockCode).length)) + 2; // DEC-136: icon thay chữ BLOCK-
   const [selectedId, setSelectedId] = useState('');
   const [slot, setSlot] = useState<SlotValue>(EMPTY_SLOT);
   const [showHistory, setShowHistory] = useState(false);
@@ -96,7 +99,7 @@ export const YardShiftWorkspace: React.FC<{
             <dt className="text-slate-500">Trạng thái</dt>
             <dd className="font-semibold">{selected.conditionClass} • {getContainerProgress(selected).map((p) => PROGRESS_LABELS[p]).join(', ')}</dd>
             <dt className="text-slate-500">Vị trí hiện tại</dt>
-            <dd className="font-mono font-bold">{formatLocation(selected)}</dd>
+            <dd className="font-mono font-bold"><LocationText loc={selected} /></dd>
           </dl>
           <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
             <span className="block font-bold text-slate-800">Vị trí mới *</span>
@@ -167,7 +170,7 @@ export const YardShiftWorkspace: React.FC<{
                     </span>
                     <span className="mt-1 flex items-center gap-2 overflow-hidden whitespace-nowrap">
                       <span className="flex shrink-0 font-mono text-[11px] font-bold text-slate-900" data-testid="shift-slot">
-                        <span className="shrink-0" style={{ width: `${blockCh}ch` }}>{c.currentBlock || ''}</span>
+                        <span className="inline-flex shrink-0 items-center gap-0.5" style={{ width: `${blockCh}ch` }}>{c.currentBlock && <BlockIcon />}{blockLabel(c.currentBlock)}</span>
                         <span className="truncate">{slotDetail(c) ? ` / ${slotDetail(c)}` : ''}</span>
                       </span>
                       <span

@@ -18,7 +18,7 @@ import {
 import { formatLocation, parseContainerList, storageDays } from '../../services/core';
 import { formatDateTime, parseDateTime } from '../../services/datetime';
 import { can } from '../../services/permissions';
-import { linkCls, ContainerNo, DateTimeField, DetailDrawer, Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
+import { linkCls, ContainerNo, DateTimeField, DetailDrawer, Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard, LocationText } from '../../components/shared';
 import { VesselListTitle, VesselProgressBar } from './VesselShared';
 
 interface Props {
@@ -389,7 +389,7 @@ export const ExportPicker: React.FC<{ state: DepotState; picked: Set<string>; on
                     <td className="px-2 py-1.5">{c.shippingLineCode}</td>
                     <td className={`px-2 py-1.5 font-bold ${blocker ? '' : c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
                     <td className="px-2 py-1.5">{c.stuffingClass}</td>
-                    <td className="px-2 py-1.5 font-mono">{formatLocation(c)}</td>
+                    <td className="px-2 py-1.5 font-mono"><LocationText loc={c} /></td>
                     <td className="px-2 py-1.5 text-right font-mono">{storageDays(c.gateInAt)}</td>
                     <td className="px-2 py-1.5 text-[11px]">{blocker ? <span className="font-semibold text-rose-700">{blocker}</span> : c.officeNote || ''}</td>
                   </tr>

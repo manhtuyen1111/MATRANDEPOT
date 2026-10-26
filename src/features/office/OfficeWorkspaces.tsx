@@ -40,6 +40,7 @@ import { linkCls,
   secondaryBtn,
   SectionCard,
   suggestLoloFee,
+  LocationText,
 } from '../../components/shared';
 
 interface OfficeProps {
@@ -586,7 +587,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                       <td className="py-2 pr-2">{c.shippingLineCode}</td>
                       <td className={`py-2 pr-2 font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
                       <td className="py-2 pr-2">{c.stuffingClass}</td>
-                      <td className="py-2 pr-2 font-mono">{formatLocation(c)}</td>
+                      <td className="py-2 pr-2 font-mono"><LocationText loc={c} /></td>
                       <td className="py-2 text-[11px] font-semibold text-amber-900">{c.officeNote || "-"}</td>
                     </tr>
                   ))

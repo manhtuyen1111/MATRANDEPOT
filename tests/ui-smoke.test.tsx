@@ -469,12 +469,13 @@ describe('DEC-125: chọn vị trí từng bước (Block → Bay → Row → Ti
     const { SlotPicker } = await import('../src/components/shared');
     const empty = renderToString(<SlotPicker state={base} value={{ blockCode: '', bay: '', row: '', tier: '' }} onChange={noop} />).replace(/<!-- -->/g, '');
     expect(empty).toContain('Chọn Block *');
-    for (const b of base.yardBlocks) expect(empty).toContain(`>${b.blockCode}</button>`);
+    // DEC-136: nút Block hiện icon + tên bỏ tiền tố BLOCK-
+    for (const b of base.yardBlocks) expect(empty).toContain(`</svg>${b.blockCode.replace(/^BLOCK-/, '')}</span></button>`);
     expect(empty).not.toContain('Chọn Bay');
     const bay = renderToString(<SlotPicker state={base} value={{ blockCode: 'BLOCK-A', bay: '', row: '', tier: '' }} onChange={noop} />).replace(/<!-- -->/g, '');
     expect(bay).toContain('Chọn Bay * (01 → 20)');
     expect(bay).not.toContain('Chọn Block *');
-    expect(bay).toMatch(/data-testid="slot-summary"[\s\S]*>BLOCK-A<\/button>/);
+    expect(bay).toMatch(/data-testid="slot-summary"[\s\S]*<\/svg>A<\/span><\/button>/);
     const row = renderToString(<SlotPicker state={base} value={{ blockCode: 'BLOCK-A', bay: '05', row: '', tier: '' }} onChange={noop} />).replace(/<!-- -->/g, '');
     expect(row).toContain('>05</button>');
     expect(row).toContain('Chọn Row *');
@@ -483,8 +484,8 @@ describe('DEC-125: chọn vị trí từng bước (Block → Bay → Row → Ti
     expect(done).toContain('✓ Đủ vị trí');
     expect(done).not.toContain('Chọn Tier');
     const rack = renderToString(<SlotPicker state={base} value={{ blockCode: '', bay: '', row: '', tier: '' }} onChange={noop} onlyBlocks={['BLOCK-DAMAGE']} />);
-    expect(rack).toContain('>BLOCK-DAMAGE</button>');
-    expect(rack).not.toContain('>BLOCK-A</button>');
+    expect(rack).toContain('</svg>DAMAGE</span></button>');
+    expect(rack).not.toContain('</svg>A</span></button>');
   });
 });
 
@@ -541,10 +542,11 @@ describe('DEC-090: Xe nâng → Đảo chuyển — vị trí thẳng cột', ()
     expect(rows).toBeGreaterThan(0);
     // DEC-092: 1 dòng số cont | size/type | "BLOCK-A / 04-02-01"; ô Block rộng = mã Block dài nhất (ch) → Bay-Row-Tier thẳng cột
     expect(html.match(/data-testid="shift-slot"/g)?.length).toBe(rows);
-    const ch = Math.max(5, ...base.yardBlocks.map((b) => b.blockCode.length));
+    const ch = Math.max(4, ...base.yardBlocks.map((b) => b.blockCode.replace(/^BLOCK-/, '').length)) + 2; // DEC-136: icon thay chữ BLOCK-
     expect(html.split(`style="width:${ch}ch"`).length - 1).toBe(rows);
-    expect(html).toMatch(/>BLOCK-A<\/span><span class="truncate"> \/ 04-02-01<\/span>/);
-    expect(html).toMatch(/>BLOCK-B<\/span><span class="truncate"><\/span>/);
+    expect(html).toMatch(/<\/svg>A<\/span><span class="truncate"> \/ 04-02-01<\/span>/);
+    expect(html).toMatch(/<\/svg>B<\/span><span class="truncate"><\/span>/);
+    expect(html).not.toContain('>BLOCK-A<');
     expect(html).not.toContain('>Tier</span>');
     // DEC-094: ô TRẠNG THÁI đầu dòng (AV / DAMAGE), tiến độ ở cuối ô
     expect(html.match(/data-testid="shift-status"/g)?.length).toBe(rows);
@@ -725,5 +727,21 @@ describe('DEC-134: bảng 1 dòng', () => {
       const tables = html.match(/<table[^>]*>/g) || [];
       for (const tb of tables) expect(tb).toContain('whitespace-nowrap');
     }
+  });
+});
+
+// DEC-136: vị trí hiển thị icon định vị thay chữ "BLOCK-" (mã lưu vẫn BLOCK-…)
+describe('DEC-136: vị trí dùng icon thay chữ BLOCK', () => {
+  it('LocationText / blockLabel bỏ tiền tố BLOCK-, có icon; Tồn vỏ không hiện chữ BLOCK- ở cột vị trí', async () => {
+    const { LocationText, blockLabel } = await import('../src/components/shared');
+    expect(blockLabel('BLOCK-A')).toBe('A');
+    const html = renderToString(<LocationText loc={{ currentBlock: 'BLOCK-A', currentBay: '17', currentRow: '02', currentTier: '02' }} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('data-testid="block-icon"');
+    expect(html).toContain('>A / 17-02-02<');
+    expect(html).toContain('title="BLOCK-A / 17-02-02"');
+    expect(renderToString(<LocationText loc={{ currentBlock: null, currentBay: null, currentRow: null, currentTier: null }} />)).not.toContain('block-icon');
+    const demo = createDemoState();
+    const yard = renderToString(<YardFeature state={demo} onUpdateState={noop} />);
+    expect(yard).toContain('data-testid="block-icon"');
   });
 });
