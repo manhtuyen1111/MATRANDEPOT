@@ -226,6 +226,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Văn phòng → Nhập / Xuất tàu: bảng chi tiết tàu mỗi cột 1 thông tin, 1 dòng (tách Size / Type / Hãng tàu / Trạng thái / Phân loại / Người thực hiện / Thời gian — DEC-146). Kiểm thử: 141/141 pass, build PASS.
 - Giám định → Hạ vỏ: lựa chọn **W-SURVEY (LÊN KỆ)** thay ô tích Hạ kệ; tab **Chờ giám định trên kệ** để giám định bổ sung AV / DAMAGE + Đóng hàng + AGE; EEIR ghi W-SURVEY; DAMAGE sau bổ sung vào Chờ báo giá (DEC-147, Q-042). Kiểm thử: 145/145 pass, build PASS.
 - Dữ liệu test: hãng tàu MSK, 10 khách hàng, công ty CÔNG TY CỔ PHẦN MATRAN, biểu giá 20DC / 40DC / 40HC / 45HC + rác LV1 / LV2; thêm danh sách lớn cho mọi tác nghiệp (DEC-148). Kiểm thử: 147/147 pass, build PASS.
+- Khóa lưu localStorage nâng lên v14 → trình duyệt tự nạp dữ liệu test mới (dữ liệu Demo cũ bị thay).
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
