@@ -40,6 +40,8 @@ import { ticketsAwaitingReturn } from '../services/driverRoute';
 import { RepairTeamCatalog } from '../features/catalog/RepairTeamCatalog';
 import { UserRoleCatalog } from '../features/catalog/UserRoleCatalog';
 import { CompanyCatalog } from '../features/catalog/CompanyCatalog';
+import { FeedbackButton } from '../components/FeedbackButton';
+import { FeedbackReport } from '../features/reports/FeedbackReport';
 
 interface MenuItem {
   id: WorkspaceMenuId;
@@ -102,6 +104,7 @@ const MENU: MenuGroup[] = [
       { id: 'BC_XUAT_TAU', label: 'Xuất tàu' },
       { id: 'BC_SUA_CHUA', label: 'Sửa chữa' },
       { id: 'BC_TONG_HOP', label: 'Tổng hợp' },
+      { id: 'BC_GOP_Y', label: 'Góp ý' }, // DEC-120: chỉ Admin
     ],
   },
   {
@@ -169,6 +172,10 @@ export const App: React.FC = () => {
   const [prefs, setPrefs] = useState(readPrefs);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // DEC-120: danh sách MENU / TÍNH NĂNG để chọn khi góp ý (menu người dùng được thấy) và để Admin lọc báo cáo (mọi menu)
+  const toOptions = (groups: MenuGroup[]) => groups.flatMap((g) => g.items.map((i) => ({ id: i.id, label: `${g.label} → ${i.label}` })));
+  const allMenuOptions = toOptions(MENU);
+
   const handleUpdateState = (next: DepotState) => {
     setState(next);
     saveDepotState(next);
@@ -181,6 +188,7 @@ export const App: React.FC = () => {
       ),
     [state.currentUser]
   );
+  const feedbackMenuOptions = toOptions(visibleMenu);
 
   // Đổi người dùng → nếu không còn quyền với màn hình hiện tại thì chuyển sang mục đầu tiên được phép
   useEffect(() => {
@@ -404,6 +412,8 @@ export const App: React.FC = () => {
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
+            {/* DEC-120: Góp ý — mọi người dùng, góc trên bên phải */}
+            <FeedbackButton state={state} onUpdateState={handleUpdateState} menuOptions={feedbackMenuOptions} />
             {!isSupabaseConfigured && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">DEMO</span>}
             <label className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1">
               <UserCheck className="h-3.5 w-3.5 text-slate-500" />
@@ -423,7 +433,7 @@ export const App: React.FC = () => {
                 ))}
               </select>
             </label>
-            <button type="button" onClick={() => { if (window.confirm('Xóa toàn bộ dữ liệu tác nghiệp (container, lệnh, phiếu thu…)? Danh mục được giữ lại.')) setState(resetDepotState()); }} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
+            <button type="button" onClick={() => { if (window.confirm('Xóa toàn bộ dữ liệu tác nghiệp (container, lệnh, phiếu thu…)? Danh mục và góp ý được giữ lại.')) handleUpdateState({ ...resetDepotState(), feedbacks: state.feedbacks || [] }); }} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
               <RefreshCw className="h-3 w-3" />
               Xóa dữ liệu
             </button>
@@ -465,6 +475,7 @@ export const App: React.FC = () => {
           {REPORT_MENUS.includes(activeMenu as ReportSection) && (
             <ReportsWorkspace state={state} section={activeMenu as ReportSection} onOpenDossier={setActiveDossierCode} />
           )}
+          {activeMenu === 'BC_GOP_Y' && <FeedbackReport state={state} onUpdateState={handleUpdateState} menuOptions={allMenuOptions} />}
           {activeMenu === 'DM_SUA_CHUA' && <RepairTeamCatalog state={state} onUpdateState={handleUpdateState} />}
           {activeMenu === 'DM_USER' && <UserRoleCatalog state={state} onUpdateState={handleUpdateState} />}
           {activeMenu === 'DM_CONG_TY' && <CompanyCatalog state={state} onUpdateState={handleUpdateState} />}

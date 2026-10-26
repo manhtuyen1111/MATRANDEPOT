@@ -18,7 +18,9 @@ import { formatLocation, getContainerProgress, PROGRESS_LABELS, storageDays } fr
 import { containerPaymentInfo, masterReceiptUsage, PAYMENT_CATEGORY_FULL_LABELS, receiptOperationOf } from './payments';
 import { formatDateTime, parseDateTime } from './datetime';
 import { INVOICE_STATUS_LABELS } from './invoice';
-import type { InvoiceStatus } from '../types/depot';
+import { FEEDBACK_STATUS_LABELS } from './feedback';
+import { assertPermission } from './core';
+import type { FeedbackItem, FeedbackStatus, InvoiceStatus } from '../types/depot';
 
 // ============================================================================
 // BÁO CÁO & TRA CỨU (CR-08, CR-04 PHIẾU THU)
@@ -504,6 +506,38 @@ export function vesselReportSheet(mode: VesselMode, rows: VesselReportRow[]): Sh
         ? [(i.cleaningItems || []).join(', '), i.manufactureYear || '', (i.damageRemarks || []).join(', '), i.inspectedBy || '', fmt(i.inspectedAt)]
         : [i.locationAtList || '']),
       i.doneBy || '', fmt(i.doneAt), l.createdBy, fmt(l.createdAt),
+    ]),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// BÁO CÁO GÓP Ý (DEC-120) — chỉ Admin; lọc thời gian / trạng thái / menu / từ khóa
+// ---------------------------------------------------------------------------
+export interface FeedbackFilter extends DateRange {
+  status?: FeedbackStatus | 'ALL';
+  menuId?: string; // 'ALL' hoặc mã menu
+  keyword?: string; // mã góp ý, nội dung, người góp ý
+}
+
+export function queryFeedback(state: DepotState, filter: FeedbackFilter, page = 1, pageSize = REPORT_PAGE_SIZE): PagedResult<FeedbackItem> {
+  assertPermission(state, 'FEEDBACK_MANAGE', 'chỉ Quản trị viên (Admin) được xem báo cáo góp ý.');
+  const range = toRange(filter);
+  const keyword = filter.keyword?.trim().toLowerCase();
+  const rows = (state.feedbacks || [])
+    .filter((f) => inRange(f.createdAt, range))
+    .filter((f) => !filter.status || filter.status === 'ALL' || f.status === filter.status)
+    .filter((f) => !filter.menuId || filter.menuId === 'ALL' || f.menuId === filter.menuId)
+    .filter((f) => !keyword || [f.code, f.content, f.createdBy, f.menuLabel].some((v) => v.toLowerCase().includes(keyword)))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return paginate(rows, page, pageSize);
+}
+
+export function feedbackSheet(rows: FeedbackItem[]): SheetData {
+  return {
+    name: 'GÓP Ý',
+    columns: ['MÃ GÓP Ý', 'THỜI GIAN', 'NGƯỜI GÓP Ý', 'MENU / TÍNH NĂNG', 'NỘI DUNG', 'TRẠNG THÁI', 'PHẢN HỒI', 'PHẢN HỒI LÚC', 'NGƯỜI PHẢN HỒI'],
+    rows: rows.map((f) => [
+      f.code, fmt(f.createdAt), f.createdBy, f.menuLabel, f.content, FEEDBACK_STATUS_LABELS[f.status], f.response || '', fmt(f.respondedAt), f.respondedBy || '',
     ]),
   };
 }

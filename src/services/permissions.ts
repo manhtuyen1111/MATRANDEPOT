@@ -32,6 +32,8 @@ export const PERMISSIONS = {
   VESSEL_IMPORT_INSPECT: ['INSPECTOR', 'MANAGER'],
   VESSEL_EXPORT_EXECUTE: ['INSPECTOR', 'FORKLIFT', 'MANAGER'],
   CATALOG_EDIT: [] as AppRole[],
+  // DEC-120: chỉ ADMIN xem / xử lý góp ý
+  FEEDBACK_MANAGE: [] as AppRole[],
 } satisfies Record<string, AppRole[]>;
 
 export type PermissionKey = keyof typeof PERMISSIONS;
@@ -83,6 +85,7 @@ export const MENU_ACCESS: Record<WorkspaceMenuId, AppRole[]> = {
   DM_CONTAINER: OFFICE_BLOCK,
   DM_BIEU_GIA: OFFICE_BLOCK,
   DM_USER: [],
+  BC_GOP_Y: PERMISSIONS.FEEDBACK_MANAGE, // DEC-120: chỉ Admin
 };
 
 // Vai trò được chọn trong màn USER - PHÂN QUYỀN (DEC-045, DEC-047)

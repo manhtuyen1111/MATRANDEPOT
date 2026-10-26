@@ -3,6 +3,7 @@ import { ensureInvoiceFields } from './invoice';
 import {
   AppRole,
   AuditLogEntry,
+  FeedbackItem,
   ContainerRecord,
   ContainerSize,
   ContainerType,
@@ -56,6 +57,7 @@ export interface DepotState {
   vesselLists: VesselList[]; // NHẬP TÀU / XUẤT TÀU (DEC-069)
   // Bộ đếm cấp mã hồ sơ / phiếu (HV-YYMMDD, CV-YYMMDD, PT-YYYY...). Ở chế độ Supabase do database cấp.
   codeCounters: Record<string, number>;
+  feedbacks: FeedbackItem[]; // DEC-120: góp ý xây dựng hệ thống (giữ lại khi Xóa dữ liệu)
 }
 
 export const INITIAL_CONTAINER_SIZES: ContainerSize[] = ['20', '40', '45'];
@@ -784,6 +786,7 @@ export function createInitialState(): DepotState {
     },
     vesselLists: [],
     codeCounters: {},
+    feedbacks: [],
   };
 }
 
@@ -834,6 +837,7 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
     companyProfile: { ...base.companyProfile, ...(raw.companyProfile || {}) },
     vesselLists: raw.vesselLists || [],
     codeCounters: raw.codeCounters || {},
+    feedbacks: raw.feedbacks || [],
   } as DepotState;
 }
 
@@ -858,6 +862,7 @@ export function createCleanState(): DepotState {
     auditLogs: [],
     vesselLists: [],
     codeCounters: {},
+    feedbacks: [],
   };
 }
 

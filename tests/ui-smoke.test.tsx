@@ -3,6 +3,8 @@ import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { createInitialState, DepotState } from '../src/services/depotStore';
 import { App } from '../src/app/App';
+import { FeedbackButton, FeedbackPanel } from '../src/components/FeedbackButton';
+import { FeedbackReport } from '../src/features/reports/FeedbackReport';
 import { InvoicePortal } from '../src/features/invoice/InvoicePortal';
 import { InvoicePanel } from '../src/features/receipts/ReceiptsWorkspace';
 import { createDemoState } from '../src/services/demoData';
@@ -608,5 +610,22 @@ describe('DEC-116: Đảo chuyển không có ghi chú tác nghiệp', () => {
     const html = renderToString(<YardShiftWorkspace state={base} onUpdateState={noop} />);
     expect(c).toBeTruthy();
     expect(html).not.toContain('Ghi chú tác nghiệp');
+  });
+});
+
+describe('DEC-120: Góp ý', () => {
+  const demo = createDemoState();
+  const opts = [{ id: 'TON_VO', label: 'Tồn vỏ' }];
+  it('nút Góp ý + form chọn menu / nội dung + Góp ý của tôi', () => {
+    expect(renderToString(<FeedbackButton state={demo} onUpdateState={noop} menuOptions={opts} />)).toContain('data-testid="feedback-button"');
+    const html = renderToString(<FeedbackPanel state={as(demo, 'usr-forklift')} onUpdateState={noop} menuOptions={opts} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('aria-label="Menu góp ý"');
+    expect(html).toContain('>Khác<');
+    expect(html).toContain('Góp ý của tôi (1)');
+  });
+  it('Báo cáo → Góp ý có bộ lọc + Tra cứu', () => {
+    const html = renderToString(<FeedbackReport state={as(demo, 'usr-admin')} onUpdateState={noop} menuOptions={opts} />);
+    expect(html).toContain('Báo cáo Góp ý');
+    expect(html).toContain('aria-label="Lọc nhanh thời gian"');
   });
 });

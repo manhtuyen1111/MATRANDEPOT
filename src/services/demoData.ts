@@ -21,6 +21,7 @@ import {
 } from './depotOperations';
 import { createVesselList, executeVesselExport, inspectVesselImportItem } from './vessel';
 import { markInvoiceIssued, submitInvoiceRequest } from './invoice';
+import { respondFeedback, submitFeedback } from './feedback';
 import type { ContainerSize, ContainerType } from '../types/depot';
 
 const as = (state: DepotState, userId: string): DepotState => ({
@@ -204,5 +205,10 @@ export function createDemoState(): DepotState {
     taxCode: '0209876543-001', email: 'hoadon@namhai.vn', companyName: 'CÔNG TY VẬN TẢI NAM HẢI', address: 'Km 6 Đình Vũ, Hải An, Hải Phòng',
   });
   s = markInvoiceIssued(as(s, 'usr-acc'), { receiptNo: receiptOf('MSKU1000022').receiptNo, invoiceNo: '0000123' });
+
+  // ── GÓP Ý (DEC-120): 1 góp ý mới, 1 góp ý Admin đã phản hồi
+  s = submitFeedback(as(s, 'usr-forklift'), { menuId: 'XN_DAO_CHUYEN', menuLabel: 'Xe nâng → Đảo chuyển', content: 'Muốn lọc nhanh theo Block khi đảo chuyển.' });
+  s = submitFeedback(as(s, 'usr-office'), { menuId: 'VP_PHIEU_THU', menuLabel: 'Văn phòng → Phiếu thu', content: 'Cần in lại nhiều phiếu thu cùng lúc.' });
+  s = respondFeedback(as(s, 'usr-admin'), { id: s.feedbacks[0].id, status: 'DA_XU_LY', response: 'Đã ghi nhận, sẽ làm ở bản sau.' });
   return as(s, 'usr-admin');
 }

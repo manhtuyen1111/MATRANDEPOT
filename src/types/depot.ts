@@ -29,6 +29,23 @@ export const ROLE_LABELS: Record<AppRole, string> = {
 // DEC-111: trạng thái xuất hóa đơn của phiếu thu
 export type InvoiceStatus = 'CHUA_XHD' | 'YEU_CAU_XHD' | 'DA_XHD';
 
+// DEC-120: GÓP Ý XÂY DỰNG HỆ THỐNG
+export type FeedbackStatus = 'MOI' | 'DANG_XU_LY' | 'DA_XU_LY' | 'KHONG_AP_DUNG';
+export interface FeedbackItem {
+  id: string;
+  code: string;        // GY-YYMMDD-NNN
+  menuId: string;      // mã menu (WorkspaceMenuId) hoặc 'KHAC'
+  menuLabel: string;   // tên menu / tính năng tại thời điểm góp ý
+  content: string;
+  status: FeedbackStatus;
+  createdAt: string;
+  createdById: string;
+  createdBy: string;
+  response?: string;   // phản hồi của Admin
+  respondedAt?: string;
+  respondedBy?: string;
+}
+
 // Cấu trúc Menu tác nghiệp (CR-06, CR-09)
 export type WorkspaceMenuId =
   | 'TON_VO'
@@ -62,7 +79,8 @@ export type WorkspaceMenuId =
   | 'DM_CONG_TY'
   | 'DM_USER'
   | 'BC_HA_VO'
-  | 'BC_SUA_CHUA';
+  | 'BC_SUA_CHUA'
+  | 'BC_GOP_Y'; // DEC-120
 
 export type GateInType = 'CUSTOMER_RETURN' | 'VESSEL_IMPORT';
 
