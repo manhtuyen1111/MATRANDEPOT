@@ -199,14 +199,14 @@ export function gateInSheet(name: string, orders: GateInOrder[], state?: DepotSt
   return {
     name,
     columns: [
-      'MÃ HỒ SƠ', 'LOẠI', 'TRẠNG THÁI HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'KHÁCH HÀNG',
+      'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'LOẠI', 'TRẠNG THÁI HỒ SƠ', 'KHÁCH HÀNG', // DEC-139: 5 cột đầu cố định
       'SỐ XE', 'SĐT LÁI XE', 'SỐ LỆNH / CHỨNG TỪ', 'TRẠNG THÁI', 'GHI CHÚ HƯ HỎNG', 'PHÂN LOẠI ĐÓNG HÀNG',
       'TÌNH TRẠNG VỆ SINH', 'AGE', 'GIÁM ĐỊNH', 'THỜI GIAN GIÁM ĐỊNH', 'VĂN PHÒNG', 'THỜI GIAN VĂN PHÒNG',
       'CHI PHÍ (ĐÃ GỒM VAT)', 'THANH TOÁN', 'MÃ PHIẾU THU', 'GATE IN OK LÚC', 'GATE IN OK BỞI', 'LÝ DO HỦY',
     ],
     rows: orders.map((o) => [
-      o.masterDossierCode, o.gateInType, o.status, o.containerNo || '', o.size || '', o.type || '',
-      o.shippingLineCode || '', o.customerRep || '', o.truckNo || '', o.driverPhone || '', o.orderDocNo || '',
+      o.masterDossierCode, o.containerNo || '', o.size || '', o.type || '', o.shippingLineCode || '',
+      o.gateInType, o.status, o.customerRep || '', o.truckNo || '', o.driverPhone || '', o.orderDocNo || '',
       o.conditionClass, o.damageRemarks.join('; '), o.stuffingClass, o.cleaningItems.join(' + '),
       o.manufactureYear, o.fieldStaffName, fmt(o.fieldRecordedAt), o.officeStaffName || '', fmt(o.officeVerifiedAt),
       o.feeAmount || 0,
@@ -221,8 +221,8 @@ export function gateOutSheet(name: string, state: DepotState, orders: GateOutOrd
   return {
     name,
     columns: [
-      'MÃ HỒ SƠ CẤP', 'MÃ HỒ SƠ HẠ VỎ', 'LOẠI', 'TRẠNG THÁI HỒ SƠ', 'BOOKING', 'SỐ CONTAINER', 'SIZE', 'TYPE',
-      'HÃNG TÀU', 'TRẠNG THÁI', 'PHÂN LOẠI ĐÓNG HÀNG', 'KHÁCH HÀNG', 'SỐ XE', 'SĐT LÁI XE',
+      'MÃ HỒ SƠ CẤP', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', // DEC-139: 5 cột đầu cố định
+      'MÃ HỒ SƠ HẠ VỎ', 'LOẠI', 'TRẠNG THÁI HỒ SƠ', 'BOOKING', 'TRẠNG THÁI', 'PHÂN LOẠI ĐÓNG HÀNG', 'KHÁCH HÀNG', 'SỐ XE', 'SĐT LÁI XE',
       'CHI PHÍ (ĐÃ GỒM VAT)', 'THANH TOÁN', 'MÃ PHIẾU THU', 'LẬP LỆNH LÚC', 'LẬP LỆNH BỞI', 'OUT LÚC', 'XÁC NHẬN OUT BỞI',
       'LÝ DO HỦY',
     ],
@@ -230,8 +230,8 @@ export function gateOutSheet(name: string, state: DepotState, orders: GateOutOrd
       const c = state.containers.find((x) => x.masterDossierCode === o.masterDossierCode);
       const v = state.vouchers.find((x) => x.id === o.voucherId);
       return [
-        o.gateOutCode, o.masterDossierCode, o.gateOutType, o.status, o.bookingNo, o.containerNo, c?.size || '',
-        c?.type || '', c?.shippingLineCode || '', c?.conditionClass || '', c?.stuffingClass || '', o.receiverRep,
+        o.gateOutCode, o.containerNo, c?.size || '', c?.type || '', c?.shippingLineCode || '',
+        o.masterDossierCode, o.gateOutType, o.status, o.bookingNo, c?.conditionClass || '', c?.stuffingClass || '', o.receiverRep,
         o.truckNo, o.driverPhone || '', o.feeAmount || 0,
         ...(() => { const p = voucherPaymentInfo(state, v); return [p.label, p.receipt]; })(), // DEC-126
         fmt(o.createdAt), o.createdBy || '', fmt(o.confirmedAt), o.confirmedBy || '', o.cancelReason || '',
@@ -511,13 +511,15 @@ export function vesselReportSheet(mode: VesselMode, rows: VesselReportRow[]): Sh
   return {
     name: isImport ? 'NHẬP TÀU' : 'XUẤT TÀU',
     columns: [
-      'TÊN TÀU', isImport ? 'THỜI GIAN NHẬP TÀU' : 'THỜI GIAN XUẤT TÀU', 'HÃNG TÀU', 'DUYỆT DANH SÁCH', 'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE',
+      'TÊN TÀU', 'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', // DEC-139: 6 cột đầu cố định
+      isImport ? 'THỜI GIAN NHẬP TÀU' : 'THỜI GIAN XUẤT TÀU', 'DUYỆT DANH SÁCH',
       'TIẾN ĐỘ', 'SỐ XE', 'TRẠNG THÁI', 'ĐÓNG HÀNG', ...(isImport ? ['VỆ SINH', 'AGE', 'GHI CHÚ HƯ HỎNG', 'GIÁM ĐỊNH', 'GIÁM ĐỊNH LÚC'] : ['VỊ TRÍ LÚC LẬP']),
       isImport ? 'HẠ BÃI BỞI' : 'XUẤT BỞI', isImport ? 'HẠ BÃI LÚC' : 'XUẤT LÚC', 'LẬP DANH SÁCH', 'LẬP LÚC',
     ],
     rows: rows.map(({ list: l, item: i }) => [
-      l.vesselName, fmt(l.plannedAt), l.shippingLineCode || '', l.status === 'APPROVED' ? `ĐÃ DUYỆT • ${l.approvedBy || ''} • ${fmt(l.approvedAt)}` : 'Chưa duyệt',
-      i.dossierCode || '', i.containerNo, i.size, i.type, VESSEL_ITEM_STATUS[mode][i.status], i.truckNo || '', i.conditionClass || '', i.stuffingClass || '',
+      l.vesselName, i.dossierCode || '', i.containerNo, i.size, i.type, l.shippingLineCode || '',
+      fmt(l.plannedAt), l.status === 'APPROVED' ? `ĐÃ DUYỆT • ${l.approvedBy || ''} • ${fmt(l.approvedAt)}` : 'Chưa duyệt',
+      VESSEL_ITEM_STATUS[mode][i.status], i.truckNo || '', i.conditionClass || '', i.stuffingClass || '',
       ...(isImport
         ? [(i.cleaningItems || []).join(', '), i.manufactureYear || '', (i.damageRemarks || []).join(', '), i.inspectedBy || '', fmt(i.inspectedAt)]
         : [i.locationAtList || '']),
