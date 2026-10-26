@@ -1121,6 +1121,17 @@ Quy ước trạng thái:
   - Bảng rộng hơn màn hình thì cuộn ngang.
 - Không đổi thứ tự / số cột, nên Excel giữ nguyên (DEC-129).
 
+### DEC-133 — Phiếu thu trả trước: cột HÓA ĐƠN gắn với từng lượt sử dụng
+
+- Trạng thái: CONFIRMED (2026-10-26). Bổ sung DEC-130.
+- Bảng **Sử dụng phiếu thu trả trước** trong chi tiết phiếu PT-TTR- có thêm cột **HÓA ĐƠN**: trạng thái của từng lượt (CHƯA XHD / YÊU CẦU XHD / ĐÃ XHD).
+- **Bấm vào ô trạng thái** → mở chi tiết ngay dưới dòng:
+  - yêu cầu khách đã gửi (các lượt được gộp chung, MST, Gmail, công ty, địa chỉ, ghi chú, số hóa đơn);
+  - nút **Đã xuất hóa đơn** cho Kế toán.
+  - Lượt chưa có yêu cầu thì báo "Khách hàng chưa gửi yêu cầu".
+- Khối **Xuất hóa đơn** của phiếu trả trước chỉ còn mã bảo mật + đường link + dòng tóm tắt; không liệt kê các yêu cầu nữa.
+- Excel không đổi.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1210,6 +1221,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-132 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-133 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
