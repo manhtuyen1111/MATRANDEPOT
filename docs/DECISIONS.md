@@ -1259,7 +1259,8 @@ Quy ước trạng thái:
 - **Chữ:** Be Vietnam Pro (giao diện), JetBrains Mono (số cont, mã) — tải từ Google Fonts, có font dự phòng của hệ thống. Cỡ mặc định máy tính 14px; ô nhập điện thoại vẫn 16px (DEC-116).
 - **Chữ thường** cho tiêu đề thẻ và nhãn ô nhập; IN HOA chỉ còn ở nhãn tác nghiệp.
 - Nút / ô nhập cao tối thiểu 40px, bo 8px; thẻ bo 12px, không bóng đổ.
-- **Áp dần theo từng bước** (mỗi bước một commit): (1) token + font + thành phần dùng chung; (2) khung App / menu; (3) Tồn vỏ; (4) màn mobile hiện trường; (5) văn phòng, báo cáo, danh mục, phiếu thu, giấy tờ in — **đã làm cả 5 bước** (đổi class slate / blue sang token). Còn giữ ~20 chỗ màu slate trên nền đậm (chữ / viền phụ). Màn mới phải dùng token, không viết thêm `blue-600` / `slate-*` cho màu chính.
+- **Áp dần theo từng bước** (mỗi bước một commit): (1) token + font + thành phần dùng chung; (2) khung App / menu; (3) Tồn vỏ; (4) màn mobile hiện trường; (5) văn phòng, báo cáo, danh mục, phiếu thu, giấy tờ in — **đã làm cả 5 bước** (đổi class slate / blue sang token). Còn giữ ~20 chỗ màu slate trên nền đậm (chữ / viền phụ).
+- **Lưu vào code làm chuẩn bắt buộc:** `docs/DESIGN_SYSTEM.md` + `docs/design/` (tokens, mẫu thành phần, 2 màn mẫu); skill `matran-ui-screen` trỏ tới; test chặn class màu cũ trong `src/`. Màn mới phải dùng token, không viết thêm `blue-600` / `slate-*` cho màu chính.
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 

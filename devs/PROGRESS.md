@@ -372,3 +372,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-26 — Claude Code: hoàn tác đăng nhập Demo (DEC-143/144) — giữ tài khoản demo + tên menu User - Role; quy tắc tài khoản chuyển thành việc của GĐ 4. 138/138 • build PASS.
 - 2026-10-26 — Claude Code: DEC-145 design system v2 bước 1/5 (token + font + thành phần dùng chung), nhánh `agent/claude/ui-design-v2`. Còn: khung App / menu, Tồn vỏ, màn mobile, các màn khác. 139/139 • build PASS.
 - 2026-10-26 — Claude Code: DEC-145 xong 5/5 bước (App, Tồn vỏ, mobile, văn phòng / báo cáo / in). 139/139 • build PASS. Chưa xem trực quan trên trình duyệt.
+- 2026-10-26 — Claude Code: lưu design system vào repo (`docs/DESIGN_SYSTEM.md`, `docs/design/`), skill UI + test chặn màu cũ. 140/140 • build PASS.
