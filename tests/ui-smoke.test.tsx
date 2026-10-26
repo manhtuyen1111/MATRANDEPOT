@@ -59,7 +59,9 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('>-<');
     expect(html).toContain('Lưu bãi');
     // DEC-074: cột Date in nằm giữa Hãng tàu và Trạng thái
-    expect(html).toMatch(/Hãng tàu<\/th><th[^>]*>Date in<\/th><th[^>]*>Trạng thái/);
+    // DEC-129: AGE ngay sau Hãng tàu; Date in vẫn trước Trạng thái
+    expect(html).toMatch(/Hãng tàu<\/th><th[^>]*>AGE<\/th><th[^>]*>Date in<\/th><th[^>]*>Trạng thái/);
+    expect(html).toMatch(/>Mã phiếu thu<\/th><th[^>]*>Tiến độ<\/th>/);
     // DEC-128: cột Phân loại (đóng hàng) ngay bên phải Trạng thái
     expect(html).toMatch(/>Trạng thái<\/th><th[^>]*>Phân loại<\/th>/);
     expect(html).toContain('Tìm hàng loạt');
@@ -661,5 +663,18 @@ describe('DEC-120: Góp ý', () => {
     const html = renderToString(<FeedbackReport state={as(demo, 'usr-admin')} onUpdateState={noop} menuOptions={opts} />);
     expect(html).toContain('Báo cáo Góp ý');
     expect(html).toContain('aria-label="Lọc nhanh thời gian"');
+  });
+});
+
+describe('DEC-129: Tồn vỏ — thứ tự cột màn hình = thứ tự cột Excel', () => {
+  it('mọi cột hiển thị trên màn đều có trong Excel, đúng thứ tự', async () => {
+    const { yardStockSheet } = await import('../src/services/reports');
+    const html = renderToString(<YardFeature state={base} onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    const thead = html.slice(html.indexOf('<thead'), html.indexOf('</thead>'));
+    const screen = [...thead.matchAll(/<th[^>]*>([^<]+)<\/th>/g)].map((m) => m[1].trim().toUpperCase()).filter(Boolean);
+    const excel = yardStockSheet(base.containers, base).columns;
+    const positions = screen.map((label) => excel.findIndex((col) => col === label || col.startsWith(label + ' ')));
+    screen.forEach((label, i) => expect(positions[i], `Excel thiếu cột "${label}"`).toBeGreaterThan(-1));
+    for (let i = 1; i < positions.length; i++) expect(positions[i], `Sai thứ tự cột "${screen[i]}"`).toBeGreaterThan(positions[i - 1]);
   });
 });

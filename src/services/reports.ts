@@ -444,18 +444,17 @@ export function yardStockSheet(rows: ContainerRecord[], state?: DepotState): She
   return {
     name: 'TỒN VỎ',
     columns: [
-      'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'DATE IN', 'VÀO BÃI BẰNG', 'TRẠNG THÁI', 'PHÂN LOẠI', 'LƯU BÃI (NGÀY)', 'AGE', 'VỊ TRÍ', 'TIẾN ĐỘ', // DEC-128: PHÂN LOẠI (đóng hàng) ngay sau TRẠNG THÁI
-      // DEC-099: thông tin thanh toán lượt vào bãi
-      'THANH TOÁN', 'MÃ PHIẾU THU', // DEC-126: đổi tên từ HÌNH THỨC TT
+            // DEC-128: PHÂN LOẠI ngay sau TRẠNG THÁI; DEC-129: AGE sau HÃNG TÀU, TIẾN ĐỘ sau MÃ PHIẾU THU (cùng thứ tự màn hình)
+      'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'AGE', 'DATE IN', 'VÀO BÃI BẰNG', 'TRẠNG THÁI', 'PHÂN LOẠI', 'LƯU BÃI (NGÀY)', 'VỊ TRÍ',
+      'THANH TOÁN', 'MÃ PHIẾU THU', 'TIẾN ĐỘ',
       'KHÁCH HÀNG', 'SỐ XE HẠ', 'KHÓA', 'NGƯỜI KHÓA', 'KHÓA LÚC', 'GHI CHÚ', 'GHI CHÚ BỞI', 'GHI CHÚ LÚC',
     ],
     rows: rows.map((c) => {
       const pay = state ? containerPaymentInfo(state, c) : undefined;
       return [
-        c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, fmt(c.gateInAt), c.masterDossierCode.startsWith('NT-') ? 'NHẬP TÀU' : 'HẠ VỎ',
-        c.conditionClass, c.stuffingClass, storageDays(c.gateInAt),
-        c.manufactureYear || '', formatLocation(c), getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', '),
-        pay?.label || '', pay?.receipt || '',
+        c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, c.manufactureYear || '', fmt(c.gateInAt), c.masterDossierCode.startsWith('NT-') ? 'NHẬP TÀU' : 'HẠ VỎ',
+        c.conditionClass, c.stuffingClass, storageDays(c.gateInAt), formatLocation(c),
+        pay?.label || '', pay?.receipt || '', getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', '),
         c.customerRep || '', c.truckNo || '', c.isOnHold ? 'ĐANG KHÓA' : '', c.holdBy || '', fmt(c.holdAt),
         c.officeNote || '', c.officeNoteUpdatedBy || '', fmt(c.officeNoteUpdatedAt),
       ];

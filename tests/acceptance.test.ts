@@ -883,8 +883,9 @@ describe('DEC-067: Tồn vỏ — lưu bãi, khóa / ghi chú hàng loạt', () 
     expect(sheet.columns.indexOf('LƯU BÃI (NGÀY)')).toBe(sheet.columns.indexOf('TRẠNG THÁI') + 2);
     expect(sheet.columns).toContain('VỊ TRÍ');
     for (const r of sheet.rows) expect(r.length).toBe(sheet.columns.length);
-    expect(sheet.columns.slice(4, 7)).toEqual(['HÃNG TÀU', 'DATE IN', 'VÀO BÃI BẰNG']);
-    expect(sheet.rows[0][6]).toBe('HẠ VỎ');
+    expect(sheet.columns.slice(4, 8)).toEqual(['HÃNG TÀU', 'AGE', 'DATE IN', 'VÀO BÃI BẰNG']); // DEC-129
+    expect(sheet.columns.indexOf('TIẾN ĐỘ')).toBe(sheet.columns.indexOf('MÃ PHIẾU THU') + 1);
+    expect(sheet.rows[0][sheet.columns.indexOf('VÀO BÃI BẰNG')]).toBe('HẠ VỎ');
     expect(sheet.columns).toContain('GHI CHÚ');
   });
 });
