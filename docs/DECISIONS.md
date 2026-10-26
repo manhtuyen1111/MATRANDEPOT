@@ -1324,6 +1324,19 @@ Quy ước trạng thái:
   - Nhập tàu: 3 tàu × 20 cont (xong / dở / chưa làm). Xuất tàu: 1 tàu 12 cont, xuất một nửa.
   - Góp ý: nhiều màn.
 
+### DEC-149 — Mở Giai đoạn 4 (Database): nền tảng Supabase Singapore; trạng thái theo bản Demo
+
+- Trạng thái: CONFIRMED (2026-10-26). Trả lời Q-040 và cách chốt OPEN-003.
+- **Mốc lưu bản Demo** (chưa có database), để quay lại khi cần:
+  - nhánh `backup/demo-truoc-database`;
+  - tag `demo-truoc-database-2026-10-26` (commit `33584bd`).
+- **Nền tảng:** **Supabase vùng Singapore**, gói Pro + PITR, 3 môi trường dev / staging / production (theo `docs/DATABASE_PLATFORM_ADVICE.md`).
+  - Người dùng tự tạo project và giữ khóa.
+  - Agent chỉ viết migration, không apply.
+- **Danh mục trạng thái (OPEN-003):** lấy theo bản Demo. Bảng ở `docs/STATUS_CATALOG.md` — **chờ người dùng duyệt** các mã ⚪ (chưa dùng) trước khi viết schema.
+- Việc database làm trên nhánh `agent/claude/p4-database`.
+- Vẫn mở: Q-037 (lưu ảnh), Q-038 (số người dùng cùng lúc), Q-039 (sao lưu — đã có đề xuất), Q-041 (tài khoản), Q-042.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1413,6 +1426,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-148 đã xác nhận (cập nhật 2026-10-26).
+- Quyết định nghiệp vụ: DEC-001 → DEC-149 đã xác nhận (cập nhật 2026-10-26).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
