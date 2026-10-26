@@ -214,6 +214,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Vị trí: icon định vị thay chữ "BLOCK-" trên màn hình (Tồn vỏ, Xe nâng, Đảo chuyển, chọn vị trí, Báo giá, Văn phòng, Xuất tàu); Danh mục / Excel / in vẫn ghi đủ BLOCK-… (DEC-136). Kiểm thử: 133/133 pass, build PASS.
 - Văn phòng → Cấp vỏ: "Container được chọn" thành 6 ô có nhãn (Số container, Size/Type, Hãng tàu, Trạng thái, Đóng hàng, Vị trí), tự điền khi chọn ở danh sách (DEC-137). Kiểm thử: 134/134 pass, build PASS.
 - Tồn vỏ → Sửa vị trí: khung gọn như Đảo chuyển (thẻ max-w-lg dính trái, nút Lưu vị trí full chiều rộng luôn thấy) (DEC-138). Kiểm thử: 134/134 pass, build PASS.
+- Cố định cột đầu khi kéo ngang: Tồn vỏ, Báo cáo Hạ vỏ / Cấp vỏ / Sửa chữa (Mã hồ sơ | Số container | Size | Type | Hãng tàu); Báo cáo Nhập / Xuất tàu thêm Tên tàu (6 cột). Excel cùng thứ tự (DEC-139). Kiểm thử: 137/137 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
