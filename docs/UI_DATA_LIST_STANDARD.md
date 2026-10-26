@@ -60,3 +60,8 @@ Thứ tự từ trên xuống:
 - Mã bấm được để mở dữ liệu liên quan (mã hồ sơ, mã phiếu thu, CV-, NT- / XT-…) dùng chung `linkCls` (`src/components/shared.tsx`): chữ đều nét, xanh, gạch chân khi rê chuột — giống Mã hồ sơ ở Tồn vỏ.
 - Trong bảng, ô chứa link dùng cùng định dạng ô Mã hồ sơ (`whitespace-nowrap font-mono text-blue-700`).
 - Mã nào có hồ sơ / phiếu lưu trữ thì **luôn là link** (DEC-118) — không để chữ thường.
+
+## Mỗi thông tin 1 dòng (DEC-134)
+
+- `<table>` có `whitespace-nowrap`, bọc trong `overflow-x-auto` (cuộn ngang khi rộng).
+- Ô chữ dài: `max-w-[…] truncate` + `title` để rê chuột xem đủ.

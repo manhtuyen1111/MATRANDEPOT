@@ -1132,6 +1132,14 @@ Quy ước trạng thái:
 - Khối **Xuất hóa đơn** của phiếu trả trước chỉ còn mã bảo mật + đường link + dòng tóm tắt; không liệt kê các yêu cầu nữa.
 - Excel không đổi.
 
+### DEC-134 — Bảng / danh sách: mỗi thông tin chỉ hiển thị 1 dòng (quy tắc chung)
+
+- Trạng thái: CONFIRMED (2026-10-26). Mở rộng DEC-132 cho toàn ứng dụng.
+- Mọi bảng / danh sách (màn văn phòng, báo cáo, tra cứu): mỗi ô **không xuống dòng**; bảng rộng hơn màn hình thì **cuộn ngang**.
+- Ô chữ dài (ghi chú, remark, nội dung, danh sách tên): **cắt bớt** (`max-w-[…] truncate`), rê chuột xem đủ (`title`).
+- Áp dụng ngay: Văn phòng → Phiếu thu; Báo cáo Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa (và Góp ý). Tồn vỏ đã làm ở DEC-132.
+- Màn / bảng mới phải theo quy tắc này. Danh sách thẻ trên mobile theo quy tắc riêng (DEC-089, DEC-115).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1221,6 +1229,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-133 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-134 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
