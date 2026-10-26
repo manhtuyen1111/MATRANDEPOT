@@ -173,7 +173,7 @@ export const App: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // DEC-120: danh sách MENU / TÍNH NĂNG để chọn khi góp ý (menu người dùng được thấy) và để Admin lọc báo cáo (mọi menu)
-  const toOptions = (groups: MenuGroup[]) => groups.flatMap((g) => g.items.map((i) => ({ id: i.id, label: `${g.label} → ${i.label}` })));
+  const toOptions = (groups: MenuGroup[]) => groups.flatMap((g) => g.items.map((i) => ({ id: i.id, label: `${g.label} → ${i.label}`, group: g.label, item: i.label })));
   const allMenuOptions = toOptions(MENU);
 
   const handleUpdateState = (next: DepotState) => {

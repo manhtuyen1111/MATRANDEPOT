@@ -615,12 +615,19 @@ describe('DEC-116: Đảo chuyển không có ghi chú tác nghiệp', () => {
 
 describe('DEC-120: Góp ý', () => {
   const demo = createDemoState();
-  const opts = [{ id: 'TON_VO', label: 'Tồn vỏ' }];
+  const opts = [
+    { id: 'TON_VO', label: 'Văn phòng → Tồn vỏ', group: 'Văn phòng', item: 'Tồn vỏ' },
+    { id: 'VP_PHIEU_THU', label: 'Văn phòng → Phiếu thu', group: 'Văn phòng', item: 'Phiếu thu' },
+  ];
   it('nút Góp ý + form chọn menu / nội dung + Góp ý của tôi', () => {
     expect(renderToString(<FeedbackButton state={demo} onUpdateState={noop} menuOptions={opts} />)).toContain('data-testid="feedback-button"');
     const html = renderToString(<FeedbackPanel state={as(demo, 'usr-forklift')} onUpdateState={noop} menuOptions={opts} />).replace(/<!-- -->/g, '');
     expect(html).toContain('aria-label="Menu góp ý"');
     expect(html).toContain('>Khác<');
+    // DEC-123: chọn menu chính trước — chưa hiện ô Tính năng / Nội dung
+    expect(html).toContain('>Văn phòng<');
+    expect(html).not.toContain('aria-label="Tính năng góp ý"');
+    expect(html).not.toContain('3. Nội dung góp ý');
     expect(html).toContain('Góp ý của tôi (1)');
   });
   it('Báo cáo → Góp ý có bộ lọc + Tra cứu', () => {

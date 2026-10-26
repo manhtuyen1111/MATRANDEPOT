@@ -8,8 +8,12 @@ import type { FeedbackStatus } from '../types/depot';
 
 export interface FeedbackMenuOption {
   id: string;
-  label: string;
+  label: string;   // "Menu chính → Tính năng" (dùng cho báo cáo / lưu)
+  group?: string;  // DEC-123: MENU CHÍNH
+  item?: string;   // DEC-123: TÍNH NĂNG trong menu
 }
+
+const OTHER_GROUP = 'Khác';
 
 export const FEEDBACK_STATUS_STYLE: Record<FeedbackStatus, string> = {
   MOI: 'bg-blue-100 text-blue-800',
@@ -28,7 +32,11 @@ export const FeedbackPanel: React.FC<{
   onUpdateState: (next: DepotState) => void;
   menuOptions: FeedbackMenuOption[];
 }> = ({ state, onUpdateState, menuOptions }) => {
-  const options = [...menuOptions, { id: FEEDBACK_OTHER_MENU, label: 'Khác' }];
+  const options: FeedbackMenuOption[] = [...menuOptions, { id: FEEDBACK_OTHER_MENU, label: OTHER_GROUP, group: OTHER_GROUP, item: OTHER_GROUP }];
+  // DEC-123: chọn MENU CHÍNH trước → TÍNH NĂNG trong menu → mới nhập nội dung
+  const groups = Array.from(new Set(options.map((o) => o.group || o.label)));
+  const [group, setGroup] = useState('');
+  const items = options.filter((o) => (o.group || o.label) === group);
   const [menuId, setMenuId] = useState('');
   const [content, setContent] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -55,16 +63,37 @@ export const FeedbackPanel: React.FC<{
       <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
       <form onSubmit={submit} className="space-y-2">
         <label className="block">
-          <span className={labelCls}>Menu / tính năng *</span>
-          <select value={menuId} onChange={(e) => setMenuId(e.target.value)} className={inputCls} aria-label="Menu góp ý">
-            <option value="">-- Chọn --</option>
-            {options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+          <span className={labelCls}>1. Menu chính *</span>
+          <select
+            value={group}
+            onChange={(e) => {
+              const g = e.target.value;
+              setGroup(g);
+              const only = options.filter((o) => (o.group || o.label) === g);
+              setMenuId(only.length === 1 ? only[0].id : ''); // menu chỉ có 1 tính năng (VD: Khác) → chọn sẵn
+            }}
+            className={inputCls}
+            aria-label="Menu góp ý"
+          >
+            <option value="">-- Chọn menu --</option>
+            {groups.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
         </label>
-        <label className="block">
-          <span className={labelCls}>Nội dung góp ý *</span>
-          <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={4} maxLength={FEEDBACK_MAX_LENGTH} className={inputCls} placeholder="Mô tả vấn đề hoặc đề xuất của bạn" />
-        </label>
+        {group && (
+          <label className="block">
+            <span className={labelCls}>2. Tính năng *</span>
+            <select value={menuId} onChange={(e) => setMenuId(e.target.value)} className={inputCls} aria-label="Tính năng góp ý">
+              <option value="">-- Chọn tính năng --</option>
+              {items.map((o) => <option key={o.id} value={o.id}>{o.item || o.label}</option>)}
+            </select>
+          </label>
+        )}
+        {menuId && (
+          <label className="block">
+            <span className={labelCls}>3. Nội dung góp ý *</span>
+            <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={4} maxLength={FEEDBACK_MAX_LENGTH} className={inputCls} placeholder="Mô tả vấn đề hoặc đề xuất của bạn" />
+          </label>
+        )}
         <button type="submit" disabled={!menuId || !content.trim()} className={`${primaryBtn} w-full py-2.5`}>
           <Send className="h-4 w-4" />
           Gửi góp ý
