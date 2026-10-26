@@ -85,7 +85,7 @@ Cập nhật lần cuối: 2026-10-22.
 - Ưu tiên giải quyết các câu hỏi ảnh hưởng đến cấu trúc database và tính đúng đắn của giao dịch trước.
 - [ ] Q-041: (GĐ 4) Khi chuyển sang Supabase Auth: tài khoản đăng nhập bằng tên đăng nhập (Supabase cần email nội bộ dạng `<tên>@matrandepot.local`?), có cần khóa tạm sau nhiều lần đăng nhập sai, thời gian tự đăng xuất? Bản Demo hiện chưa giới hạn (DEC-143).
 
-## Q-042 — Cont GIÁM ĐỊNH SAU có được Cấp vỏ trước khi giám định bổ sung? (DEC-147)
+## Q-042 — Cont W-SURVEY có được Cấp vỏ trước khi giám định bổ sung? (DEC-147)
 
 - Trạng thái: OPEN (2026-10-26).
 - Hiện code **chặn Cấp vỏ** cho đến khi Giám định bổ sung trên kệ xong (Claude đề xuất, vì chưa biết AV / DAMAGE). Người dùng xác nhận giữ hay bỏ.

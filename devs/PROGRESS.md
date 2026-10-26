@@ -374,4 +374,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-26 — Claude Code: DEC-145 xong 5/5 bước (App, Tồn vỏ, mobile, văn phòng / báo cáo / in). 139/139 • build PASS. Chưa xem trực quan trên trình duyệt.
 - 2026-10-26 — Claude Code: lưu design system vào repo (`docs/DESIGN_SYSTEM.md`, `docs/design/`), skill UI + test chặn màu cũ. 140/140 • build PASS.
 - 2026-10-26 — Claude Code: DEC-146 bảng chi tiết tàu không gộp cột, 1 dòng. 141/141 • build PASS.
-- 2026-10-26 — Claude Code: DEC-147 GIÁM ĐỊNH SAU (LÊN KỆ) + giám định bổ sung trên kệ; Q-042 mở (chặn Cấp vỏ). 145/145 • build PASS.
+- 2026-10-26 — Claude Code: DEC-147 W-SURVEY (LÊN KỆ) + giám định bổ sung trên kệ; Q-042 mở (chặn Cấp vỏ). 145/145 • build PASS.
