@@ -204,6 +204,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Báo cáo Hạ vỏ / Cấp vỏ (màn + Excel) thêm cột Thanh toán + Mã phiếu thu như Tồn vỏ; đổi "Hình thức TT" → "Thanh toán"; sửa khoảng đệm ô Mã hồ sơ ở báo cáo (DEC-126). Kiểm thử: 127/127 pass, build PASS.
 - Cột Thanh toán chỉ ghi TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU / Không thu phí (bỏ ký hiệu TT —, TTR —, TTS —) (DEC-127).
 - Tồn vỏ: cột Phân loại (đóng hàng) bên phải Trạng thái; Excel đổi ĐÓNG HÀNG → PHÂN LOẠI, đặt ngay sau TRẠNG THÁI (DEC-128). Kiểm thử: 127/127 pass, build PASS.
+- Tồn vỏ: cột AGE sau Hãng tàu, Tiến độ sau Mã phiếu thu (màn hình + Excel cùng thứ tự); quy tắc "đổi cột màn hình → sửa Excel tương ứng" + test tự động cho Tồn vỏ (DEC-129). Kiểm thử: 128/128 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

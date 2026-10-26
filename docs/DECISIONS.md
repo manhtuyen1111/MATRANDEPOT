@@ -1065,6 +1065,15 @@ Quy ước trạng thái:
   - Bảng Tồn vỏ thêm cột **Phân loại** (phân loại đóng hàng M / K / E) **ngay bên phải cột Trạng thái** (AV / DAMAGE).
   - Excel Tồn vỏ: cột "ĐÓNG HÀNG" đổi tên thành **PHÂN LOẠI** và chuyển về ngay sau TRẠNG THÁI. Thứ tự: TRẠNG THÁI → PHÂN LOẠI → LƯU BÃI.
 
+### DEC-129 — Tồn vỏ: cột AGE sau Hãng tàu, TIẾN ĐỘ sau Mã phiếu thu; Excel luôn khớp màn hình
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- **Thứ tự cột Tồn vỏ** (màn hình và Excel):
+  - Màn hình: Mã hồ sơ | Số container | Size | Type | Hãng tàu | **AGE** | Date in | Trạng thái | Phân loại | Lưu bãi | Vị trí | Thanh toán | Mã phiếu thu | **Tiến độ** | Ghi chú.
+  - Excel cùng thứ tự, thêm các cột chỉ có ở Excel (Vào bãi bằng, Khách hàng, Số xe hạ, Khóa…).
+- **Quy tắc chung (người dùng yêu cầu):** khi thêm, bớt hoặc đổi thứ tự cột trên màn hình danh sách / báo cáo thì **phải sửa file Excel xuất ra cho tương xứng**.
+  - Riêng Tồn vỏ có test tự động so thứ tự cột màn hình với cột Excel.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1154,6 +1163,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-128 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-129 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

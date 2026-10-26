@@ -51,6 +51,10 @@ Thứ tự từ trên xuống:
 - [ ] Có nút Xuất Excel theo bộ lọc.
 - [ ] Smoke test trong `tests/ui-smoke.test.tsx`.
 
+## Excel khớp màn hình (DEC-129)
+
+- Thêm / bớt / đổi thứ tự cột trên màn → sửa luôn sheet Excel tương ứng (cùng tên, cùng thứ tự; Excel có thể thêm cột phụ).
+
 ## Link dữ liệu (DEC-117)
 
 - Mã bấm được để mở dữ liệu liên quan (mã hồ sơ, mã phiếu thu, CV-, NT- / XT-…) dùng chung `linkCls` (`src/components/shared.tsx`): chữ đều nét, xanh, gạch chân khi rê chuột — giống Mã hồ sơ ở Tồn vỏ.
