@@ -15,7 +15,9 @@ import { yardStockSheet } from '../../services/reports';
 import { containerPaymentInfo } from '../../services/payments';
 import { fileStamp, formatDateTime } from '../../services/datetime';
 import { ContainerRecord, FieldConditionClass, K80InternalTicket } from '../../types/depot';
-import { linkCls,
+import { PaymentInfoCells } from '../../components/PaymentInfoCells';
+import {
+  linkCls,
   EMPTY_SLOT,
   ExportExcelButton,
   Feedback,
@@ -262,7 +264,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
               <th className="w-16 whitespace-nowrap px-2 py-2.5 text-right">Lưu bãi</th>
               <th className="w-40 px-2 py-2.5">Vị trí</th>
               <th className="w-40 px-2 py-2.5">Tiến độ</th>
-              <th className="w-36 whitespace-nowrap px-2 py-2.5">Hình thức TT</th>
+              <th className="w-36 whitespace-nowrap px-2 py-2.5">Thanh toán</th>
               <th className="w-40 whitespace-nowrap px-2 py-2.5">Mã phiếu thu</th>
               <th className="min-w-[14rem] px-2 py-2.5">Ghi chú</th>
             </tr>
@@ -330,23 +332,8 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                         </div>
                       </td>
                       <td className="px-2 py-2.5 text-[11px]">{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</td>
-                      {(() => {
-                        // DEC-099: hình thức thanh toán + mã phiếu thu của lượt vào bãi
-                        const pay = containerPaymentInfo(state, c);
-                        const tone = pay.category === 'TTTT' ? 'text-emerald-700' : pay.category === 'TTT' ? 'text-blue-700' : pay.category === 'TTS' ? 'text-violet-700' : 'text-slate-400';
-                        return (
-                          <>
-                            <td className={`whitespace-nowrap px-2 py-2.5 text-[11px] font-bold ${tone}`}>{pay.label}</td>
-                            <td className="whitespace-nowrap px-2 py-2.5 font-mono text-blue-700">{/* DEC-117: cùng định dạng ô Mã hồ sơ */}
-                              {pay.receipt && pay.receiptTarget && onOpenReceipt ? (
-                                <button type="button" onClick={(e) => { e.stopPropagation(); onOpenReceipt(pay.receiptTarget!); }} className={linkCls} title="Mở phiếu thu">
-                                  {pay.receipt}
-                                </button>
-                              ) : pay.receipt}
-                            </td>
-                          </>
-                        );
-                      })()}
+                      {/* DEC-099, DEC-126: THANH TOÁN | MÃ PHIẾU THU (thành phần dùng chung) */}
+                      <PaymentInfoCells info={containerPaymentInfo(state, c)} onOpenReceipt={onOpenReceipt} />
                       <td className={`px-2 py-2.5 ${hasNote && editingNoteId !== c.id ? 'bg-yellow-200' : ''}`} onClick={(e) => e.stopPropagation()}>
                         {editingNoteId === c.id ? (
                           <div className="flex items-center gap-1">

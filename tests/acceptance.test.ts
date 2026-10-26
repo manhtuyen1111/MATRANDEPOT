@@ -1128,8 +1128,8 @@ describe('DEC-099: Tồn vỏ — hình thức thanh toán + phiếu thu của l
     // Excel
     const c = s.containers.find((x) => x.masterDossierCode === g.masterDossierCode)!;
     const sheet = yardStockSheet([c], s);
-    const i = sheet.columns.indexOf('HÌNH THỨC TT');
-    expect(sheet.columns.slice(i, i + 2)).toEqual(['HÌNH THỨC TT', 'MÃ PHIẾU THU']);
+    const i = sheet.columns.indexOf('THANH TOÁN');
+    expect(sheet.columns.slice(i, i + 2)).toEqual(['THANH TOÁN', 'MÃ PHIẾU THU']);
     expect(sheet.rows[0][i]).toBe('TT — TRỰC TIẾP');
     expect(String(sheet.rows[0][i + 1])).toMatch(/^PT-TT-/);
     for (const row of sheet.rows) expect(row.length).toBe(sheet.columns.length);

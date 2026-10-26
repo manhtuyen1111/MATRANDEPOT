@@ -473,7 +473,7 @@ export const App: React.FC = () => {
           )}
           {activeMenu === 'XN_DAO_CHUYEN' && <YardShiftWorkspace state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
           {REPORT_MENUS.includes(activeMenu as ReportSection) && (
-            <ReportsWorkspace state={state} section={activeMenu as ReportSection} onOpenDossier={setActiveDossierCode} />
+            <ReportsWorkspace state={state} section={activeMenu as ReportSection} onOpenDossier={setActiveDossierCode} onOpenReceipt={openReceipt} />
           )}
           {activeMenu === 'BC_GOP_Y' && <FeedbackReport state={state} onUpdateState={handleUpdateState} menuOptions={allMenuOptions} />}
           {activeMenu === 'DM_SUA_CHUA' && <RepairTeamCatalog state={state} onUpdateState={handleUpdateState} />}

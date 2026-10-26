@@ -63,7 +63,7 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('Tìm hàng loạt');
     expect(html).toContain('Container không khóa');
     // DEC-099: cột thanh toán
-    expect(html).toContain('Hình thức TT');
+    expect(html).toContain('>Thanh toán<');
     expect(html).toContain('>Mã phiếu thu<');
     expect(html).toContain('TTR — TRẢ TRƯỚC');
     expect(html).not.toContain('>Thao tác<');

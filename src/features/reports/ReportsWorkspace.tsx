@@ -20,6 +20,8 @@ import { can } from '../../services/permissions';
 import { quickRange, fileStamp } from '../../services/datetime';
 import { VesselReport } from './VesselReport';
 import { linkCls, DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
+import { PaymentInfoCells } from '../../components/PaymentInfoCells';
+import { voucherPaymentInfo } from '../../services/payments';
 
 export type ReportSection = 'BC_HA_VO' | 'BC_CAP_VO' | 'BC_NHAP_TAU' | 'BC_XUAT_TAU' | 'BC_SUA_CHUA' | 'BC_TONG_HOP';
 
@@ -27,6 +29,7 @@ interface Props {
   state: DepotState;
   section: ReportSection;
   onOpenDossier: (code: string) => void;
+  onOpenReceipt?: (key: string) => void; // DEC-126: mở phiếu thu
 }
 
 const TITLES: Record<ReportSection, string> = {
@@ -51,7 +54,7 @@ const SECTION_FILE: Record<ReportSection, string> = {
 function operationSheet(state: DepotState, section: ReportSection, f: OperationReportFilter): SheetData {
   if (section === 'BC_HA_VO' || section === 'BC_NHAP_TAU') {
     const type = section === 'BC_HA_VO' ? 'CUSTOMER_RETURN' : 'VESSEL_IMPORT';
-    return gateInSheet(section === 'BC_HA_VO' ? 'HẠ VỎ' : 'NHẬP TÀU', collectAllPages((p) => queryGateInReport(state, type, f, p)));
+    return gateInSheet(section === 'BC_HA_VO' ? 'HẠ VỎ' : 'NHẬP TÀU', collectAllPages((p) => queryGateInReport(state, type, f, p)), state);
   }
   const types: GateOutType[] = section === 'BC_CAP_VO' ? ['EMPTY_RELEASE'] : ['VESSEL_EXPORT'];
   return gateOutSheet(section === 'BC_CAP_VO' ? 'CẤP VỎ' : 'XUẤT TÀU', state, collectAllPages((p) => queryGateOutReport(state, types, f, p)));
@@ -72,7 +75,7 @@ const GATE_OUT_STATUS: Record<GateOutOrder['status'], string> = {
   CANCELLED: 'Đã hủy',
 };
 
-export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossier }) => {
+export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossier, onOpenReceipt }) => {
   // key theo section để reset bộ lọc khi đổi báo cáo
   if (section === 'BC_SUA_CHUA') return <RepairReport key={section} state={state} onOpenDossier={onOpenDossier} />;
   if (section === 'BC_NHAP_TAU' || section === 'BC_XUAT_TAU') {
@@ -81,11 +84,11 @@ export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossie
   return section === 'BC_TONG_HOP' ? (
     <SummaryReport key={section} state={state} />
   ) : (
-    <OperationReport key={section} state={state} section={section} onOpenDossier={onOpenDossier} />
+    <OperationReport key={section} state={state} section={section} onOpenDossier={onOpenDossier} onOpenReceipt={onOpenReceipt} />
   );
 };
 
-const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => {
+const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpenReceipt }) => {
   const [draft, setDraft] = useState<OperationReportFilter>(() => ({ containerNo: '', ...quickRange('TODAY'), shippingLineCode: '', size: '' }));
   const [applied, setApplied] = useState<OperationReportFilter | null>(null);
   const [page, setPage] = useState(1);
@@ -168,12 +171,14 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
                     <th className="px-3 py-2">Lập lệnh</th>
                     <th className="px-3 py-2">OUT</th>
                     {showMoney && <th className="px-3 py-2 text-right">Chi phí</th>}
+                    <th className="px-3 py-2">Thanh toán</th>
+                    <th className="px-3 py-2">Mã phiếu thu</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {outRows.rows.map((o) => (
                     <tr key={o.id} className="hover:bg-slate-50">
-                      <td className={linkCls}><button type="button" onClick={() => onOpenDossier(o.gateOutCode)} className="font-mono text-blue-700 hover:underline">{o.gateOutCode}</button></td>
+                      <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.gateOutCode)} className={linkCls}>{o.gateOutCode}</button></td>
                       <td className="px-3 py-2 font-mono font-bold">{o.containerNo}</td>
                       <td className="px-3 py-2 font-mono">{o.bookingNo}</td>
                       <td className="px-3 py-2">{o.receiverRep}</td>
@@ -183,6 +188,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
                       <td className="px-3 py-2">{formatViTime(o.createdAt)}</td>
                       <td className="px-3 py-2">{formatViTime(o.confirmedAt)}</td>
                       {showMoney && <td className="px-3 py-2 text-right font-mono">{formatVnd(o.feeAmount)}</td>}
+                      <PaymentInfoCells info={voucherPaymentInfo(state, state.vouchers.find((v) => v.id === o.voucherId))} onOpenReceipt={onOpenReceipt} cellCls="px-3 py-2" />
                     </tr>
                   ))}
                 </tbody>
@@ -204,12 +210,14 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
                     <th className="px-3 py-2">Giám định</th>
                     <th className="px-3 py-2">GATE IN OK</th>
                     {showMoney && <th className="px-3 py-2 text-right">Chi phí</th>}
+                    <th className="px-3 py-2">Thanh toán</th>
+                    <th className="px-3 py-2">Mã phiếu thu</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {inRows.rows.map((o) => (
                     <tr key={o.id} className="hover:bg-slate-50">
-                      <td className={linkCls}><button type="button" onClick={() => onOpenDossier(o.masterDossierCode)} className="font-mono text-blue-700 hover:underline">{o.masterDossierCode}</button></td>
+                      <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.masterDossierCode)} className={linkCls}>{o.masterDossierCode}</button></td>
                       <td className="px-3 py-2 font-mono font-bold">{o.containerNo || '-'}</td>
                       <td className="px-3 py-2">{o.size || '-'}/{o.type || '-'}</td>
                       <td className="px-3 py-2">{o.shippingLineCode || '-'}</td>
@@ -221,6 +229,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier }) => 
                       <td className="px-3 py-2">{formatViTime(o.fieldRecordedAt)}</td>
                       <td className="px-3 py-2">{formatViTime(o.gateInOkAt)}</td>
                       {showMoney && <td className="px-3 py-2 text-right font-mono">{formatVnd(o.feeAmount || 0)}</td>}
+                      <PaymentInfoCells info={voucherPaymentInfo(state, state.vouchers.find((v) => v.id === o.voucherId))} onOpenReceipt={onOpenReceipt} cellCls="px-3 py-2" />
                     </tr>
                   ))}
                 </tbody>

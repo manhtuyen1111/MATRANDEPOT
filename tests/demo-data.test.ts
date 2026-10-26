@@ -45,3 +45,27 @@ describe('DEC-121: phiếu thu trả trước — cột MÃ HỒ SƠ là các t�
     expect(s.masterReceipts.every((m) => m.receiptCode.startsWith('PT-TTR-'))).toBe(true);
   });
 });
+
+describe('DEC-126: Báo cáo Hạ vỏ / Cấp vỏ có cột THANH TOÁN + MÃ PHIẾU THU (như Tồn vỏ)', () => {
+  it('Excel Hạ vỏ / Cấp vỏ / Tồn vỏ đủ 2 cột, đúng giá trị', async () => {
+    const { gateInSheet, gateOutSheet, yardStockSheet } = await import('../src/services/reports');
+    const s = createDemoState();
+    const gin = gateInSheet('HẠ VỎ', s.gateInOrders, s);
+    const iIn = gin.columns.indexOf('THANH TOÁN');
+    expect(gin.columns[iIn + 1]).toBe('MÃ PHIẾU THU');
+    const rowTT = gin.rows.find((r) => r.includes('MSKU1000011'))!;
+    expect(rowTT[iIn]).toBe('TT — TRỰC TIẾP');
+    expect(String(rowTT[iIn + 1])).toMatch(/^PT-TT-/);
+    const rowTTS = gin.rows.find((r) => r.includes('MSKU1000044'))!;
+    expect(rowTTS[iIn]).toBe('TTS — THANH TOÁN SAU');
+    expect(rowTTS[iIn + 1]).toBe('');
+    const gout = gateOutSheet('CẤP VỎ', s, s.gateOutOrders);
+    const iOut = gout.columns.indexOf('THANH TOÁN');
+    expect(gout.columns[iOut + 1]).toBe('MÃ PHIẾU THU');
+    const outTT = gout.rows.find((r) => r.includes('MSKU2000011'))!;
+    expect(String(outTT[iOut + 1])).toMatch(/^PT-TT-/);
+    expect(gout.columns).not.toContain('HÌNH THỨC THANH TOÁN');
+    expect(yardStockSheet(s.containers, s).columns).toContain('THANH TOÁN');
+    for (const sh of [gin, gout]) for (const r of sh.rows) expect(r.length).toBe(sh.columns.length);
+  });
+});

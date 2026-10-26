@@ -561,7 +561,11 @@ export interface ContainerPaymentInfo {
 
 export function containerPaymentInfo(state: DepotState, c: { masterDossierCode: string }): ContainerPaymentInfo {
   if (c.masterDossierCode.startsWith('NT-')) return { label: 'Không thu phí', receipt: '' };
-  const voucher = state.vouchers.find((v) => v.masterDossierCode === c.masterDossierCode && v.serviceType === 'GATE_IN');
+  return voucherPaymentInfo(state, state.vouchers.find((v) => v.masterDossierCode === c.masterDossierCode && v.serviceType === 'GATE_IN'));
+}
+
+// DEC-126: THANH TOÁN + MÃ PHIẾU THU theo chứng từ chi phí (Hạ vỏ hoặc Cấp vỏ)
+export function voucherPaymentInfo(state: DepotState, voucher: PaymentVoucher | undefined): ContainerPaymentInfo {
   if (!voucher) return { label: 'Chưa lập chứng từ', receipt: '' };
   if (voucher.status !== 'CONFIRMED' && voucher.status !== 'DEFERRED') {
     return { label: 'Chưa thanh toán', receipt: '' };

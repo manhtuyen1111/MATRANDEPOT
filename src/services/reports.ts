@@ -15,7 +15,7 @@ import {
 } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { formatLocation, getContainerProgress, PROGRESS_LABELS, storageDays } from './core';
-import { containerPaymentInfo, masterReceiptUsage, PAYMENT_CATEGORY_FULL_LABELS, receiptOperationOf } from './payments';
+import { containerPaymentInfo, masterReceiptUsage, PAYMENT_CATEGORY_FULL_LABELS, receiptOperationOf, voucherPaymentInfo } from './payments';
 import { formatDateTime, parseDateTime } from './datetime';
 import { INVOICE_STATUS_LABELS } from './invoice';
 import { FEEDBACK_STATUS_LABELS } from './feedback';
@@ -195,21 +195,24 @@ export interface SheetData {
 
 const fmt = (iso?: string) => (iso ? formatDateTime(iso) : '');
 
-export function gateInSheet(name: string, orders: GateInOrder[]): SheetData {
+export function gateInSheet(name: string, orders: GateInOrder[], state?: DepotState): SheetData {
   return {
     name,
     columns: [
       'MÃ HỒ SƠ', 'LOẠI', 'TRẠNG THÁI HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'KHÁCH HÀNG',
       'SỐ XE', 'SĐT LÁI XE', 'SỐ LỆNH / CHỨNG TỪ', 'TRẠNG THÁI', 'GHI CHÚ HƯ HỎNG', 'PHÂN LOẠI ĐÓNG HÀNG',
       'TÌNH TRẠNG VỆ SINH', 'AGE', 'GIÁM ĐỊNH', 'THỜI GIAN GIÁM ĐỊNH', 'VĂN PHÒNG', 'THỜI GIAN VĂN PHÒNG',
-      'CHI PHÍ (ĐÃ GỒM VAT)', 'GATE IN OK LÚC', 'GATE IN OK BỞI', 'LÝ DO HỦY',
+      'CHI PHÍ (ĐÃ GỒM VAT)', 'THANH TOÁN', 'MÃ PHIẾU THU', 'GATE IN OK LÚC', 'GATE IN OK BỞI', 'LÝ DO HỦY',
     ],
     rows: orders.map((o) => [
       o.masterDossierCode, o.gateInType, o.status, o.containerNo || '', o.size || '', o.type || '',
       o.shippingLineCode || '', o.customerRep || '', o.truckNo || '', o.driverPhone || '', o.orderDocNo || '',
       o.conditionClass, o.damageRemarks.join('; '), o.stuffingClass, o.cleaningItems.join(' + '),
       o.manufactureYear, o.fieldStaffName, fmt(o.fieldRecordedAt), o.officeStaffName || '', fmt(o.officeVerifiedAt),
-      o.feeAmount || 0, fmt(o.gateInOkAt), o.gateInOkBy || '', o.cancelReason || '',
+      o.feeAmount || 0,
+      // DEC-126: thanh toán + mã phiếu thu (như Tồn vỏ)
+      ...(() => { const p = state ? voucherPaymentInfo(state, state.vouchers.find((v) => v.id === o.voucherId)) : undefined; return [p?.label || '', p?.receipt || '']; })(),
+      fmt(o.gateInOkAt), o.gateInOkBy || '', o.cancelReason || '',
     ]),
   };
 }
@@ -220,7 +223,7 @@ export function gateOutSheet(name: string, state: DepotState, orders: GateOutOrd
     columns: [
       'MÃ HỒ SƠ CẤP', 'MÃ HỒ SƠ HẠ VỎ', 'LOẠI', 'TRẠNG THÁI HỒ SƠ', 'BOOKING', 'SỐ CONTAINER', 'SIZE', 'TYPE',
       'HÃNG TÀU', 'TRẠNG THÁI', 'PHÂN LOẠI ĐÓNG HÀNG', 'KHÁCH HÀNG', 'SỐ XE', 'SĐT LÁI XE',
-      'CHI PHÍ (ĐÃ GỒM VAT)', 'HÌNH THỨC THANH TOÁN', 'LẬP LỆNH LÚC', 'LẬP LỆNH BỞI', 'OUT LÚC', 'XÁC NHẬN OUT BỞI',
+      'CHI PHÍ (ĐÃ GỒM VAT)', 'THANH TOÁN', 'MÃ PHIẾU THU', 'LẬP LỆNH LÚC', 'LẬP LỆNH BỞI', 'OUT LÚC', 'XÁC NHẬN OUT BỞI',
       'LÝ DO HỦY',
     ],
     rows: orders.map((o) => {
@@ -230,7 +233,7 @@ export function gateOutSheet(name: string, state: DepotState, orders: GateOutOrd
         o.gateOutCode, o.masterDossierCode, o.gateOutType, o.status, o.bookingNo, o.containerNo, c?.size || '',
         c?.type || '', c?.shippingLineCode || '', c?.conditionClass || '', c?.stuffingClass || '', o.receiverRep,
         o.truckNo, o.driverPhone || '', o.feeAmount || 0,
-        v ? `${v.paymentCategory || ''}${v.directMethod ? ` / ${v.directMethod}` : ''} (${v.status})` : '',
+        ...(() => { const p = voucherPaymentInfo(state, v); return [p.label, p.receipt]; })(), // DEC-126
         fmt(o.createdAt), o.createdBy || '', fmt(o.confirmedAt), o.confirmedBy || '', o.cancelReason || '',
       ];
     }),
@@ -266,7 +269,7 @@ export function buildSummaryReport(state: DepotState, range: DateRange): SheetDa
   const vesselRows = (mode: VesselMode): VesselReportRow[] =>
     (state.vesselLists || []).filter((l) => l.mode === mode && inRange(l.plannedAt, r)).flatMap((list) => list.items.map((item) => ({ list, item })));
   return [
-    gateInSheet('HẠ VỎ', gateIn('CUSTOMER_RETURN')),
+    gateInSheet('HẠ VỎ', gateIn('CUSTOMER_RETURN'), state),
     gateOutSheet('CẤP VỎ', state, gateOut(['EMPTY_RELEASE'])),
     // DEC-040 + DEC-069: XUẤT VỎ = XUẤT TÀU, NHẬP VỎ = NHẬP TÀU (theo thời gian nhập / xuất tàu của danh sách)
     { ...vesselReportSheet('XUAT_TAU', vesselRows('XUAT_TAU')), name: 'XUẤT VỎ' },
@@ -443,7 +446,7 @@ export function yardStockSheet(rows: ContainerRecord[], state?: DepotState): She
     columns: [
       'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'DATE IN', 'VÀO BÃI BẰNG', 'TRẠNG THÁI', 'LƯU BÃI (NGÀY)', 'ĐÓNG HÀNG', 'AGE', 'VỊ TRÍ', 'TIẾN ĐỘ',
       // DEC-099: thông tin thanh toán lượt vào bãi
-      'HÌNH THỨC TT', 'MÃ PHIẾU THU',
+      'THANH TOÁN', 'MÃ PHIẾU THU', // DEC-126: đổi tên từ HÌNH THỨC TT
       'KHÁCH HÀNG', 'SỐ XE HẠ', 'KHÓA', 'NGƯỜI KHÓA', 'KHÓA LÚC', 'GHI CHÚ', 'GHI CHÚ BỞI', 'GHI CHÚ LÚC',
     ],
     rows: rows.map((c) => {
