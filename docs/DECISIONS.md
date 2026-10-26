@@ -1353,8 +1353,21 @@ Quy ước trạng thái:
   - Giữ **trực tuyến 3 năm** (tra cứu / báo cáo trên app).
   - Quá 3 năm → **chuyển ra kho lưu trữ** (file nén + mã hóa, ngoài database) và xóa khỏi bảng trực tuyến.
   - Phần lưu kho vẫn giữ đủ thời hạn chứng từ kế toán theo luật; không tra trên app, khôi phục khi cần.
-  - Bảng lớn chia partition theo tháng để chuyển kho theo từng tháng.
+  - Chuyển kho theo từng tháng (phạm vi partition chỉnh ở DEC-151).
 - **W-SURVEY (Q-042):** **không được Cấp vỏ** khi chưa giám định bổ sung — chưa có tình trạng thì không cấp (giữ chặn ở `releaseBlocker`, DEC-147).
+
+### DEC-151 — Database: đăng nhập, mất mạng hiện trường; chỉnh phạm vi partition
+
+- Trạng thái: CONFIRMED (2026-10-26). Trả lời Q-041.
+- **Đăng nhập:** nhân viên gõ **tên đăng nhập** (`tuan.lv`); hệ thống đổi thành email nội bộ `tuan.lv@matrandepot.local` cho Supabase Auth (không cần email thật).
+- **Không khóa** tài khoản khi nhập sai mật khẩu nhiều lần; **không tự đăng xuất**.
+- **Mất mạng ở hiện trường:**
+  - Không lưu tạm trên điện thoại. Thao tác chỉ thành công khi máy chủ xác nhận; mất mạng thì báo lỗi, giữ dữ liệu trên màn để bấm lại.
+  - Mỗi thao tác gửi kèm `request_id` để bấm lại không tạo trùng.
+- **Chỉnh DEC-150 về partition** (Claude rà lại theo quy mô thật, ~3–6 GB / 3 năm):
+  - Chỉ `audit_logs` và `location_history` chia partition theo tháng.
+  - Bảng nghiệp vụ dùng chỉ mục thời gian; chuyển kho theo tháng bằng truy vấn ngày đóng.
+- Thiết kế đầy đủ: `docs/DATABASE_SCHEMA.md` (chờ duyệt).
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
@@ -1445,6 +1458,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-150 đã xác nhận (cập nhật 2026-10-26).
+- Quyết định nghiệp vụ: DEC-001 → DEC-151 đã xác nhận (cập nhật 2026-10-26).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

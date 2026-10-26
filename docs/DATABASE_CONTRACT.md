@@ -269,6 +269,6 @@ Dung lượng dữ liệu (không ảnh) ước 5–15 GB / 10 năm.
 ### 10.5. Lưu trữ
 - **Sửa theo DEC-150:**
   - Dữ liệu trực tuyến **3 năm**; quá 3 năm chuyển ra kho lưu trữ (file nén, mã hóa) theo từng tháng, vẫn đủ thời hạn chứng từ kế toán.
-  - Các bảng lớn (hồ sơ, chứng từ, giao dịch, phiếu thu, lịch sử vị trí, nhật ký) **chia partition theo tháng**.
+  - Chỉ `audit_logs` và `location_history` **chia partition theo tháng** (DEC-151); bảng khác dùng chỉ mục thời gian. Thiết kế: `docs/DATABASE_SCHEMA.md`.
 - Ảnh lưu ở Supabase Storage, nén ~200 KB, **giữ 24 tháng** rồi tự xóa; database chỉ lưu đường dẫn + ngày hết hạn.
 - Chế độ Demo (localStorage ~5 MB) chỉ để chạy thử — không dùng cho dữ liệu thật.

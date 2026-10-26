@@ -229,6 +229,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Khóa lưu localStorage nâng lên v14 → trình duyệt tự nạp dữ liệu test mới (dữ liệu Demo cũ bị thay).
 - Mở GĐ 4 Database (DEC-149): lưu mốc Demo (nhánh `backup/demo-truoc-database`, tag `demo-truoc-database-2026-10-26`); nền tảng Supabase Singapore; danh mục trạng thái `docs/STATUS_CATALOG.md` chờ duyệt.
 - DEC-150: quy mô 50–70 nhân viên / 10–15 nghìn cont mỗi tháng; bỏ 12 mã trạng thái chưa dùng; ảnh nén ~200 KB giữ 24 tháng; dữ liệu trực tuyến 3 năm rồi chuyển kho; W-SURVEY không cho Cấp vỏ (Q-037, Q-038, Q-042 đã chốt).
+- DEC-151: đăng nhập bằng tên đăng nhập (email nội bộ), không khóa / không tự đăng xuất, mất mạng thì báo lỗi; partition chỉ 2 bảng nhật ký. Thiết kế database v1: `docs/DATABASE_SCHEMA.md` (chờ duyệt).
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
