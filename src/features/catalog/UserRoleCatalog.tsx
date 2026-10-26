@@ -37,7 +37,7 @@ function screensOf(role: AppRole): string {
 const RoleChecks: React.FC<{ value: AppRole[]; onChange: (r: AppRole[]) => void }> = ({ value, onChange }) => (
   <div className="flex flex-wrap gap-1.5">
     {ASSIGNABLE_ROLES.map((r) => (
-      <label key={r} className={`flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-[11px] ${value.includes(r) ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-slate-200'}`}>
+      <label key={r} className={`flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-[11px] ${value.includes(r) ? 'border-navy-900 bg-navy-50 text-navy-900' : 'border-line'}`}>
         <input type="checkbox" className="h-3 w-3" checked={value.includes(r)} onChange={(e) => onChange(e.target.checked ? [...value, r] : value.filter((x) => x !== r))} />
         {ROLE_LABELS[r]}
       </label>
@@ -69,7 +69,7 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
     <div className="space-y-4">
       <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
 
-      <SectionCard title="Thêm user" icon={<UserPlus className="h-4 w-4 text-slate-500" />}>
+      <SectionCard title="Thêm user" icon={<UserPlus className="h-4 w-4 text-ink-muted" />}>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -97,9 +97,9 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
         </form>
       </SectionCard>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-line bg-white">
         <table className="w-full min-w-[720px] text-left text-xs">
-          <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
+          <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
             <tr>
               <th className="px-3 py-2">Mã</th>
               <th className="px-3 py-2">Họ tên</th>
@@ -109,9 +109,9 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
               <th className="px-3 py-2 text-right">Thao tác</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line">
             {state.staffUsers.map((u: StaffUser) => (
-              <tr key={u.id} className={u.isActive ? '' : 'text-slate-400'}>
+              <tr key={u.id} className={u.isActive ? '' : 'text-ink-muted'}>
                 <td className="px-3 py-2 font-mono">{u.staffCode}</td>
                 <td className="px-3 py-2 font-semibold">{u.fullName}</td>
                 <td className="px-3 py-2">{u.email}</td>
@@ -145,18 +145,18 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
         </table>
       </div>
 
-      <SectionCard title="Vai trò & màn hình được truy cập" icon={<ShieldCheck className="h-4 w-4 text-slate-500" />}>
+      <SectionCard title="Vai trò & màn hình được truy cập" icon={<ShieldCheck className="h-4 w-4 text-ink-muted" />}>
         <table className="w-full text-left text-xs">
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line">
             {ASSIGNABLE_ROLES.map((r) => (
               <tr key={r}>
                 <td className="w-32 py-1.5 pr-2 font-semibold">{ROLE_LABELS[r]}</td>
-                <td className="py-1.5 text-slate-700">{screensOf(r)}</td>
+                <td className="py-1.5 text-ink">{screensOf(r)}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        <p className="mt-2 text-[11px] text-slate-500">
+        <p className="mt-2 text-[11px] text-ink-muted">
           Chế độ Demo: user là hồ sơ nhân viên, đổi người dùng ở góc phải để thử. Khi nối Supabase, tài khoản đăng nhập được tạo qua Supabase Auth và quyền được kiểm tra ở database.
         </p>
       </SectionCard>

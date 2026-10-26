@@ -33,8 +33,8 @@ const CONTAINER_STATUS: Record<ContainerStatus, string> = {
 // ---------------------------------------------------------------------------
 const Field: React.FC<{ label: string; value?: React.ReactNode; mono?: boolean }> = ({ label, value, mono }) => (
   <div>
-    <dt className="text-[10px] font-semibold uppercase text-slate-500">{label}</dt>
-    <dd className={`text-xs font-semibold text-slate-900 ${mono ? 'font-mono' : ''}`}>{value || '-'}</dd>
+    <dt className="text-[10px] font-semibold uppercase text-ink-muted">{label}</dt>
+    <dd className={`text-xs font-semibold text-ink ${mono ? 'font-mono' : ''}`}>{value || '-'}</dd>
   </div>
 );
 
@@ -51,8 +51,8 @@ const Confirm: React.FC<ConfirmInfo> = ({ done, by, at, pending }) =>
       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
       <div>
         <span className="block text-[10px] font-black uppercase tracking-wide text-emerald-700">Hoàn thành</span>
-        <span className="block font-semibold text-slate-900">{by || '-'}</span>
-        <span className="font-mono text-slate-600">{formatViTime(at)}</span>
+        <span className="block font-semibold text-ink">{by || '-'}</span>
+        <span className="font-mono text-ink-muted">{formatViTime(at)}</span>
       </div>
     </div>
   ) : (
@@ -71,17 +71,17 @@ const Step: React.FC<{ no: number; title: string; tone?: 'default' | 'payment'; 
 }) => (
   <section
     className={`grid grid-cols-1 gap-3 rounded-md border p-3 sm:grid-cols-[1fr_200px] ${
-      tone === 'payment' ? 'border-blue-300 bg-blue-50/40' : 'border-slate-200'
+      tone === 'payment' ? 'border-line-strong bg-navy-50/40' : 'border-line'
     }`}
   >
     <div>
-      <h4 className="mb-2 flex items-center gap-2 text-[11px] font-black uppercase tracking-wide text-slate-800">
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[10px] text-white">{no}</span>
+      <h4 className="mb-2 flex items-center gap-2 text-[11px] font-black uppercase tracking-wide text-ink">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-navy-900 text-[10px] text-white">{no}</span>
         {title}
       </h4>
-      <div className="text-xs text-slate-700">{children}</div>
+      <div className="text-xs text-ink">{children}</div>
     </div>
-    <div className="sm:border-l sm:border-slate-200 sm:pl-3">
+    <div className="sm:border-l sm:border-line sm:pl-3">
       <Confirm {...confirm} />
     </div>
   </section>
@@ -140,14 +140,14 @@ function paymentInfo(state: DepotState, voucher?: PaymentVoucher) {
 }
 
 const PaymentBody: React.FC<{ state: DepotState; voucher?: PaymentVoucher; onOpenReceipt?: (key: string) => void }> = ({ state, voucher, onOpenReceipt }) => {
-  if (!voucher) return <p className="text-slate-500">Chưa lập chứng từ chi phí.</p>;
+  if (!voucher) return <p className="text-ink-muted">Chưa lập chứng từ chi phí.</p>;
   const info = paymentInfo(state, voucher);
   const paidTone = voucher.status === 'CONFIRMED' ? 'text-emerald-700' : voucher.status === 'DEFERRED' ? 'text-violet-700' : 'text-amber-700';
   return (
     <div className="space-y-2">
       {voucher.feeLines && voucher.feeLines.length > 0 && (
         <table className="w-full text-xs">
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-line">
             {voucher.feeLines.map((l) => (
               <tr key={l.id}>
                 <td className="py-1 pr-2">{l.name}</td>
@@ -167,7 +167,7 @@ const PaymentBody: React.FC<{ state: DepotState; voucher?: PaymentVoucher; onOpe
           {info.receipts.map((r) => (
             <li key={r.target} className="flex flex-wrap items-center gap-2">
               <ReceiptLink label={r.no.startsWith('Yêu cầu') ? r.no : `Phiếu thu ${r.no}`} target={r.target} onOpenReceipt={onOpenReceipt} />
-              <span className="text-[11px] text-slate-600">{r.note}</span>
+              <span className="text-[11px] text-ink-muted">{r.note}</span>
             </li>
           ))}
         </ul>
@@ -210,7 +210,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
         <div className="w-full max-w-sm rounded-lg bg-white p-5 text-center text-xs">
           <p className="mb-3">Không tìm thấy hồ sơ <span className="font-mono font-bold">{masterDossierCode}</span>.</p>
-          <button type="button" onClick={onClose} className="rounded-md border border-slate-300 px-3 py-1.5 font-semibold">Đóng</button>
+          <button type="button" onClick={onClose} className="rounded-md border border-line-strong px-3 py-1.5 font-semibold">Đóng</button>
         </div>
       </div>
     );
@@ -250,7 +250,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
           }}
         >
           Hạng mục: <strong>{cleaningItems.join(' + ')}</strong>
-          {cleaningWo?.resultNotes && <p className="text-slate-500">{cleaningWo.resultNotes}</p>}
+          {cleaningWo?.resultNotes && <p className="text-ink-muted">{cleaningWo.resultNotes}</p>}
         </Step>
       )}
       
@@ -262,17 +262,17 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
         {placement ? (
           <p>Hạ vỏ vào <strong className="font-mono">{placement.toLocation}</strong></p>
         ) : (
-          <p className="text-slate-500">Chưa hạ vỏ.</p>
+          <p className="text-ink-muted">Chưa hạ vỏ.</p>
         )}
         {moves.length > 0 && (
-          <ul className="mt-1.5 space-y-0.5 border-t border-slate-200 pt-1.5 text-[11px]">
+          <ul className="mt-1.5 space-y-0.5 border-t border-line pt-1.5 text-[11px]">
             {moves.map((l) => (
               <li key={l.id} className="flex flex-wrap justify-between gap-2">
                 <span>
                   <strong>{l.actionType === 'YARD_SHIFT' ? 'ĐẢO CHUYỂN' : l.actionType}</strong>{' '}
                   <span className="font-mono">{l.fromLocation} → {l.toLocation}</span>
                 </span>
-                <span className="text-slate-500">{l.performedBy} • {formatViTime(l.performedAt)}</span>
+                <span className="text-ink-muted">{l.performedBy} • {formatViTime(l.performedAt)}</span>
               </li>
             ))}
           </ul>
@@ -315,7 +315,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
           {repairWo.repairTeamName ? (
             <p>Tổ: <strong>{repairWo.repairTeamName}</strong> — {(repairWo.repairMembers || []).join(', ')}</p>
           ) : (
-            <p className="text-slate-500">Chưa sửa.</p>
+            <p className="text-ink-muted">Chưa sửa.</p>
           )}
         </Step>
       )}
@@ -324,10 +324,10 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
 
   return (
     // DEC-080: hồ sơ mở dạng cửa sổ trượt bên phải (giống chi tiết các danh sách); bấm ra ngoài / Esc để đóng
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/30" role="dialog" aria-modal="true" aria-label="Hồ sơ container" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-navy-900/30" role="dialog" aria-modal="true" aria-label="Hồ sơ container" onClick={onClose}>
       <div className="h-full w-full overflow-y-auto bg-white shadow-2xl sm:w-[min(960px,80vw)]" onClick={(e) => e.stopPropagation()}>
         {/* THÔNG TIN CƠ BẢN CONTAINER — focus số cont */}
-        <header className="bg-slate-900 px-5 py-4 text-white">
+        <header className="bg-navy-900 px-5 py-4 text-white">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-300">Hồ sơ container</p>
@@ -336,7 +336,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                 <span className="rounded bg-white/15 px-1.5 py-0.5">{importHit ? 'NHẬP TÀU' : 'HẠ VỎ'} {visitCode}</span>
                 {activeOut && <span className="rounded bg-white/15 px-1.5 py-0.5">CẤP VỎ {activeOut.gateOutCode}</span>}
                 {exportHits.map(({ item }) => <span key={item.id} className="rounded bg-white/15 px-1.5 py-0.5">XUẤT TÀU {item.dossierCode}</span>)}
-                {container && <span className="rounded bg-amber-400 px-1.5 py-0.5 font-sans font-bold text-slate-900">{CONTAINER_STATUS[container.status]}</span>}
+                {container && <span className="rounded bg-amber-400 px-1.5 py-0.5 font-sans font-bold text-ink">{CONTAINER_STATUS[container.status]}</span>}
                 {container?.isOnHold && <span className="rounded bg-rose-500 px-1.5 py-0.5 font-sans font-bold">ĐANG KHÓA: {container.holdReason}</span>}
               </p>
             </div>
@@ -367,10 +367,10 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
           {/* ===================== HẠ VỎ ===================== */}
           {gateIn && (
             <>
-              <h3 className="pt-1 text-xs font-black uppercase tracking-wider text-slate-500">Tác nghiệp HẠ VỎ — {visitCode}</h3>
+              <h3 className="pt-1 text-xs font-black uppercase tracking-wider text-ink-muted">Tác nghiệp HẠ VỎ — {visitCode}</h3>
               <Step no={next()} title="Giám định — Hạ vỏ" confirm={{ done: true, by: gateIn.fieldStaffName, at: gateIn.fieldRecordedAt }}>
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  <img src={gateIn.doorPhotoUrl} alt="Ảnh cửa container" className="h-24 w-full rounded border border-slate-200 object-cover sm:w-36" />
+                  <img src={gateIn.doorPhotoUrl} alt="Ảnh cửa container" className="h-24 w-full rounded border border-line object-cover sm:w-36" />
                   <dl className="grid flex-1 grid-cols-2 gap-2">
                     <Field label="Trạng thái" value={`${gateIn.conditionClass}${gateIn.damageRemarks.length ? ` — ${gateIn.damageRemarks.join(', ')}` : ''}`} />
                     <Field label="Đóng hàng" value={gateIn.stuffingClass} />
@@ -414,7 +414,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
           {/* ===================== NHẬP TÀU (DEC-069) ===================== */}
           {importHit && (
             <>
-              <h3 className="pt-1 text-xs font-black uppercase tracking-wider text-slate-500">Tác nghiệp NHẬP TÀU — {visitCode}</h3>
+              <h3 className="pt-1 text-xs font-black uppercase tracking-wider text-ink-muted">Tác nghiệp NHẬP TÀU — {visitCode}</h3>
               <Step no={next()} title="Văn phòng — Lập danh sách nhập tàu" confirm={{ done: true, by: importHit.list.createdBy, at: importHit.list.createdAt }}>
                 <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <Field label="Tên tàu" value={importHit.list.vesselName} />
@@ -447,14 +447,14 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
             const v = state.vouchers.find((x) => x.id === o.voucherId);
             if (o.status === 'CANCELLED') {
               return (
-                <p key={o.id} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
+                <p key={o.id} className="rounded-md border border-line bg-canvas px-3 py-2 text-[11px] text-ink-muted">
                   Lệnh cấp <span className="font-mono">{o.gateOutCode}</span> (booking {o.bookingNo}) đã hủy lúc {formatViTime(o.cancelledAt)} — {o.cancelReason}
                 </p>
               );
             }
             return (
               <React.Fragment key={o.id}>
-                <h3 className="pt-2 text-xs font-black uppercase tracking-wider text-slate-500">Tác nghiệp CẤP VỎ — {o.gateOutCode}</h3>
+                <h3 className="pt-2 text-xs font-black uppercase tracking-wider text-ink-muted">Tác nghiệp CẤP VỎ — {o.gateOutCode}</h3>
                 <Step no={next()} title="Văn phòng — Cấp vỏ" confirm={{ done: true, by: o.createdBy, at: o.createdAt }}>
                   <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     <Field label="Booking" value={o.bookingNo} mono />
@@ -471,7 +471,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                   title="Xe nâng — Cấp vỏ"
                   confirm={{ done: o.status === 'GATE_OUT_OK', by: o.confirmedBy, at: o.confirmedAt, pending: o.status === 'PAYMENT_PENDING' ? 'Chờ thanh toán' : 'Chờ xe nâng' }}
                 >
-                  {o.status === 'GATE_OUT_OK' ? <p>Đã OUT khỏi bãi • xe <strong>{o.truckNo}</strong></p> : <p className="text-slate-500">Chưa OUT.</p>}
+                  {o.status === 'GATE_OUT_OK' ? <p>Đã OUT khỏi bãi • xe <strong>{o.truckNo}</strong></p> : <p className="text-ink-muted">Chưa OUT.</p>}
                 </Step>
                 <Step
                   no={next()}
@@ -487,7 +487,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
           {/* ===================== XUẤT TÀU (DEC-069) ===================== */}
           {exportHits.map(({ list, item }) => (
             <React.Fragment key={item.id}>
-              <h3 className="pt-2 text-xs font-black uppercase tracking-wider text-slate-500">Tác nghiệp XUẤT TÀU — {item.dossierCode}</h3>
+              <h3 className="pt-2 text-xs font-black uppercase tracking-wider text-ink-muted">Tác nghiệp XUẤT TÀU — {item.dossierCode}</h3>
               <Step no={next()} title="Văn phòng — Lập danh sách xuất tàu" confirm={{ done: true, by: list.createdBy, at: list.createdAt }}>
                 <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <Field label="Tên tàu" value={list.vesselName} />
@@ -497,7 +497,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                 </dl>
               </Step>
               <Step no={next()} title="Giám định / Xe nâng — Xuất tàu" confirm={{ done: item.status === 'DONE', by: item.doneBy, at: item.doneAt, pending: 'Chờ xuất tàu' }}>
-                {item.status === 'DONE' ? <p>Đã OUT khỏi bãi • xe <strong>{item.truckNo}</strong></p> : <p className="text-slate-500">Chưa xuất.</p>}
+                {item.status === 'DONE' ? <p>Đã OUT khỏi bãi • xe <strong>{item.truckNo}</strong></p> : <p className="text-ink-muted">Chưa xuất.</p>}
               </Step>
               <Step no={next()} title="Văn phòng — Duyệt xuất tàu" confirm={{ done: list.status === 'APPROVED', by: list.approvedBy, at: list.approvedAt, pending: 'Chờ xuất hết danh sách' }}>
                 <p>Duyệt cả danh sách tàu <strong>{list.vesselName}</strong> khi đã xuất hết. Không thu phí, không phiếu K80.</p>
@@ -506,12 +506,12 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
           ))}
         </div>
 
-        <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-5 py-3">
+        <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3">
           {latestTicket && onOpenK80Ticket && (
             <button
               type="button"
               onClick={() => onOpenK80Ticket(latestTicket)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-line-strong px-3 py-2 text-xs font-semibold text-ink hover:bg-canvas"
             >
               <QrCode className="h-4 w-4" />
               {ticketClosed ? 'Xem phiếu K80 (đã đóng)' : 'Xem / in phiếu K80'}
@@ -591,23 +591,23 @@ const DossierPrintBar: React.FC<{
   const jobPack = job ? packs.find((p) => p.ticket.ticketCode === job.ticketCode) : undefined;
   const btn = 'inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold';
   return (
-    <div className="space-y-2 border-t border-slate-200 px-5 py-3 text-xs">
+    <div className="space-y-2 border-t border-line px-5 py-3 text-xs">
       {error && <p className="rounded-md bg-rose-50 px-3 py-2 text-rose-800">{error}</p>}
       {packs.map((p) => {
         const op = p.ticket.operationMode === 'CAP_VO' ? 'CẤP VỎ' : 'HẠ VỎ';
         const printedBefore = p.receipts.filter((r) => (r.printLog?.length || 0) > 0);
         return (
           <div key={p.ticket.ticketCode} className="flex flex-wrap items-center justify-end gap-2">
-            <span className="mr-auto font-semibold text-slate-700">EEIR {op} — <span className="font-mono">{p.dossierCode}</span>{p.receipts.length > 0 && <> • {p.receipts.length} phiếu thu</>}</span>
+            <span className="mr-auto font-semibold text-ink">EEIR {op} — <span className="font-mono">{p.dossierCode}</span>{p.receipts.length > 0 && <> • {p.receipts.length} phiếu thu</>}</span>
             {confirmCode === p.ticket.ticketCode ? (
               <span className="inline-flex flex-wrap items-center gap-2 rounded-md border border-rose-300 bg-rose-50 px-2 py-1 text-[11px] text-rose-800">
                 {printedBefore.map((r) => `${r.receiptNo} đã in ${r.printLog!.length} lần (gần nhất ${formatDateTime(r.printLog![r.printLog!.length - 1].at)})`).join('; ')}. In lại?
                 <button type="button" onClick={() => print(p.ticket.ticketCode, true)} className="rounded bg-rose-600 px-2 py-1 font-bold text-white">In lại</button>
-                <button type="button" onClick={() => setConfirmCode(null)} className="rounded border border-slate-300 bg-white px-2 py-1">Hủy</button>
+                <button type="button" onClick={() => setConfirmCode(null)} className="rounded border border-line-strong bg-white px-2 py-1">Hủy</button>
               </span>
             ) : (
               <>
-                <button type="button" onClick={() => print(p.ticket.ticketCode, false)} className={`${btn} border border-slate-300 text-slate-700 hover:bg-slate-50`}>
+                <button type="button" onClick={() => print(p.ticket.ticketCode, false)} className={`${btn} border border-line-strong text-ink hover:bg-canvas`}>
                   <Printer className="h-4 w-4" />
                   In EEIR {op}
                 </button>
@@ -615,7 +615,7 @@ const DossierPrintBar: React.FC<{
                   <button
                     type="button"
                     onClick={() => (printedBefore.length ? setConfirmCode(p.ticket.ticketCode) : print(p.ticket.ticketCode, true))}
-                    className={`${btn} bg-slate-900 text-white hover:bg-slate-800`}
+                    className={`${btn} bg-navy-900 text-white hover:bg-navy-700`}
                   >
                     <Printer className="h-4 w-4" />
                     In EEIR + phiếu thu
@@ -631,7 +631,7 @@ const DossierPrintBar: React.FC<{
         const ready = vesselReady(v);
         return (
           <div key={v.item.id} className="flex flex-wrap items-center justify-end gap-2">
-            <span className="mr-auto font-semibold text-slate-700">
+            <span className="mr-auto font-semibold text-ink">
               EEIR {op} — <span className="font-mono">{v.item.dossierCode}</span> • tàu {v.list.vesselName}
             </span>
             <button
@@ -639,7 +639,7 @@ const DossierPrintBar: React.FC<{
               disabled={!ready}
               title={ready ? '' : v.list.mode === 'NHAP_TAU' ? 'Chờ Giám định xác nhận cont' : 'Chờ cont xuất tàu'}
               onClick={() => printVessel(v.item.id)}
-              className={`${btn} border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40`}
+              className={`${btn} border border-line-strong text-ink hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-40`}
             >
               <Printer className="h-4 w-4" />
               In EEIR {op}

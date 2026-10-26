@@ -32,7 +32,7 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
 
   return (
     <div className="space-y-4">
-      <SectionCard title={`Báo cáo ${isImport ? 'Nhập tàu' : 'Xuất tàu'}`} icon={<Search className="h-4 w-4 text-slate-500" />}>
+      <SectionCard title={`Báo cáo ${isImport ? 'Nhập tàu' : 'Xuất tàu'}`} icon={<Search className="h-4 w-4 text-ink-muted" />}>
         <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2 sm:col-span-1">
             <span className={labelCls}>Số container</span>
@@ -58,17 +58,17 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
         </form>
       </SectionCard>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-line bg-white">
         {!applied ? (
-          <p className="p-8 text-center text-xs text-slate-500">Nhập số container / tên tàu hoặc chọn khoảng thời gian, sau đó bấm Tra cứu.</p>
+          <p className="p-8 text-center text-xs text-ink-muted">Nhập số container / tên tàu hoặc chọn khoảng thời gian, sau đó bấm Tra cứu.</p>
         ) : queryError ? (
           <p className="p-6 text-center text-xs text-red-700">{queryError}</p>
         ) : !result || result.total === 0 ? (
-          <p className="p-8 text-center text-xs text-slate-500">Không có dữ liệu phù hợp.</p>
+          <p className="p-8 text-center text-xs text-ink-muted">Không có dữ liệu phù hợp.</p>
         ) : (
           <>
             <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
-              <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
+              <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
                 <tr>
                   <th className="px-3 py-2">Tên tàu</th>
                   <th className="px-3 py-2">Mã hồ sơ</th>
@@ -85,7 +85,7 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
                   <th className="px-3 py-2">Duyệt</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line">
                 {result.rows.map(({ list: l, item: i }) => (
                   <tr key={i.id}>
                     <td className="px-3 py-2 font-semibold"><CellText text={l.vesselName} max={CELL_MAX.SHORT} /></td>
@@ -106,7 +106,7 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
                     <td className="px-3 py-2">{i.truckNo || '-'}</td>
                     <td className="px-3 py-2">{STATUS[mode][i.status]}</td>
                     <td className="px-3 py-2 font-mono">{formatDateTime(i.doneAt)}</td>
-                    <td className="px-3 py-2">{l.status === 'APPROVED' ? <span className="font-bold text-emerald-700">Đã duyệt</span> : <span className="text-slate-500">Chưa</span>}</td>
+                    <td className="px-3 py-2">{l.status === 'APPROVED' ? <span className="font-bold text-emerald-700">Đã duyệt</span> : <span className="text-ink-muted">Chưa</span>}</td>
                   </tr>
                 ))}
               </tbody>

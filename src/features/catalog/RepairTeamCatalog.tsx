@@ -42,7 +42,7 @@ export const RepairTeamCatalog: React.FC<{ state: DepotState; onUpdateState: (ne
       {!isAdmin && <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">Chế độ chỉ xem — chỉ Admin cấu hình tổ sửa chữa.</p>}
 
       {isAdmin && (
-        <SectionCard title="Thêm tổ sửa chữa" icon={<Wrench className="h-4 w-4 text-slate-500" />}>
+        <SectionCard title="Thêm tổ sửa chữa" icon={<Wrench className="h-4 w-4 text-ink-muted" />}>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -69,14 +69,14 @@ export const RepairTeamCatalog: React.FC<{ state: DepotState; onUpdateState: (ne
       )}
 
       {state.repairTeams.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-xs text-slate-500">Chưa có tổ sửa chữa.</p>
+        <p className="rounded-lg border border-dashed border-line-strong bg-white p-8 text-center text-xs text-ink-muted">Chưa có tổ sửa chữa.</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {state.repairTeams.map((t) => (
             <SectionCard
               key={t.id}
               title={`${t.code} — ${t.name}${t.isActive ? '' : ' (ngưng)'}`}
-              icon={<Users className="h-4 w-4 text-slate-500" />}
+              icon={<Users className="h-4 w-4 text-ink-muted" />}
               right={
                 isAdmin && (
                   <button type="button" onClick={() => run(() => setRepairTeamActive(state, { teamId: t.id, isActive: !t.isActive }), 'Đã cập nhật tổ.')} className={secondaryBtn}>
@@ -85,19 +85,19 @@ export const RepairTeamCatalog: React.FC<{ state: DepotState; onUpdateState: (ne
                 )
               }
             >
-              <ul className="divide-y divide-slate-100 text-xs">
-                {t.members.length === 0 && <li className="py-2 text-slate-500">Chưa có nhân viên.</li>}
+              <ul className="divide-y divide-line text-xs">
+                {t.members.length === 0 && <li className="py-2 text-ink-muted">Chưa có nhân viên.</li>}
                 {t.members.map((m) => (
                   <li key={m.id} className="flex items-center justify-between py-1.5">
-                    <span className={m.isActive ? 'text-slate-900' : 'text-slate-400 line-through'}>
+                    <span className={m.isActive ? 'text-ink' : 'text-ink-muted line-through'}>
                       {m.fullName}
-                      {m.staffUserId && <span className="ml-1 rounded bg-blue-50 px-1 text-[10px] text-blue-700">user</span>}
+                      {m.staffUserId && <span className="ml-1 rounded bg-navy-50 px-1 text-[10px] text-navy-700">user</span>}
                     </span>
                     {isAdmin && (
                       <button
                         type="button"
                         onClick={() => run(() => setRepairTeamMemberActive(state, { teamId: t.id, memberId: m.id, isActive: !m.isActive }), 'Đã cập nhật nhân viên.')}
-                        className="text-[11px] text-slate-500 hover:text-slate-900"
+                        className="text-[11px] text-ink-muted hover:text-ink"
                       >
                         {m.isActive ? 'Ngưng' : 'Kích hoạt'}
                       </button>

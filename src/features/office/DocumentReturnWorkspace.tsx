@@ -49,13 +49,13 @@ export const DocumentReturnWorkspace: React.FC<{
   return (
     <div className="space-y-4">
       <Feedback error={error} onClose={() => setError(null)} />
-      <SectionCard title="Trả chứng từ — quét mã QR phiếu K80" icon={<QrCode className="h-4 w-4 text-slate-500" />}>
+      <SectionCard title="Trả chứng từ — quét mã QR phiếu K80" icon={<QrCode className="h-4 w-4 text-ink-muted" />}>
         <form onSubmit={(e) => { e.preventDefault(); confirm(code); }} className="flex gap-2">
           <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} autoFocus placeholder="Quét mã QR K80 / mã hồ sơ..." className={`${inputCls} py-2.5 font-mono text-sm uppercase`} />
           <button type="button" disabled={!code.trim()} onClick={() => showPreview(code)} className={`${secondaryBtn} shrink-0`}><Eye className="h-3.5 w-3.5" />Xem trước</button>
           <button type="submit" disabled={!code.trim()} className={`${primaryBtn} shrink-0`}>Xác nhận & in</button>
         </form>
-        <p className="mt-2 text-[11px] text-slate-500">Quét được cả phiếu Hạ vỏ và Cấp vỏ. Chỉ trả được khi lái xe đã đi đủ các bộ phận trên lộ trình. Hệ thống tự in EEIR và phiếu thu (nếu có); mỗi lần in phiếu thu được ghi nhận.</p>
+        <p className="mt-2 text-[11px] text-ink-muted">Quét được cả phiếu Hạ vỏ và Cấp vỏ. Chỉ trả được khi lái xe đã đi đủ các bộ phận trên lộ trình. Hệ thống tự in EEIR và phiếu thu (nếu có); mỗi lần in phiếu thu được ghi nhận.</p>
       </SectionCard>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -65,19 +65,19 @@ export const DocumentReturnWorkspace: React.FC<{
             <SectionCard
               key={m}
               title={`Đang chờ TRẢ CHỨNG TỪ ${MODE_LABEL[m]}`}
-              icon={<FileCheck2 className="h-4 w-4 text-slate-500" />}
-              right={<span className="rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white">{waiting.length}</span>}
+              icon={<FileCheck2 className="h-4 w-4 text-ink-muted" />}
+              right={<span className="rounded bg-navy-900 px-2 py-0.5 text-[11px] font-bold text-white">{waiting.length}</span>}
             >
               {waiting.length === 0 ? (
-                <p className="text-xs text-slate-500">Không có lái xe nào đang chờ.</p>
+                <p className="text-xs text-ink-muted">Không có lái xe nào đang chờ.</p>
               ) : (
-                <ul className="divide-y divide-slate-100 text-xs">
+                <ul className="divide-y divide-line text-xs">
                   {waiting.map((t) => (
                     <li key={t.ticketCode} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="flex flex-wrap items-center gap-2">
                         <ContainerNo no={t.containerNo} />
                         <button type="button" onClick={() => onOpenDossier?.(t.outDossierCode || t.masterDossierCode)} className={linkCls}>{t.outDossierCode || t.masterDossierCode}</button>
-                        <span className="text-slate-600">Xe {t.truckNo || '-'} • {t.driverPhone || '-'}</span>
+                        <span className="text-ink-muted">Xe {t.truckNo || '-'} • {t.driverPhone || '-'}</span>
                       </span>
                       <span className="flex gap-2">
                         <button type="button" onClick={() => showPreview(t.qrCode)} className={secondaryBtn}><Eye className="h-3.5 w-3.5" />Xem trước</button>
@@ -128,7 +128,7 @@ const DocumentPackPrint: React.FC<{ state: DepotState; pack: DocumentPack; previ
           {pack.receipts.map((r) => (
             <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={preview ? (r.printLog?.length || 0) + 1 : r.printLog?.length || 1} />
           ))}
-          {pack.receipts.length === 0 && <p className="text-center text-slate-500">Không có phiếu thu (TTT trừ Phiếu thu trả trước / TTS công nợ).</p>}
+          {pack.receipts.length === 0 && <p className="text-center text-ink-muted">Không có phiếu thu (TTT trừ Phiếu thu trả trước / TTS công nợ).</p>}
         </div>
         {!preview && (
           <PrintPortal>
@@ -136,7 +136,7 @@ const DocumentPackPrint: React.FC<{ state: DepotState; pack: DocumentPack; previ
             {!eeirOnly && pack.receipts.map((r) => <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={r.printLog?.length || 1} />)}
           </PrintPortal>
         )}
-        <p className="no-print text-[11px] text-slate-500">
+        <p className="no-print text-[11px] text-ink-muted">
           {preview
             ? 'Chỉ xem — chưa ghi nhận trả chứng từ, không in, không tính lần in. Bấm Trả chứng từ để trả và in.'
             : 'In lại phiếu thu sau này tại Văn phòng → Phiếu thu (hệ thống hỏi xác nhận và đánh dấu BẢN IN LẠI).'}

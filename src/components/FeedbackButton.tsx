@@ -16,10 +16,10 @@ export interface FeedbackMenuOption {
 const OTHER_GROUP = 'Khác';
 
 export const FEEDBACK_STATUS_STYLE: Record<FeedbackStatus, string> = {
-  MOI: 'bg-blue-100 text-blue-800',
+  MOI: 'bg-navy-50 text-navy-900',
   DANG_XU_LY: 'bg-amber-100 text-amber-800',
   DA_XU_LY: 'bg-emerald-100 text-emerald-800',
-  KHONG_AP_DUNG: 'bg-slate-200 text-slate-700',
+  KHONG_AP_DUNG: 'bg-line text-ink',
 };
 
 export const FeedbackStatusBadge: React.FC<{ status: FeedbackStatus }> = ({ status }) => (
@@ -99,21 +99,21 @@ export const FeedbackPanel: React.FC<{
           Gửi góp ý
         </button>
       </form>
-      <div className="border-t border-slate-200 pt-3">
-        <p className="mb-2 font-bold text-slate-800">Góp ý của tôi ({mine.length})</p>
+      <div className="border-t border-line pt-3">
+        <p className="mb-2 font-bold text-ink">Góp ý của tôi ({mine.length})</p>
         {mine.length === 0 ? (
-          <p className="text-slate-500">Chưa có góp ý nào.</p>
+          <p className="text-ink-muted">Chưa có góp ý nào.</p>
         ) : (
           <ul className="max-h-64 space-y-2 overflow-y-auto">
             {mine.map((f) => (
-              <li key={f.id} className="rounded-md border border-slate-200 p-2">
+              <li key={f.id} className="rounded-md border border-line p-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono font-bold">{f.code}</span>
                   <FeedbackStatusBadge status={f.status} />
                 </div>
-                <p className="text-[11px] text-slate-500">{f.menuLabel} • {formatDateTime(f.createdAt)}</p>
-                <p className="mt-1 whitespace-pre-wrap text-slate-800">{f.content}</p>
-                {f.response && <p className="mt-1 rounded bg-slate-50 p-1.5 text-slate-700"><strong>Phản hồi:</strong> {f.response}</p>}
+                <p className="text-[11px] text-ink-muted">{f.menuLabel} • {formatDateTime(f.createdAt)}</p>
+                <p className="mt-1 whitespace-pre-wrap text-ink">{f.content}</p>
+                {f.response && <p className="mt-1 rounded bg-canvas p-1.5 text-ink"><strong>Phản hồi:</strong> {f.response}</p>}
               </li>
             ))}
           </ul>
@@ -132,7 +132,7 @@ export const FeedbackButton: React.FC<{
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 font-semibold text-blue-700 hover:bg-blue-100" data-testid="feedback-button">
+      <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1 rounded-md border border-line-strong bg-navy-50 px-2 py-1 font-semibold text-navy-700 hover:bg-navy-50" data-testid="feedback-button">
         <MessageSquarePlus className="h-3.5 w-3.5" />
         Góp ý
       </button>
@@ -140,8 +140,8 @@ export const FeedbackButton: React.FC<{
         <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/40 p-3" role="dialog" aria-modal="true" aria-label="Góp ý">
           <div className="w-full max-w-md space-y-3 rounded-lg bg-white p-4 shadow-xl">
             <div className="flex items-center justify-between">
-              <h2 className="flex items-center gap-1.5 text-sm font-bold"><MessageSquarePlus className="h-4 w-4 text-blue-700" />Góp ý xây dựng hệ thống</h2>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Đóng" className="text-slate-400 hover:text-slate-700"><X className="h-4 w-4" /></button>
+              <h2 className="flex items-center gap-1.5 text-sm font-bold"><MessageSquarePlus className="h-4 w-4 text-navy-700" />Góp ý xây dựng hệ thống</h2>
+              <button type="button" onClick={() => setOpen(false)} aria-label="Đóng" className="text-ink-muted hover:text-ink"><X className="h-4 w-4" /></button>
             </div>
             <FeedbackPanel {...props} />
           </div>

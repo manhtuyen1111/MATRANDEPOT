@@ -61,15 +61,15 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm({ ...form, [k]: e.target.value });
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900">
+    <div className="min-h-screen bg-canvas px-4 py-6 text-ink">
       <div className="mx-auto w-full max-w-lg space-y-4">
-        <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
-          <p className="text-[11px] font-semibold uppercase text-slate-500">{state.companyProfile.name}</p>
-          <h1 className="flex items-center gap-1.5 text-base font-bold"><FileText className="h-4 w-4 text-slate-500" />Yêu cầu xuất hóa đơn</h1>
+        <div className="rounded-lg border border-line bg-white px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase text-ink-muted">{state.companyProfile.name}</p>
+          <h1 className="flex items-center gap-1.5 text-base font-bold"><FileText className="h-4 w-4 text-ink-muted" />Yêu cầu xuất hóa đơn</h1>
         </div>
         <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
 
-        <form onSubmit={lookup} className="space-y-2 rounded-lg border border-slate-200 bg-white p-4">
+        <form onSubmit={lookup} className="space-y-2 rounded-lg border border-line bg-white p-4">
           <label className="block">
             <span className={labelCls}>Mã bảo mật trên phiếu thu ({INVOICE_SECRET_LENGTH} ký tự)</span>
             <input
@@ -82,7 +82,7 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
               aria-label="Mã bảo mật"
             />
           </label>
-          <p className="text-[11px] text-slate-500">Phân biệt chữ hoa / chữ thường.</p>
+          <p className="text-[11px] text-ink-muted">Phân biệt chữ hoa / chữ thường.</p>
           <button type="submit" disabled={code.length !== INVOICE_SECRET_LENGTH} className={`${primaryBtn} w-full py-3`}>
             <KeyRound className="h-4 w-4" />
             Tra cứu phiếu thu
@@ -92,19 +92,19 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
         <InvoiceGuide state={state} />
 
         {view && (
-          <div className="space-y-3 rounded-lg border border-blue-600 bg-white p-4 text-xs">
+          <div className="space-y-3 rounded-lg border border-navy-900 bg-white p-4 text-xs">
             <div className="flex items-center justify-between">
               <span className="font-mono text-sm font-black">{view.receiptNo}</span>
-              <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${view.status === 'DA_XHD' ? 'bg-emerald-100 text-emerald-800' : view.status === 'YEU_CAU_XHD' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}`}>
+              <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${view.status === 'DA_XHD' ? 'bg-emerald-100 text-emerald-800' : view.status === 'YEU_CAU_XHD' ? 'bg-amber-100 text-amber-800' : 'bg-navy-50 text-ink'}`}>
                 {INVOICE_STATUS_LABELS[view.status]}
               </span>
             </div>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
-              <dt className="text-slate-500">Ngày thu</dt><dd className="font-mono">{formatDateTime(view.issuedAt)}</dd>
-              <dt className="text-slate-500">Số tiền</dt><dd className="font-mono font-bold">{formatVnd(view.amount)}</dd>
-              <dt className="text-slate-500">Bên thanh toán</dt><dd>{view.payerName}</dd>
-              {view.containerNo && (<><dt className="text-slate-500">Số container</dt><dd className="font-mono">{view.containerNo}</dd></>)}
-              {view.invoiceNo && (<><dt className="text-slate-500">Số hóa đơn</dt><dd className="font-mono font-bold">{view.invoiceNo}</dd></>)}
+              <dt className="text-ink-muted">Ngày thu</dt><dd className="font-mono">{formatDateTime(view.issuedAt)}</dd>
+              <dt className="text-ink-muted">Số tiền</dt><dd className="font-mono font-bold">{formatVnd(view.amount)}</dd>
+              <dt className="text-ink-muted">Bên thanh toán</dt><dd>{view.payerName}</dd>
+              {view.containerNo && (<><dt className="text-ink-muted">Số container</dt><dd className="font-mono">{view.containerNo}</dd></>)}
+              {view.invoiceNo && (<><dt className="text-ink-muted">Số hóa đơn</dt><dd className="font-mono font-bold">{view.invoiceNo}</dd></>)}
             </dl>
 
             {view.prepaid ? (
@@ -121,7 +121,7 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
                 onError={(m) => { setSuccess(null); setError(m); }}
               />
             ) : (
-            <form onSubmit={submit} className="space-y-2 border-t border-slate-200 pt-3">
+            <form onSubmit={submit} className="space-y-2 border-t border-line pt-3">
               <label className="block"><span className={labelCls}>Mã số thuế *</span><input value={form.taxCode} onChange={set('taxCode')} disabled={locked} inputMode="numeric" placeholder="0123456789" className={`${inputCls} font-mono`} /></label>
               <label className="block"><span className={labelCls}>Gmail nhận hóa đơn *</span><input value={form.email} onChange={set('email')} disabled={locked} type="email" className={inputCls} /></label>
               <label className="block"><span className={labelCls}>Tên công ty *</span><input value={form.companyName} onChange={set('companyName')} disabled={locked} className={inputCls} /></label>
@@ -149,17 +149,17 @@ export const InvoiceGuide: React.FC<{ state: DepotState }> = ({ state }) => {
   const phone = state.companyProfile.phone;
   const steps = ['Nhập mã bảo mật trên phiếu thu → Tra cứu', 'Điền Mã số thuế, Tên công ty, Địa chỉ, Gmail → Gửi', 'Nhận hóa đơn qua Gmail'];
   return (
-    <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-4 text-xs" data-testid="invoice-guide">
-      <p className="font-bold text-slate-900">Hướng dẫn</p>
+    <div className="space-y-2 rounded-lg border border-line bg-white p-4 text-xs" data-testid="invoice-guide">
+      <p className="font-bold text-ink">Hướng dẫn</p>
       <ol className="space-y-1.5">
         {steps.map((s, i) => (
           <li key={s} className="flex items-center gap-2">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[10px] font-black text-white">{i + 1}</span>
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-navy-900 text-[10px] font-black text-white">{i + 1}</span>
             <span>{s}</span>
           </li>
         ))}
       </ol>
-      <p className="border-t border-slate-100 pt-2 text-slate-600">
+      <p className="border-t border-line pt-2 text-ink-muted">
         <strong>Ghi sai?</strong> Chưa xuất: tra cứu lại → sửa → <strong>Cập nhật yêu cầu</strong>. Đã xuất: liên hệ Kế toán{phone ? ` ${phone}` : ''}.
       </p>
     </div>
@@ -210,8 +210,8 @@ const PrepaidPortal: React.FC<{
   };
 
   return (
-    <div className="space-y-3 border-t border-slate-200 pt-3" data-testid="prepaid-portal">
-      <p className="text-slate-600">
+    <div className="space-y-3 border-t border-line pt-3" data-testid="prepaid-portal">
+      <p className="text-ink-muted">
         Phiếu thu trả trước: yêu cầu hóa đơn theo <strong>từng lượt đã dùng</strong> — chọn 1 hoặc nhiều lượt để gộp chung 1 hóa đơn. Còn {formatVnd(prepaid.remainingAmount)} chưa dùng (chưa xuất hóa đơn được).
       </p>
 
@@ -219,16 +219,16 @@ const PrepaidPortal: React.FC<{
       {prepaid.groups.map((g, i) => {
         const lots = prepaid.lots.filter((l) => g.deductionIds.includes(l.deductionId));
         return (
-          <div key={g.id} className={`space-y-1 rounded-md border p-2 ${editingId === g.id ? 'border-blue-600' : 'border-slate-200'}`}>
+          <div key={g.id} className={`space-y-1 rounded-md border p-2 ${editingId === g.id ? 'border-navy-900' : 'border-line'}`}>
             <div className="flex items-center justify-between">
               <span className="font-bold">Yêu cầu {i + 1}: {lots.length} lượt • {formatVnd(g.amount)}</span>
               <span className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${g.status === 'DA_XHD' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{INVOICE_STATUS_LABELS[g.status]}</span>
             </div>
-            <p className="font-mono text-[11px] text-slate-600">{lots.map((l) => l.dossierCode).join(', ')}</p>
+            <p className="font-mono text-[11px] text-ink-muted">{lots.map((l) => l.dossierCode).join(', ')}</p>
             <p>{g.companyName} • MST {g.taxCode}{g.invoiceNo ? ` • HĐ ${g.invoiceNo}` : ''}</p>
             {g.status === 'YEU_CAU_XHD' && (
               <div className="flex gap-2">
-                <button type="button" onClick={() => { setEditingId(g.id); setPicked(g.deductionIds); setInfo({ taxCode: g.taxCode, email: g.email, companyName: g.companyName, address: g.address, note: g.note || '' }); }} className="font-semibold text-blue-700 underline">Sửa</button>
+                <button type="button" onClick={() => { setEditingId(g.id); setPicked(g.deductionIds); setInfo({ taxCode: g.taxCode, email: g.email, companyName: g.companyName, address: g.address, note: g.note || '' }); }} className="font-semibold text-navy-700 underline">Sửa</button>
                 <button
                   type="button"
                   onClick={() => {
@@ -250,15 +250,15 @@ const PrepaidPortal: React.FC<{
         <p className="rounded bg-emerald-50 p-2 text-center font-semibold text-emerald-800">Mọi lượt đã dùng đều đã có yêu cầu hóa đơn.</p>
       ) : (
         <form onSubmit={submit} className="space-y-2">
-          <p className="font-bold text-slate-800">{editingId ? 'Sửa yêu cầu' : 'Yêu cầu mới'} — chọn lượt *</p>
-          <ul className="divide-y divide-slate-100 rounded-md border border-slate-200">
+          <p className="font-bold text-ink">{editingId ? 'Sửa yêu cầu' : 'Yêu cầu mới'} — chọn lượt *</p>
+          <ul className="divide-y divide-line rounded-md border border-line">
             {selectable.map((l) => (
               <li key={l.deductionId}>
                 <label className="flex items-center gap-2 px-2 py-2">
                   <input type="checkbox" checked={picked.includes(l.deductionId)} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, l.deductionId] : p.filter((x) => x !== l.deductionId)))} className="h-4 w-4" />
                   <span className="flex-1">
                     <span className="block font-mono font-bold">{l.dossierCode} • {l.containerNo}</span>
-                    <span className="block text-[11px] text-slate-500">{l.operation} • {formatDateTime(l.performedAt)}</span>
+                    <span className="block text-[11px] text-ink-muted">{l.operation} • {formatDateTime(l.performedAt)}</span>
                   </span>
                   <span className="font-mono font-bold">{formatVnd(l.amount)}</span>
                 </label>
@@ -267,7 +267,7 @@ const PrepaidPortal: React.FC<{
           </ul>
           <p className="text-right font-bold">Đã chọn {picked.length} lượt • {formatVnd(total)}</p>
           {last && !editingId && (
-            <button type="button" onClick={() => setInfo({ taxCode: last.taxCode, email: last.email, companyName: last.companyName, address: last.address, note: '' })} className="font-semibold text-blue-700 underline">
+            <button type="button" onClick={() => setInfo({ taxCode: last.taxCode, email: last.email, companyName: last.companyName, address: last.address, note: '' })} className="font-semibold text-navy-700 underline">
               Dùng lại thông tin yêu cầu trước
             </button>
           )}
@@ -281,7 +281,7 @@ const PrepaidPortal: React.FC<{
               <Send className="h-4 w-4" />
               {editingId ? 'Cập nhật yêu cầu' : 'Gửi yêu cầu hóa đơn'}
             </button>
-            {editingId && <button type="button" onClick={reset} className="rounded-md border border-slate-300 px-3 font-semibold text-slate-700">Bỏ sửa</button>}
+            {editingId && <button type="button" onClick={reset} className="rounded-md border border-line-strong px-3 font-semibold text-ink">Bỏ sửa</button>}
           </div>
         </form>
       )}

@@ -29,7 +29,7 @@ export const FeedbackReport: React.FC<{ state: DepotState; onUpdateState: (next:
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Báo cáo Góp ý" icon={<MessageSquare className="h-4 w-4 text-slate-500" />}>
+      <SectionCard title="Báo cáo Góp ý" icon={<MessageSquare className="h-4 w-4 text-ink-muted" />}>
         <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <label>
@@ -63,17 +63,17 @@ export const FeedbackReport: React.FC<{ state: DepotState; onUpdateState: (next:
         </form>
       </SectionCard>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-line bg-white">
         {!applied ? (
-          <p className="p-8 text-center text-xs text-slate-500">Chọn điều kiện và bấm Tra cứu để xem góp ý.</p>
+          <p className="p-8 text-center text-xs text-ink-muted">Chọn điều kiện và bấm Tra cứu để xem góp ý.</p>
         ) : queryError ? (
           <p className="p-6 text-center text-xs text-red-700">{queryError}</p>
         ) : !result || result.total === 0 ? (
-          <p className="p-8 text-center text-xs text-slate-500">Không có góp ý phù hợp.</p>
+          <p className="p-8 text-center text-xs text-ink-muted">Không có góp ý phù hợp.</p>
         ) : (
           <>
             <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
-              <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
+              <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
                 <tr>
                   <th className="px-3 py-2">Mã góp ý</th>
                   <th className="px-3 py-2">Thời gian</th>
@@ -84,16 +84,16 @@ export const FeedbackReport: React.FC<{ state: DepotState; onUpdateState: (next:
                   <th className="px-3 py-2">Phản hồi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line">
                 {result.rows.map((f) => (
-                  <tr key={f.id} onClick={() => setSelectedId(f.id)} className={`cursor-pointer ${selectedId === f.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
+                  <tr key={f.id} onClick={() => setSelectedId(f.id)} className={`cursor-pointer ${selectedId === f.id ? 'bg-navy-50' : 'hover:bg-canvas'}`}>
                     <td className="whitespace-nowrap px-3 py-2 font-mono font-bold">{f.code}</td>
                     <td className="whitespace-nowrap px-3 py-2 font-mono">{formatDateTime(f.createdAt)}</td>
                     <td className="px-3 py-2">{f.createdBy}</td>
                     <td className="px-3 py-2">{f.menuLabel}</td>
                     <td className="px-3 py-2"><CellText text={f.content} max={CELL_MAX.LONG} /></td>
                     <td className="px-3 py-2"><FeedbackStatusBadge status={f.status} /></td>
-                    <td className="px-3 py-2 text-slate-600"><CellText text={f.response} max={CELL_MAX.MEDIUM} /></td>
+                    <td className="px-3 py-2 text-ink-muted"><CellText text={f.response} max={CELL_MAX.MEDIUM} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -129,14 +129,14 @@ const FeedbackDetail: React.FC<{ item: FeedbackItem; state: DepotState; onUpdate
     <div className="space-y-3 text-xs">
       <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
       <dl className="grid grid-cols-[7rem_1fr] gap-x-3 gap-y-1.5">
-        <dt className="text-slate-500">Người góp ý</dt><dd>{f.createdBy}</dd>
-        <dt className="text-slate-500">Thời gian</dt><dd className="font-mono">{formatDateTime(f.createdAt)}</dd>
-        <dt className="text-slate-500">Menu / tính năng</dt><dd className="font-semibold">{f.menuLabel}</dd>
-        <dt className="text-slate-500">Trạng thái</dt><dd><FeedbackStatusBadge status={f.status} /></dd>
-        {f.respondedBy && (<><dt className="text-slate-500">Phản hồi lúc</dt><dd>{f.respondedBy} • {formatDateTime(f.respondedAt)}</dd></>)}
+        <dt className="text-ink-muted">Người góp ý</dt><dd>{f.createdBy}</dd>
+        <dt className="text-ink-muted">Thời gian</dt><dd className="font-mono">{formatDateTime(f.createdAt)}</dd>
+        <dt className="text-ink-muted">Menu / tính năng</dt><dd className="font-semibold">{f.menuLabel}</dd>
+        <dt className="text-ink-muted">Trạng thái</dt><dd><FeedbackStatusBadge status={f.status} /></dd>
+        {f.respondedBy && (<><dt className="text-ink-muted">Phản hồi lúc</dt><dd>{f.respondedBy} • {formatDateTime(f.respondedAt)}</dd></>)}
       </dl>
-      <p className="whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 text-slate-900">{f.content}</p>
-      <div className="space-y-2 border-t border-slate-200 pt-3">
+      <p className="whitespace-pre-wrap rounded-md border border-line bg-canvas p-3 text-ink">{f.content}</p>
+      <div className="space-y-2 border-t border-line pt-3">
         <label className="block">
           <span className={labelCls}>Trạng thái xử lý</span>
           <select value={status} onChange={(e) => setStatus(e.target.value as FeedbackStatus)} className={inputCls}>

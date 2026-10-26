@@ -118,16 +118,16 @@ export const QuotationWorkspace: React.FC<{
 
   return (
     <div className="w-full space-y-3">
-      <div className="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs">
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-line bg-white px-4 py-3 text-xs">
         <div>
-          <span className="block text-[11px] font-semibold uppercase text-slate-500">Bộ phận Báo giá</span>
-          <h2 className="text-sm font-bold text-slate-900">Chờ báo giá ({filtered.length} / {queue.length})</h2>
+          <span className="block text-[11px] font-semibold uppercase text-ink-muted">Bộ phận Báo giá</span>
+          <h2 className="text-sm font-bold text-ink">Chờ báo giá ({filtered.length} / {queue.length})</h2>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <label>
             <span className={labelCls}>Số container</span>
             <div className="relative">
-              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
               <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} w-44 pl-7 font-mono uppercase`} />
             </div>
           </label>
@@ -145,14 +145,14 @@ export const QuotationWorkspace: React.FC<{
               {state.containerTypes.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </label>
-          <button type="button" onClick={() => setBulkOpen(!bulkOpen)} className={`${secondaryBtn} ${bulkList.length ? 'border-blue-600 text-blue-700' : ''}`}>
+          <button type="button" onClick={() => setBulkOpen(!bulkOpen)} className={`${secondaryBtn} ${bulkList.length ? 'border-navy-900 text-navy-700' : ''}`}>
             <ListChecks className="h-3.5 w-3.5" />
             Tìm hàng loạt{bulkList.length ? ` (${bulkList.length})` : ''}
           </button>
           <ExportExcelButton fileName={`MATRAN_CHO_BAO_GIA_${fileStamp(formatDateTime(new Date()))}.xlsx`} disabled={filtered.length === 0} getSheets={() => [{ ...yardStockSheet(filtered, state), name: "CHỜ BÁO GIÁ" }]} />
         </div>
         {bulkOpen && (
-          <div className="flex w-full flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-end">
+          <div className="flex w-full flex-col gap-2 border-t border-line pt-3 sm:flex-row sm:items-end">
             <label className="flex-1">
               <span className={labelCls}>Danh sách số container (mỗi dòng 1 số, hoặc cách nhau bởi dấu phẩy / khoảng trắng)</span>
               <textarea value={bulkText} onChange={(e) => setBulkText(e.target.value)} rows={3} placeholder={'MSKU4089123\nTGHU2211457'} className={`${inputCls} font-mono uppercase`} />
@@ -175,19 +175,19 @@ export const QuotationWorkspace: React.FC<{
       {!selected && <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />}
 
       {pickedIds.length > 0 && (
-        <div className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs sm:flex-row sm:items-center">
-          <p className="font-bold text-blue-900">
+        <div className="flex flex-col gap-2 rounded-lg border border-line-strong bg-navy-50 px-4 py-3 text-xs sm:flex-row sm:items-center">
+          <p className="font-bold text-navy-900">
             Đã chọn {pickedIds.length} container — {filtered.filter((c) => picked.has(c.id) && hasDraft(c)).length} đã cập nhật báo giá
           </p>
-          <span className="flex-1 text-[11px] text-slate-600">Cont chưa cập nhật tình trạng sửa chữa / giờ công sẽ được bỏ qua và báo lại.</span>
+          <span className="flex-1 text-[11px] text-ink-muted">Cont chưa cập nhật tình trạng sửa chữa / giờ công sẽ được bỏ qua và báo lại.</span>
           <button type="button" onClick={runBulkConfirm} className={primaryBtn}>Xác nhận chờ sửa chữa hàng loạt ({pickedIds.length})</button>
           <button type="button" onClick={() => setPicked(new Set())} className={secondaryBtn}>Bỏ chọn</button>
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-line bg-white">
         <table className="w-full min-w-[1320px] whitespace-nowrap text-left text-xs">{/* DEC-142: mỗi cont 1 dòng như Tồn vỏ */}
-          <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
+          <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
             <tr>
               <th className="w-8 px-2 py-2.5">
                 <input type="checkbox" aria-label="Chọn tất cả theo bộ lọc" checked={allPicked} onChange={() => setPicked(allPicked ? new Set() : new Set(filtered.map((c) => c.id)))} />
@@ -207,16 +207,16 @@ export const QuotationWorkspace: React.FC<{
               <th className="w-56 whitespace-nowrap px-2 py-2.5 text-right">Tác nghiệp</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line">
             {rows.length === 0 ? (
-              <tr><td colSpan={14} className="px-4 py-8 text-center text-slate-500">Không có container DAMAGE nào đang chờ báo giá.</td></tr>
+              <tr><td colSpan={14} className="px-4 py-8 text-center text-ink-muted">Không có container DAMAGE nào đang chờ báo giá.</td></tr>
             ) : (
               rows.map((c) => (
-                <tr key={c.id} onClick={() => open(c)} className={`cursor-pointer whitespace-nowrap ${selectedId === c.id || picked.has(c.id) ? 'bg-blue-50' : 'hover:bg-slate-50'}`} data-testid="quote-row">
+                <tr key={c.id} onClick={() => open(c)} className={`cursor-pointer whitespace-nowrap ${selectedId === c.id || picked.has(c.id) ? 'bg-navy-50' : 'hover:bg-canvas'}`} data-testid="quote-row">
                   <td className="px-2 py-2.5" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" aria-label={`Chọn ${c.containerNo}`} checked={picked.has(c.id)} onChange={() => togglePick(c.id)} />
                   </td>
-                  <td className="whitespace-nowrap px-2 py-2.5 font-mono text-blue-700">
+                  <td className="whitespace-nowrap px-2 py-2.5 font-mono text-navy-700">
                     <button type="button" onClick={(e) => { e.stopPropagation(); onOpenDossier?.(c.masterDossierCode); }} className={linkCls}>{c.masterDossierCode}</button>
                   </td>
                   <td className="whitespace-nowrap px-2 py-2.5"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.officeNote || c.holdReason} className="text-sm" /></td>
@@ -224,14 +224,14 @@ export const QuotationWorkspace: React.FC<{
                   <td className="px-2 py-2.5 text-center">{c.type}</td>
                   <td className="whitespace-nowrap px-2 py-2.5">{c.shippingLineCode}</td>
                   <td className="whitespace-nowrap px-2 py-2.5 font-mono">
-                    {formatDateTime(c.gateInAt).slice(0, 10)} <span className="text-slate-500">{formatDateTime(c.gateInAt).slice(11)}</span>
+                    {formatDateTime(c.gateInAt).slice(0, 10)} <span className="text-ink-muted">{formatDateTime(c.gateInAt).slice(11)}</span>
                   </td>
                   <td className="px-2 py-2.5 text-center font-bold text-rose-700">{c.conditionClass}</td>
                   <td className="px-2 py-2.5 text-right font-mono font-bold">{storageDays(c.gateInAt, now)}</td>
                   <td className="px-2 py-2.5 font-mono"><LocationText loc={c} /></td>
-                  <td className="px-2 py-2.5">{c.quotationItems?.length ? <CellText text={c.quotationItems.join(", ")} max={CELL_MAX.LONG} className="font-semibold text-slate-900" /> : <span className="italic text-slate-400">Chưa cập nhật</span>}</td>
+                  <td className="px-2 py-2.5">{c.quotationItems?.length ? <CellText text={c.quotationItems.join(", ")} max={CELL_MAX.LONG} className="font-semibold text-ink" /> : <span className="italic text-ink-muted">Chưa cập nhật</span>}</td>
                   <td className="px-2 py-2.5 text-right font-mono font-bold">{c.quotationLaborHours ?? "-"}</td>
-                  <td className={`px-2 py-2.5 ${c.officeNote ? 'bg-yellow-200 font-semibold' : 'text-slate-400'}`}><CellText text={c.officeNote} max={CELL_MAX.LONG} /></td>
+                  <td className={`px-2 py-2.5 ${c.officeNote ? 'bg-yellow-200 font-semibold' : 'text-ink-muted'}`}><CellText text={c.officeNote} max={CELL_MAX.LONG} /></td>
                   <td className="px-2 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                     <span className="inline-flex gap-1">
                       <button type="button" onClick={() => open(c)} className={secondaryBtn}>Cập nhật</button>
@@ -254,14 +254,14 @@ export const QuotationWorkspace: React.FC<{
         {selected && (
           <div className="space-y-3">
             <Feedback error={error} onClose={() => setError(null)} />
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-slate-200 p-3 sm:grid-cols-4">
-              <dt className="text-slate-500">Mã hồ sơ</dt><dd><button type="button" onClick={() => onOpenDossier?.(selected.masterDossierCode)} className={linkCls}>{selected.masterDossierCode}</button></dd>
-              <dt className="text-slate-500">Size / Type</dt><dd className="font-semibold">{selected.size} / {selected.type}</dd>
-              <dt className="text-slate-500">Hãng tàu</dt><dd className="font-semibold">{selected.shippingLineCode || '-'}</dd>
-              <dt className="text-slate-500">AGE</dt><dd className="font-semibold">{selected.manufactureYear}</dd>
-              <dt className="text-slate-500">Vị trí</dt><dd className="font-mono"><LocationText loc={selected} /></dd>
-              <dt className="text-slate-500">Lưu bãi</dt><dd className="font-mono">{storageDays(selected.gateInAt, now)} ngày</dd>
-              <dt className="text-slate-500">Hư hỏng giám định</dt><dd className="font-semibold text-rose-800 sm:col-span-3">{selected.damageRemarks.join(', ') || '-'}</dd>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-line p-3 sm:grid-cols-4">
+              <dt className="text-ink-muted">Mã hồ sơ</dt><dd><button type="button" onClick={() => onOpenDossier?.(selected.masterDossierCode)} className={linkCls}>{selected.masterDossierCode}</button></dd>
+              <dt className="text-ink-muted">Size / Type</dt><dd className="font-semibold">{selected.size} / {selected.type}</dd>
+              <dt className="text-ink-muted">Hãng tàu</dt><dd className="font-semibold">{selected.shippingLineCode || '-'}</dd>
+              <dt className="text-ink-muted">AGE</dt><dd className="font-semibold">{selected.manufactureYear}</dd>
+              <dt className="text-ink-muted">Vị trí</dt><dd className="font-mono"><LocationText loc={selected} /></dd>
+              <dt className="text-ink-muted">Lưu bãi</dt><dd className="font-mono">{storageDays(selected.gateInAt, now)} ngày</dd>
+              <dt className="text-ink-muted">Hư hỏng giám định</dt><dd className="font-semibold text-rose-800 sm:col-span-3">{selected.damageRemarks.join(', ') || '-'}</dd>
             </dl>
             <label className="block">
               <span className={labelCls}>Tình trạng sửa chữa thực tế * (phân cách bằng dấu phẩy)</span>
@@ -282,7 +282,7 @@ export const QuotationWorkspace: React.FC<{
               </button>
             </div>
             {selected.quotationUpdatedBy && (
-              <p className="text-[11px] text-slate-500">Cập nhật gần nhất: {selected.quotationUpdatedBy} • {formatDateTime(selected.quotationUpdatedAt)}</p>
+              <p className="text-[11px] text-ink-muted">Cập nhật gần nhất: {selected.quotationUpdatedBy} • {formatDateTime(selected.quotationUpdatedAt)}</p>
             )}
           </div>
         )}

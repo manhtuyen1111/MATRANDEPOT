@@ -251,12 +251,12 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
   return (
     <div className="space-y-4">
       {/* HEADER & QUYỀN ADMIN */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-white px-4 py-3">
         <div>
-          <h2 className="text-base font-extrabold text-slate-900">
+          <h2 className="text-base font-extrabold text-ink">
             DANH MỤC CHUNG HỆ THỐNG
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-muted">
             Cấu hình chuẩn cho toàn hệ thống: Khách hàng • Vị trí • Hãng tàu • Container (Size - Type) • Biểu giá (Nâng hạ &amp; Thu gom rác). Các màn hình tác nghiệp chỉ được chọn theo cấu hình tại đây.
           </p>
         </div>
@@ -276,7 +276,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={handleSwitchToAdmin}
-                className="rounded-lg bg-blue-600 px-3 py-1.5 font-bold text-white hover:bg-blue-700"
+                className="rounded-lg bg-navy-900 px-3 py-1.5 font-bold text-white hover:bg-navy-700"
               >
                 Chuyển sang tài khoản Admin
               </button>
@@ -301,7 +301,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
 
       {/* 5 TABS DANH MỤC CHUNG — chỉ dùng khi không điều hướng từ menu */}
       {!tab && (
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2 text-xs">
+      <div className="flex flex-wrap gap-2 border-b border-line pb-2 text-xs">
         {(
           [
             {
@@ -348,8 +348,8 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
               }}
               className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 font-bold transition ${
                 active
-                  ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
-                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  ? 'border-navy-900 bg-navy-900 text-white shadow-xs'
+                  : 'border-line bg-white text-ink hover:bg-canvas'
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -358,7 +358,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                 className={`rounded px-1.5 py-0.5 text-[10px] font-black ${
                   active
                     ? 'bg-blue-800 text-white'
-                    : 'bg-slate-100 text-slate-600'
+                    : 'bg-navy-50 text-ink-muted'
                 }`}
               >
                 {item.count}
@@ -374,13 +374,13 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
       {/* ===================================================================== */}
       {activeTab === 'KHACH_HANG' && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-          <div className="lg:col-span-4 rounded-xl border border-slate-200 bg-white p-4 text-xs space-y-3">
-            <h3 className="text-sm font-bold text-slate-900">
+          <div className="lg:col-span-4 rounded-xl border border-line bg-white p-4 text-xs space-y-3">
+            <h3 className="text-sm font-bold text-ink">
               Thêm Khách Hàng Mới (Admin)
             </h3>
             <form onSubmit={handleAddCustomer} className="space-y-3">
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
+                <label className="mb-1 block font-bold text-ink">
                   Mã Khách Hàng *
                 </label>
                 <input
@@ -389,12 +389,12 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                   onChange={(e) => setCustCode(e.target.value.toUpperCase())}
                   placeholder="VD: VIETLOG, NAMHAI..."
                   disabled={!isAdmin}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono font-bold uppercase disabled:bg-slate-100"
+                  className="w-full rounded-lg border border-line-strong px-3 py-2 font-mono font-bold uppercase disabled:bg-navy-50"
                   required
                 />
               </div>
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
+                <label className="mb-1 block font-bold text-ink">
                   Tên Khách Hàng / Đại Diện KH *
                 </label>
                 <input
@@ -403,11 +403,11 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                   onChange={(e) => setCustName(e.target.value)}
                   placeholder="VD: Công ty Tiếp Vận Việt (VietLog)"
                   disabled={!isAdmin}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 disabled:bg-slate-100"
+                  className="w-full rounded-lg border border-line-strong px-3 py-2 disabled:bg-navy-50"
                   required
                 />
               </div>
-              <label className="flex items-center gap-2 font-semibold text-slate-700">
+              <label className="flex items-center gap-2 font-semibold text-ink">
                 <input
                   type="checkbox"
                   checked={custAllowTts}
@@ -419,7 +419,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
               <button
                 type="submit"
                 disabled={!isAdmin}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2.5 font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-navy-900 py-2.5 font-bold text-white hover:bg-navy-700 disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
                 Thêm vào Danh Mục Khách Hàng
@@ -427,26 +427,26 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
             </form>
           </div>
 
-          <div className="lg:col-span-8 rounded-xl border border-slate-200 bg-white overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-800">
+          <div className="lg:col-span-8 rounded-xl border border-line bg-white overflow-hidden">
+            <div className="border-b border-line bg-canvas px-4 py-2.5 text-xs font-bold text-ink">
               Danh sách KHÁCH HÀNG đã cấu hình ({customers.length})
             </div>
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-100 font-bold text-slate-600">
+                <tr className="border-b border-line bg-navy-50 font-bold text-ink-muted">
                   <th className="px-4 py-2.5">Mã KH</th>
                   <th className="px-4 py-2.5">Tên Khách Hàng / Đại Diện</th>
                   <th className="px-4 py-2.5">Chính sách TTS</th>
                   <th className="px-4 py-2.5 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-line">
                 {customers.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-2.5 font-mono font-bold text-blue-700">
+                  <tr key={c.id} className="hover:bg-canvas">
+                    <td className="px-4 py-2.5 font-mono font-bold text-navy-700">
                       {c.code}
                     </td>
-                    <td className="px-4 py-2.5 font-semibold text-slate-900">
+                    <td className="px-4 py-2.5 font-semibold text-ink">
                       {c.name}
                     </td>
                     <td className="px-4 py-2.5">
@@ -454,7 +454,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                         className={`rounded px-2 py-0.5 text-[11px] font-bold ${
                           c.allowTts
                             ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-slate-100 text-slate-600'
+                            : 'bg-navy-50 text-ink-muted'
                         }`}
                       >
                         {c.allowTts ? 'Được phép TTS' : 'Không TTS'}
@@ -487,40 +487,40 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
       {/* ===================================================================== */}
       {activeTab === 'VI_TRI' && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-          <div className="lg:col-span-4 rounded-xl border border-slate-200 bg-white p-4 text-xs space-y-3">
-            <h3 className="text-sm font-bold text-slate-900">
+          <div className="lg:col-span-4 rounded-xl border border-line bg-white p-4 text-xs space-y-3">
+            <h3 className="text-sm font-bold text-ink">
               Thêm Vị Trí / Khu Vực Bãi (Admin)
             </h3>
             <form onSubmit={handleAddBlock} className="space-y-3">
               {/* DEC-082: mã luôn bắt đầu bằng BLOCK- — chỉ cần gõ A, B, C... */}
               <div>
-                <label className="mb-1 block font-bold text-slate-700">Mã Vị Trí *</label>
-                <div className="flex items-stretch overflow-hidden rounded-lg border border-slate-300">
-                  <span className="flex items-center bg-slate-100 px-3 font-mono font-bold text-slate-600">BLOCK-</span>
+                <label className="mb-1 block font-bold text-ink">Mã Vị Trí *</label>
+                <div className="flex items-stretch overflow-hidden rounded-lg border border-line-strong">
+                  <span className="flex items-center bg-navy-50 px-3 font-mono font-bold text-ink-muted">BLOCK-</span>
                   <input
                     type="text"
                     value={blockCode}
                     onChange={(e) => setBlockCode(e.target.value.toUpperCase().replace(/^BLOCK[-\s]*/, ''))}
                     placeholder="A, B, C..."
                     disabled={!isAdmin}
-                    className="w-full px-3 py-2 font-mono font-bold uppercase outline-none disabled:bg-slate-100"
+                    className="w-full px-3 py-2 font-mono font-bold uppercase outline-none disabled:bg-navy-50"
                     required
                   />
                 </div>
               </div>
               <div>
-                <label className="mb-1 block font-bold text-slate-700">Mô tả thông tin</label>
+                <label className="mb-1 block font-bold text-ink">Mô tả thông tin</label>
                 <textarea
                   value={blockDesc}
                   onChange={(e) => setBlockDesc(e.target.value)}
                   rows={2}
                   placeholder="VD: Khu lưu cont 40'HC AV sẵn sàng cấp vỏ..."
                   disabled={!isAdmin}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 disabled:bg-slate-100"
+                  className="w-full rounded-lg border border-line-strong px-3 py-2 disabled:bg-navy-50"
                 />
               </div>
               <div>
-                <p className="mb-1 font-bold text-slate-700">Vị trí chi tiết (để trống = không dùng)</p>
+                <p className="mb-1 font-bold text-ink">Vị trí chi tiết (để trống = không dùng)</p>
                 <div className="grid grid-cols-3 gap-2">
                   {([
                     ['Số Bay tối đa', maxBay, setMaxBay],
@@ -528,7 +528,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                     ['Số Tier tối đa', maxTier, setMaxTier],
                   ] as [string, string, (v: string) => void][]).map(([label, val, setVal]) => (
                     <label key={label}>
-                      <span className="mb-1 block text-[11px] font-semibold text-slate-600">{label}</span>
+                      <span className="mb-1 block text-[11px] font-semibold text-ink-muted">{label}</span>
                       <input
                         type="number"
                         min={1}
@@ -536,26 +536,26 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                         onChange={(e) => setVal(e.target.value)}
                         placeholder="Không dùng"
                         disabled={!isAdmin}
-                        className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono font-bold disabled:bg-slate-100"
+                        className="w-full rounded-lg border border-line-strong px-2.5 py-1.5 font-mono font-bold disabled:bg-navy-50"
                       />
                     </label>
                   ))}
                 </div>
-                <p className="mt-1 text-[11px] text-slate-500">
+                <p className="mt-1 text-[11px] text-ink-muted">
                   Chiều nào để trống thì khi đặt cont ở khu này sẽ không hiện và không yêu cầu nhập. Không nhập cả 3 → chỉ cần chọn Block, không giới hạn số cont.
                 </p>
               </div>
-              <label className="flex items-start gap-2 rounded-lg border border-slate-200 p-2.5">
+              <label className="flex items-start gap-2 rounded-lg border border-line p-2.5">
                 <input type="checkbox" checked={blockIsRack} onChange={(e) => setBlockIsRack(e.target.checked)} className="mt-0.5" />
                 <span>
-                  <span className="block font-bold text-slate-700">Đây là KỆ GIÁM ĐỊNH</span>
-                  <span className="block text-[11px] text-slate-500">Cont Giám định đánh dấu "Hạ kệ giám định" chỉ được Xe nâng hạ vào các khu này.</span>
+                  <span className="block font-bold text-ink">Đây là KỆ GIÁM ĐỊNH</span>
+                  <span className="block text-[11px] text-ink-muted">Cont Giám định đánh dấu "Hạ kệ giám định" chỉ được Xe nâng hạ vào các khu này.</span>
                 </span>
               </label>
               <button
                 type="submit"
                 disabled={!isAdmin}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2.5 font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-navy-900 py-2.5 font-bold text-white hover:bg-navy-700 disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
                 Thêm vào Danh Mục Vị Trí
@@ -563,13 +563,13 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
             </form>
           </div>
 
-          <div className="lg:col-span-8 rounded-xl border border-slate-200 bg-white overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-800">
+          <div className="lg:col-span-8 rounded-xl border border-line bg-white overflow-hidden">
+            <div className="border-b border-line bg-canvas px-4 py-2.5 text-xs font-bold text-ink">
               Danh sách VỊ TRÍ BÃI đã cấu hình ({state.yardBlocks.length}) — Bộ phận Xe nâng chỉ được chọn trong danh sách này
             </div>
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-100 font-bold text-slate-600">
+                <tr className="border-b border-line bg-navy-50 font-bold text-ink-muted">
                   <th className="px-4 py-2.5">Mã Vị Trí</th>
                   <th className="px-4 py-2.5">Tên Khu Vực</th>
                   <th className="px-4 py-2.5">Cấu hình Ô (Bay / Row / Tier)</th>
@@ -577,17 +577,17 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                   <th className="px-4 py-2.5 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-line">
                 {state.yardBlocks.map((b) => (
-                  <tr key={b.blockCode} className="hover:bg-slate-50">
-                    <td className="px-4 py-2.5 font-mono font-bold text-blue-700">
+                  <tr key={b.blockCode} className="hover:bg-canvas">
+                    <td className="px-4 py-2.5 font-mono font-bold text-navy-700">
                       {b.blockCode}
                     </td>
                     <td className="px-4 py-2.5">
-                      <p className="font-semibold text-slate-900">{b.blockName}</p>
-                      <p className="text-[11px] text-slate-500">{b.description}</p>
+                      <p className="font-semibold text-ink">{b.blockName}</p>
+                      <p className="text-[11px] text-ink-muted">{b.description}</p>
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-slate-700">
+                    <td className="px-4 py-2.5 font-mono text-ink">
                       {/* DEC-082: chỉ hiện chiều có cấu hình */}
                       {blockDimensions(b).length === 0
                         ? 'Chỉ Block — không giới hạn số cont'
@@ -638,13 +638,13 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
       {/* ===================================================================== */}
       {activeTab === 'HANG_TAU' && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-          <div className="lg:col-span-4 rounded-xl border border-slate-200 bg-white p-4 text-xs space-y-3">
-            <h3 className="text-sm font-bold text-slate-900">
+          <div className="lg:col-span-4 rounded-xl border border-line bg-white p-4 text-xs space-y-3">
+            <h3 className="text-sm font-bold text-ink">
               Thêm Hãng Tàu Mới (Admin)
             </h3>
             <form onSubmit={handleAddShippingLine} className="space-y-3">
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
+                <label className="mb-1 block font-bold text-ink">
                   Mã Hãng Tàu *
                 </label>
                 <input
@@ -653,12 +653,12 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                   onChange={(e) => setLineCode(e.target.value.toUpperCase())}
                   placeholder="VD: MSC, EVERGREEN, SITC..."
                   disabled={!isAdmin}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono font-bold uppercase disabled:bg-slate-100"
+                  className="w-full rounded-lg border border-line-strong px-3 py-2 font-mono font-bold uppercase disabled:bg-navy-50"
                   required
                 />
               </div>
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
+                <label className="mb-1 block font-bold text-ink">
                   Tên Hãng Tàu *
                 </label>
                 <input
@@ -667,11 +667,11 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                   onChange={(e) => setLineName(e.target.value)}
                   placeholder="VD: Mediterranean Shipping Company (MSC)"
                   disabled={!isAdmin}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 disabled:bg-slate-100"
+                  className="w-full rounded-lg border border-line-strong px-3 py-2 disabled:bg-navy-50"
                   required
                 />
               </div>
-              <label className="flex items-center gap-2 font-semibold text-slate-700">
+              <label className="flex items-center gap-2 font-semibold text-ink">
                 <input
                   type="checkbox"
                   checked={lineAllowTts}
@@ -683,7 +683,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
               <button
                 type="submit"
                 disabled={!isAdmin}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2.5 font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-navy-900 py-2.5 font-bold text-white hover:bg-navy-700 disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
                 Thêm vào Danh Mục Hãng Tàu
@@ -691,26 +691,26 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
             </form>
           </div>
 
-          <div className="lg:col-span-8 rounded-xl border border-slate-200 bg-white overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-800">
+          <div className="lg:col-span-8 rounded-xl border border-line bg-white overflow-hidden">
+            <div className="border-b border-line bg-canvas px-4 py-2.5 text-xs font-bold text-ink">
               Danh sách HÃNG TÀU đã cấu hình ({shippingLines.length})
             </div>
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-100 font-bold text-slate-600">
+                <tr className="border-b border-line bg-navy-50 font-bold text-ink-muted">
                   <th className="px-4 py-2.5">Mã Hãng Tàu</th>
                   <th className="px-4 py-2.5">Tên Hãng Tàu</th>
                   <th className="px-4 py-2.5">Chính sách TTS</th>
                   <th className="px-4 py-2.5 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-line">
                 {shippingLines.map((s) => (
-                  <tr key={s.id} className="hover:bg-slate-50">
+                  <tr key={s.id} className="hover:bg-canvas">
                     <td className="px-4 py-2.5 font-mono font-bold text-indigo-700">
                       {s.code}
                     </td>
-                    <td className="px-4 py-2.5 font-semibold text-slate-900">
+                    <td className="px-4 py-2.5 font-semibold text-ink">
                       {s.name}
                     </td>
                     <td className="px-4 py-2.5">
@@ -718,7 +718,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                         className={`rounded px-2 py-0.5 text-[11px] font-bold ${
                           s.allowTts
                             ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-slate-100 text-slate-600'
+                            : 'bg-navy-50 text-ink-muted'
                         }`}
                       >
                         {s.allowTts ? 'Được phép TTS' : 'Không TTS'}
@@ -752,12 +752,12 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
       {activeTab === 'CONTAINER' && (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {/* CẤU HÌNH SIZE */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 text-xs space-y-4">
+          <div className="rounded-xl border border-line bg-white p-4 text-xs space-y-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-sm font-bold text-ink">
                 Cấu Hình CONTAINER — SIZE ({containerSizes.length})
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-ink-muted">
                 Các phần chọn SIZE trong hệ thống chỉ hiển thị theo danh sách này
               </p>
             </div>
@@ -769,26 +769,26 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                 onChange={(e) => setNewSize(e.target.value.toUpperCase())}
                 placeholder="Nhập Size mới (VD: 10, 20, 40, 45)..."
                 disabled={!isAdmin}
-                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 font-mono font-bold uppercase disabled:bg-slate-100"
+                className="flex-1 rounded-lg border border-line-strong px-3 py-2 font-mono font-bold uppercase disabled:bg-navy-50"
                 required
               />
               <button
                 type="submit"
                 disabled={!isAdmin}
-                className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-lg bg-navy-900 px-4 py-2 font-bold text-white hover:bg-navy-700 disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
                 Thêm Size
               </button>
             </form>
 
-            <div className="divide-y divide-slate-200 rounded-lg border border-slate-200">
+            <div className="divide-y divide-line rounded-lg border border-line">
               {containerSizes.map((sz) => (
                 <div
                   key={sz}
                   className="flex items-center justify-between px-3.5 py-2.5"
                 >
-                  <span className="font-mono text-sm font-black text-slate-900">
+                  <span className="font-mono text-sm font-black text-ink">
                     {sz}&apos;
                   </span>
                   <button
@@ -809,12 +809,12 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
           </div>
 
           {/* CẤU HÌNH TYPE */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 text-xs space-y-4">
+          <div className="rounded-xl border border-line bg-white p-4 text-xs space-y-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-sm font-bold text-ink">
                 Cấu Hình CONTAINER — TYPE ({containerTypes.length})
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-ink-muted">
                 Các phần chọn TYPE trong hệ thống chỉ hiển thị theo danh sách này
               </p>
             </div>
@@ -826,26 +826,26 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                 onChange={(e) => setNewType(e.target.value.toUpperCase())}
                 placeholder="Nhập Type mới (VD: DC, HC, OT, FR, RF)..."
                 disabled={!isAdmin}
-                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 font-mono font-bold uppercase disabled:bg-slate-100"
+                className="flex-1 rounded-lg border border-line-strong px-3 py-2 font-mono font-bold uppercase disabled:bg-navy-50"
                 required
               />
               <button
                 type="submit"
                 disabled={!isAdmin}
-                className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-lg bg-navy-900 px-4 py-2 font-bold text-white hover:bg-navy-700 disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
                 Thêm Type
               </button>
             </form>
 
-            <div className="divide-y divide-slate-200 rounded-lg border border-slate-200">
+            <div className="divide-y divide-line rounded-lg border border-line">
               {containerTypes.map((tp) => (
                 <div
                   key={tp}
                   className="flex items-center justify-between px-3.5 py-2.5"
                 >
-                  <span className="font-mono text-sm font-black text-slate-900">
+                  <span className="font-mono text-sm font-black text-ink">
                     {tp}
                   </span>
                   <button
@@ -873,19 +873,19 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
       {activeTab === 'BIEU_GIA' && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           {/* FORM THÊM NHIỀU BIỂU GIÁ KHÁC NHAU (CHỈ ADMIN) */}
-          <div className="lg:col-span-4 rounded-xl border border-slate-200 bg-white p-4 text-xs space-y-3">
+          <div className="lg:col-span-4 rounded-xl border border-line bg-white p-4 text-xs space-y-3">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-sm font-bold text-ink">
                 Thêm Biểu Giá Mới (Admin)
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-ink-muted">
                 Cho phép thêm nhiều biểu giá khác nhau (Đơn giá ĐÃ BAO GỒM VAT)
               </p>
             </div>
 
             <form onSubmit={handleAddTariff} className="space-y-3">
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
+                <label className="mb-1 block font-bold text-ink">
                   Nhóm Biểu Giá *
                 </label>
                 <select
@@ -894,7 +894,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                     setTariffCategory(e.target.value as FeeTariffCategory)
                   }
                   disabled={!isAdmin}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 font-bold text-slate-900 disabled:bg-slate-100"
+                  className="w-full rounded-lg border border-line-strong px-3 py-2 font-bold text-ink disabled:bg-navy-50"
                 >
                   <option value="NANG_HA">
                     - NÂNG HẠ (Theo từng Size - Type - Hãng tàu)
@@ -907,16 +907,16 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
               </div>
 
               {tariffCategory === 'NANG_HA' && (
-                <div className="grid grid-cols-3 gap-2 rounded-lg border border-blue-200 bg-blue-50/50 p-2.5">
+                <div className="grid grid-cols-3 gap-2 rounded-lg border border-line-strong bg-navy-50/50 p-2.5">
                   <div>
-                    <label className="mb-1 block font-bold text-slate-700">
+                    <label className="mb-1 block font-bold text-ink">
                       SIZE *
                     </label>
                     <select
                       value={tariffSize}
                       onChange={(e) => setTariffSize(e.target.value)}
                       disabled={!isAdmin}
-                      className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 font-mono font-bold"
+                      className="w-full rounded border border-line-strong bg-white px-2 py-1.5 font-mono font-bold"
                     >
                       {containerSizes.map((s) => (
                         <option key={s} value={s}>
@@ -926,14 +926,14 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="mb-1 block font-bold text-slate-700">
+                    <label className="mb-1 block font-bold text-ink">
                       TYPE *
                     </label>
                     <select
                       value={tariffType}
                       onChange={(e) => setTariffType(e.target.value)}
                       disabled={!isAdmin}
-                      className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 font-mono font-bold"
+                      className="w-full rounded border border-line-strong bg-white px-2 py-1.5 font-mono font-bold"
                     >
                       {containerTypes.map((t) => (
                         <option key={t} value={t}>
@@ -943,14 +943,14 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="mb-1 block font-bold text-slate-700">
+                    <label className="mb-1 block font-bold text-ink">
                       HÃNG TÀU *
                     </label>
                     <select
                       value={tariffShippingLine}
                       onChange={(e) => setTariffShippingLine(e.target.value)}
                       disabled={!isAdmin}
-                      className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 font-mono font-bold"
+                      className="w-full rounded border border-line-strong bg-white px-2 py-1.5 font-mono font-bold"
                     >
                       {shippingLines.map((l) => (
                         <option key={l.id} value={l.code}>
@@ -965,14 +965,14 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
 
               {tariffCategory === 'THU_GOM_RAC' && (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-2.5">
-                  <label className="mb-1 block font-bold text-slate-700">
+                  <label className="mb-1 block font-bold text-ink">
                     Áp dụng theo SIZE (Tùy chọn)
                   </label>
                   <select
                     value={tariffSize}
                     onChange={(e) => setTariffSize(e.target.value)}
                     disabled={!isAdmin}
-                    className="w-full rounded border border-slate-300 bg-white px-2.5 py-1.5 font-mono font-bold"
+                    className="w-full rounded border border-line-strong bg-white px-2.5 py-1.5 font-mono font-bold"
                   >
                     <option value="">Áp dụng chung mọi Size</option>
                     {containerSizes.map((s) => (
@@ -985,7 +985,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
               )}
 
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
+                <label className="mb-1 block font-bold text-ink">
                   Tên hiển thị Biểu Giá (Để trống sẽ tự sinh theo cấu hình)
                 </label>
                 <input
@@ -1000,12 +1000,12 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                       : 'VD: Phí vệ sinh / phụ phí dịch vụ bãi...'
                   }
                   disabled={!isAdmin}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 disabled:bg-slate-100"
+                  className="w-full rounded-lg border border-line-strong px-3 py-2 disabled:bg-navy-50"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
+                <label className="mb-1 block font-bold text-ink">
                   Đơn giá ĐÃ BAO GỒM VAT (VNĐ) *
                 </label>
                 <input
@@ -1014,7 +1014,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                   value={tariffAmount}
                   onChange={(e) => setTariffAmount(Number(e.target.value))}
                   disabled={!isAdmin}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm font-black text-emerald-700 disabled:bg-slate-100"
+                  className="w-full rounded-lg border border-line-strong px-3 py-2 font-mono text-sm font-black text-emerald-700 disabled:bg-navy-50"
                   required
                 />
               </div>
@@ -1022,7 +1022,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
               <button
                 type="submit"
                 disabled={!isAdmin}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2.5 font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-navy-900 py-2.5 font-bold text-white hover:bg-navy-700 disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
                 Thêm Biểu Giá vào Danh Mục Chung
@@ -1031,9 +1031,9 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
           </div>
 
           {/* DANH SÁCH BIỂU GIÁ ĐÃ CẤU HÌNH */}
-          <div className="lg:col-span-8 rounded-xl border border-slate-200 bg-white overflow-hidden">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs">
-              <span className="font-bold text-slate-800">
+          <div className="lg:col-span-8 rounded-xl border border-line bg-white overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-canvas px-4 py-2.5 text-xs">
+              <span className="font-bold text-ink">
                 Danh sách BIỂU GIÁ đã cấu hình ({feeCatalog.length} biểu giá — ĐÃ BAO GỒM VAT)
               </span>
               <div className="flex items-center gap-1.5">
@@ -1051,8 +1051,8 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                     onClick={() => setFilterTariffCat(f.id)}
                     className={`rounded px-2.5 py-1 text-[11px] font-bold ${
                       filterTariffCat === f.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        ? 'bg-navy-900 text-white'
+                        : 'bg-white border border-line text-ink-muted hover:bg-navy-50'
                     }`}
                   >
                     {f.label}
@@ -1063,7 +1063,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
 
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-100 font-bold text-slate-600">
+                <tr className="border-b border-line bg-navy-50 font-bold text-ink-muted">
                   <th className="px-3.5 py-2.5">Nhóm</th>
                   <th className="px-3.5 py-2.5">Cấu hình (Size - Type - Hãng tàu)</th>
                   <th className="px-3.5 py-2.5">Tên Biểu Giá</th>
@@ -1071,7 +1071,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                   <th className="px-3.5 py-2.5 text-right">Xóa</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-line">
                 {feeCatalog
                   .filter(
                     (item) =>
@@ -1081,15 +1081,15 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                   .map((item) => {
                     const cat = item.category || 'KHAC';
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50">
+                      <tr key={item.id} className="hover:bg-canvas">
                         <td className="px-3.5 py-2.5">
                           <span
                             className={`inline-block rounded px-2 py-0.5 text-[10px] font-black ${
                               cat === 'NANG_HA'
-                                ? 'bg-blue-100 text-blue-800'
+                                ? 'bg-navy-50 text-navy-900'
                                 : cat === 'THU_GOM_RAC'
                                 ? 'bg-emerald-100 text-emerald-800'
-                                : 'bg-slate-100 text-slate-700'
+                                : 'bg-navy-50 text-ink'
                             }`}
                           >
                             {cat === 'NANG_HA'
@@ -1099,7 +1099,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                               : 'DỊCH VỤ / VS'}
                           </span>
                         </td>
-                        <td className="px-3.5 py-2.5 font-mono text-[11px] font-bold text-slate-700">
+                        <td className="px-3.5 py-2.5 font-mono text-[11px] font-bold text-ink">
                           {cat === 'NANG_HA' ? (
                             <span>
                               {item.size || 'ALL'}&apos; • {item.type || 'ALL'} •{' '}
@@ -1110,10 +1110,10 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                           ) : item.size ? (
                             <span>Cont {item.size}&apos;</span>
                           ) : (
-                            <span className="text-slate-400">Chung</span>
+                            <span className="text-ink-muted">Chung</span>
                           )}
                         </td>
-                        <td className="px-3.5 py-2.5 font-semibold text-slate-900">
+                        <td className="px-3.5 py-2.5 font-semibold text-ink">
                           {item.name}
                         </td>
                         <td className="px-3.5 py-2.5 text-right font-mono font-bold text-emerald-700">

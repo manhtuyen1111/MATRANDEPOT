@@ -43,7 +43,7 @@ const PrintFrame: React.FC<{ state: DepotState; title: string; number: string; o
   reprintNo,
   children,
 }) => (
-  <section className="print-sheet relative break-inside-avoid border-2 border-slate-800 bg-white p-4 text-xs text-slate-900">
+  <section className="print-sheet relative break-inside-avoid border-2 border-slate-800 bg-white p-4 text-xs text-ink">
     {reprintNo && reprintNo > 1 && (
       <span className="absolute right-3 top-3 rounded border-2 border-rose-600 px-2 py-0.5 text-[11px] font-black text-rose-600">BẢN IN LẠI — LẦN {reprintNo}</span>
     )}
@@ -53,7 +53,7 @@ const PrintFrame: React.FC<{ state: DepotState; title: string; number: string; o
       subtitle={
         <>
           <p className="font-mono text-sm font-bold">Số: {number}</p>
-          <p className="mt-1 inline-block bg-slate-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {operation}</p>
+          <p className="mt-1 inline-block bg-navy-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {operation}</p>
         </>
       }
     />
@@ -65,7 +65,7 @@ const InfoGrid: React.FC<{ rows: [string, React.ReactNode, boolean?][] }> = ({ r
   <dl className="mt-3 grid grid-cols-[140px_1fr] gap-x-3 gap-y-1">
     {rows.map(([label, value, mono]) => (
       <React.Fragment key={label}>
-        <dt className="text-slate-600">{label}</dt>
+        <dt className="text-ink-muted">{label}</dt>
         <dd className={`font-semibold ${mono ? 'font-mono' : ''}`}>{value || '-'}</dd>
       </React.Fragment>
     ))}
@@ -80,7 +80,7 @@ const Signatures: React.FC<{ left: string; right: string; rightName?: string }> 
 );
 
 const PrintFooter: React.FC<{ note?: string }> = ({ note }) => (
-  <p className="mt-2 text-center text-[10px] text-slate-500">In lúc {formatDateTime(new Date())}{note ? ` • ${note}` : ''}</p>
+  <p className="mt-2 text-center text-[10px] text-ink-muted">In lúc {formatDateTime(new Date())}{note ? ` • ${note}` : ''}</p>
 );
 
 // ---------------------------------------------------------------------------
@@ -117,7 +117,7 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
       {lines.length > 0 && (
         <table className="mt-3 w-full border-collapse text-left">
           <thead>
-            <tr className="border-y border-slate-400">
+            <tr className="border-y border-line-strong">
               <th className="py-1">Nội dung (đã gồm VAT)</th>
               {(isPrepaid || hasQty) && <><th className="py-1 text-right">SL</th><th className="py-1 text-right">Đơn giá</th></>}
               <th className="py-1 text-right">Thành tiền</th>
@@ -125,7 +125,7 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
           </thead>
           <tbody>
             {lines.map((l) => (
-              <tr key={l.id} className="border-b border-slate-200">
+              <tr key={l.id} className="border-b border-line">
                 <td className="py-1">{l.name}</td>
                 {(isPrepaid || hasQty) && <><td className="py-1 text-right font-mono">{l.quantity || 1}</td><td className="py-1 text-right font-mono">{formatVnd(l.unitAmountInclVat ?? l.amountInclVat)}</td></>}
                 <td className="py-1 text-right font-mono">{formatVnd(l.amountInclVat)}</td>
@@ -142,12 +142,12 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
           <p>Truy cập: <span className="font-mono font-bold break-all">{invoicePortalUrl()}</span></p>
           <p>
             Mã bảo mật: <span className="font-mono text-sm font-black tracking-widest">{r.invoiceSecret}</span>
-            <span className="text-slate-600"> (phân biệt chữ hoa / thường — không chia sẻ cho người khác)</span>
+            <span className="text-ink-muted"> (phân biệt chữ hoa / thường — không chia sẻ cho người khác)</span>
           </p>
         </div>
       )}
       <Signatures left="Người nộp tiền" right="Người thu tiền" rightName={receiptCollectorName(state, r)} />
-      {state.companyProfile.bankAccount && <p className="mt-3 text-center text-[10px] text-slate-600">TK ngân hàng: {state.companyProfile.bankAccount}</p>}
+      {state.companyProfile.bankAccount && <p className="mt-3 text-center text-[10px] text-ink-muted">TK ngân hàng: {state.companyProfile.bankAccount}</p>}
       <PrintFooter note={printNo ? `lần in thứ ${printNo}` : undefined} />
     </PrintFrame>
   );
@@ -206,15 +206,15 @@ const ConditionBox: React.FC<{
   inspectedBy?: string;
   inspectedAt?: string;
 }> = ({ condition, stuffing, damage, cleaning, age, inspectedBy, inspectedAt }) => (
-  <div className="mt-2 border border-slate-400 p-2">
+  <div className="mt-2 border border-line-strong p-2">
     <p className="mb-1 font-black uppercase">Tình trạng vỏ (Giám định)</p>
     <dl className="grid grid-cols-[110px_1fr_70px_1fr] gap-x-2 gap-y-0.5">
-      <dt className="text-slate-600">Trạng thái</dt><dd className="font-black">{condition || '-'}</dd>
-      <dt className="text-slate-600">Đóng hàng</dt><dd className="font-semibold">{stuffing || '-'}</dd>
-      <dt className="text-slate-600">Hư hỏng</dt><dd className="col-span-3 font-semibold">{damage?.length ? damage.join(', ') : 'Không'}</dd>
-      <dt className="text-slate-600">Vệ sinh</dt><dd className="font-semibold">{(cleaning || []).join(' + ') || '-'}</dd>
-      <dt className="text-slate-600">AGE</dt><dd className="font-semibold">{age || '-'}</dd>
-      <dt className="text-slate-600">Giám định</dt><dd className="col-span-3 font-semibold">{inspectedBy || '-'} • {formatDateTime(inspectedAt)}</dd>
+      <dt className="text-ink-muted">Trạng thái</dt><dd className="font-black">{condition || '-'}</dd>
+      <dt className="text-ink-muted">Đóng hàng</dt><dd className="font-semibold">{stuffing || '-'}</dd>
+      <dt className="text-ink-muted">Hư hỏng</dt><dd className="col-span-3 font-semibold">{damage?.length ? damage.join(', ') : 'Không'}</dd>
+      <dt className="text-ink-muted">Vệ sinh</dt><dd className="font-semibold">{(cleaning || []).join(' + ') || '-'}</dd>
+      <dt className="text-ink-muted">AGE</dt><dd className="font-semibold">{age || '-'}</dd>
+      <dt className="text-ink-muted">Giám định</dt><dd className="col-span-3 font-semibold">{inspectedBy || '-'} • {formatDateTime(inspectedAt)}</dd>
     </dl>
   </div>
 );
@@ -299,7 +299,7 @@ export const PrintReceiptButton: React.FC<{
       <span className="inline-flex flex-wrap items-center gap-2 rounded-md border border-rose-300 bg-rose-50 px-2 py-1 text-[11px] text-rose-800">
         Đã in {printed} lần (gần nhất {formatDateTime(last.at)} • {last.by}). In lại?
         <button type="button" onClick={doPrint} className="rounded bg-rose-600 px-2 py-1 font-bold text-white">In lại lần {printed + 1}</button>
-        <button type="button" onClick={() => setConfirmReprint(false)} className="rounded border border-slate-300 bg-white px-2 py-1">Hủy</button>
+        <button type="button" onClick={() => setConfirmReprint(false)} className="rounded border border-line-strong bg-white px-2 py-1">Hủy</button>
       </span>
     );
   }
@@ -309,7 +309,7 @@ export const PrintReceiptButton: React.FC<{
         <Printer className="h-3.5 w-3.5" />
         {printed > 0 ? 'In lại' : 'In phiếu thu'}
       </button>
-      <span className={`text-[11px] font-semibold ${printed > 0 ? 'text-rose-700' : 'text-slate-500'}`}>Đã in: {printed} lần</span>
+      <span className={`text-[11px] font-semibold ${printed > 0 ? 'text-rose-700' : 'text-ink-muted'}`}>Đã in: {printed} lần</span>
     </span>
   );
 };

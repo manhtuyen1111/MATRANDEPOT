@@ -177,11 +177,11 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
         <SectionCard
           className="lg:col-span-4"
           title="Hàng chờ Văn phòng — Hạ vỏ"
-          icon={<ClipboardList className="h-4 w-4 text-slate-500" />}
-          right={<span className="rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white">{pendingOrders.length}</span>}
+          icon={<ClipboardList className="h-4 w-4 text-ink-muted" />}
+          right={<span className="rounded bg-navy-900 px-2 py-0.5 text-[11px] font-bold text-white">{pendingOrders.length}</span>}
         >
           {pendingOrders.length === 0 ? (
-            <p className="py-6 text-center text-xs text-slate-500">Không có hồ sơ nào đang chờ.</p>
+            <p className="py-6 text-center text-xs text-ink-muted">Không có hồ sơ nào đang chờ.</p>
           ) : (
             <ul className="space-y-1.5">
               {pendingOrders.map((o) => (
@@ -190,12 +190,12 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                     type="button"
                     onClick={() => selectOrder(o)}
                     className={`flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-xs ${
-                      order?.id === o.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'
+                      order?.id === o.id ? 'border-navy-900 bg-navy-50' : 'border-line hover:bg-canvas'
                     }`}
                   >
                     <span>
-                      <span className="block font-mono font-bold text-slate-900">{o.masterDossierCode}</span>
-                      <span className="text-[11px] text-slate-500">{formatViTime(o.fieldRecordedAt)}</span>
+                      <span className="block font-mono font-bold text-ink">{o.masterDossierCode}</span>
+                      <span className="text-[11px] text-ink-muted">{formatViTime(o.fieldRecordedAt)}</span>
                     </span>
                     <span className="text-right">
                       <span className={`block font-bold ${o.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>
@@ -213,7 +213,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
 
         <div className="space-y-4 lg:col-span-8">
           {!order ? (
-            <div className="rounded-lg border border-slate-200 bg-white py-12 text-center text-xs text-slate-500">
+            <div className="rounded-lg border border-line bg-white py-12 text-center text-xs text-ink-muted">
               Tất cả hồ sơ Hạ vỏ đã được xử lý.
             </div>
           ) : (
@@ -224,27 +224,27 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                     Hồ sơ {order.masterDossierCode}
                   </button>
                 }
-                right={<span className="text-[11px] text-slate-500">Giám định: {order.fieldStaffName}</span>}
+                right={<span className="text-[11px] text-ink-muted">Giám định: {order.fieldStaffName}</span>}
               >
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  <img src={order.doorPhotoUrl} alt="Ảnh cửa container" className="h-28 w-full rounded-md border border-slate-200 object-cover sm:w-44" />
+                  <img src={order.doorPhotoUrl} alt="Ảnh cửa container" className="h-28 w-full rounded-md border border-line object-cover sm:w-44" />
                   <dl className="grid flex-1 grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-                    <dt className="text-slate-500">Trạng thái</dt>
+                    <dt className="text-ink-muted">Trạng thái</dt>
                     <dd className={`font-bold ${order.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>
                       {order.conditionClass}
-                      {order.damageRemarks.length > 0 && <span className="font-normal text-slate-600"> — {order.damageRemarks.join(', ')}</span>}
+                      {order.damageRemarks.length > 0 && <span className="font-normal text-ink-muted"> — {order.damageRemarks.join(', ')}</span>}
                     </dd>
                     {order.toInspectionRack && (
                       <>
-                        <dt className="text-slate-500">Xe nâng</dt>
+                        <dt className="text-ink-muted">Xe nâng</dt>
                         <dd className="font-black text-amber-700">HẠ KỆ GIÁM ĐỊNH</dd>
                       </>
                     )}
-                    <dt className="text-slate-500">Phân loại đóng hàng</dt>
+                    <dt className="text-ink-muted">Phân loại đóng hàng</dt>
                     <dd className="font-bold">{order.stuffingClass}</dd>
-                    <dt className="text-slate-500">Vệ sinh</dt>
+                    <dt className="text-ink-muted">Vệ sinh</dt>
                     <dd className="font-semibold">{order.cleaningItems.join(' + ')}</dd>
-                    <dt className="text-slate-500">AGE</dt>
+                    <dt className="text-ink-muted">AGE</dt>
                     <dd className="font-semibold">{order.manufactureYear}</dd>
                   </dl>
                 </div>
@@ -454,7 +454,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
         <SectionCard title={`Hồ sơ cấp vỏ chờ thanh toán (${pendingOrders.length})`}>
           <ul className="space-y-2 text-xs">
             {pendingOrders.map((o) => (
-              <li key={o.id} className="rounded-md border border-slate-200 p-2.5">
+              <li key={o.id} className="rounded-md border border-line p-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span>
                     <button type="button" onClick={() => onOpenDossier?.(o.gateOutCode)} className={linkCls}>
@@ -513,13 +513,13 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
         <SectionCard
           className="lg:col-span-6"
           title="Danh sách container sẵn sàng CẤP VỎ"
-          right={<span className="rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white">{ready.length}</span>}
+          right={<span className="rounded bg-navy-900 px-2 py-0.5 text-[11px] font-bold text-white">{ready.length}</span>}
         >
           <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
             <label className="col-span-2 sm:col-span-1">
               <span className={labelCls}>Số cont</span>
               <div className="relative">
-                <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
                 <input value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className={`${inputCls} pl-7 font-mono uppercase`} />
               </div>
             </label>
@@ -556,7 +556,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-left text-xs">
-              <thead className="border-b border-slate-200 text-[11px] uppercase text-slate-500">
+              <thead className="border-b border-line text-[11px] uppercase text-ink-muted">
                 <tr>
                   <th className="py-2 pr-2">Số container</th>
                   <th className="py-2 pr-2">Size/Type</th>
@@ -567,10 +567,10 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                   <th className="py-2">Ghi chú</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line">
                 {ready.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-6 text-center text-slate-500">Không có container phù hợp bộ lọc.</td>
+                    <td colSpan={7} className="py-6 text-center text-ink-muted">Không có container phù hợp bộ lọc.</td>
                   </tr>
                 ) : (
                   ready.map((c) => (
@@ -580,7 +580,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                         if (c.isOnHold) { setError(`Container ${c.containerNo} đang KHÓA (${c.officeNote || c.holdReason || ""}) — mở khóa ở Tồn vỏ trước khi cấp.`); return; }
                         setError(null); setSelectedContainerId(c.id); setFeeIds([]);
                       }}
-                      className={`${c.isOnHold ? "cursor-not-allowed bg-rose-50/60 text-slate-500" : "cursor-pointer"} ${selectedContainerId === c.id ? "bg-blue-50" : c.isOnHold ? "" : "hover:bg-slate-50"}`}
+                      className={`${c.isOnHold ? "cursor-not-allowed bg-rose-50/60 text-ink-muted" : "cursor-pointer"} ${selectedContainerId === c.id ? "bg-navy-50" : c.isOnHold ? "" : "hover:bg-canvas"}`}
                     >
                       <td className="py-2 pr-2"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.officeNote || c.holdReason} /></td>
                       <td className="py-2 pr-2">{c.size}/{c.type}</td>
@@ -598,7 +598,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
         </SectionCard>
 
         <form onSubmit={handleSubmit} className="space-y-4 lg:col-span-6">
-          <SectionCard title="1. Booking & container" icon={<Truck className="h-4 w-4 text-slate-500" />}>
+          <SectionCard title="1. Booking & container" icon={<Truck className="h-4 w-4 text-ink-muted" />}>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label>
                 <span className={labelCls}>Số booking *</span>
@@ -611,12 +611,12 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
             </div>
 
             {summary && (
-              <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs">
+              <div className="mt-3 rounded-md border border-line bg-canvas p-3 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span>
                     Đã cấp theo booking: <strong className="text-sm">{summary.issued.length}</strong>
                     {summary.booking?.requestedQty ? ` / ${summary.booking.requestedQty}` : ''} container
-                    <span className="text-slate-500">
+                    <span className="text-ink-muted">
                       {' '}(Chờ TT {summary.waitingPayment.length} • Chờ xe nâng {summary.waitingForklift.length} • Đã OUT {summary.gatedOut.length})
                       {summary.cancelled.length > 0 && ` • Đã hủy ${summary.cancelled.length}`}
                     </span>
@@ -627,10 +627,10 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                     </button>
                   )}
                 </div>
-                {!summary.booking && <p className="mt-1 text-[11px] text-slate-500">Booking mới — sẽ được tạo khi lập lệnh đầu tiên.</p>}
+                {!summary.booking && <p className="mt-1 text-[11px] text-ink-muted">Booking mới — sẽ được tạo khi lập lệnh đầu tiên.</p>}
                 {showBookingList && (
                   <table className="mt-2 w-full text-left text-[11px]">
-                    <tbody className="divide-y divide-slate-200">
+                    <tbody className="divide-y divide-line">
                       {summary.orders.map((o) => (
                         <tr key={o.id}>
                           <td className="py-1 pr-2 font-mono">
@@ -649,7 +649,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
 
             {/* DEC-137: container được chọn — chia ô rõ ràng (chỉ đọc), tự điền khi bấm chọn ở danh sách bên trái */}
             <div className="mt-3 text-xs" data-testid="selected-container">
-              <span className={labelCls}>Container được chọn {!selected && <span className="normal-case font-normal text-slate-500">— bấm chọn ở danh sách bên trái</span>}</span>
+              <span className={labelCls}>Container được chọn {!selected && <span className="normal-case font-normal text-ink-muted">— bấm chọn ở danh sách bên trái</span>}</span>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {([
                   ['Số container', selected ? <ContainerNo no={selected.containerNo} /> : null],
@@ -660,9 +660,9 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                   ['Vị trí', selected ? <LocationText loc={selected} /> : null],
                 ] as [string, React.ReactNode][]).map(([label, value]) => (
                   <div key={label}>
-                    <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-500">{label}</span>
-                    <div className="flex min-h-[2.25rem] items-center whitespace-nowrap rounded-md border border-slate-200 bg-slate-50 px-2.5 font-mono text-xs font-semibold text-slate-900">
-                      {value || <span className="font-normal text-slate-400">-</span>}
+                    <span className="mb-0.5 block text-[10px] font-semibold uppercase text-ink-muted">{label}</span>
+                    <div className="flex min-h-[2.25rem] items-center whitespace-nowrap rounded-md border border-line bg-canvas px-2.5 font-mono text-xs font-semibold text-ink">
+                      {value || <span className="font-normal text-ink-muted">-</span>}
                     </div>
                   </div>
                 ))}

@@ -39,7 +39,7 @@ const STATUS_STYLE: Record<PaymentTransactionStatus, string> = {
   PENDING: 'bg-amber-100 text-amber-800',
   SUCCEEDED: 'bg-emerald-100 text-emerald-800',
   FAILED: 'bg-rose-100 text-rose-800',
-  CANCELLED: 'bg-slate-100 text-slate-600',
+  CANCELLED: 'bg-navy-50 text-ink-muted',
 };
 
 export const ReceiptsWorkspace: React.FC<{
@@ -136,7 +136,7 @@ export const ReceiptsWorkspace: React.FC<{
     <div className="space-y-4">
       <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
 
-      <SectionCard title="Tra cứu phiếu thu" icon={<ReceiptText className="h-4 w-4 text-slate-500" />}>
+      <SectionCard title="Tra cứu phiếu thu" icon={<ReceiptText className="h-4 w-4 text-ink-muted" />}>
         <form
           onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); setSelectedTxId(''); }}
           className="grid grid-cols-2 gap-2 sm:grid-cols-6"
@@ -191,7 +191,7 @@ export const ReceiptsWorkspace: React.FC<{
               />
             )}
             {canCreate && (
-              <button type="button" onClick={() => setCreateOpen(!createOpen)} className={`${secondaryBtn} ${createOpen ? "border-blue-600 text-blue-700" : ""}`}>
+              <button type="button" onClick={() => setCreateOpen(!createOpen)} className={`${secondaryBtn} ${createOpen ? "border-navy-900 text-navy-700" : ""}`}>
                 <FilePlus2 className="h-4 w-4" />
                 Tạo phiếu thu TTR (trả trước)
               </button>
@@ -202,10 +202,10 @@ export const ReceiptsWorkspace: React.FC<{
 
       {/* TẠO PHIẾU THU TRƯỚC — cùng bố cục màn thanh toán Hạ vỏ / Cấp vỏ (DEC-077) */}
       {canCreate && createOpen && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border-2 border-blue-200 bg-blue-50/30 p-3 text-xs">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border-2 border-line-strong bg-navy-50/30 p-3 text-xs">
           <div className="flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-sm font-black text-slate-900">
-              <FilePlus2 className="h-4 w-4 text-blue-600" />
+            <h3 className="flex items-center gap-2 text-sm font-black text-ink">
+              <FilePlus2 className="h-4 w-4 text-navy-700" />
               Tạo phiếu thu TRƯỚC (TTR — trả trước)
             </h3>
             <button type="button" onClick={() => setCreateOpen(false)} aria-label="Đóng" className={secondaryBtn}><X className="h-3.5 w-3.5" /></button>
@@ -228,7 +228,7 @@ export const ReceiptsWorkspace: React.FC<{
             </SectionCard>
             <FeeLinesEditor catalog={state.feeCatalog} selectedIds={feeIds} onChange={setFeeIds} quantities={qtys} onQuantitiesChange={setQtys} />
           </div>
-          <SectionCard title="3. Hình thức thanh toán" icon={<CreditCard className="h-4 w-4 text-slate-500" />}>
+          <SectionCard title="3. Hình thức thanh toán" icon={<CreditCard className="h-4 w-4 text-ink-muted" />}>
             <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Hình thức thanh toán trước">
               {(['BANK_TRANSFER_API', 'CASH'] as const).map((m) => (
                 <button
@@ -237,13 +237,13 @@ export const ReceiptsWorkspace: React.FC<{
                   role="radio"
                   aria-checked={create.method === m}
                   onClick={() => setCreate({ ...create, method: m })}
-                  className={`rounded-md border py-2.5 text-xs font-semibold ${create.method === m ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`}
+                  className={`rounded-md border py-2.5 text-xs font-semibold ${create.method === m ? 'border-navy-900 bg-navy-900 text-white' : 'border-line-strong bg-white text-ink hover:bg-canvas'}`}
                 >
                   {m === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản (API QR)'}
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-[11px] text-slate-500">Chỉ ghi nhận đã thu khi Văn phòng xác nhận tiền mặt hoặc ngân hàng xác nhận chuyển khoản; khi đó Phiếu thu trả trước mới dùng được để trừ dần.</p>
+            <p className="mt-2 text-[11px] text-ink-muted">Chỉ ghi nhận đã thu khi Văn phòng xác nhận tiền mặt hoặc ngân hàng xác nhận chuyển khoản; khi đó Phiếu thu trả trước mới dùng được để trừ dần.</p>
           </SectionCard>
           <div className="flex flex-wrap items-center justify-end gap-3">
             <span className="text-sm">Tổng thu trước: <strong className="font-mono text-base">{formatVnd(previewTotal)}</strong></span>
@@ -257,18 +257,18 @@ export const ReceiptsWorkspace: React.FC<{
       {/* DEC-077: danh sách full chiều ngang; chi tiết phiếu ở dưới */}
       <div className="space-y-4">
         <div>
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-lg border border-line bg-white">
             {!applied ? (
-              <p className="p-8 text-center text-xs text-slate-500">Chọn điều kiện và bấm Tra cứu để xem phiếu thu.</p>
+              <p className="p-8 text-center text-xs text-ink-muted">Chọn điều kiện và bấm Tra cứu để xem phiếu thu.</p>
             ) : queryError ? (
               <p className="p-6 text-center text-xs text-red-700">{queryError}</p>
             ) : result && result.total === 0 ? (
-              <p className="p-8 text-center text-xs text-slate-500">Không có phiếu thu phù hợp.</p>
+              <p className="p-8 text-center text-xs text-ink-muted">Không có phiếu thu phù hợp.</p>
             ) : (
               result && (
                 <>
                   <table className="w-full min-w-[1180px] whitespace-nowrap text-left text-xs">
-                    <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
+                    <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
                       <tr>
                         <th className="whitespace-nowrap px-2 py-2">Mã phiếu thu</th>
                         <th className="whitespace-nowrap px-2 py-2">Tác nghiệp</th>
@@ -284,13 +284,13 @@ export const ReceiptsWorkspace: React.FC<{
                         <th className="whitespace-nowrap px-2 py-2 text-center">Đã in</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-line">
                       {result.rows.map((row) => {
                         const { transaction: t, receipt: r } = row;
                         // DEC-079: phiếu thu trước → hiện luôn số lượt đã dùng / số tiền còn lại của Phiếu thu trả trước
                         const usage = t.purpose === 'PREPAID_TOPUP' ? masterReceiptUsage(state, r?.masterReceiptCode || t.paymentRef) : undefined;
                         return (
-                        <tr key={t.id} onClick={() => setSelectedTxId(t.id)} className={`cursor-pointer ${selectedTxId === t.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
+                        <tr key={t.id} onClick={() => setSelectedTxId(t.id)} className={`cursor-pointer ${selectedTxId === t.id ? 'bg-navy-50' : 'hover:bg-canvas'}`}>
                           <td className="whitespace-nowrap px-2 py-2">{r ? <button type="button" onClick={() => setSelectedTxId(t.id)} className={linkCls}>{r.receiptNo}</button> : '—'}</td>
                           <td className="whitespace-nowrap px-2 py-2 font-bold">{RECEIPT_OPERATION_LABELS[operationOf(row)]}</td>
                           <td className="whitespace-nowrap px-2 py-2 font-mono font-bold">{t.containerNo || '-'}</td>
@@ -315,7 +315,7 @@ export const ReceiptsWorkspace: React.FC<{
                           <td className="px-2 py-2 text-[11px]">{t.createdBy}</td>
                           <td className="px-2 py-2"><span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[t.status]}`}>{PAYMENT_TX_STATUS_LABELS[t.status]}</span></td>
                           <td className="px-2 py-2">{r ? <InvoiceBadge status={receiptInvoiceStatus(state, r)} label={receiptInvoiceLabel(state, r)} /> : '—'}</td>
-                          <td className={`px-2 py-2 text-center font-bold ${(r?.printLog?.length || 0) > 1 ? "text-rose-700" : "text-slate-600"}`}>{r ? r.printLog?.length || 0 : "—"}</td>
+                          <td className={`px-2 py-2 text-center font-bold ${(r?.printLog?.length || 0) > 1 ? "text-rose-700" : "text-ink-muted"}`}>{r ? r.printLog?.length || 0 : "—"}</td>
                         </tr>
                         );
                       })}
@@ -347,54 +347,54 @@ export const ReceiptsWorkspace: React.FC<{
                 </PrintPortal>
               )}
               {selected.receipt && (selected.receipt.printLog?.length || 0) > 0 && (
-                <div className="mb-3 rounded-md border border-slate-200 px-3 py-2 text-[11px]">
-                  <span className="font-bold text-slate-700">Lịch sử in ({selected.receipt.printLog!.length} lần)</span>
+                <div className="mb-3 rounded-md border border-line px-3 py-2 text-[11px]">
+                  <span className="font-bold text-ink">Lịch sử in ({selected.receipt.printLog!.length} lần)</span>
                   <ul className="mt-1 space-y-0.5">
                     {selected.receipt.printLog!.map((p, i) => (
-                      <li key={i} className={i > 0 ? 'text-rose-700' : 'text-slate-600'}>
+                      <li key={i} className={i > 0 ? 'text-rose-700' : 'text-ink-muted'}>
                         Lần {i + 1}{i > 0 ? ' (in lại)' : ''}: {formatViTime(p.at)} • {p.by}
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
-              <p className="mb-3 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-center text-sm font-black tracking-wide text-slate-900">
+              <p className="mb-3 rounded-md border border-line-strong bg-canvas px-3 py-2 text-center text-sm font-black tracking-wide text-ink">
                 TÁC NGHIỆP: {RECEIPT_OPERATION_LABELS[operationOf(selected)]}
               </p>
               <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
-                <dt className="text-slate-500">Trạng thái</dt>
+                <dt className="text-ink-muted">Trạng thái</dt>
                 <dd><span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[selected.transaction.status]}`}>{PAYMENT_TX_STATUS_LABELS[selected.transaction.status]}</span></dd>
-                <dt className="text-slate-500">Số tiền</dt>
+                <dt className="text-ink-muted">Số tiền</dt>
                 <dd className="font-mono font-bold">{formatVnd(selected.transaction.amount)}</dd>
-                <dt className="text-slate-500">Phương thức TT</dt>
+                <dt className="text-ink-muted">Phương thức TT</dt>
                 <dd>{PAYMENT_METHOD_LABELS[selected.transaction.method]}</dd>
-                <dt className="text-slate-500">Bên thanh toán</dt>
+                <dt className="text-ink-muted">Bên thanh toán</dt>
                 <dd>{selected.transaction.payerName}</dd>
-                <dt className="text-slate-500">Mã tham chiếu</dt>
+                <dt className="text-ink-muted">Mã tham chiếu</dt>
                 <dd className="font-mono">{selected.transaction.paymentRef}</dd>
                 {selected.transaction.providerTxRef && (
                   <>
-                    <dt className="text-slate-500">Mã GD ngân hàng</dt>
+                    <dt className="text-ink-muted">Mã GD ngân hàng</dt>
                     <dd className="font-mono">{selected.transaction.providerTxRef}</dd>
                   </>
                 )}
-                <dt className="text-slate-500">Người tạo</dt>
+                <dt className="text-ink-muted">Người tạo</dt>
                 <dd>{selected.transaction.createdBy} • {formatViTime(selected.transaction.createdAt)}</dd>
                 {selected.transaction.confirmedBy && (
                   <>
-                    <dt className="text-slate-500">Xác nhận thu</dt>
+                    <dt className="text-ink-muted">Xác nhận thu</dt>
                     <dd>{selected.transaction.confirmedBy} • {formatViTime(selected.transaction.confirmedAt)}</dd>
                   </>
                 )}
                 {selected.transaction.cancelReason && (
                   <>
-                    <dt className="text-slate-500">Lý do hủy</dt>
+                    <dt className="text-ink-muted">Lý do hủy</dt>
                     <dd>{selected.transaction.cancelReason}</dd>
                   </>
                 )}
                 {selected.transaction.dossierCode && (
                   <>
-                    <dt className="text-slate-500">Hồ sơ nghiệp vụ</dt>
+                    <dt className="text-ink-muted">Hồ sơ nghiệp vụ</dt>
                     <dd>
                       <button type="button" onClick={() => onOpenDossier?.(selected.transaction.dossierCode!)} className={linkCls}>
                         {selected.transaction.dossierCode}
@@ -405,7 +405,7 @@ export const ReceiptsWorkspace: React.FC<{
                 )}
                 {(selected.receipt?.masterReceiptCode || selected.transaction.purpose === 'PREPAID_TOPUP') && (
                   <>
-                    <dt className="text-slate-500">Phiếu thu trả trước (TTR)</dt>
+                    <dt className="text-ink-muted">Phiếu thu trả trước (TTR)</dt>
                     <dd className="font-mono">
                       <button type="button" onClick={() => openMaster(selected.receipt?.masterReceiptCode || selected.transaction.paymentRef)} className={linkCls}>
                         {selected.receipt?.masterReceiptCode || selected.transaction.paymentRef}
@@ -502,20 +502,20 @@ export const MasterUsagePanel: React.FC<{
     </div>
   );
   return (
-    <div className="mt-3 space-y-2 rounded-md border-2 border-blue-200 p-3 text-xs">
-      <p className="font-black uppercase text-slate-800">Sử dụng phiếu thu trả trước {usage.master.receiptCode}</p>
+    <div className="mt-3 space-y-2 rounded-md border-2 border-line-strong p-3 text-xs">
+      <p className="font-black uppercase text-ink">Sử dụng phiếu thu trả trước {usage.master.receiptCode}</p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {tile('Tổng nạp', formatVnd(usage.master.totalAmount), 'border-slate-200 text-slate-800')}
-        {tile('Số lượt đã dùng', `${usage.usedCount} lượt`, 'border-blue-200 bg-blue-50 text-blue-800')}
+        {tile('Tổng nạp', formatVnd(usage.master.totalAmount), 'border-line text-ink')}
+        {tile('Số lượt đã dùng', `${usage.usedCount} lượt`, 'border-line-strong bg-navy-50 text-navy-900')}
         {tile('Đã trừ', formatVnd(usage.usedAmount), 'border-amber-200 bg-amber-50 text-amber-800')}
         {tile('Còn lại', formatVnd(usage.remainingAmount), 'border-emerald-200 bg-emerald-50 text-emerald-800')}
       </div>
       {usage.rows.length === 0 ? (
-        <p className="text-slate-500">{usage.master.status === 'PENDING_PAYMENT' ? 'Chưa thu tiền nạp — chưa dùng được để trừ.' : 'Chưa có lượt tác nghiệp nào trừ vào phiếu thu trả trước này.'}</p>
+        <p className="text-ink-muted">{usage.master.status === 'PENDING_PAYMENT' ? 'Chưa thu tiền nạp — chưa dùng được để trừ.' : 'Chưa có lượt tác nghiệp nào trừ vào phiếu thu trả trước này.'}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left">
-            <thead className="border-b border-slate-200 text-[11px] uppercase text-slate-500">
+            <thead className="border-b border-line text-[11px] uppercase text-ink-muted">
               <tr>
                 <th className="py-1.5 pr-2">#</th>
                 <th className="py-1.5 pr-2">Thời gian</th>
@@ -528,13 +528,13 @@ export const MasterUsagePanel: React.FC<{
                 {view && <th className="py-1.5">Hóa đơn</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line">
               {usage.rows.map((u, i) => {
                 const lot = view?.lots.find((l) => l.deductionId === u.deductionId);
                 return (
                 <React.Fragment key={u.deductionId}>
-                <tr className={openLot === u.deductionId ? 'bg-blue-50/60' : ''}>
-                  <td className="py-1.5 pr-2 text-slate-400">{usage.rows.length - i}</td>
+                <tr className={openLot === u.deductionId ? 'bg-navy-50/60' : ''}>
+                  <td className="py-1.5 pr-2 text-ink-muted">{usage.rows.length - i}</td>
                   <td className="whitespace-nowrap py-1.5 pr-2 font-mono text-[11px]">{formatViTime(u.performedAt)}</td>
                   <td className="py-1.5 pr-2 font-bold">{u.operation}</td>
                   <td className="py-1.5 pr-2 font-mono">
@@ -557,7 +557,7 @@ export const MasterUsagePanel: React.FC<{
                 </tr>
                 {view && openLot === u.deductionId && (
                   <tr>
-                    <td colSpan={9} className="bg-blue-50/60 px-2 pb-2">
+                    <td colSpan={9} className="bg-navy-50/60 px-2 pb-2">
                       <InvoiceGroupDetail view={view} groupId={lot?.groupId} canIssue={invoice!.canIssue} onIssue={invoice!.onIssue} />
                     </td>
                   </tr>
@@ -575,7 +575,7 @@ export const MasterUsagePanel: React.FC<{
 
 // DEC-111: trạng thái xuất hóa đơn của phiếu thu
 const INVOICE_STYLE: Record<InvoiceStatus, string> = {
-  CHUA_XHD: 'bg-slate-100 text-slate-600',
+  CHUA_XHD: 'bg-navy-50 text-ink-muted',
   YEU_CAU_XHD: 'bg-amber-100 text-amber-800',
   DA_XHD: 'bg-emerald-100 text-emerald-800',
 };
@@ -596,45 +596,45 @@ export const InvoicePanel: React.FC<{
   const status = statusProp || r.invoiceStatus || 'CHUA_XHD';
   const req = r.invoiceRequest;
   return (
-    <div className="mt-3 space-y-2 rounded-md border border-slate-200 p-3 text-xs" data-testid="invoice-panel">
+    <div className="mt-3 space-y-2 rounded-md border border-line p-3 text-xs" data-testid="invoice-panel">
       <div className="flex items-center justify-between">
-        <span className="font-bold uppercase text-slate-700">Xuất hóa đơn</span>
+        <span className="font-bold uppercase text-ink">Xuất hóa đơn</span>
         <InvoiceBadge status={status} />
       </div>
       {/* DEC-112: hiện mã bảo mật để Văn phòng / Kế toán đối soát với phiếu khách mang tới */}
       {r.invoiceSecret && (
-        <dl className="grid grid-cols-[6rem_1fr] gap-x-2 gap-y-1 rounded bg-slate-50 px-2 py-1.5" data-testid="invoice-secret-panel">
-          <dt className="text-slate-500">Đường link</dt>
+        <dl className="grid grid-cols-[6rem_1fr] gap-x-2 gap-y-1 rounded bg-canvas px-2 py-1.5" data-testid="invoice-secret-panel">
+          <dt className="text-ink-muted">Đường link</dt>
           <dd className="break-all font-mono text-[11px]">{invoicePortalUrl()}</dd>
-          <dt className="text-slate-500">Mã bảo mật</dt>
+          <dt className="text-ink-muted">Mã bảo mật</dt>
           <dd className="font-mono text-sm font-black tracking-widest">{r.invoiceSecret}</dd>
         </dl>
       )}
       {prepaid ? (
-        <p className="text-slate-600" data-testid="prepaid-invoice-summary">
+        <p className="text-ink-muted" data-testid="prepaid-invoice-summary">
           {prepaid.lots.length} lượt đã dùng • {prepaid.lots.filter((l) => !l.groupId).length} lượt chưa yêu cầu • {prepaid.groups.filter((g) => g.status === 'YEU_CAU_XHD').length} yêu cầu chờ xuất • còn {formatVnd(prepaid.remainingAmount)} chưa dùng (chưa xuất hóa đơn được).
           {' '}Trạng thái + yêu cầu của khách xem ở cột <b>HÓA ĐƠN</b> từng lượt bên dưới.
         </p>
       ) : req ? (
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
-          <dt className="text-slate-500">Mã số thuế</dt><dd className="font-mono font-bold">{req.taxCode}</dd>
-          <dt className="text-slate-500">Gmail nhận HĐ</dt><dd className="break-all">{req.email}</dd>
-          <dt className="text-slate-500">Tên công ty</dt><dd>{req.companyName}</dd>
-          <dt className="text-slate-500">Địa chỉ</dt><dd>{req.address}</dd>
-          {req.note && (<><dt className="text-slate-500">Ghi chú</dt><dd>{req.note}</dd></>)}
-          <dt className="text-slate-500">Khách gửi lúc</dt><dd className="font-mono">{formatViTime(req.updatedAt)}</dd>
+          <dt className="text-ink-muted">Mã số thuế</dt><dd className="font-mono font-bold">{req.taxCode}</dd>
+          <dt className="text-ink-muted">Gmail nhận HĐ</dt><dd className="break-all">{req.email}</dd>
+          <dt className="text-ink-muted">Tên công ty</dt><dd>{req.companyName}</dd>
+          <dt className="text-ink-muted">Địa chỉ</dt><dd>{req.address}</dd>
+          {req.note && (<><dt className="text-ink-muted">Ghi chú</dt><dd>{req.note}</dd></>)}
+          <dt className="text-ink-muted">Khách gửi lúc</dt><dd className="font-mono">{formatViTime(req.updatedAt)}</dd>
           {r.invoiceIssued && (
             <>
-              <dt className="text-slate-500">Số hóa đơn</dt><dd className="font-mono font-bold">{r.invoiceIssued.invoiceNo || '-'}</dd>
-              <dt className="text-slate-500">Cập nhật XHD</dt><dd>{r.invoiceIssued.issuedBy} • {formatViTime(r.invoiceIssued.issuedAt)}</dd>
+              <dt className="text-ink-muted">Số hóa đơn</dt><dd className="font-mono font-bold">{r.invoiceIssued.invoiceNo || '-'}</dd>
+              <dt className="text-ink-muted">Cập nhật XHD</dt><dd>{r.invoiceIssued.issuedBy} • {formatViTime(r.invoiceIssued.issuedAt)}</dd>
             </>
           )}
         </dl>
       ) : (
-        <p className="text-slate-500">Khách hàng chưa gửi yêu cầu (dùng mã bảo mật in trên phiếu thu).</p>
+        <p className="text-ink-muted">Khách hàng chưa gửi yêu cầu (dùng mã bảo mật in trên phiếu thu).</p>
       )}
       {!prepaid && status === 'YEU_CAU_XHD' && canIssue && (
-        <div className="flex gap-2 border-t border-slate-200 pt-2">
+        <div className="flex gap-2 border-t border-line pt-2">
           <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Số hóa đơn MISA (không bắt buộc)" className={`${inputCls} font-mono`} />
           <button type="button" onClick={() => onIssue(invoiceNo)} className={`${primaryBtn} shrink-0`}>Đã xuất hóa đơn</button>
         </div>
@@ -647,23 +647,23 @@ export const InvoicePanel: React.FC<{
 export const InvoiceGroupDetail: React.FC<{ view: PrepaidInvoiceView; groupId?: string; canIssue: boolean; onIssue: (invoiceNo: string, groupId?: string) => void }> = ({ view, groupId, canIssue, onIssue }) => {
   const [no, setNo] = useState('');
   const g = view.groups.find((x) => x.id === groupId);
-  if (!g) return <p className="text-slate-500" data-testid="invoice-group-detail">Khách hàng chưa gửi yêu cầu hóa đơn cho lượt này.</p>;
+  if (!g) return <p className="text-ink-muted" data-testid="invoice-group-detail">Khách hàng chưa gửi yêu cầu hóa đơn cho lượt này.</p>;
   const no_ = view.groups.indexOf(g) + 1;
   const lots = view.lots.filter((l) => g.deductionIds.includes(l.deductionId));
   return (
-    <div className="space-y-1 rounded border border-slate-200 bg-white p-2" data-testid="invoice-group-detail">
+    <div className="space-y-1 rounded border border-line bg-white p-2" data-testid="invoice-group-detail">
       <div className="flex items-center justify-between">
         <span className="font-bold">Yêu cầu {no_} — {lots.length} lượt • {formatVnd(g.amount)}</span>
         <InvoiceBadge status={g.status} />
       </div>
-      <p className="font-mono text-[11px] text-slate-600">Gộp: {lots.map((l) => `${l.dossierCode} (${l.containerNo})`).join(', ')}</p>
+      <p className="font-mono text-[11px] text-ink-muted">Gộp: {lots.map((l) => `${l.dossierCode} (${l.containerNo})`).join(', ')}</p>
       <dl className="grid grid-cols-[7rem_1fr] gap-x-3 gap-y-0.5">
-        <dt className="text-slate-500">Mã số thuế</dt><dd className="font-mono font-bold">{g.taxCode}</dd>
-        <dt className="text-slate-500">Gmail nhận HĐ</dt><dd className="break-all">{g.email}</dd>
-        <dt className="text-slate-500">Tên công ty</dt><dd>{g.companyName}</dd>
-        <dt className="text-slate-500">Địa chỉ</dt><dd>{g.address}</dd>
-        {g.note && (<><dt className="text-slate-500">Ghi chú</dt><dd>{g.note}</dd></>)}
-        {g.status === 'DA_XHD' && (<><dt className="text-slate-500">Số hóa đơn</dt><dd className="font-mono font-bold">{g.invoiceNo || '-'} • {g.issuedBy}</dd></>)}
+        <dt className="text-ink-muted">Mã số thuế</dt><dd className="font-mono font-bold">{g.taxCode}</dd>
+        <dt className="text-ink-muted">Gmail nhận HĐ</dt><dd className="break-all">{g.email}</dd>
+        <dt className="text-ink-muted">Tên công ty</dt><dd>{g.companyName}</dd>
+        <dt className="text-ink-muted">Địa chỉ</dt><dd>{g.address}</dd>
+        {g.note && (<><dt className="text-ink-muted">Ghi chú</dt><dd>{g.note}</dd></>)}
+        {g.status === 'DA_XHD' && (<><dt className="text-ink-muted">Số hóa đơn</dt><dd className="font-mono font-bold">{g.invoiceNo || '-'} • {g.issuedBy}</dd></>)}
       </dl>
       {g.status === 'YEU_CAU_XHD' && canIssue && (
         <div className="flex gap-2 pt-1">

@@ -113,7 +113,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
 
   return (
     <div className="space-y-4">
-      <SectionCard title={TITLES[section]} icon={<Search className="h-4 w-4 text-slate-500" />}>
+      <SectionCard title={TITLES[section]} icon={<Search className="h-4 w-4 text-ink-muted" />}>
         <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2">
             <span className={labelCls}>Số container</span>
@@ -149,18 +149,18 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
         </form>
       </SectionCard>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-line bg-white">
         {!applied ? (
-          <p className="p-8 text-center text-xs text-slate-500">Nhập số container hoặc chọn khoảng thời gian, sau đó bấm Tra cứu.</p>
+          <p className="p-8 text-center text-xs text-ink-muted">Nhập số container hoặc chọn khoảng thời gian, sau đó bấm Tra cứu.</p>
         ) : queryError ? (
           <p className="p-6 text-center text-xs text-red-700">{queryError}</p>
         ) : !result || result.total === 0 ? (
-          <p className="p-8 text-center text-xs text-slate-500">Không có dữ liệu phù hợp.</p>
+          <p className="p-8 text-center text-xs text-ink-muted">Không có dữ liệu phù hợp.</p>
         ) : (
           <>
             {outRows && (
               <table className="w-full min-w-[860px] whitespace-nowrap text-left text-xs">
-                <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
+                <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
                   <tr>
                     <th className="px-3 py-2">Mã hồ sơ</th>
                     <th className="px-3 py-2">Số container</th>
@@ -179,11 +179,11 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
                     <th className="px-3 py-2">Mã phiếu thu</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {outRows.rows.map((o) => {
                     const c = state.containers.find((x) => x.masterDossierCode === o.masterDossierCode);
                     return (
-                    <tr key={o.id} className="hover:bg-slate-50">
+                    <tr key={o.id} className="hover:bg-canvas">
                       <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.gateOutCode)} className={linkCls}>{o.gateOutCode}</button></td>
                       <td className="px-3 py-2 font-mono font-bold">{o.containerNo}</td>
                       <td className="px-3 py-2 text-center">{c?.size || '-'}</td>
@@ -206,7 +206,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
             )}
             {inRows && (
               <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
-                <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
+                <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
                   <tr>
                     <th className="px-3 py-2">Mã hồ sơ</th>
                     <th className="px-3 py-2">Số container</th>
@@ -225,9 +225,9 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
                     <th className="px-3 py-2">Mã phiếu thu</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {inRows.rows.map((o) => (
-                    <tr key={o.id} className="hover:bg-slate-50">
+                    <tr key={o.id} className="hover:bg-canvas">
                       <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.masterDossierCode)} className={linkCls}>{o.masterDossierCode}</button></td>
                       <td className="px-3 py-2 font-mono font-bold">{o.containerNo || '-'}</td>
                       <td className="px-3 py-2 text-center">{o.size || '-'}</td>
@@ -275,12 +275,12 @@ const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Báo cáo Tổng hợp" icon={<FileSpreadsheet className="h-4 w-4 text-slate-500" />}>
+      <SectionCard title="Báo cáo Tổng hợp" icon={<FileSpreadsheet className="h-4 w-4 text-ink-muted" />}>
         <form onSubmit={generate} className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <DateRangeFilter value={range} onChange={(r) => setRange(r)} required />
           <button type="submit" className={primaryBtn}>Tạo báo cáo</button>
         </form>
-        <p className="mt-2 text-[11px] text-slate-500">
+        <p className="mt-2 text-[11px] text-ink-muted">
           Gồm 5 sheet: HẠ VỎ, CẤP VỎ, XUẤT VỎ, NHẬP VỎ (theo khoảng thời gian) và TỒN VỎ (tại thời điểm lập báo cáo).
         </p>
       </SectionCard>
@@ -296,10 +296,10 @@ const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
         >
           <ul className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
             {sheets.map((s) => (
-              <li key={s.name} className="rounded-md border border-slate-200 px-3 py-2">
-                <span className="block text-[11px] font-semibold uppercase text-slate-500">{s.name}</span>
-                <span className="text-lg font-bold text-slate-900">{s.rows.length}</span>
-                <span className="text-[11px] text-slate-500"> dòng • {s.columns.length} cột</span>
+              <li key={s.name} className="rounded-md border border-line px-3 py-2">
+                <span className="block text-[11px] font-semibold uppercase text-ink-muted">{s.name}</span>
+                <span className="text-lg font-bold text-ink">{s.rows.length}</span>
+                <span className="text-[11px] text-ink-muted"> dòng • {s.columns.length} cột</span>
               </li>
             ))}
           </ul>
@@ -341,7 +341,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Báo cáo Sửa chữa" icon={<Search className="h-4 w-4 text-slate-500" />}>
+      <SectionCard title="Báo cáo Sửa chữa" icon={<Search className="h-4 w-4 text-ink-muted" />}>
         <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2 sm:col-span-1">
             <span className={labelCls}>Số container</span>
@@ -386,17 +386,17 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
         </form>
       </SectionCard>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-line bg-white">
         {!applied ? (
-          <p className="p-8 text-center text-xs text-slate-500">Nhập số container hoặc chọn khoảng thời gian, sau đó bấm Tra cứu.</p>
+          <p className="p-8 text-center text-xs text-ink-muted">Nhập số container hoặc chọn khoảng thời gian, sau đó bấm Tra cứu.</p>
         ) : queryError ? (
           <p className="p-6 text-center text-xs text-red-700">{queryError}</p>
         ) : !result || result.total === 0 ? (
-          <p className="p-8 text-center text-xs text-slate-500">Không có dữ liệu phù hợp.</p>
+          <p className="p-8 text-center text-xs text-ink-muted">Không có dữ liệu phù hợp.</p>
         ) : (
           <>
             <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
-              <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
+              <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
                 <tr>
                   <th className="px-3 py-2">Mã hồ sơ</th>
                   <th className="px-3 py-2">Số container</th>
@@ -412,9 +412,9 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
                   <th className="px-3 py-2">Hoàn tất</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line">
                 {result.rows.map(({ workOrder: w, container: c }) => (
-                  <tr key={w.id} className="hover:bg-slate-50">
+                  <tr key={w.id} className="hover:bg-canvas">
                     <td className="px-3 py-2">
                       <button type="button" onClick={() => onOpenDossier(w.masterDossierCode)} className={linkCls}>{w.masterDossierCode}</button>
                     </td>
@@ -433,7 +433,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t border-slate-200 bg-slate-50 font-semibold">
+                <tr className="border-t border-line bg-canvas font-semibold">
                   <td colSpan={4} className="px-3 py-2 text-right">Tổng giờ công (trang này)</td>
                   <td className="px-3 py-2 text-right font-mono">{result.rows.reduce((s, r) => s + (r.workOrder.laborHours || 0), 0)}</td>
                   <td colSpan={5} />
