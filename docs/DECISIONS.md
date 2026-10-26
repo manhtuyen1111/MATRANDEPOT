@@ -1058,6 +1058,13 @@ Quy ước trạng thái:
 - Các chỗ khác giữ ký hiệu: khối chọn hình thức thanh toán, Excel Phiếu thu.
 - Kỹ thuật: `PAYMENT_CATEGORY_SHORT_LABELS` (`payments.ts`), dùng trong `voucherPaymentInfo`.
 
+### DEC-128 — Tồn vỏ: cột PHÂN LOẠI (đóng hàng) bên phải Trạng thái
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- Quyết định:
+  - Bảng Tồn vỏ thêm cột **Phân loại** (phân loại đóng hàng M / K / E) **ngay bên phải cột Trạng thái** (AV / DAMAGE).
+  - Excel Tồn vỏ: cột "ĐÓNG HÀNG" đổi tên thành **PHÂN LOẠI** và chuyển về ngay sau TRẠNG THÁI. Thứ tự: TRẠNG THÁI → PHÂN LOẠI → LƯU BÃI.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1147,6 +1154,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-127 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-128 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
