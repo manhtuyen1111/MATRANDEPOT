@@ -3,6 +3,7 @@ import { ensureInvoiceFields } from './invoice';
 import {
   AppRole,
   AuditLogEntry,
+  FeedbackItem,
   ContainerRecord,
   ContainerSize,
   ContainerType,
@@ -27,8 +28,8 @@ import {
 } from '../types/depot';
 
 // DEC-106, DEC-108, DEC-111: đổi khóa để mọi máy nạp lại dữ liệu test mới; khóa cũ bị xóa khi nạp
-const STORAGE_KEY = 'matran_depot_erp_state_v10';
-const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7', 'matran_depot_erp_state_v8', 'matran_depot_erp_state_v9'];
+const STORAGE_KEY = 'matran_depot_erp_state_v13';
+const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7', 'matran_depot_erp_state_v8', 'matran_depot_erp_state_v9', 'matran_depot_erp_state_v10', 'matran_depot_erp_state_v11', 'matran_depot_erp_state_v12'];
 
 export interface DepotState {
   currentUser: StaffUser;
@@ -56,6 +57,7 @@ export interface DepotState {
   vesselLists: VesselList[]; // NHẬP TÀU / XUẤT TÀU (DEC-069)
   // Bộ đếm cấp mã hồ sơ / phiếu (HV-YYMMDD, CV-YYMMDD, PT-YYYY...). Ở chế độ Supabase do database cấp.
   codeCounters: Record<string, number>;
+  feedbacks: FeedbackItem[]; // DEC-120: góp ý xây dựng hệ thống (giữ lại khi Xóa dữ liệu)
 }
 
 export const INITIAL_CONTAINER_SIZES: ContainerSize[] = ['20', '40', '45'];
@@ -530,7 +532,7 @@ export function createInitialState(): DepotState {
         id: 'ded-1',
         receiptCode: 'PTT-2026-001',
         qrCode: 'QR-TTT-VIETLOG-001',
-        voucherNo: 'CT-GIN-261019-01',
+        voucherNo: 'HV-261019-001',
         containerNo: 'MSKU4089123',
         deductedAmount: 1200000,
         balanceBefore: 15000000,
@@ -543,7 +545,7 @@ export function createInitialState(): DepotState {
       {
         id: 'vch-1',
         masterDossierCode: 'HV-261019-001',
-        voucherNo: 'CT-GIN-261019-01',
+        voucherNo: 'HV-261019-001',
         serviceType: 'GATE_IN',
         referenceCode: 'HV-261019-001',
         containerNo: 'MSKU4089123',
@@ -562,7 +564,7 @@ export function createInitialState(): DepotState {
       {
         id: 'vch-2',
         masterDossierCode: 'HV-261021-002',
-        voucherNo: 'CT-GIN-261021-02',
+        voucherNo: 'HV-261021-002',
         serviceType: 'GATE_IN',
         referenceCode: 'HV-261021-002',
         containerNo: 'ONEU5581920',
@@ -784,6 +786,7 @@ export function createInitialState(): DepotState {
     },
     vesselLists: [],
     codeCounters: {},
+    feedbacks: [],
   };
 }
 
@@ -834,6 +837,7 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
     companyProfile: { ...base.companyProfile, ...(raw.companyProfile || {}) },
     vesselLists: raw.vesselLists || [],
     codeCounters: raw.codeCounters || {},
+    feedbacks: raw.feedbacks || [],
   } as DepotState;
 }
 
@@ -858,6 +862,7 @@ export function createCleanState(): DepotState {
     auditLogs: [],
     vesselLists: [],
     codeCounters: {},
+    feedbacks: [],
   };
 }
 

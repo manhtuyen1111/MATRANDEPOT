@@ -191,6 +191,24 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Link dữ liệu thống nhất kiểu Mã hồ sơ toàn app (`linkCls`); Tồn vỏ cột MÃ PHIẾU THU cùng định dạng Mã hồ sơ (DEC-117). Kiểm thử: 117/117 pass, build PASS.
 - Mọi mã có hồ sơ lưu trữ đều là link: Phiếu thu (mã phiếu thu, mã hồ sơ, phiếu thu trả trước), Tồn vỏ (mã hồ sơ), Báo giá, Trả chứng từ (DEC-118). Kiểm thử: 117/117 pass, build PASS.
 
+### Changed (2026-10-26, DEC-119)
+- Bỏ mã chứng từ `CT-`: số chứng từ = mã hồ sơ tác nghiệp (HV- / CV-), cũng là mã tham chiếu chuyển khoản; bỏ dòng / ô / cột "Chứng từ" trùng ở phiếu thu in, hồ sơ, Excel Hạ vỏ / Cấp vỏ. Kiểm thử: 118/118 pass, build PASS.
+
+### Added (2026-10-26, DEC-120)
+- **Góp ý**: nút ở góc trên bên phải (chọn menu / tính năng + nội dung, xem "Góp ý của tôi"); **Báo cáo → Góp ý** chỉ Admin — lọc, Excel, cập nhật trạng thái MỚI / ĐANG XỬ LÝ / ĐÃ XỬ LÝ / KHÔNG ÁP DỤNG + phản hồi. Kiểm thử: 124/124 pass, build PASS.
+- Phiếu thu trả trước: cột **Mã hồ sơ** hiện mã các tác nghiệp đã dùng phiếu (link hồ sơ), không còn hiện PTT-; Excel cùng quy tắc (DEC-121). Kiểm thử: 125/125 pass, build PASS.
+- Phiếu thu trả trước: cột Mã hồ sơ chỉ hiện "Dùng N lượt • còn X ₫" (link) — bấm mở chi tiết các lượt đã dùng; Excel vẫn ghi đủ mã hồ sơ (DEC-122).
+- Góp ý: chọn Menu chính → Tính năng → mới hiện ô Nội dung (DEC-123). Kiểm thử: 125/125 pass, build PASS.
+- Phiếu thu trả trước chỉ còn **một mã** `PT-TTR-YYMMDD-NNNN` (cấp ngay khi tạo, chờ thanh toán; thu xong là số phiếu thu; QR = `QR-<mã>`); bỏ mã PTT- (DEC-124). Kiểm thử: 125/125 pass, build PASS.
+- Chọn / sửa vị trí từng bước Block → Bay → Row → Tier bằng nút lớn, tóm tắt giá trị đã chọn ở trên (bấm để chọn lại) — áp dụng Xe nâng, Đảo chuyển, Nhập tàu, Tồn vỏ (DEC-125). Kiểm thử: 126/126 pass, build PASS.
+- Báo cáo Hạ vỏ / Cấp vỏ (màn + Excel) thêm cột Thanh toán + Mã phiếu thu như Tồn vỏ; đổi "Hình thức TT" → "Thanh toán"; sửa khoảng đệm ô Mã hồ sơ ở báo cáo (DEC-126). Kiểm thử: 127/127 pass, build PASS.
+- Cột Thanh toán chỉ ghi TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU / Không thu phí (bỏ ký hiệu TT —, TTR —, TTS —) (DEC-127).
+- Tồn vỏ: cột Phân loại (đóng hàng) bên phải Trạng thái; Excel đổi ĐÓNG HÀNG → PHÂN LOẠI, đặt ngay sau TRẠNG THÁI (DEC-128). Kiểm thử: 127/127 pass, build PASS.
+- Tồn vỏ: cột AGE sau Hãng tàu, Tiến độ sau Mã phiếu thu (màn hình + Excel cùng thứ tự); quy tắc "đổi cột màn hình → sửa Excel tương ứng" + test tự động cho Tồn vỏ (DEC-129). Kiểm thử: 128/128 pass, build PASS.
+- Phiếu thu trả trước: khách yêu cầu hóa đơn **theo từng lượt đã dùng**, tự gộp nhiều lượt / tách riêng (mỗi yêu cầu 1 MST, 1 địa chỉ), sửa / hủy khi chưa xuất; Kế toán xuất theo từng yêu cầu; trạng thái "đã xuất x/y lượt"; Excel ghép theo yêu cầu (DEC-130). Kiểm thử: 129/129 pass, build PASS.
+- Xuất tàu: cont vào danh sách tự khóa + ghi chú "XUẤT TÀU <tàu>" (chặn cấp vỏ, vẫn xuất tàu được); bỏ khỏi danh sách / không kịp → tự mở khóa, xóa ghi chú. Duyệt Nhập / Xuất tàu khi chưa đủ (bắt buộc lý do), cont không kịp bị gạch (DEC-131). Kiểm thử: 130/130 pass, build PASS.
+- Tồn vỏ: mỗi cont 1 dòng — Date in ngày + giờ cùng dòng, cột Date in / Vị trí / Tiến độ đủ rộng, ghi chú dài cắt bớt (rê chuột xem đủ) (DEC-132).
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

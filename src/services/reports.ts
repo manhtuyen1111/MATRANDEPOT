@@ -15,10 +15,12 @@ import {
 } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { formatLocation, getContainerProgress, PROGRESS_LABELS, storageDays } from './core';
-import { containerPaymentInfo, masterReceiptUsage, PAYMENT_CATEGORY_FULL_LABELS, receiptOperationOf } from './payments';
+import { containerPaymentInfo, masterReceiptUsage, PAYMENT_CATEGORY_FULL_LABELS, receiptOperationOf, voucherPaymentInfo } from './payments';
 import { formatDateTime, parseDateTime } from './datetime';
-import { INVOICE_STATUS_LABELS } from './invoice';
-import type { InvoiceStatus } from '../types/depot';
+import { receiptInvoiceLabel, receiptInvoiceStatus } from './invoice';
+import { FEEDBACK_STATUS_LABELS } from './feedback';
+import { assertPermission } from './core';
+import type { FeedbackItem, FeedbackStatus, InvoiceStatus } from '../types/depot';
 
 // ============================================================================
 // BÁO CÁO & TRA CỨU (CR-08, CR-04 PHIẾU THU)
@@ -167,7 +169,7 @@ export function queryReceipts(state: DepotState, filter: ReceiptQueryFilter, pag
     .filter(({ transaction }) => !filter.method || filter.method === 'ALL' || transaction.method === filter.method)
     .filter(({ transaction }) => !filter.status || filter.status === 'ALL' || transaction.status === filter.status)
     .filter(({ transaction, receipt }) => !filter.receiptNo || receipt?.receiptNo === filter.receiptNo || transaction.id === filter.receiptNo)
-    .filter(({ receipt }) => !filter.invoiceStatus || filter.invoiceStatus === 'ALL' || (receipt && (receipt.invoiceStatus || 'CHUA_XHD') === filter.invoiceStatus))
+    .filter(({ receipt }) => !filter.invoiceStatus || filter.invoiceStatus === 'ALL' || (receipt && receiptInvoiceStatus(state, receipt) === filter.invoiceStatus)) // DEC-130
     .filter(
       ({ transaction, receipt }) =>
         !filter.operation || filter.operation === 'ALL' || receiptOperationOf(state, { ...transaction, operation: receipt?.operation }) === filter.operation
@@ -193,21 +195,24 @@ export interface SheetData {
 
 const fmt = (iso?: string) => (iso ? formatDateTime(iso) : '');
 
-export function gateInSheet(name: string, orders: GateInOrder[]): SheetData {
+export function gateInSheet(name: string, orders: GateInOrder[], state?: DepotState): SheetData {
   return {
     name,
     columns: [
       'MÃ HỒ SƠ', 'LOẠI', 'TRẠNG THÁI HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'KHÁCH HÀNG',
       'SỐ XE', 'SĐT LÁI XE', 'SỐ LỆNH / CHỨNG TỪ', 'TRẠNG THÁI', 'GHI CHÚ HƯ HỎNG', 'PHÂN LOẠI ĐÓNG HÀNG',
       'TÌNH TRẠNG VỆ SINH', 'AGE', 'GIÁM ĐỊNH', 'THỜI GIAN GIÁM ĐỊNH', 'VĂN PHÒNG', 'THỜI GIAN VĂN PHÒNG',
-      'SỐ CHỨNG TỪ', 'CHI PHÍ (ĐÃ GỒM VAT)', 'GATE IN OK LÚC', 'GATE IN OK BỞI', 'LÝ DO HỦY',
+      'CHI PHÍ (ĐÃ GỒM VAT)', 'THANH TOÁN', 'MÃ PHIẾU THU', 'GATE IN OK LÚC', 'GATE IN OK BỞI', 'LÝ DO HỦY',
     ],
     rows: orders.map((o) => [
       o.masterDossierCode, o.gateInType, o.status, o.containerNo || '', o.size || '', o.type || '',
       o.shippingLineCode || '', o.customerRep || '', o.truckNo || '', o.driverPhone || '', o.orderDocNo || '',
       o.conditionClass, o.damageRemarks.join('; '), o.stuffingClass, o.cleaningItems.join(' + '),
       o.manufactureYear, o.fieldStaffName, fmt(o.fieldRecordedAt), o.officeStaffName || '', fmt(o.officeVerifiedAt),
-      o.voucherNo || '', o.feeAmount || 0, fmt(o.gateInOkAt), o.gateInOkBy || '', o.cancelReason || '',
+      o.feeAmount || 0,
+      // DEC-126: thanh toán + mã phiếu thu (như Tồn vỏ)
+      ...(() => { const p = state ? voucherPaymentInfo(state, state.vouchers.find((v) => v.id === o.voucherId)) : undefined; return [p?.label || '', p?.receipt || '']; })(),
+      fmt(o.gateInOkAt), o.gateInOkBy || '', o.cancelReason || '',
     ]),
   };
 }
@@ -217,8 +222,8 @@ export function gateOutSheet(name: string, state: DepotState, orders: GateOutOrd
     name,
     columns: [
       'MÃ HỒ SƠ CẤP', 'MÃ HỒ SƠ HẠ VỎ', 'LOẠI', 'TRẠNG THÁI HỒ SƠ', 'BOOKING', 'SỐ CONTAINER', 'SIZE', 'TYPE',
-      'HÃNG TÀU', 'TRẠNG THÁI', 'PHÂN LOẠI ĐÓNG HÀNG', 'KHÁCH HÀNG', 'SỐ XE', 'SĐT LÁI XE', 'SỐ CHỨNG TỪ',
-      'CHI PHÍ (ĐÃ GỒM VAT)', 'HÌNH THỨC THANH TOÁN', 'LẬP LỆNH LÚC', 'LẬP LỆNH BỞI', 'OUT LÚC', 'XÁC NHẬN OUT BỞI',
+      'HÃNG TÀU', 'TRẠNG THÁI', 'PHÂN LOẠI ĐÓNG HÀNG', 'KHÁCH HÀNG', 'SỐ XE', 'SĐT LÁI XE',
+      'CHI PHÍ (ĐÃ GỒM VAT)', 'THANH TOÁN', 'MÃ PHIẾU THU', 'LẬP LỆNH LÚC', 'LẬP LỆNH BỞI', 'OUT LÚC', 'XÁC NHẬN OUT BỞI',
       'LÝ DO HỦY',
     ],
     rows: orders.map((o) => {
@@ -227,8 +232,8 @@ export function gateOutSheet(name: string, state: DepotState, orders: GateOutOrd
       return [
         o.gateOutCode, o.masterDossierCode, o.gateOutType, o.status, o.bookingNo, o.containerNo, c?.size || '',
         c?.type || '', c?.shippingLineCode || '', c?.conditionClass || '', c?.stuffingClass || '', o.receiverRep,
-        o.truckNo, o.driverPhone || '', o.voucherNo || '', o.feeAmount || 0,
-        v ? `${v.paymentCategory || ''}${v.directMethod ? ` / ${v.directMethod}` : ''} (${v.status})` : '',
+        o.truckNo, o.driverPhone || '', o.feeAmount || 0,
+        ...(() => { const p = voucherPaymentInfo(state, v); return [p.label, p.receipt]; })(), // DEC-126
         fmt(o.createdAt), o.createdBy || '', fmt(o.confirmedAt), o.confirmedBy || '', o.cancelReason || '',
       ];
     }),
@@ -264,7 +269,7 @@ export function buildSummaryReport(state: DepotState, range: DateRange): SheetDa
   const vesselRows = (mode: VesselMode): VesselReportRow[] =>
     (state.vesselLists || []).filter((l) => l.mode === mode && inRange(l.plannedAt, r)).flatMap((list) => list.items.map((item) => ({ list, item })));
   return [
-    gateInSheet('HẠ VỎ', gateIn('CUSTOMER_RETURN')),
+    gateInSheet('HẠ VỎ', gateIn('CUSTOMER_RETURN'), state),
     gateOutSheet('CẤP VỎ', state, gateOut(['EMPTY_RELEASE'])),
     // DEC-040 + DEC-069: XUẤT VỎ = XUẤT TÀU, NHẬP VỎ = NHẬP TÀU (theo thời gian nhập / xuất tàu của danh sách)
     { ...vesselReportSheet('XUAT_TAU', vesselRows('XUAT_TAU')), name: 'XUẤT VỎ' },
@@ -401,6 +406,20 @@ export function collectAllPages<T>(query: (page: number) => PagedResult<T>): T[]
 }
 
 // Sheet PHIẾU THU (DEC-055) — đủ cột tra cứu / đối soát
+// DEC-111, DEC-130: 8 cột hóa đơn của phiếu thu — phiếu thu trả trước ghép các yêu cầu theo lượt (ngăn cách "; ")
+function invoiceCells(state: DepotState, r: PaymentReceipt | undefined): string[] {
+  if (!r) return ['', '', '', '', '', '', '', ''];
+  const groups = r.invoiceGroups || [];
+  if (groups.length) {
+    const j = (f: (g: (typeof groups)[number]) => string | undefined) => groups.map((g) => f(g) || '-').join('; ');
+    return [receiptInvoiceLabel(state, r), j((g) => g.taxCode), j((g) => g.email), j((g) => g.companyName), j((g) => g.address), j((g) => g.note),
+      j((g) => g.invoiceNo), j((g) => (g.issuedAt ? `${fmt(g.issuedAt)} • ${g.issuedBy}` : undefined))];
+  }
+  const q = r.invoiceRequest;
+  return [receiptInvoiceLabel(state, r), q?.taxCode || '', q?.email || '', q?.companyName || '', q?.address || '', q?.note || '', r.invoiceIssued?.invoiceNo || '',
+    r.invoiceIssued ? `${fmt(r.invoiceIssued.issuedAt)} • ${r.invoiceIssued.issuedBy}` : ''];
+}
+
 export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData {
   const STATUS: Record<string, string> = { PENDING: 'Chờ thanh toán', SUCCEEDED: 'Thành công', FAILED: 'Thất bại', CANCELLED: 'Đã hủy' };
   const OP: Record<string, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP VỎ', THU_TRUOC: 'THU TRƯỚC (TTR)', KHAC: 'KHÁC' };
@@ -416,13 +435,13 @@ export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData 
     ],
     rows: rows.map(({ transaction: t, receipt: r }) => [
       r?.receiptNo || '', OP[receiptOperationOf(state, { ...t, operation: r?.operation })], t.containerNo || '', STATUS[t.status] || t.status, t.amount,
-      PAYMENT_CATEGORY_FULL_LABELS[t.paymentCategory] || t.paymentCategory, t.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản', t.payerName, t.dossierCode || '',
+      PAYMENT_CATEGORY_FULL_LABELS[t.paymentCategory] || t.paymentCategory, t.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản', t.payerName,
+      // DEC-121: phiếu thu trả trước → mã hồ sơ các tác nghiệp đã dùng phiếu
+      t.purpose === 'PREPAID_TOPUP' ? masterReceiptUsage(state, r?.masterReceiptCode || t.paymentRef)?.rows.map((u) => u.dossierCode).join(', ') || '' : t.dossierCode || '',
       r?.masterReceiptCode || (t.purpose === 'PREPAID_TOPUP' ? t.paymentRef : ''), t.paymentRef,
       t.providerTxRef || '', fmt(t.createdAt), t.createdBy, fmt(t.confirmedAt), t.confirmedBy || '', t.cancelReason || '',
       r?.printLog?.length || 0, r?.printLog?.length ? `${fmt(r.printLog[r.printLog.length - 1].at)} • ${r.printLog[r.printLog.length - 1].by}` : '',
-      r ? INVOICE_STATUS_LABELS[r.invoiceStatus || 'CHUA_XHD'] : '', r?.invoiceRequest?.taxCode || '', r?.invoiceRequest?.email || '',
-      r?.invoiceRequest?.companyName || '', r?.invoiceRequest?.address || '', r?.invoiceRequest?.note || '', r?.invoiceIssued?.invoiceNo || '',
-      r?.invoiceIssued ? `${fmt(r.invoiceIssued.issuedAt)} • ${r.invoiceIssued.issuedBy}` : '',
+      ...invoiceCells(state, r),
       // DEC-079: phiếu thu trước — số lượt tác nghiệp đã trừ, số tiền còn lại
       ...(() => {
         const u = t.purpose === 'PREPAID_TOPUP' ? masterReceiptUsage(state, r?.masterReceiptCode || t.paymentRef) : undefined;
@@ -437,18 +456,17 @@ export function yardStockSheet(rows: ContainerRecord[], state?: DepotState): She
   return {
     name: 'TỒN VỎ',
     columns: [
-      'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'DATE IN', 'VÀO BÃI BẰNG', 'TRẠNG THÁI', 'LƯU BÃI (NGÀY)', 'ĐÓNG HÀNG', 'AGE', 'VỊ TRÍ', 'TIẾN ĐỘ',
-      // DEC-099: thông tin thanh toán lượt vào bãi
-      'HÌNH THỨC TT', 'MÃ PHIẾU THU',
+            // DEC-128: PHÂN LOẠI ngay sau TRẠNG THÁI; DEC-129: AGE sau HÃNG TÀU, TIẾN ĐỘ sau MÃ PHIẾU THU (cùng thứ tự màn hình)
+      'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'AGE', 'DATE IN', 'VÀO BÃI BẰNG', 'TRẠNG THÁI', 'PHÂN LOẠI', 'LƯU BÃI (NGÀY)', 'VỊ TRÍ',
+      'THANH TOÁN', 'MÃ PHIẾU THU', 'TIẾN ĐỘ',
       'KHÁCH HÀNG', 'SỐ XE HẠ', 'KHÓA', 'NGƯỜI KHÓA', 'KHÓA LÚC', 'GHI CHÚ', 'GHI CHÚ BỞI', 'GHI CHÚ LÚC',
     ],
     rows: rows.map((c) => {
       const pay = state ? containerPaymentInfo(state, c) : undefined;
       return [
-        c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, fmt(c.gateInAt), c.masterDossierCode.startsWith('NT-') ? 'NHẬP TÀU' : 'HẠ VỎ',
-        c.conditionClass, storageDays(c.gateInAt), c.stuffingClass,
-        c.manufactureYear || '', formatLocation(c), getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', '),
-        pay?.label || '', pay?.receipt || '',
+        c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, c.manufactureYear || '', fmt(c.gateInAt), c.masterDossierCode.startsWith('NT-') ? 'NHẬP TÀU' : 'HẠ VỎ',
+        c.conditionClass, c.stuffingClass, storageDays(c.gateInAt), formatLocation(c),
+        pay?.label || '', pay?.receipt || '', getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', '),
         c.customerRep || '', c.truckNo || '', c.isOnHold ? 'ĐANG KHÓA' : '', c.holdBy || '', fmt(c.holdAt),
         c.officeNote || '', c.officeNoteUpdatedBy || '', fmt(c.officeNoteUpdatedAt),
       ];
@@ -484,8 +502,8 @@ export function queryVesselReport(state: DepotState, mode: VesselMode, filter: V
 }
 
 const VESSEL_ITEM_STATUS: Record<string, Record<string, string>> = {
-  NHAP_TAU: { PENDING: 'Chờ xe về', INSPECTED: 'Đã giám định — chờ hạ', DONE: 'Đã hạ bãi' },
-  XUAT_TAU: { PENDING: 'Chờ xuất', INSPECTED: '-', DONE: 'Đã xuất tàu' },
+  NHAP_TAU: { PENDING: 'Chờ xe về', INSPECTED: 'Đã giám định — chờ hạ', DONE: 'Đã hạ bãi', SKIPPED: 'Không kịp (gạch)' }, // DEC-131
+  XUAT_TAU: { PENDING: 'Chờ xuất', INSPECTED: '-', DONE: 'Đã xuất tàu', SKIPPED: 'Không kịp (gạch)' },
 };
 
 export function vesselReportSheet(mode: VesselMode, rows: VesselReportRow[]): SheetData {
@@ -504,6 +522,38 @@ export function vesselReportSheet(mode: VesselMode, rows: VesselReportRow[]): Sh
         ? [(i.cleaningItems || []).join(', '), i.manufactureYear || '', (i.damageRemarks || []).join(', '), i.inspectedBy || '', fmt(i.inspectedAt)]
         : [i.locationAtList || '']),
       i.doneBy || '', fmt(i.doneAt), l.createdBy, fmt(l.createdAt),
+    ]),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// BÁO CÁO GÓP Ý (DEC-120) — chỉ Admin; lọc thời gian / trạng thái / menu / từ khóa
+// ---------------------------------------------------------------------------
+export interface FeedbackFilter extends DateRange {
+  status?: FeedbackStatus | 'ALL';
+  menuId?: string; // 'ALL' hoặc mã menu
+  keyword?: string; // mã góp ý, nội dung, người góp ý
+}
+
+export function queryFeedback(state: DepotState, filter: FeedbackFilter, page = 1, pageSize = REPORT_PAGE_SIZE): PagedResult<FeedbackItem> {
+  assertPermission(state, 'FEEDBACK_MANAGE', 'chỉ Quản trị viên (Admin) được xem báo cáo góp ý.');
+  const range = toRange(filter);
+  const keyword = filter.keyword?.trim().toLowerCase();
+  const rows = (state.feedbacks || [])
+    .filter((f) => inRange(f.createdAt, range))
+    .filter((f) => !filter.status || filter.status === 'ALL' || f.status === filter.status)
+    .filter((f) => !filter.menuId || filter.menuId === 'ALL' || f.menuId === filter.menuId)
+    .filter((f) => !keyword || [f.code, f.content, f.createdBy, f.menuLabel].some((v) => v.toLowerCase().includes(keyword)))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return paginate(rows, page, pageSize);
+}
+
+export function feedbackSheet(rows: FeedbackItem[]): SheetData {
+  return {
+    name: 'GÓP Ý',
+    columns: ['MÃ GÓP Ý', 'THỜI GIAN', 'NGƯỜI GÓP Ý', 'MENU / TÍNH NĂNG', 'NỘI DUNG', 'TRẠNG THÁI', 'PHẢN HỒI', 'PHẢN HỒI LÚC', 'NGƯỜI PHẢN HỒI'],
+    rows: rows.map((f) => [
+      f.code, fmt(f.createdAt), f.createdBy, f.menuLabel, f.content, FEEDBACK_STATUS_LABELS[f.status], f.response || '', fmt(f.respondedAt), f.respondedBy || '',
     ]),
   };
 }

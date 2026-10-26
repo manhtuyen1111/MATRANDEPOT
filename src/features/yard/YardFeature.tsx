@@ -15,7 +15,9 @@ import { yardStockSheet } from '../../services/reports';
 import { containerPaymentInfo } from '../../services/payments';
 import { fileStamp, formatDateTime } from '../../services/datetime';
 import { ContainerRecord, FieldConditionClass, K80InternalTicket } from '../../types/depot';
-import { linkCls,
+import { PaymentInfoCells } from '../../components/PaymentInfoCells';
+import {
+  linkCls,
   EMPTY_SLOT,
   ExportExcelButton,
   Feedback,
@@ -147,7 +149,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
     }
   };
 
-  const colCount = canBulk ? 14 : 13;
+  const colCount = canBulk ? 16 : 15;
 
   return (
     <div className="w-full space-y-3">
@@ -239,7 +241,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
       )}
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="w-full min-w-[1400px] text-left text-xs">
+        <table className="w-full min-w-[1640px] text-left text-xs">
           <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
             <tr>
               {canBulk && (
@@ -257,13 +259,15 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
               <th className="w-12 px-2 py-2.5 text-center">Size</th>
               <th className="w-12 px-2 py-2.5 text-center">Type</th>
               <th className="w-20 whitespace-nowrap px-2 py-2.5">Hãng tàu</th>
-              <th className="w-24 whitespace-nowrap px-2 py-2.5">Date in</th>
+              <th className="w-14 px-2 py-2.5 text-center">AGE</th>{/* DEC-129 */}
+              <th className="w-40 whitespace-nowrap px-2 py-2.5">Date in</th>
               <th className="w-20 whitespace-nowrap px-2 py-2.5 text-center">Trạng thái</th>
+              <th className="w-16 whitespace-nowrap px-2 py-2.5 text-center">Phân loại</th>{/* DEC-128: phân loại đóng hàng M / K / E */}
               <th className="w-16 whitespace-nowrap px-2 py-2.5 text-right">Lưu bãi</th>
-              <th className="w-40 px-2 py-2.5">Vị trí</th>
-              <th className="w-40 px-2 py-2.5">Tiến độ</th>
-              <th className="w-36 whitespace-nowrap px-2 py-2.5">Hình thức TT</th>
+              <th className="w-44 whitespace-nowrap px-2 py-2.5">Vị trí</th>
+              <th className="w-36 whitespace-nowrap px-2 py-2.5">Thanh toán</th>
               <th className="w-40 whitespace-nowrap px-2 py-2.5">Mã phiếu thu</th>
+              <th className="w-48 whitespace-nowrap px-2 py-2.5">Tiến độ</th>{/* DEC-129: sau Mã phiếu thu */}
               <th className="min-w-[14rem] px-2 py-2.5">Ghi chú</th>
             </tr>
           </thead>
@@ -277,7 +281,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                 const panelOpen = panel?.id === c.id;
                 return (
                   <React.Fragment key={c.id}>
-                    <tr onClick={() => onOpenDossier?.(c.masterDossierCode)} className={`cursor-pointer hover:bg-slate-50 ${selected.has(c.id) ? 'bg-blue-50/60' : ''}`}>
+                    <tr onClick={() => onOpenDossier?.(c.masterDossierCode)} className={`cursor-pointer whitespace-nowrap hover:bg-slate-50 ${selected.has(c.id) ? 'bg-blue-50/60' : ''}`} data-testid="yard-row">{/* DEC-132: mỗi cont 1 dòng */}
                       {canBulk && (
                         <td className="px-2 py-2.5" onClick={(e) => e.stopPropagation()}>
                           <input type="checkbox" aria-label={`Chọn ${c.containerNo}`} checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
@@ -307,15 +311,16 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                       <td className="px-2 py-2.5 text-center">{c.size}</td>
                       <td className="px-2 py-2.5 text-center">{c.type}</td>
                       <td className="whitespace-nowrap px-2 py-2.5">{c.shippingLineCode}</td>
-                      <td className="whitespace-nowrap px-2 py-2.5 font-mono leading-tight" title="Thời gian vào bãi (Hạ vỏ / Nhập tàu)">
-                        <span className="block">{formatDateTime(c.gateInAt).slice(0, 10)}</span>
-                        <span className="block text-[10px] text-slate-500">{formatDateTime(c.gateInAt).slice(11)}</span>
+                      <td className="px-2 py-2.5 text-center font-mono">{c.manufactureYear || '-'}</td>
+                      <td className="whitespace-nowrap px-2 py-2.5 font-mono" title="Thời gian vào bãi (Hạ vỏ / Nhập tàu)">
+                        {formatDateTime(c.gateInAt).slice(0, 10)} <span className="text-slate-500">{formatDateTime(c.gateInAt).slice(11)}</span>
                       </td>
                       <td className={`px-2 py-2.5 text-center font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
+                      <td className="px-2 py-2.5 text-center font-mono font-bold">{c.stuffingClass}</td>
                       <td className="px-2 py-2.5 text-right font-mono font-bold">{storageDays(c.gateInAt, now)}</td>
                       <td className="px-2 py-2.5 font-mono" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-start justify-between gap-2">
-                          <span>{formatLocation(c)}</span>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="whitespace-nowrap">{formatLocation(c)}</span>
                           {canEditLocation && hasPosition && (
                             <button
                               type="button"
@@ -329,24 +334,9 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                           )}
                         </div>
                       </td>
+                      {/* DEC-099, DEC-126: THANH TOÁN | MÃ PHIẾU THU (thành phần dùng chung); DEC-129: TIẾN ĐỘ đứng sau */}
+                      <PaymentInfoCells info={containerPaymentInfo(state, c)} onOpenReceipt={onOpenReceipt} />
                       <td className="px-2 py-2.5 text-[11px]">{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</td>
-                      {(() => {
-                        // DEC-099: hình thức thanh toán + mã phiếu thu của lượt vào bãi
-                        const pay = containerPaymentInfo(state, c);
-                        const tone = pay.category === 'TTTT' ? 'text-emerald-700' : pay.category === 'TTT' ? 'text-blue-700' : pay.category === 'TTS' ? 'text-violet-700' : 'text-slate-400';
-                        return (
-                          <>
-                            <td className={`whitespace-nowrap px-2 py-2.5 text-[11px] font-bold ${tone}`}>{pay.label}</td>
-                            <td className="whitespace-nowrap px-2 py-2.5 font-mono text-blue-700">{/* DEC-117: cùng định dạng ô Mã hồ sơ */}
-                              {pay.receipt && pay.receiptTarget && onOpenReceipt ? (
-                                <button type="button" onClick={(e) => { e.stopPropagation(); onOpenReceipt(pay.receiptTarget!); }} className={linkCls} title="Mở phiếu thu">
-                                  {pay.receipt}
-                                </button>
-                              ) : pay.receipt}
-                            </td>
-                          </>
-                        );
-                      })()}
                       <td className={`px-2 py-2.5 ${hasNote && editingNoteId !== c.id ? 'bg-yellow-200' : ''}`} onClick={(e) => e.stopPropagation()}>
                         {editingNoteId === c.id ? (
                           <div className="flex items-center gap-1">
@@ -364,8 +354,8 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                             </button>
                           </div>
                         ) : hasNote ? (
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="font-semibold text-slate-900">{c.officeNote}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="block max-w-[18rem] truncate font-semibold text-slate-900" title={c.officeNote}>{c.officeNote}</span>
                             {canNote && (
                               <button type="button" aria-label="Sửa ghi chú" onClick={() => { setEditingNoteId(c.id); setNoteDraft(c.officeNote || ''); }} className="text-slate-600 hover:text-slate-900">
                                 <Pencil className="h-3 w-3" />

@@ -29,6 +29,23 @@ export const ROLE_LABELS: Record<AppRole, string> = {
 // DEC-111: trạng thái xuất hóa đơn của phiếu thu
 export type InvoiceStatus = 'CHUA_XHD' | 'YEU_CAU_XHD' | 'DA_XHD';
 
+// DEC-120: GÓP Ý XÂY DỰNG HỆ THỐNG
+export type FeedbackStatus = 'MOI' | 'DANG_XU_LY' | 'DA_XU_LY' | 'KHONG_AP_DUNG';
+export interface FeedbackItem {
+  id: string;
+  code: string;        // GY-YYMMDD-NNN
+  menuId: string;      // mã menu (WorkspaceMenuId) hoặc 'KHAC'
+  menuLabel: string;   // tên menu / tính năng tại thời điểm góp ý
+  content: string;
+  status: FeedbackStatus;
+  createdAt: string;
+  createdById: string;
+  createdBy: string;
+  response?: string;   // phản hồi của Admin
+  respondedAt?: string;
+  respondedBy?: string;
+}
+
 // Cấu trúc Menu tác nghiệp (CR-06, CR-09)
 export type WorkspaceMenuId =
   | 'TON_VO'
@@ -62,7 +79,8 @@ export type WorkspaceMenuId =
   | 'DM_CONG_TY'
   | 'DM_USER'
   | 'BC_HA_VO'
-  | 'BC_SUA_CHUA';
+  | 'BC_SUA_CHUA'
+  | 'BC_GOP_Y'; // DEC-120
 
 export type GateInType = 'CUSTOMER_RETURN' | 'VESSEL_IMPORT';
 
@@ -253,6 +271,7 @@ export interface ContainerRecord {
   // DEC-109: HA_KE_GIAM_DINH = cont phải hạ vào KỆ GIÁM ĐỊNH (đặt từ Giám định Hạ vỏ); xóa khi ĐẢO CHUYỂN về vị trí khác.
   // HA_SUA_CHUA: cờ cũ (menu đã gỡ theo CR-01).
   forkliftShiftTask: 'NONE' | 'HA_SUA_CHUA' | 'HA_KE_GIAM_DINH';
+  holdSource?: 'VESSEL_EXPORT'; // DEC-131: khóa tự động do nằm trong danh sách XUẤT TÀU (chặn cấp vỏ, vẫn xuất tàu được)
   quotationAmount?: number;
   quotationItems?: string[];
   quotationLaborHours?: number; // GIỜ CÔNG SỬA CHỮA do Báo giá nhập (DEC-041)
@@ -426,6 +445,26 @@ export interface PaymentReceipt {
   invoiceStatus?: InvoiceStatus;
   invoiceRequest?: { taxCode: string; email: string; companyName: string; address: string; note?: string; requestedAt: string; updatedAt: string };
   invoiceIssued?: { invoiceNo?: string; issuedAt: string; issuedBy: string };
+  // DEC-130: phiếu thu TRẢ TRƯỚC — khách tự gộp các LƯỢT đã dùng thành từng yêu cầu hóa đơn
+  invoiceGroups?: InvoiceGroup[];
+}
+
+// DEC-130: 1 yêu cầu hóa đơn = 1 nhóm lượt trừ tiền của phiếu thu trả trước (1 MST / 1 địa chỉ)
+export interface InvoiceGroup {
+  id: string;
+  deductionIds: string[];
+  amount: number;
+  taxCode: string;
+  email: string;
+  companyName: string;
+  address: string;
+  note?: string;
+  status: 'YEU_CAU_XHD' | 'DA_XHD';
+  requestedAt: string;
+  updatedAt: string;
+  invoiceNo?: string;
+  issuedAt?: string;
+  issuedBy?: string;
 }
 
 export interface GateInOrder {
@@ -601,7 +640,7 @@ export const VESSEL_MODE_LABELS: Record<VesselMode, string> = { NHAP_TAU: 'NHẬ
 export type VesselListStatus = 'OPEN' | 'APPROVED';
 // NT: PENDING (chờ xe về) → INSPECTED (Giám định xác nhận, cont vào hàng chờ Vệ sinh / Xe nâng) → DONE (Xe nâng hạ, cont tồn bãi)
 // XT: PENDING (chờ xuất) → DONE (Giám định / Xe nâng gán xe, cont OUT khỏi bãi)
-export type VesselItemStatus = 'PENDING' | 'INSPECTED' | 'DONE';
+export type VesselItemStatus = 'PENDING' | 'INSPECTED' | 'DONE' | 'SKIPPED'; // DEC-131: SKIPPED = không kịp tác nghiệp khi duyệt (gạch đi)
 
 export interface VesselListItem {
   id: string;
@@ -640,4 +679,5 @@ export interface VesselList {
   createdAt: string;
   approvedBy?: string;
   approvedAt?: string;
+  approveNote?: string; // DEC-131: lý do duyệt khi chưa xuất / nhập đủ
 }

@@ -951,6 +951,176 @@ Quy ước trạng thái:
   - Danh sách chờ ở Văn phòng Hạ vỏ (bấm dòng để chọn; khung chi tiết bên phải đã có link hồ sơ).
   - Màn Giám định Hạ vỏ mobile (hồ sơ chưa qua Văn phòng).
 
+### DEC-119 — Bỏ mã chứng từ CT-: số chứng từ = MÃ HỒ SƠ của tác nghiệp
+
+- Trạng thái: CONFIRMED (2026-10-26). **Thay phần "giữ 2 mã bên trong" của DEC-099 / DEC-104.**
+- Quyết định:
+  - Không cấp mã chứng từ `CT-…` riêng nữa. **Số chứng từ = mã hồ sơ của tác nghiệp**: Hạ vỏ `HV-…`, Cấp vỏ `CV-…`. Mã này cũng là **mã tham chiếu / nội dung chuyển khoản**.
+  - Tiền đã thu thì chứng từ là **MÃ PHIẾU THU** (`PT-TT-…` / `PT-TTR-…`).
+  - TTS (công nợ) theo dõi bằng mã hồ sơ.
+- Vì mỗi lượt Hạ vỏ / Cấp vỏ chỉ có 1 chứng từ chi phí, mã hồ sơ đủ duy nhất. Khớp tiền ngân hàng chỉ tìm giao dịch đang chờ, nên hủy và tạo lại yêu cầu chuyển khoản vẫn đúng.
+- Đã bỏ các chỗ hiển thị trùng:
+  - Dòng "Chứng từ" trên phiếu thu in (đã có Mã hồ sơ).
+  - Ô "Chứng từ" trong hồ sơ container.
+  - Cột "SỐ CHỨNG TỪ" ở Excel báo cáo Hạ vỏ / Cấp vỏ.
+  - Giữ cột "SỐ LỆNH / CHỨNG TỪ": đây là số EIR / lệnh của khách, không phải mã nội bộ.
+- Dữ liệu trình duyệt được nạp lại dữ liệu test mới (khóa lưu v11).
+
+### DEC-120 — GÓP Ý xây dựng hệ thống
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- **Gửi góp ý:** nút **Góp ý** ở góc trên bên phải, mọi người dùng đều thấy. Cửa sổ góp ý gồm:
+  - Chọn **Menu / tính năng**: các menu người dùng được thấy, cộng mục "Khác".
+  - **Nội dung**: 5 → 2000 ký tự.
+  - Gửi xong cấp mã **GY-YYMMDD-NNN** (qua `codes.ts`).
+  - Phía dưới là **Góp ý của tôi**: chỉ góp ý của chính mình, kèm trạng thái và phản hồi của Admin.
+- **Báo cáo → Góp ý** (chỉ **Admin** — `FEEDBACK_MANAGE`): lọc thời gian (lọc nhanh), trạng thái, menu, từ khóa; phân trang; xuất Excel. Bấm dòng mở cửa sổ chi tiết để cập nhật **trạng thái + phản hồi**:
+  - Trạng thái: **MỚI → ĐANG XỬ LÝ → ĐÃ XỬ LÝ / KHÔNG ÁP DỤNG**.
+  - Khi chuyển sang Đã xử lý / Không áp dụng thì bắt buộc ghi phản hồi.
+- Góp ý được **giữ lại khi bấm "Xóa dữ liệu"**. Dữ liệu test có 2 góp ý mẫu (1 MỚI, 1 ĐÃ XỬ LÝ).
+- Kỹ thuật: `src/services/feedback.ts`, `queryFeedback` / `feedbackSheet` (`reports.ts`), `src/components/FeedbackButton.tsx`, `src/features/reports/FeedbackReport.tsx`.
+
+### DEC-121 — Phiếu thu trả trước: cột MÃ HỒ SƠ = các tác nghiệp đã dùng phiếu
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- Quyết định: Ở Văn phòng → Phiếu thu, dòng phiếu nạp tiền trả trước (`PT-TTR-…`) có cột **Mã hồ sơ** hiện **mã hồ sơ của các tác nghiệp đã dùng phiếu thu trả trước đó** (HV- / CV-).
+  - Mỗi mã là link mở hồ sơ.
+  - Hiện tối đa 3 mã, còn lại ghi "+N".
+  - Chưa dùng thì ghi "Chưa dùng"; vẫn kèm "Dùng N lượt • còn X".
+- Không hiện mã `PTT-…` ở cột này. Mã PTT vẫn có trong cửa sổ chi tiết, bảng sử dụng và cột Excel **PHIẾU THU TRẢ TRƯỚC**.
+- Excel: cột MÃ HỒ SƠ của phiếu nạp = danh sách mã hồ sơ đã dùng, ngăn cách bằng dấu phẩy.
+- Tên cột đổi từ "Mã hồ sơ / Phiếu thu trả trước" thành **"Mã hồ sơ"**.
+
+### DEC-122 — Phiếu thu trả trước: cột Mã hồ sơ chỉ hiện tóm tắt, bấm để xem chi tiết
+
+- Trạng thái: CONFIRMED (2026-10-26). Thay phần hiển thị trên màn của DEC-121.
+- Quyết định: Dòng THU TRƯỚC (TTR) ở cột **Mã hồ sơ** **không liệt kê các mã hồ sơ**. Chỉ hiện một dòng tóm tắt **"Dùng N lượt • còn X ₫"** dạng link (`linkCls`).
+- Bấm vào tóm tắt sẽ mở cửa sổ chi tiết phiếu, có bảng **Sử dụng phiếu thu trả trước**: từng lượt, mã hồ sơ (link), số cont, số tiền trừ, số dư.
+- **Excel giữ như DEC-121:** cột MÃ HỒ SƠ ghi đủ các mã hồ sơ đã dùng phiếu.
+
+### DEC-123 — Góp ý: chọn Menu chính → Tính năng → Nội dung
+
+- Trạng thái: CONFIRMED (2026-10-26). Bổ sung DEC-120.
+- Quyết định: Form góp ý đi theo **3 bước**, bước sau chỉ hiện khi bước trước đã chọn:
+  1. **Menu chính** (Văn phòng, Xe nâng, Báo cáo…, và "Khác").
+  2. **Tính năng** trong menu đó. Menu chỉ có 1 tính năng (VD: Khác) thì chọn sẵn.
+  3. **Nội dung góp ý**.
+- Báo cáo vẫn lưu và hiển thị dạng "Menu chính → Tính năng".
+
+### DEC-124 — Phiếu thu trả trước chỉ có MỘT mã: PT-TTR-YYMMDD-NNNN (bỏ PTT-)
+
+- Trạng thái: CONFIRMED (2026-10-26). **Thay mã `PTT-YYYY-NNN` của DEC-068 / DEC-077** cho phiếu thu trả trước.
+- Quyết định:
+  - Văn phòng **tạo phiếu thu trả trước** → hệ thống cấp ngay **`PT-TTR-YYMMDD-NNNN`**, trạng thái **CHỜ THANH TOÁN**: chưa in, QR chưa dùng được (DEC-031).
+  - Thu tiền xong (tiền mặt hoặc ngân hàng báo có) → **chính mã đó** là số phiếu thu, không cấp thêm mã khác.
+  - Mã QR trừ dần = `QR-<mã PT-TTR>`. Nội dung chuyển khoản = mã PT-TTR.
+  - Không còn cấp mã `PTT-`. Phiếu đã có mã PTT- trong dữ liệu cũ vẫn dùng được (thu tiền sẽ cấp PT-TTR mới).
+- Bộ đếm PT-TTR tính cả phiếu đang chờ thanh toán, nên mã không bị trùng.
+- Dữ liệu trình duyệt được nạp lại dữ liệu test mới (khóa lưu v12).
+
+### DEC-125 — Chọn / sửa vị trí từng bước: Block → Bay → Row → Tier
+
+- Trạng thái: CONFIRMED (2026-10-26). Áp dụng cho mọi tác nghiệp có vị trí, vì tất cả dùng chung `SlotPicker`: Xe nâng (Chờ hạ vỏ, Đảo chuyển, Nhập tàu), Tồn vỏ (sửa vị trí).
+- Quyết định:
+  - Chỉ hiện **bước đang chọn**, với **toàn bộ giá trị dạng nút lớn**.
+    - Bước đầu là tất cả Block (theo `onlyBlocks` nếu có, VD Kệ giám định).
+    - Chọn xong mới hiện bước tiếp theo, chỉ các chiều Block có cấu hình (DEC-082).
+  - **Dòng tóm tắt ở trên cùng** luôn hiện giá trị đã chọn, VD `BLOCK-A / 05 - Row - Tier`.
+    - Bấm vào một phần để **chọn lại** phần đó; các phần sau tự xóa để chọn lại cho đủ.
+    - Đủ thì hiện "✓ Đủ vị trí".
+  - Nút xác nhận vẫn chỉ bấm được khi `isSlotComplete`, nên người dùng **bắt buộc chọn đủ**.
+  - Chiều nào có hơn 60 giá trị thì dùng ô chọn thả xuống thay cho nút.
+
+### DEC-126 — Báo cáo Hạ vỏ / Cấp vỏ có cột THANH TOÁN + MÃ PHIẾU THU; đổi "Hình thức TT" thành "Thanh toán"
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- Quyết định:
+  - **Báo cáo Hạ vỏ** và **Báo cáo Cấp vỏ** (màn hình và Excel) thêm 2 cột **Thanh toán** | **Mã phiếu thu**, cùng quy tắc với Tồn vỏ (DEC-099, DEC-104, DEC-105).
+    - TT: hiện `PT-TT-…`.
+    - TTR: hiện mã phiếu thu trả trước `PT-TTR-…`.
+    - TTS: để trống.
+    - Mã phiếu thu là link mở phiếu.
+  - Cấp vỏ lấy theo chứng từ của lệnh cấp (`voucherPaymentInfo`). Excel Cấp vỏ thay cột cũ "HÌNH THỨC THANH TOÁN" (đang ghi mã kỹ thuật) bằng 2 cột này.
+  - **Đổi tên cột "Hình thức TT" → "Thanh toán"** (Excel: "THANH TOÁN") ở Tồn vỏ, Hạ vỏ, Cấp vỏ, để không viết tắt.
+- Kỹ thuật: 2 ô dùng chung `PaymentInfoCells` (`src/components/PaymentInfoCells.tsx`).
+- Sửa kèm: ô Mã hồ sơ ở bảng Báo cáo Hạ vỏ / Cấp vỏ bị mất khoảng đệm, do lần đổi kiểu link ở DEC-117 gắn nhầm class vào ô thay vì vào nút.
+
+### DEC-127 — Cột THANH TOÁN chỉ ghi tên hình thức, không kèm ký hiệu
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- Quyết định: Cột **Thanh toán** ở Tồn vỏ, Báo cáo Hạ vỏ, Báo cáo Cấp vỏ (màn hình và Excel) chỉ ghi một trong các giá trị:
+  - **TRỰC TIẾP**
+  - **TRẢ TRƯỚC**
+  - **THANH TOÁN SAU**
+  - **Không thu phí** (Nhập tàu)
+  - **Chưa thanh toán** / **Chưa lập chứng từ** (khi chưa có thanh toán)
+- Bỏ ký hiệu đứng trước ("TT —", "TTR —", "TTS —") cho gọn.
+- Các chỗ khác giữ ký hiệu: khối chọn hình thức thanh toán, Excel Phiếu thu.
+- Kỹ thuật: `PAYMENT_CATEGORY_SHORT_LABELS` (`payments.ts`), dùng trong `voucherPaymentInfo`.
+
+### DEC-128 — Tồn vỏ: cột PHÂN LOẠI (đóng hàng) bên phải Trạng thái
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- Quyết định:
+  - Bảng Tồn vỏ thêm cột **Phân loại** (phân loại đóng hàng M / K / E) **ngay bên phải cột Trạng thái** (AV / DAMAGE).
+  - Excel Tồn vỏ: cột "ĐÓNG HÀNG" đổi tên thành **PHÂN LOẠI** và chuyển về ngay sau TRẠNG THÁI. Thứ tự: TRẠNG THÁI → PHÂN LOẠI → LƯU BÃI.
+
+### DEC-129 — Tồn vỏ: cột AGE sau Hãng tàu, TIẾN ĐỘ sau Mã phiếu thu; Excel luôn khớp màn hình
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- **Thứ tự cột Tồn vỏ** (màn hình và Excel):
+  - Màn hình: Mã hồ sơ | Số container | Size | Type | Hãng tàu | **AGE** | Date in | Trạng thái | Phân loại | Lưu bãi | Vị trí | Thanh toán | Mã phiếu thu | **Tiến độ** | Ghi chú.
+  - Excel cùng thứ tự, thêm các cột chỉ có ở Excel (Vào bãi bằng, Khách hàng, Số xe hạ, Khóa…).
+- **Quy tắc chung (người dùng yêu cầu):** khi thêm, bớt hoặc đổi thứ tự cột trên màn hình danh sách / báo cáo thì **phải sửa file Excel xuất ra cho tương xứng**.
+  - Riêng Tồn vỏ có test tự động so thứ tự cột màn hình với cột Excel.
+
+### DEC-130 — Phiếu thu trả trước: hóa đơn theo TỪNG LƯỢT, khách tự gộp
+
+- Trạng thái: CONFIRMED (2026-10-26). Bổ sung DEC-111 cho phiếu `PT-TTR-…`.
+- Quyết định:
+  - **Mã bảo mật:** khách dùng **một** mã của phiếu thu trả trước và thấy **mọi lượt đã dùng** (ngày, mã hồ sơ, số cont, tác nghiệp, số tiền trừ).
+  - **Gửi yêu cầu:** khách **tự chọn 1 hoặc nhiều lượt** → gửi **1 yêu cầu hóa đơn** với MST / Gmail / Tên công ty / Địa chỉ / Ghi chú riêng. Số tiền = tổng các lượt đã chọn. Gửi được nhiều yêu cầu (gộp hoặc tách tùy ý), có nút "Dùng lại thông tin yêu cầu trước".
+  - **Chống xuất trùng:** mỗi lượt chỉ thuộc **1** yêu cầu. Phiếu trả trước **không** yêu cầu hóa đơn cho cả phiếu.
+  - **Số dư chưa dùng: chưa xuất được.** Dùng tiếp thì lượt mới tự hiện để yêu cầu.
+  - **Sửa / hủy:** khi yêu cầu chưa xuất, khách được sửa (đổi lượt, đổi thông tin) hoặc **hủy để gộp / tách lại**. Đã xuất thì khóa.
+  - **Kế toán:** cập nhật **ĐÃ XHD theo từng yêu cầu**, kèm số hóa đơn MISA (không bắt buộc).
+  - **Trạng thái phiếu** (tính lại mỗi lần, vì có thể phát sinh lượt mới), nhãn kèm "đã xuất x/y lượt":
+    - YÊU CẦU XHD khi còn yêu cầu chờ Kế toán.
+    - ĐÃ XHD khi mọi lượt đã dùng đều đã xuất.
+    - Còn lại là CHƯA XHD.
+- **Excel Phiếu thu:** các cột hóa đơn của phiếu trả trước ghép theo từng yêu cầu, ngăn cách "; ". Bộ lọc "Hóa đơn" dùng trạng thái tính lại.
+- Kỹ thuật:
+  - `PaymentReceipt.invoiceGroups` (`InvoiceGroup`).
+  - `prepaidInvoiceView`, `submitPrepaidInvoiceGroup`, `cancelPrepaidInvoiceGroup`, `receiptInvoiceStatus` / `receiptInvoiceLabel`, `markInvoiceIssued({ groupId })` trong `invoice.ts`.
+  - Dữ liệu trình duyệt nạp lại (khóa lưu v13).
+
+### DEC-131 — Xuất tàu tự khóa + ghi chú tên tàu; duyệt Nhập / Xuất tàu khi chưa đủ (gạch cont không kịp)
+
+- Trạng thái: CONFIRMED (2026-10-26). Bổ sung DEC-069.
+- **Khóa xuất tàu tự động:**
+  - Khi cont được đưa vào danh sách **XUẤT TÀU** (lập mới hoặc thêm cont), cont **tự KHÓA** và **Ghi chú = "XUẤT TÀU <tên tàu>"**. Ghi chú cũ bị thay hẳn.
+  - **Không cấp vỏ được, chỉ xuất tàu được**: Xuất tàu cho phép cont đang mang khóa xuất tàu; cont có khóa thường thì vẫn phải mở khóa trước.
+  - Văn phòng **không tự mở khóa / sửa ghi chú** loại khóa này. Muốn gỡ thì bỏ cont khỏi danh sách.
+  - Đổi tên tàu thì ghi chú các cont đang chờ đổi theo.
+  - **Bỏ cont khỏi danh sách / xóa danh sách / duyệt mà cont chưa kịp xuất** → cont **tự mở khóa + xóa ghi chú**, trở lại tồn bãi bình thường. Nhật ký vẫn ghi lại.
+- **Duyệt khi chưa đủ:**
+  - Nút Duyệt bấm được cả khi chưa xuất / nhập đủ; khi đó **bắt buộc ghi lý do**.
+  - Cont chưa tác nghiệp chuyển trạng thái **KHÔNG KỊP** và hiện **gạch ngang** trong danh sách, báo cáo, Excel.
+  - Nhập tàu: cont đã Giám định (đang chờ hạ) vẫn tiếp tục luồng hạ bãi; chỉ cont chưa về bị gạch.
+  - Lý do được lưu (`approveNote`) và hiện ở đầu danh sách.
+- Kỹ thuật: `ContainerRecord.holdSource = 'VESSEL_EXPORT'`, `vesselLock` / `vesselUnlock` (`vessel.ts`), `VesselItemStatus 'SKIPPED'`, `approveVesselList({ reason })`.
+
+### DEC-132 — Tồn vỏ: mỗi cont đúng 1 dòng
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- Quyết định:
+  - Cả dòng cont **không xuống dòng**.
+  - **Date in** ghi ngày + giờ trên cùng 1 dòng (giờ màu nhạt).
+  - Các cột **Date in, Vị trí, Tiến độ** rộng ra cho đủ một dòng.
+  - **Ghi chú** dài thì cắt bớt (tối đa khoảng 18rem), rê chuột vào xem đủ.
+  - Bảng rộng hơn màn hình thì cuộn ngang.
+- Không đổi thứ tự / số cột, nên Excel giữ nguyên (DEC-129).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1040,6 +1210,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-118 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-132 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

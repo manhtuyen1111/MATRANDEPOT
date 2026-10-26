@@ -158,7 +158,6 @@ const PaymentBody: React.FC<{ state: DepotState; voucher?: PaymentVoucher; onOpe
         </table>
       )}
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <Field label="Chứng từ" value={voucher.voucherNo} mono />
         <Field label="Tổng (đã gồm VAT)" value={formatVnd(voucher.amount)} mono />
         <Field label="Bên thanh toán" value={voucher.payerName} />
       </dl>

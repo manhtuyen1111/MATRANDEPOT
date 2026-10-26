@@ -3,7 +3,16 @@ import { FileText, KeyRound, Send } from 'lucide-react';
 import { DepotState, formatVnd, loadDepotState, saveDepotState } from '../../services/depotStore';
 import { createDemoState } from '../../services/demoData';
 import { formatDateTime } from '../../services/datetime';
-import { INVOICE_SECRET_LENGTH, INVOICE_STATUS_LABELS, InvoicePortalView, lookupInvoicePortal, submitInvoiceRequest } from '../../services/invoice';
+import {
+  cancelPrepaidInvoiceGroup,
+  INVOICE_SECRET_LENGTH,
+  INVOICE_STATUS_LABELS,
+  InvoicePortalView,
+  lookupInvoicePortal,
+  PrepaidInvoiceView,
+  submitInvoiceRequest,
+  submitPrepaidInvoiceGroup,
+} from '../../services/invoice';
 import { Feedback, inputCls, labelCls, primaryBtn } from '../../components/shared';
 
 // DEC-111: TRANG KHÁCH HÀNG — YÊU CẦU XUẤT HÓA ĐƠN (không cần đăng nhập, chỉ cần mã bảo mật in trên phiếu thu)
@@ -98,6 +107,20 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
               {view.invoiceNo && (<><dt className="text-slate-500">Số hóa đơn</dt><dd className="font-mono font-bold">{view.invoiceNo}</dd></>)}
             </dl>
 
+            {view.prepaid ? (
+              <PrepaidPortal
+                secret={code}
+                prepaid={view.prepaid}
+                state={state}
+                onDone={(next, message) => {
+                  onUpdateState(next);
+                  setView(lookupInvoicePortal(next, code));
+                  setError(null);
+                  setSuccess(message);
+                }}
+                onError={(m) => { setSuccess(null); setError(m); }}
+              />
+            ) : (
             <form onSubmit={submit} className="space-y-2 border-t border-slate-200 pt-3">
               <label className="block"><span className={labelCls}>Mã số thuế *</span><input value={form.taxCode} onChange={set('taxCode')} disabled={locked} inputMode="numeric" placeholder="0123456789" className={`${inputCls} font-mono`} /></label>
               <label className="block"><span className={labelCls}>Gmail nhận hóa đơn *</span><input value={form.email} onChange={set('email')} disabled={locked} type="email" className={inputCls} /></label>
@@ -113,6 +136,7 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
                 </button>
               )}
             </form>
+            )}
           </div>
         )}
       </div>
@@ -153,5 +177,114 @@ export const InvoicePortalPage: React.FC = () => {
         saveDepotState(next);
       }}
     />
+  );
+};
+
+// DEC-130: PHIẾU THU TRẢ TRƯỚC — khách chọn các LƯỢT đã dùng (gộp 1 hoặc nhiều lượt) → 1 yêu cầu hóa đơn / 1 MST
+const EMPTY_INFO = { taxCode: '', email: '', companyName: '', address: '', note: '' };
+const PrepaidPortal: React.FC<{
+  secret: string;
+  prepaid: PrepaidInvoiceView;
+  state: DepotState;
+  onDone: (next: DepotState, message: string) => void;
+  onError: (message: string) => void;
+}> = ({ secret, prepaid, state, onDone, onError }) => {
+  const [picked, setPicked] = useState<string[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [info, setInfo] = useState(EMPTY_INFO);
+  const selectable = prepaid.lots.filter((l) => !l.groupId || l.groupId === editingId);
+  const total = prepaid.lots.filter((l) => picked.includes(l.deductionId)).reduce((s, l) => s + l.amount, 0);
+  const last = [...prepaid.groups].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+  const set = (k: keyof typeof EMPTY_INFO) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setInfo({ ...info, [k]: e.target.value });
+  const reset = () => { setPicked([]); setEditingId(null); setInfo(EMPTY_INFO); };
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const next = submitPrepaidInvoiceGroup(state, { secret, deductionIds: picked, groupId: editingId || undefined, ...info });
+      reset();
+      onDone(next, editingId ? 'Đã cập nhật yêu cầu hóa đơn.' : 'Đã gửi yêu cầu hóa đơn cho các lượt đã chọn.');
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Không gửi được yêu cầu.');
+    }
+  };
+
+  return (
+    <div className="space-y-3 border-t border-slate-200 pt-3" data-testid="prepaid-portal">
+      <p className="text-slate-600">
+        Phiếu thu trả trước: yêu cầu hóa đơn theo <strong>từng lượt đã dùng</strong> — chọn 1 hoặc nhiều lượt để gộp chung 1 hóa đơn. Còn {formatVnd(prepaid.remainingAmount)} chưa dùng (chưa xuất hóa đơn được).
+      </p>
+
+      {/* Các yêu cầu đã gửi */}
+      {prepaid.groups.map((g, i) => {
+        const lots = prepaid.lots.filter((l) => g.deductionIds.includes(l.deductionId));
+        return (
+          <div key={g.id} className={`space-y-1 rounded-md border p-2 ${editingId === g.id ? 'border-blue-600' : 'border-slate-200'}`}>
+            <div className="flex items-center justify-between">
+              <span className="font-bold">Yêu cầu {i + 1}: {lots.length} lượt • {formatVnd(g.amount)}</span>
+              <span className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${g.status === 'DA_XHD' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{INVOICE_STATUS_LABELS[g.status]}</span>
+            </div>
+            <p className="font-mono text-[11px] text-slate-600">{lots.map((l) => l.dossierCode).join(', ')}</p>
+            <p>{g.companyName} • MST {g.taxCode}{g.invoiceNo ? ` • HĐ ${g.invoiceNo}` : ''}</p>
+            {g.status === 'YEU_CAU_XHD' && (
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setEditingId(g.id); setPicked(g.deductionIds); setInfo({ taxCode: g.taxCode, email: g.email, companyName: g.companyName, address: g.address, note: g.note || '' }); }} className="font-semibold text-blue-700 underline">Sửa</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try { onDone(cancelPrepaidInvoiceGroup(state, { secret, groupId: g.id }), 'Đã hủy yêu cầu — các lượt được chọn lại.'); reset(); }
+                    catch (err) { onError(err instanceof Error ? err.message : 'Không hủy được.'); }
+                  }}
+                  className="font-semibold text-rose-700 underline"
+                >
+                  Hủy yêu cầu
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Chọn lượt + nhập thông tin */}
+      {selectable.length === 0 ? (
+        <p className="rounded bg-emerald-50 p-2 text-center font-semibold text-emerald-800">Mọi lượt đã dùng đều đã có yêu cầu hóa đơn.</p>
+      ) : (
+        <form onSubmit={submit} className="space-y-2">
+          <p className="font-bold text-slate-800">{editingId ? 'Sửa yêu cầu' : 'Yêu cầu mới'} — chọn lượt *</p>
+          <ul className="divide-y divide-slate-100 rounded-md border border-slate-200">
+            {selectable.map((l) => (
+              <li key={l.deductionId}>
+                <label className="flex items-center gap-2 px-2 py-2">
+                  <input type="checkbox" checked={picked.includes(l.deductionId)} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, l.deductionId] : p.filter((x) => x !== l.deductionId)))} className="h-4 w-4" />
+                  <span className="flex-1">
+                    <span className="block font-mono font-bold">{l.dossierCode} • {l.containerNo}</span>
+                    <span className="block text-[11px] text-slate-500">{l.operation} • {formatDateTime(l.performedAt)}</span>
+                  </span>
+                  <span className="font-mono font-bold">{formatVnd(l.amount)}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <p className="text-right font-bold">Đã chọn {picked.length} lượt • {formatVnd(total)}</p>
+          {last && !editingId && (
+            <button type="button" onClick={() => setInfo({ taxCode: last.taxCode, email: last.email, companyName: last.companyName, address: last.address, note: '' })} className="font-semibold text-blue-700 underline">
+              Dùng lại thông tin yêu cầu trước
+            </button>
+          )}
+          <label className="block"><span className={labelCls}>Mã số thuế *</span><input value={info.taxCode} onChange={set('taxCode')} inputMode="numeric" className={`${inputCls} font-mono`} /></label>
+          <label className="block"><span className={labelCls}>Gmail nhận hóa đơn *</span><input value={info.email} onChange={set('email')} type="email" className={inputCls} /></label>
+          <label className="block"><span className={labelCls}>Tên công ty *</span><input value={info.companyName} onChange={set('companyName')} className={inputCls} /></label>
+          <label className="block"><span className={labelCls}>Địa chỉ *</span><input value={info.address} onChange={set('address')} className={inputCls} /></label>
+          <label className="block"><span className={labelCls}>Ghi chú</span><textarea value={info.note} onChange={set('note')} rows={2} className={inputCls} /></label>
+          <div className="flex gap-2">
+            <button type="submit" disabled={picked.length === 0} className={`${primaryBtn} flex-1 py-3`}>
+              <Send className="h-4 w-4" />
+              {editingId ? 'Cập nhật yêu cầu' : 'Gửi yêu cầu hóa đơn'}
+            </button>
+            {editingId && <button type="button" onClick={reset} className="rounded-md border border-slate-300 px-3 font-semibold text-slate-700">Bỏ sửa</button>}
+          </div>
+        </form>
+      )}
+    </div>
   );
 };

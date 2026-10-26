@@ -24,7 +24,7 @@ import { can } from '../services/permissions';
 import { isSupabaseConfigured } from '../lib/env';
 import { DATETIME_PLACEHOLDER, formatDateTime, maskDateTimeInput, parseDateTime, QUICK_RANGE_OPTIONS, quickRange, QuickRangeKey } from '../services/datetime';
 import { PAGE_SIZE_OPTIONS, SheetData, toXlsxBuffer, XLSX_MIME } from '../services/reports';
-import { blockDimensions, SLOT_DIMENSION_LABELS } from '../services/core';
+import { blockDimensions, SLOT_DIMENSION_LABELS, SlotDimension } from '../services/core';
 
 // ---------------------------------------------------------------------------
 // Thông báo lỗi / thành công thống nhất
@@ -447,43 +447,88 @@ export function isSlotComplete(v: SlotValue, state: DepotState): boolean {
 }
 
 // Chọn vị trí: chỉ hiện Bay / Row / Tier mà Block có cấu hình (DEC-082)
+// DEC-125: CHỌN VỊ TRÍ TỪNG BƯỚC — Block → Bay → Row → Tier (chỉ các chiều Block có cấu hình, DEC-082).
+//   Dòng tóm tắt trên cùng luôn hiện giá trị đã chọn (bấm vào 1 phần để chọn lại phần đó và các phần sau);
+//   bên dưới chỉ hiện bước đang chọn với toàn bộ giá trị dạng nút lớn → ép chọn đủ, dễ thao tác trên điện thoại.
+const SLOT_BUTTON_LIMIT = 60; // quá nhiều giá trị (cấu hình lớn) → dùng ô chọn thả xuống
 export const SlotPicker: React.FC<{
   state: DepotState;
   value: SlotValue;
   onChange: (next: SlotValue) => void;
   onlyBlocks?: string[]; // DEC-109: giới hạn block được chọn (VD: chỉ Kệ giám định)
 }> = ({ state, value, onChange, onlyBlocks }) => {
+  const blocks = state.yardBlocks.filter((b) => !onlyBlocks || onlyBlocks.includes(b.blockCode));
   const block = state.yardBlocks.find((b) => b.blockCode === value.blockCode);
   const dims = block ? blockDimensions(block) : [];
   const range = (n: number) => Array.from({ length: n }, (_, i) => String(i + 1).padStart(2, '0'));
+  const step = !block ? 'block' : dims.find((d) => !value[d.key])?.key; // undefined = đã chọn đủ
+  const current = dims.find((d) => d.key === step);
+  // chọn lại 1 phần → xóa phần đó và các phần sau
+  const resetFrom = (key: 'block' | SlotDimension) => {
+    if (key === 'block') return onChange({ blockCode: '', bay: '', row: '', tier: '' });
+    const idx = dims.findIndex((d) => d.key === key);
+    const next = { ...value };
+    dims.slice(idx).forEach((d) => (next[d.key] = ''));
+    onChange(next);
+  };
+  const btn = (active: boolean) =>
+    `min-h-[2.75rem] rounded-md border px-2 py-2 text-center font-mono text-sm font-bold ${active ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white text-slate-900 hover:border-blue-400 active:bg-blue-50'}`;
+  const seg = (filled: boolean, active: boolean) =>
+    `rounded px-1.5 py-0.5 font-mono font-black ${filled ? 'bg-slate-900 text-white' : active ? 'border border-dashed border-blue-600 text-blue-700' : 'text-slate-400'}`;
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      <label>
-        <span className={labelCls}>Block *</span>
-        <select
-          value={value.blockCode}
-          onChange={(e) => onChange({ blockCode: e.target.value, bay: '', row: '', tier: '' })}
-          className={inputCls}
-        >
-          <option value="">-- Chọn --</option>
-          {state.yardBlocks.filter((b) => !onlyBlocks || onlyBlocks.includes(b.blockCode)).map((b) => (
-            <option key={b.blockCode} value={b.blockCode}>
-              {b.blockCode}
-            </option>
-          ))}
-        </select>
-      </label>
-      {dims.map((d) => (
-        <label key={d.key}>
-          <span className={labelCls}>{SLOT_DIMENSION_LABELS[d.key]} *</span>
-          <select value={value[d.key]} onChange={(e) => onChange({ ...value, [d.key]: e.target.value })} className={inputCls}>
-            <option value="">--</option>
-            {range(d.max).map((v) => <option key={v} value={v}>{v}</option>)}
-          </select>
-        </label>
-      ))}
+    <div className="space-y-2" data-testid="slot-picker">
+      {/* Dòng tóm tắt: giá trị đã chọn */}
+      <div className="flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs" data-testid="slot-summary">
+        <span className="mr-1 text-[11px] font-semibold uppercase text-slate-500">Vị trí</span>
+        <button type="button" onClick={() => resetFrom('block')} disabled={!block} className={seg(Boolean(block), step === 'block')} title="Chọn lại Block">
+          {block ? block.blockCode : 'Block'}
+        </button>
+        {dims.map((d, i) => (
+          <React.Fragment key={d.key}>
+            <span className="text-slate-400">{i === 0 ? '/' : '-'}</span>
+            <button type="button" onClick={() => resetFrom(d.key)} disabled={!value[d.key]} className={seg(Boolean(value[d.key]), step === d.key)} title={`Chọn lại ${SLOT_DIMENSION_LABELS[d.key]}`}>
+              {value[d.key] || SLOT_DIMENSION_LABELS[d.key]}
+            </button>
+          </React.Fragment>
+        ))}
+        {block && !step && <span className="ml-auto font-bold text-emerald-700">✓ Đủ vị trí</span>}
+      </div>
+
+      {/* Bước đang chọn */}
+      {step === 'block' && (
+        <div>
+          <span className={labelCls}>Chọn Block *</span>
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+            {blocks.map((b) => (
+              <button key={b.blockCode} type="button" onClick={() => onChange({ blockCode: b.blockCode, bay: '', row: '', tier: '' })} className={btn(false)}>
+                {b.blockCode}
+              </button>
+            ))}
+          </div>
+          {blocks.length === 0 && <p className="text-[11px] text-amber-700">Chưa có Block phù hợp trong Danh mục Vị trí.</p>}
+        </div>
+      )}
+      {current && (
+        <div>
+          <span className={labelCls}>Chọn {SLOT_DIMENSION_LABELS[current.key]} * (01 → {String(current.max).padStart(2, '0')})</span>
+          {current.max > SLOT_BUTTON_LIMIT ? (
+            <select value="" onChange={(e) => onChange({ ...value, [current.key]: e.target.value })} className={inputCls}>
+              <option value="">--</option>
+              {range(current.max).map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          ) : (
+            <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">
+              {range(current.max).map((v) => (
+                <button key={v} type="button" onClick={() => onChange({ ...value, [current.key]: v })} className={btn(false)}>
+                  {v}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {block && dims.length === 0 && (
-        <p className="col-span-2 self-end pb-2 text-[11px] text-slate-500 sm:col-span-3">{block.blockCode} chỉ quản lý theo Block — không cần Bay / Row / Tier.</p>
+        <p className="text-[11px] text-slate-500">{block.blockCode} chỉ quản lý theo Block — không cần Bay / Row / Tier.</p>
       )}
     </div>
   );

@@ -3,6 +3,8 @@ import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { createInitialState, DepotState } from '../src/services/depotStore';
 import { App } from '../src/app/App';
+import { FeedbackButton, FeedbackPanel } from '../src/components/FeedbackButton';
+import { FeedbackReport } from '../src/features/reports/FeedbackReport';
 import { InvoicePortal } from '../src/features/invoice/InvoicePortal';
 import { InvoicePanel } from '../src/features/receipts/ReceiptsWorkspace';
 import { createDemoState } from '../src/services/demoData';
@@ -35,7 +37,7 @@ const as = (s: DepotState, id: string) => ({ ...s, currentUser: s.staffUsers.fin
 describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
   it('App khung menu', () => {
     // DEC-106: App mở với dữ liệu sạch; smoke này cần dữ liệu mẫu → nạp qua localStorage giả
-    const store: Record<string, string> = { matran_depot_erp_state_v10: JSON.stringify(base) };
+    const store: Record<string, string> = { matran_depot_erp_state_v13: JSON.stringify(base) };
     const prev = (globalThis as { localStorage?: unknown }).localStorage;
     (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } };
     const html = renderToString(<App />);
@@ -57,13 +59,21 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('>-<');
     expect(html).toContain('Lưu bãi');
     // DEC-074: cột Date in nằm giữa Hãng tàu và Trạng thái
-    expect(html).toMatch(/Hãng tàu<\/th><th[^>]*>Date in<\/th><th[^>]*>Trạng thái/);
+    // DEC-132: mỗi cont 1 dòng (không xuống dòng), Date in ngày + giờ cùng 1 dòng
+    expect(html).toMatch(/cursor-pointer whitespace-nowrap[^"]*" data-testid="yard-row"/);
+    expect(html).not.toContain('block text-[10px] text-slate-500');
+    // DEC-129: AGE ngay sau Hãng tàu; Date in vẫn trước Trạng thái
+    expect(html).toMatch(/Hãng tàu<\/th><th[^>]*>AGE<\/th><th[^>]*>Date in<\/th><th[^>]*>Trạng thái/);
+    expect(html).toMatch(/>Mã phiếu thu<\/th><th[^>]*>Tiến độ<\/th>/);
+    // DEC-128: cột Phân loại (đóng hàng) ngay bên phải Trạng thái
+    expect(html).toMatch(/>Trạng thái<\/th><th[^>]*>Phân loại<\/th>/);
     expect(html).toContain('Tìm hàng loạt');
     expect(html).toContain('Container không khóa');
     // DEC-099: cột thanh toán
-    expect(html).toContain('Hình thức TT');
+    expect(html).toContain('>Thanh toán<');
     expect(html).toContain('>Mã phiếu thu<');
-    expect(html).toContain('TTR — TRẢ TRƯỚC');
+    expect(html).toContain('>TRẢ TRƯỚC<'); // DEC-127: không kèm ký hiệu
+    expect(html).not.toContain('TTR — TRẢ TRƯỚC');
     expect(html).not.toContain('>Thao tác<');
   });
 
@@ -363,7 +373,6 @@ describe('DEC-079: khối Sử dụng phiếu thu trả trước', () => {
     expect(html).toContain('Sử dụng phiếu thu trả trước PTT-2026-001');
     expect(html).toContain('1 lượt');
     expect(html).toContain('HV-261019-001');
-    expect(html).not.toContain('CT-GIN-261019-01'); // DEC-107: không hiện chứng từ
     expect(html).toContain('Còn lại');
   });
 });
@@ -452,6 +461,30 @@ describe('DEC-082: chọn vị trí chỉ hiện chiều Block có cấu hình',
     expect(b).toContain('chỉ quản lý theo Block');
     expect(isSlotComplete({ blockCode: 'BLOCK-B', bay: '', row: '', tier: '' }, base)).toBe(true);
     expect(isSlotComplete({ blockCode: 'BLOCK-A', bay: '01', row: '', tier: '' }, base)).toBe(false);
+  });
+});
+
+describe('DEC-125: chọn vị trí từng bước (Block → Bay → Row → Tier), tóm tắt ở trên', () => {
+  it('chưa chọn: chỉ hiện toàn bộ Block dạng nút; chọn dần thì tóm tắt hiện giá trị đã chọn và bước tiếp theo', async () => {
+    const { SlotPicker } = await import('../src/components/shared');
+    const empty = renderToString(<SlotPicker state={base} value={{ blockCode: '', bay: '', row: '', tier: '' }} onChange={noop} />).replace(/<!-- -->/g, '');
+    expect(empty).toContain('Chọn Block *');
+    for (const b of base.yardBlocks) expect(empty).toContain(`>${b.blockCode}</button>`);
+    expect(empty).not.toContain('Chọn Bay');
+    const bay = renderToString(<SlotPicker state={base} value={{ blockCode: 'BLOCK-A', bay: '', row: '', tier: '' }} onChange={noop} />).replace(/<!-- -->/g, '');
+    expect(bay).toContain('Chọn Bay * (01 → 20)');
+    expect(bay).not.toContain('Chọn Block *');
+    expect(bay).toMatch(/data-testid="slot-summary"[\s\S]*>BLOCK-A<\/button>/);
+    const row = renderToString(<SlotPicker state={base} value={{ blockCode: 'BLOCK-A', bay: '05', row: '', tier: '' }} onChange={noop} />).replace(/<!-- -->/g, '');
+    expect(row).toContain('>05</button>');
+    expect(row).toContain('Chọn Row *');
+    expect(row).not.toContain('Chọn Tier');
+    const done = renderToString(<SlotPicker state={base} value={{ blockCode: 'BLOCK-A', bay: '05', row: '02', tier: '01' }} onChange={noop} />).replace(/<!-- -->/g, '');
+    expect(done).toContain('✓ Đủ vị trí');
+    expect(done).not.toContain('Chọn Tier');
+    const rack = renderToString(<SlotPicker state={base} value={{ blockCode: '', bay: '', row: '', tier: '' }} onChange={noop} onlyBlocks={['BLOCK-DAMAGE']} />);
+    expect(rack).toContain('>BLOCK-DAMAGE</button>');
+    expect(rack).not.toContain('>BLOCK-A</button>');
   });
 });
 
@@ -588,7 +621,7 @@ describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
     expect(html).toContain(r.invoiceSecret!);
     expect(html).toContain('#/hoa-don');
   });
-  it('Phiếu thu có cột / lọc Hóa đơn; Kế toán thấy nút Đã xuất hóa đơn khi khách đã yêu cầu', () => {
+  it('Phiếu thu có cột / lọc Hóa đơn; Kế toán thấy nút Đã xuất hóa đơn khi khách đã yêu cầu', async () => {
     const html = renderToString(<ReceiptsWorkspace state={as(demo, 'usr-acc')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
     expect(html).toContain('>Hóa đơn<');
     expect(html).toContain('YÊU CẦU XHD');
@@ -599,6 +632,13 @@ describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
     expect(panel).toContain(req.invoiceSecret!); // DEC-112: hiện mã bảo mật để đối soát
     expect(panel).toContain('#/hoa-don'); // DEC-113: kèm đường link
     expect(renderToString(<InvoicePanel receipt={req} canIssue={false} onIssue={noop} />)).not.toContain('Đã xuất hóa đơn</button>');
+    // DEC-130: phiếu trả trước → các yêu cầu theo lượt, Kế toán xuất từng yêu cầu
+    const { prepaidInvoiceView } = await import('../src/services/invoice');
+    const topup = demo.paymentReceipts.find((x) => x.purpose === 'PREPAID_TOPUP' && (x.invoiceGroups || []).length)!;
+    const pp = renderToString(<InvoicePanel receipt={topup} canIssue onIssue={noop} prepaid={prepaidInvoiceView(demo, topup)} />).replace(/<!-- -->/g, '');
+    expect(pp).toContain('data-testid="prepaid-invoice-groups"');
+    expect(pp).toContain('Yêu cầu 1 — 1 lượt');
+    expect(pp).toContain('Đã xuất hóa đơn</button>');
   });
 });
 
@@ -609,5 +649,42 @@ describe('DEC-116: Đảo chuyển không có ghi chú tác nghiệp', () => {
     const html = renderToString(<YardShiftWorkspace state={base} onUpdateState={noop} />);
     expect(c).toBeTruthy();
     expect(html).not.toContain('Ghi chú tác nghiệp');
+  });
+});
+
+describe('DEC-120: Góp ý', () => {
+  const demo = createDemoState();
+  const opts = [
+    { id: 'TON_VO', label: 'Văn phòng → Tồn vỏ', group: 'Văn phòng', item: 'Tồn vỏ' },
+    { id: 'VP_PHIEU_THU', label: 'Văn phòng → Phiếu thu', group: 'Văn phòng', item: 'Phiếu thu' },
+  ];
+  it('nút Góp ý + form chọn menu / nội dung + Góp ý của tôi', () => {
+    expect(renderToString(<FeedbackButton state={demo} onUpdateState={noop} menuOptions={opts} />)).toContain('data-testid="feedback-button"');
+    const html = renderToString(<FeedbackPanel state={as(demo, 'usr-forklift')} onUpdateState={noop} menuOptions={opts} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('aria-label="Menu góp ý"');
+    expect(html).toContain('>Khác<');
+    // DEC-123: chọn menu chính trước — chưa hiện ô Tính năng / Nội dung
+    expect(html).toContain('>Văn phòng<');
+    expect(html).not.toContain('aria-label="Tính năng góp ý"');
+    expect(html).not.toContain('3. Nội dung góp ý');
+    expect(html).toContain('Góp ý của tôi (1)');
+  });
+  it('Báo cáo → Góp ý có bộ lọc + Tra cứu', () => {
+    const html = renderToString(<FeedbackReport state={as(demo, 'usr-admin')} onUpdateState={noop} menuOptions={opts} />);
+    expect(html).toContain('Báo cáo Góp ý');
+    expect(html).toContain('aria-label="Lọc nhanh thời gian"');
+  });
+});
+
+describe('DEC-129: Tồn vỏ — thứ tự cột màn hình = thứ tự cột Excel', () => {
+  it('mọi cột hiển thị trên màn đều có trong Excel, đúng thứ tự', async () => {
+    const { yardStockSheet } = await import('../src/services/reports');
+    const html = renderToString(<YardFeature state={base} onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    const thead = html.slice(html.indexOf('<thead'), html.indexOf('</thead>'));
+    const screen = [...thead.matchAll(/<th[^>]*>([^<]+)<\/th>/g)].map((m) => m[1].trim().toUpperCase()).filter(Boolean);
+    const excel = yardStockSheet(base.containers, base).columns;
+    const positions = screen.map((label) => excel.findIndex((col) => col === label || col.startsWith(label + ' ')));
+    screen.forEach((label, i) => expect(positions[i], `Excel thiếu cột "${label}"`).toBeGreaterThan(-1));
+    for (let i = 1; i < positions.length; i++) expect(positions[i], `Sai thứ tự cột "${screen[i]}"`).toBeGreaterThan(positions[i - 1]);
   });
 });

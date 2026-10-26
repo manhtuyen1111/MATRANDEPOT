@@ -7,8 +7,8 @@ import { quickRange, fileStamp, formatDateTime } from '../../services/datetime';
 import { linkCls, ContainerNo, DateRangeFilter, ExportExcelButton, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize } from '../../components/shared';
 
 const STATUS: Record<VesselMode, Record<string, string>> = {
-  NHAP_TAU: { PENDING: 'Chờ xe về', INSPECTED: 'Đã giám định — chờ hạ', DONE: 'Đã hạ bãi' },
-  XUAT_TAU: { PENDING: 'Chờ xuất', INSPECTED: '-', DONE: 'Đã xuất tàu' },
+  NHAP_TAU: { PENDING: 'Chờ xe về', INSPECTED: 'Đã giám định — chờ hạ', DONE: 'Đã hạ bãi', SKIPPED: 'Không kịp (gạch)' },
+  XUAT_TAU: { PENDING: 'Chờ xuất', INSPECTED: '-', DONE: 'Đã xuất tàu', SKIPPED: 'Không kịp (gạch)' },
 };
 
 // BÁO CÁO NHẬP TÀU / XUẤT TÀU (DEC-069): lọc theo thời gian nhập / xuất tàu, tên tàu, số cont
