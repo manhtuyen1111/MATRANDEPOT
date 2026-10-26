@@ -1256,6 +1256,7 @@ Quy ước trạng thái:
   - khu vực trên cùng là **bộ lọc** (Tìm kiếm họ tên / tên đăng nhập / mã NV, không phân biệt dấu; Vai trò; Trạng thái; Mật khẩu mặc định / đã đổi) + nút **Thêm nhân viên mới (+)**, giống Văn phòng → Phiếu thu;
   - **bấm Thêm** mới mở khung "Thêm nhân viên mới"; tạo xong thì khung tự đóng.
 - Kỹ thuật: `suggestUsername`, `stripVietnamese` (`auth.ts`); `PASSWORD_MIN_LENGTH = 1`.
+- **Không** cho Admin xem mật khẩu người dùng (đã cân nhắc 2026-10-26, người dùng quyết định bỏ). Mật khẩu chỉ lưu dạng băm một chiều; quên mật khẩu thì Admin **Đặt lại mật khẩu** về 123456.
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
