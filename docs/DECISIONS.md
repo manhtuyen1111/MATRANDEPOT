@@ -1177,6 +1177,17 @@ Quy ước trạng thái:
 - Các ô **tự điền** khi bấm chọn container ở danh sách bên trái; không gõ tay. Chưa chọn thì ô hiện "-" kèm nhắc "bấm chọn ở danh sách bên trái".
 - Không đổi nghiệp vụ chọn container: cont khóa vẫn không chọn được.
 
+### DEC-138 — Tồn vỏ → Sửa vị trí: khung làm việc giống Đảo chuyển
+
+- Trạng thái: CONFIRMED (2026-10-26).
+- Lỗi cũ: khung SỬA VỊ TRÍ trải theo chiều rộng bảng Tồn vỏ (rất rộng), nên nút **Lưu vị trí** bị đẩy ra ngoài màn hình.
+- Nay khung là **thẻ gọn** (tối đa `max-w-lg`), **dính bên trái** khi bảng cuộn ngang, bố cục giống Đảo chuyển, từ trên xuống:
+  - số container (có nút đóng ✕);
+  - Size / Type, Trạng thái + tiến độ, Vị trí hiện tại;
+  - khối **Vị trí mới \*** (`SlotPicker`);
+  - nút **Lưu vị trí** full chiều rộng ở cuối.
+- Nghiệp vụ không đổi: vẫn là sửa vị trí hành chính (`correctContainerLocation`), không ghi nhận là Đảo chuyển.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1266,6 +1277,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-137 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-138 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
