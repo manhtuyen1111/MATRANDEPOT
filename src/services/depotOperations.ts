@@ -847,6 +847,8 @@ export function toggleContainerHold(
   }
   const container = findActiveContainer(state, input.containerNo);
   if (!container) throw new Error('Không tìm thấy container đang tồn bãi.');
+  // DEC-131: khóa do danh sách XUẤT TÀU chỉ gỡ bằng cách bỏ cont khỏi danh sách / duyệt danh sách
+  if (container.holdSource === 'VESSEL_EXPORT') throw new Error(`Container ${container.containerNo} đang khóa do ${container.holdReason} — bỏ khỏi danh sách Xuất tàu để mở khóa.`);
   if (container.isOnHold === input.hold) {
     throw new Error(input.hold ? 'Container đã đang bị khóa.' : 'Container hiện không bị khóa.');
   }
@@ -1691,6 +1693,8 @@ export function updateContainerOfficeNote(
   assertPermission(state, 'OFFICE_NOTE', 'chỉ Văn phòng / Quản lý được ghi chú tồn vỏ.');
   const target = state.containers.find((c) => c.id === input.containerId);
   if (!target) return state;
+  // DEC-131: ghi chú = tên tàu khi nằm trong danh sách XUẤT TÀU — không sửa tay
+  if (target.holdSource === 'VESSEL_EXPORT') throw new Error(`Container ${target.containerNo} đang khóa do ${target.holdReason} — ghi chú do danh sách Xuất tàu quản lý.`);
 
   const cleanNote = input.officeNote.trim();
   const next = updateContainerById(state, target.id, {

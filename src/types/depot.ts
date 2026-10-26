@@ -271,6 +271,7 @@ export interface ContainerRecord {
   // DEC-109: HA_KE_GIAM_DINH = cont phải hạ vào KỆ GIÁM ĐỊNH (đặt từ Giám định Hạ vỏ); xóa khi ĐẢO CHUYỂN về vị trí khác.
   // HA_SUA_CHUA: cờ cũ (menu đã gỡ theo CR-01).
   forkliftShiftTask: 'NONE' | 'HA_SUA_CHUA' | 'HA_KE_GIAM_DINH';
+  holdSource?: 'VESSEL_EXPORT'; // DEC-131: khóa tự động do nằm trong danh sách XUẤT TÀU (chặn cấp vỏ, vẫn xuất tàu được)
   quotationAmount?: number;
   quotationItems?: string[];
   quotationLaborHours?: number; // GIỜ CÔNG SỬA CHỮA do Báo giá nhập (DEC-041)
@@ -639,7 +640,7 @@ export const VESSEL_MODE_LABELS: Record<VesselMode, string> = { NHAP_TAU: 'NHẬ
 export type VesselListStatus = 'OPEN' | 'APPROVED';
 // NT: PENDING (chờ xe về) → INSPECTED (Giám định xác nhận, cont vào hàng chờ Vệ sinh / Xe nâng) → DONE (Xe nâng hạ, cont tồn bãi)
 // XT: PENDING (chờ xuất) → DONE (Giám định / Xe nâng gán xe, cont OUT khỏi bãi)
-export type VesselItemStatus = 'PENDING' | 'INSPECTED' | 'DONE';
+export type VesselItemStatus = 'PENDING' | 'INSPECTED' | 'DONE' | 'SKIPPED'; // DEC-131: SKIPPED = không kịp tác nghiệp khi duyệt (gạch đi)
 
 export interface VesselListItem {
   id: string;
@@ -678,4 +679,5 @@ export interface VesselList {
   createdAt: string;
   approvedBy?: string;
   approvedAt?: string;
+  approveNote?: string; // DEC-131: lý do duyệt khi chưa xuất / nhập đủ
 }

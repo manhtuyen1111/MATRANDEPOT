@@ -502,8 +502,8 @@ export function queryVesselReport(state: DepotState, mode: VesselMode, filter: V
 }
 
 const VESSEL_ITEM_STATUS: Record<string, Record<string, string>> = {
-  NHAP_TAU: { PENDING: 'Chờ xe về', INSPECTED: 'Đã giám định — chờ hạ', DONE: 'Đã hạ bãi' },
-  XUAT_TAU: { PENDING: 'Chờ xuất', INSPECTED: '-', DONE: 'Đã xuất tàu' },
+  NHAP_TAU: { PENDING: 'Chờ xe về', INSPECTED: 'Đã giám định — chờ hạ', DONE: 'Đã hạ bãi', SKIPPED: 'Không kịp (gạch)' }, // DEC-131
+  XUAT_TAU: { PENDING: 'Chờ xuất', INSPECTED: '-', DONE: 'Đã xuất tàu', SKIPPED: 'Không kịp (gạch)' },
 };
 
 export function vesselReportSheet(mode: VesselMode, rows: VesselReportRow[]): SheetData {

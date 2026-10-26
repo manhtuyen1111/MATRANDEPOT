@@ -63,7 +63,7 @@ describe('DEC-069: NHẬP TÀU', () => {
     expect(s.k80Tickets.some((t) => t.masterDossierCode === it1.dossierCode)).toBe(false); // không K80
     expect(s.vouchers.some((x) => x.masterDossierCode === it1.dossierCode)).toBe(false);    // không thu phí
     expect(() => inspectVesselImportItem(as(s, 'usr-inspector'), inspect)).toThrow(/đã được Giám định/);
-    expect(() => approveVesselList(as(s, 'usr-office'), { listId, mode: 'NHAP_TAU' })).toThrow(/Chưa NHẬP TÀU hết/);
+    expect(() => approveVesselList(as(s, 'usr-office'), { listId, mode: 'NHAP_TAU' })).toThrow(/bắt buộc ghi LÝ DO/);
 
     // Có vệ sinh: Xe nâng chỉ hạ được sau khi Vệ sinh xong (dùng chung hàm Hạ vỏ)
     expect(() => updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU1234567', blockCode: 'BLOCK-B', reason: '' })).toThrow(/vệ sinh/);
@@ -114,8 +114,9 @@ describe('DEC-069: XUẤT TÀU', () => {
 
     expect(() => executeVesselExport(as(s, 'usr-office'), { listId, itemId: items[0].id, truckNo: '15C-333.33' })).toThrow(/Không đủ quyền/);
     expect(() => executeVesselExport(as(s, 'usr-forklift'), { listId, itemId: items[0].id, truckNo: 'X' })).toThrow(/SỐ XE/);
-    const lockedLater = toggleContainerHold(s, { containerNo: yard[0].containerNo, hold: true, reason: 'Giữ' });
-    expect(() => executeVesselExport(as(lockedLater, 'usr-forklift'), { listId, itemId: items[0].id, truckNo: '15C-333.33' })).toThrow(/mở khóa/);
+    // DEC-131: vào danh sách → tự KHÓA + ghi chú tên tàu (thay ghi chú cũ); Văn phòng không tự mở khóa / sửa ghi chú được; vẫn xuất tàu được
+    expect(s.containers.find((c) => c.id === yard[0].id)).toMatchObject({ isOnHold: true, holdSource: 'VESSEL_EXPORT', officeNote: 'XUẤT TÀU WAN HAI 305' });
+    expect(() => toggleContainerHold(s, { containerNo: yard[0].containerNo, hold: false, reason: 'Mở' })).toThrow(/bỏ khỏi danh sách Xuất tàu/);
 
     s = executeVesselExport(as(s, 'usr-inspector'), { listId, itemId: items[0].id, truckNo: '15c-333.33' });
     expect(s.containers.find((c) => c.id === yard[0].id)).toMatchObject({ status: 'GATED_OUT', outDossierCode: items[0].dossierCode, currentBlock: null });
@@ -126,6 +127,9 @@ describe('DEC-069: XUẤT TÀU', () => {
 
     s = removeVesselListItem(s, { listId, itemId: items[1].id, mode: 'XUAT_TAU' });
     expect(s.containers.find((c) => c.id === yard[1].id)!.vesselExportItemId).toBeUndefined();
+    // DEC-131: bỏ khỏi danh sách → tự mở khóa + xóa ghi chú, cấp vỏ lại được
+    expect(s.containers.find((c) => c.id === yard[1].id)).toMatchObject({ isOnHold: false, officeNote: undefined, holdSource: undefined });
+    expect(releaseBlocker(s.containers.find((c) => c.id === yard[1].id)!) || '').not.toMatch(/XUẤT TÀU|KHÓA/);
     expect(() => removeVesselListItem(s, { listId, itemId: items[0].id, mode: 'XUAT_TAU' })).toThrow(/đã tác nghiệp/);
     s = approveVesselList(s, { listId, mode: 'XUAT_TAU' });
     expect(s.vesselLists[0].status).toBe('APPROVED');
@@ -255,5 +259,36 @@ describe('DEC-083: tác nghiệp hiện tại của cont (cho Vệ sinh / Xe nâ
         // cont mẫu không đủ điều kiện cấp vỏ — bỏ qua nhánh này
       }
     }
+  });
+});
+
+describe('DEC-131: duyệt khi chưa đủ — gạch cont không kịp, bắt buộc lý do', () => {
+  it('Xuất tàu: duyệt thiếu cần lý do; cont không kịp → SKIPPED, tự mở khóa + xóa ghi chú; Nhập tàu: cont chưa về bị gạch', async () => {
+    const { updateContainerOfficeNote } = await import('../src/services/depotOperations');
+    const s0 = as(createInitialState(), 'usr-office');
+    const yard = s0.containers.filter((c) => c.status === 'IN_YARD' && !c.isOnHold).slice(0, 2);
+    let { state: s, listId } = createVesselList(s0, { mode: 'XUAT_TAU', vesselName: 'Wan Hai 305', plannedAt: PLANNED, truckNos: ['15C-333.33'], exportContainerIds: yard.map((c) => c.id) });
+    expect(() => updateContainerOfficeNote(s, { containerId: yard[0].id, officeNote: 'Sửa tay' })).toThrow(/Xuất tàu quản lý/);
+    const items = s.vesselLists[0].items;
+    s = executeVesselExport(as(s, 'usr-forklift'), { listId, itemId: items[0].id, truckNo: '15C-333.33' });
+    s = as(s, 'usr-office');
+    expect(() => approveVesselList(s, { listId, mode: 'XUAT_TAU', reason: '  ' })).toThrow(/LÝ DO/);
+    s = approveVesselList(s, { listId, mode: 'XUAT_TAU', reason: 'Tàu chạy sớm' });
+    const list = s.vesselLists[0];
+    expect(list).toMatchObject({ status: 'APPROVED', approveNote: 'Tàu chạy sớm' });
+    expect(list.items.map((i) => i.status)).toEqual(['DONE', 'SKIPPED']);
+    const left = s.containers.find((c) => c.id === yard[1].id)!;
+    expect(left).toMatchObject({ status: 'IN_YARD', isOnHold: false, officeNote: undefined, vesselExportItemId: undefined });
+    expect(releaseBlocker(left) || '').not.toMatch(/XUẤT TÀU|KHÓA/);
+    expect(s.auditLogs[0].summary).toMatch(/CHƯA ĐỦ.*gạch 1 cont/);
+    expect(() => approveVesselList(s, { listId, mode: 'XUAT_TAU', reason: 'x' })).toThrow(/đã được duyệt/);
+
+    // Nhập tàu: 1 cont chưa về → gạch; duyệt đủ thì không cần lý do
+    let nt = createVesselList(as(createInitialState(), 'usr-office'), {
+      mode: 'NHAP_TAU', vesselName: 'Ever Gentle', plannedAt: PLANNED, truckNos: ['15C-111.11'], shippingLineCode: 'MAERSK',
+      importItems: [{ containerNo: 'TCLU1234567', size: '40', type: 'HC' }, { containerNo: 'TCLU7654321', size: '20', type: 'DC' }],
+    });
+    let n = approveVesselList(nt.state, { listId: nt.listId, mode: 'NHAP_TAU', reason: 'Cont chưa về' });
+    expect(n.vesselLists[0].items.every((i) => i.status === 'SKIPPED')).toBe(true);
   });
 });

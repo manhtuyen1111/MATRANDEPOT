@@ -33,11 +33,13 @@ const ITEM_STATUS: Record<VesselMode, Record<string, { label: string; cls: strin
     PENDING: { label: 'Chờ xe về', cls: 'bg-slate-100 text-slate-700' },
     INSPECTED: { label: 'Đã giám định — chờ hạ', cls: 'bg-amber-100 text-amber-800' },
     DONE: { label: 'Đã hạ bãi', cls: 'bg-emerald-100 text-emerald-800' },
+    SKIPPED: { label: 'Không kịp', cls: 'bg-rose-100 text-rose-700' }, // DEC-131
   },
   XUAT_TAU: {
     PENDING: { label: 'Chờ xuất', cls: 'bg-slate-100 text-slate-700' },
     INSPECTED: { label: '-', cls: '' },
     DONE: { label: 'Đã xuất tàu', cls: 'bg-emerald-100 text-emerald-800' },
+    SKIPPED: { label: 'Không kịp', cls: 'bg-rose-100 text-rose-700' }, // DEC-131
   },
 };
 
@@ -458,7 +460,8 @@ const ListDetail: React.FC<{
   const isImport = mode === 'NHAP_TAU';
   const p = vesselListProgress(list);
   const complete = p.total > 0 && p.done === p.total;
-  const [panel, setPanel] = useState<'' | 'EDIT' | 'ADD' | 'DELETE'>('');
+  const [panel, setPanel] = useState<'' | 'EDIT' | 'ADD' | 'DELETE' | 'APPROVE'>('');
+  const [approveReason, setApproveReason] = useState(''); // DEC-131
   const [header, setHeader] = useState<HeaderValue>(() => ({
     vesselName: list.vesselName,
     plannedAt: formatDateTime(list.plannedAt),
@@ -486,7 +489,8 @@ const ListDetail: React.FC<{
             <button type="button" onClick={() => openPanel('EDIT')} className={secondaryBtn}><Pencil className="h-3.5 w-3.5" />Sửa thông tin</button>
             <button type="button" onClick={() => openPanel('ADD')} className={secondaryBtn}><Plus className="h-3.5 w-3.5" />Thêm cont</button>
             <button type="button" onClick={() => openPanel('DELETE')} className={`${secondaryBtn} text-rose-700`}><Trash2 className="h-3.5 w-3.5" />Xóa danh sách</button>
-            <button type="button" onClick={() => run(() => approveVesselList(state, { listId: list.id, mode }), `Đã duyệt ${VESSEL_MODE_LABELS[mode]} thành công tàu ${list.vesselName}.`)} disabled={!complete} className={primaryBtn} title={complete ? '' : 'Chỉ duyệt khi đã xong hết danh sách'}>
+            {/* DEC-131: duyệt được cả khi chưa đủ — bắt buộc lý do, cont không kịp bị gạch */}
+            <button type="button" onClick={() => (complete ? run(() => approveVesselList(state, { listId: list.id, mode }), `Đã duyệt ${VESSEL_MODE_LABELS[mode]} thành công tàu ${list.vesselName}.`) : openPanel('APPROVE'))} disabled={list.status === 'APPROVED' || p.total === 0} className={primaryBtn}>
               <CheckCircle2 className="h-4 w-4" />
               Duyệt {VESSEL_MODE_LABELS[mode]} thành công
             </button>
@@ -498,6 +502,7 @@ const ListDetail: React.FC<{
         <p className="text-[11px] text-slate-600">
           Xe: <span className="font-semibold">{list.truckNos.join(', ')}</span> • lập bởi {list.createdBy}, {formatDateTime(list.createdAt)}
           {list.status === 'APPROVED' && <> • <span className="font-bold text-emerald-700">duyệt bởi {list.approvedBy}, {formatDateTime(list.approvedAt)}</span></>}
+          {list.approveNote && <> • <span className="font-bold text-amber-800">Duyệt chưa đủ — lý do: {list.approveNote}</span></>}
         </p>
         <VesselProgressBar list={list} />
 
@@ -532,6 +537,22 @@ const ListDetail: React.FC<{
             </div>
           </div>
         )}
+        {panel === 'APPROVE' && (
+          <div className="space-y-2 rounded-md border border-amber-400 bg-amber-50 p-3 text-amber-900" data-testid="approve-incomplete">
+            <p className="font-semibold">
+              Chưa {VESSEL_MODE_LABELS[mode].toLowerCase()} đủ ({p.done}/{p.total}). Duyệt bây giờ: {p.pending} cont chưa tác nghiệp sẽ bị <span className="line-through">gạch đi</span> (Không kịp)
+              {isImport ? '; cont đã giám định vẫn tiếp tục hạ bãi.' : ' và tự mở khóa, xóa ghi chú — trở lại tồn bãi.'}
+            </p>
+            <label className="block">
+              <span className={labelCls}>Lý do duyệt khi chưa đủ *</span>
+              <input value={approveReason} onChange={(e) => setApproveReason(e.target.value)} placeholder="VD: Tàu chạy sớm" className={inputCls} />
+            </label>
+            <div className="flex gap-2">
+              <button type="button" disabled={!approveReason.trim()} onClick={() => run(() => approveVesselList(state, { listId: list.id, mode, reason: approveReason }), `Đã duyệt ${VESSEL_MODE_LABELS[mode]} tàu ${list.vesselName} (chưa đủ).`) && setPanel('')} className={primaryBtn}>Xác nhận duyệt</button>
+              <button type="button" onClick={() => setPanel('')} className={secondaryBtn}>Hủy</button>
+            </div>
+          </div>
+        )}
         {panel === 'DELETE' && (
           <div className="flex flex-wrap items-center gap-2 rounded-md border border-rose-300 bg-rose-50 p-3 text-rose-900">
             <span className="mr-auto font-semibold">Xóa cả danh sách tàu {list.vesselName} ({list.items.length} container)? Chỉ xóa được khi chưa có cont nào được tác nghiệp.</span>
@@ -560,7 +581,7 @@ const ListDetail: React.FC<{
               {items.map((i, idx) => {
                 const st = ITEM_STATUS[mode][i.status];
                 return (
-                  <tr key={i.id}>
+                  <tr key={i.id} className={i.status === 'SKIPPED' ? 'text-slate-400 line-through' : ''}>
                     <td className="py-1.5 pr-2 text-slate-400">{idx + 1}</td>
                     <td className="py-1.5 pr-2 font-mono">
                       {i.dossierCode && i.status !== 'PENDING' ? (

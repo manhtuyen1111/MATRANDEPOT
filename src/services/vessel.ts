@@ -122,7 +122,23 @@ function buildImportItems(state: DepotState, rows: ImportRow[], existing: Vessel
 }
 
 // Dòng XUẤT TÀU mới: chọn từ tồn vỏ, cấp mã XT- và đánh dấu cont đang trong danh sách
-function buildExportItems(state: DepotState, containerIds: string[]): { state: DepotState; items: VesselListItem[] } {
+// DEC-131: cont trong danh sách XUẤT TÀU tự KHÓA + ghi chú tên tàu (thay ghi chú cũ); bỏ khỏi danh sách / không kịp → tự mở khóa + xóa ghi chú
+function vesselLock(state: DepotState, containerId: string, vesselName: string): DepotState {
+  const note = `XUẤT TÀU ${vesselName}`;
+  const now = nowIso();
+  return updateContainerById(state, containerId, {
+    isOnHold: true, holdSource: 'VESSEL_EXPORT', holdReason: note, holdBy: state.currentUser.fullName, holdAt: now,
+    officeNote: note, officeNoteUpdatedBy: state.currentUser.fullName, officeNoteUpdatedAt: now,
+  });
+}
+function vesselUnlock(state: DepotState, containerId: string): DepotState {
+  return updateContainerById(state, containerId, {
+    vesselExportItemId: undefined, isOnHold: false, holdSource: undefined, holdReason: undefined, holdBy: undefined, holdAt: undefined,
+    officeNote: undefined, officeNoteUpdatedBy: undefined, officeNoteUpdatedAt: undefined,
+  });
+}
+
+function buildExportItems(state: DepotState, containerIds: string[], vesselName: string): { state: DepotState; items: VesselListItem[] } {
   const ids = Array.from(new Set(containerIds));
   if (ids.length === 0) throw new Error('Danh sách xuất tàu chưa có container nào (chọn từ tồn vỏ).');
   let next = state;
@@ -147,7 +163,7 @@ function buildExportItems(state: DepotState, containerIds: string[]): { state: D
       stuffingClass: c.stuffingClass,
       locationAtList: formatLocation(c),
     });
-    next = updateContainerById(next, c.id, { vesselExportItemId: itemId });
+    next = vesselLock(updateContainerById(next, c.id, { vesselExportItemId: itemId }), c.id, vesselName);
   }
   return { state: next, items };
 }
@@ -174,7 +190,7 @@ export function createVesselList(
     shippingLineCode = assertShippingLine(state, input.shippingLineCode);
     items = buildImportItems(state, input.importItems || []);
   } else {
-    ({ state: next, items } = buildExportItems(state, input.exportContainerIds || []));
+    ({ state: next, items } = buildExportItems(state, input.exportContainerIds || [], vesselName));
   }
   const list: VesselList = {
     id: listId, mode: input.mode, vesselName, shippingLineCode, plannedAt: input.plannedAt, truckNos, items,
@@ -208,8 +224,12 @@ export function updateVesselList(
     }
     shippingLineCode = code;
   }
+  let next: DepotState = state;
+  if (list.mode === 'XUAT_TAU' && vesselName !== list.vesselName) {
+    for (const i of list.items) if (i.status === 'PENDING' && i.containerId) next = vesselLock(next, i.containerId, vesselName); // DEC-131
+  }
   return appendAudit(
-    { ...state, vesselLists: state.vesselLists.map((l) => (l.id === list.id ? { ...l, vesselName, plannedAt: input.plannedAt, truckNos, shippingLineCode } : l)) },
+    { ...next, vesselLists: next.vesselLists.map((l) => (l.id === list.id ? { ...l, vesselName, plannedAt: input.plannedAt, truckNos, shippingLineCode } : l)) },
     'VESSEL_UPDATE_LIST',
     'VESSEL',
     vesselName,
@@ -227,7 +247,7 @@ export function addVesselListItems(
   let next = state;
   let items: VesselListItem[];
   if (input.mode === 'NHAP_TAU') items = buildImportItems(state, input.importItems || [], list.items);
-  else ({ state: next, items } = buildExportItems(state, input.exportContainerIds || []));
+  else ({ state: next, items } = buildExportItems(state, input.exportContainerIds || [], list.vesselName));
   return appendAudit(
     { ...next, vesselLists: next.vesselLists.map((l) => (l.id === list.id ? { ...l, items: [...l.items, ...items] } : l)) },
     'VESSEL_ADD_ITEMS',
@@ -246,7 +266,7 @@ export function deleteVesselList(state: DepotState, input: { listId: string; mod
     throw new Error(`Đã có ${worked.length} container được tác nghiệp — không xóa danh sách được (chỉ bỏ được cont còn chờ).`);
   }
   let next: DepotState = { ...state, vesselLists: state.vesselLists.filter((l) => l.id !== list.id) };
-  for (const i of list.items) if (i.containerId) next = updateContainerById(next, i.containerId, { vesselExportItemId: undefined });
+  for (const i of list.items) if (i.containerId && list.mode === 'XUAT_TAU') next = vesselUnlock(next, i.containerId); // DEC-131
   return appendAudit(next, 'VESSEL_DELETE_LIST', 'VESSEL', list.vesselName, `Xóa danh sách ${label(list.mode)} tàu ${list.vesselName} (${list.items.length} container chưa tác nghiệp)`);
 }
 
@@ -260,7 +280,7 @@ export function removeVesselListItem(state: DepotState, input: { listId: string;
     ...state,
     vesselLists: state.vesselLists.map((l) => (l.id === list.id ? { ...l, items: l.items.filter((i) => i.id !== item.id) } : l)),
   };
-  if (item.containerId) next = updateContainerById(next, item.containerId, { vesselExportItemId: undefined });
+  if (item.containerId && list.mode === 'XUAT_TAU') next = vesselUnlock(next, item.containerId); // DEC-131
   return appendAudit(next, 'VESSEL_REMOVE_ITEM', 'VESSEL', list.vesselName, `Bỏ ${item.containerNo} khỏi danh sách ${label(list.mode)} tàu ${list.vesselName}`, item.dossierCode);
 }
 
@@ -392,7 +412,8 @@ export function executeVesselExport(state: DepotState, input: { listId: string; 
   if (!list.truckNos.includes(truckNo)) throw new Error('Bắt buộc chọn SỐ XE trong danh sách xe xuất tàu.');
   const c = state.containers.find((x) => x.id === item.containerId);
   if (!c || c.status === 'GATED_OUT') throw new Error(`Container ${item.containerNo} không còn tồn bãi.`);
-  if (c.isOnHold) throw new Error(`Container ${c.containerNo} đang bị KHÓA (${c.holdReason || ''}) — Văn phòng phải mở khóa trước khi xuất tàu.`);
+  // DEC-131: khóa do chính danh sách XUẤT TÀU không chặn xuất tàu; khóa thường thì phải mở khóa trước
+  if (c.isOnHold && c.holdSource !== 'VESSEL_EXPORT') throw new Error(`Container ${c.containerNo} đang bị KHÓA (${c.holdReason || ''}) — Văn phòng phải mở khóa trước khi xuất tàu.`);
   if (c.status !== 'IN_YARD') throw new Error(`Container ${c.containerNo} không ở trạng thái tồn bãi.`);
 
   const now = nowIso();
@@ -434,6 +455,8 @@ export function executeVesselExport(state: DepotState, input: { listId: string; 
     forkliftShiftTask: 'NONE',
     outDossierCode: code,
     vesselExportItemId: undefined,
+    isOnHold: false,
+    holdSource: undefined,
     gateOutAt: now,
   });
   next = patchItem(next, list.id, item.id, { status: 'DONE', truckNo, doneBy: actor, doneAt: now });
@@ -450,25 +473,52 @@ export function executeVesselExport(state: DepotState, input: { listId: string; 
 // ---------------------------------------------------------------------------
 // 4. VĂN PHÒNG / QUẢN LÝ — DUYỆT danh sách khi đã xong hết
 // ---------------------------------------------------------------------------
-export function vesselListProgress(list: VesselList): { total: number; done: number; inspected: number; pending: number } {
+export function vesselListProgress(list: VesselList): { total: number; done: number; inspected: number; pending: number; skipped: number } {
   const done = list.items.filter((i) => i.status === 'DONE').length;
   const inspected = list.items.filter((i) => i.status === 'INSPECTED').length;
-  return { total: list.items.length, done, inspected, pending: list.items.length - done - inspected };
+  const skipped = list.items.filter((i) => i.status === 'SKIPPED').length;
+  return { total: list.items.length, done, inspected, skipped, pending: list.items.length - done - inspected - skipped };
 }
 
-export function approveVesselList(state: DepotState, input: { listId: string; mode: VesselMode }): DepotState {
+// DEC-131: duyệt được cả khi CHƯA làm đủ — bắt buộc ghi LÝ DO; cont chưa tác nghiệp (PENDING) bị gạch đi (SKIPPED).
+//   Xuất tàu: cont không kịp tự mở khóa + xóa ghi chú, trở lại tồn bãi bình thường.
+//   Nhập tàu: cont đã Giám định (đang chờ hạ) vẫn đi tiếp luồng hạ bãi; chỉ cont chưa về mới bị gạch.
+export function approveVesselList(state: DepotState, input: { listId: string; mode: VesselMode; reason?: string }): DepotState {
   assertPermission(state, 'VESSEL_LIST_MANAGE', `chỉ Văn phòng / Quản lý được duyệt ${label(input.mode)}.`);
   const list = findList(state, input.listId, input.mode);
+  if (list.status === 'APPROVED') throw new Error('Danh sách đã được duyệt.');
   const p = vesselListProgress(list);
   if (p.total === 0) throw new Error('Danh sách không có container nào.');
-  if (p.done < p.total) throw new Error(`Chưa ${label(list.mode)} hết danh sách (${p.done}/${p.total}) — chưa duyệt được.`);
+  const incomplete = p.done < p.total;
+  const reason = input.reason?.trim();
+  if (incomplete && !reason) throw new Error(`Chưa ${label(list.mode)} đủ (${p.done}/${p.total}) — bắt buộc ghi LÝ DO khi duyệt.`);
+  const skippedItems = list.items.filter((i) => i.status === 'PENDING');
+  let next = state;
+  if (list.mode === 'XUAT_TAU') for (const i of skippedItems) if (i.containerId) next = vesselUnlock(next, i.containerId);
   const now = nowIso();
+  next = {
+    ...next,
+    vesselLists: next.vesselLists.map((l) =>
+      l.id === list.id
+        ? {
+            ...l,
+            status: 'APPROVED' as const,
+            approvedBy: state.currentUser.fullName,
+            approvedAt: now,
+            approveNote: incomplete ? reason : undefined,
+            items: l.items.map((i) => (i.status === 'PENDING' ? { ...i, status: 'SKIPPED' as const } : i)),
+          }
+        : l
+    ),
+  };
   return appendAudit(
-    { ...state, vesselLists: state.vesselLists.map((l) => (l.id === list.id ? { ...l, status: 'APPROVED' as const, approvedBy: state.currentUser.fullName, approvedAt: now } : l)) },
+    next,
     list.mode === 'NHAP_TAU' ? 'NHAP_TAU_DUYET' : 'XUAT_TAU_DUYET',
     'VESSEL',
     list.vesselName,
-    `Duyệt ${label(list.mode)} thành công tàu ${list.vesselName}: ${p.total} container`
+    incomplete
+      ? `Duyệt ${label(list.mode)} tàu ${list.vesselName} CHƯA ĐỦ: ${p.done}/${p.total} container${skippedItems.length ? `, gạch ${skippedItems.length} cont không kịp (${skippedItems.map((i) => i.containerNo).join(', ')})` : ''}. Lý do: ${reason}`
+      : `Duyệt ${label(list.mode)} thành công tàu ${list.vesselName}: ${p.total} container`
   );
 }
 
