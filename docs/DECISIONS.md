@@ -991,6 +991,13 @@ Quy ước trạng thái:
 - Excel: cột MÃ HỒ SƠ của phiếu nạp = danh sách mã hồ sơ đã dùng, ngăn cách bằng dấu phẩy.
 - Tên cột đổi từ "Mã hồ sơ / Phiếu thu trả trước" thành **"Mã hồ sơ"**.
 
+### DEC-122 — Phiếu thu trả trước: cột Mã hồ sơ chỉ hiện tóm tắt, bấm để xem chi tiết
+
+- Trạng thái: CONFIRMED (2026-10-26). Thay phần hiển thị trên màn của DEC-121.
+- Quyết định: Dòng THU TRƯỚC (TTR) ở cột **Mã hồ sơ** **không liệt kê các mã hồ sơ**. Chỉ hiện một dòng tóm tắt **"Dùng N lượt • còn X ₫"** dạng link (`linkCls`).
+- Bấm vào tóm tắt sẽ mở cửa sổ chi tiết phiếu, có bảng **Sử dụng phiếu thu trả trước**: từng lượt, mã hồ sơ (link), số cont, số tiền trừ, số dư.
+- **Excel giữ như DEC-121:** cột MÃ HỒ SƠ ghi đủ các mã hồ sơ đã dùng phiếu.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1080,6 +1087,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-121 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-122 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
