@@ -1211,6 +1211,14 @@ Quy ước trạng thái:
 - **Giữ nguyên** thứ tự cột đồng bộ của DEC-139 (5 cột đầu Mã hồ sơ | Số container | Size | Type | Hãng tàu; báo cáo tàu thêm Tên tàu đầu tiên), cả trên màn hình lẫn Excel.
 - Đã gỡ `frozenCols` / `FROZEN_W` / `FROZEN_STANDARD` khỏi `shared.tsx`.
 
+### DEC-142 — Báo giá → Chờ báo giá: mỗi cont 1 dòng như Tồn vỏ
+
+- Trạng thái: CONFIRMED (2026-10-26). Áp DEC-132, DEC-134, DEC-135 cho menu Báo giá.
+- Cả dòng **không xuống dòng**; bảng rộng thì cuộn ngang.
+- **Date in**: ngày + giờ trên cùng 1 dòng.
+- **Tình trạng sửa chữa** và **Ghi chú** dài: cắt bớt (`CellText`, tối đa 40 ký tự), rê chuột xem đủ.
+- Thứ tự cột không đổi, nên Excel giữ nguyên.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1300,6 +1308,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-141 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-142 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
