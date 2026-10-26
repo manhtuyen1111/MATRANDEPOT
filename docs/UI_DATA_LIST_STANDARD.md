@@ -66,8 +66,8 @@ Thứ tự từ trên xuống:
 - `<table>` có `whitespace-nowrap`, bọc trong `overflow-x-auto` (cuộn ngang khi rộng).
 - Ô chữ dài: `<CellText text max={CELL_MAX.SHORT | MEDIUM | LONG} />` — tối đa 20 / 30 / 40 ký tự, dư thì "…", rê chuột xem đủ (DEC-135). Excel vẫn xuất đủ.
 
-## Cố định cột đầu (DEC-139)
+## Thứ tự cột đầu (DEC-139, DEC-141)
 
-- Bảng có container: 5 cột đầu **Mã hồ sơ | Số container | Size | Type | Hãng tàu**, cố định khi kéo ngang (`frozenCols(FROZEN_STANDARD)`).
-- Báo cáo tàu: **Tên tàu** + 5 cột trên (6 cột cố định).
+- Bảng có container: 5 cột đầu **Mã hồ sơ | Số container | Size | Type | Hãng tàu**. Không cố định cột khi kéo ngang (DEC-141).
+- Báo cáo tàu: **Tên tàu** + 5 cột trên.
 - Sheet Excel bắt đầu bằng đúng các cột này.
