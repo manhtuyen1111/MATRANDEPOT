@@ -3,10 +3,10 @@
 > Agent cập nhật file này sau mỗi việc (skill `matran-docs-sync`). Bạn chỉ cần đọc mục A, B và F.
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
-Cập nhật lần cuối: 2026-10-25 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-132**), **đã push đầy đủ lên GitHub 2026-10-25**, chưa merge vào `main`. Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110); **xuất hóa đơn từ phiếu thu**: mã bảo mật 12 ký tự, trang khách `#/hoa-don`, trạng thái CHƯA / YÊU CẦU / ĐÃ XHD, **thêm lại vai trò Kế toán**, người thu tiền luôn là nhân viên (111 → 114); **Đảo chuyển mobile 2 dòng**, bỏ ghi chú tác nghiệp (115, 116); **ô nhập mobile chữ 16px** (không tự phóng to vỡ khung — 116); **mọi mã có hồ sơ đều là link, cùng kiểu Mã hồ sơ** (117, 118). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
+Cập nhật lần cuối: 2026-10-26 — Claude Code
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-132**), **đã push đầy đủ lên GitHub 2026-10-25**, chưa merge vào `main`. Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110); **xuất hóa đơn từ phiếu thu**: mã bảo mật 12 ký tự, trang khách `#/hoa-don`, trạng thái CHƯA / YÊU CẦU / ĐÃ XHD, **thêm lại vai trò Kế toán**, người thu tiền luôn là nhân viên (111 → 114); **Đảo chuyển mobile 2 dòng**, bỏ ghi chú tác nghiệp (115, 116); **ô nhập mobile chữ 16px** (không tự phóng to vỡ khung — 116); **mọi mã có hồ sơ đều là link, cùng kiểu Mã hồ sơ** (117, 118). Ngày 26/10: **bỏ mã CT-** (số chứng từ = mã hồ sơ — 119); **Góp ý** (nút góc phải + Báo cáo → Góp ý chỉ Admin — 120, 123); phiếu thu trả trước **một mã PT-TTR-** (bỏ PTT- — 124), cột Mã hồ sơ chỉ tóm tắt (121, 122), **hóa đơn theo từng lượt, khách tự gộp** (130); **chọn vị trí từng bước** (125); báo cáo Hạ / Cấp vỏ có Thanh toán + Mã phiếu thu, bỏ ký hiệu (126, 127); Tồn vỏ Phân loại / AGE / Tiến độ, **mỗi cont 1 dòng**, Excel khớp màn hình (128, 129, 132); **Xuất tàu tự khóa + ghi chú, duyệt tàu khi chưa đủ** (131). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
-**Điểm dừng 2026-10-25 (khuya):** đã kiểm tra (117/117 test, build, quét khóa bí mật) + **push đầy đủ lên GitHub** (DEC-050 → DEC-118). **Đọc mục I (I.3) trước khi làm việc tiếp theo.**
+**Điểm dừng 2026-10-26:** đã kiểm tra (130/130 test, build, quét khóa bí mật) + **push đầy đủ lên GitHub** (DEC-050 → DEC-132). **Đọc mục I (I.3) trước khi làm việc tiếp theo.**
 
 **Quyết định 2026-10-25: TẠM HOÃN GĐ 4 Database** — người dùng test kỹ bản Demo trước (dữ liệu test đầy đủ đã có), khi thấy các luồng ổn định mới xây database. Lý do: sau khi có database, mỗi thay đổi nghiệp vụ phải sửa cả migration / RPC / pgTAP, tốn công hơn nhiều. API ngân hàng (GĐ 6) phụ thuộc GĐ 4. Khi mở lại cần chốt Q-037 → Q-040.
 Kiểm thử mới nhất: `npm test` **97/97 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
@@ -14,7 +14,7 @@ Kiểm thử mới nhất: `npm test` **97/97 pass** (3 file test) • `npm run 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
 |---|---|---|
-| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push đầy đủ** (DEC-050 → DEC-118, 2026-10-25). **Thử trên trình duyệt + in giấy thật** (mục F, F2, F3) rồi tạo Pull Request merge vào `main` | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
+| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push đầy đủ** (DEC-050 → DEC-132, 2026-10-26). **Thử trên trình duyệt + in giấy thật** (mục F, F2, F3) rồi tạo Pull Request merge vào `main` | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
 | 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |
 | 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
 | 4 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
@@ -248,7 +248,30 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-24 — Claude Code: P7-24 (DEC-095) Đảo chuyển tiến độ + ghi chú.
 - 2026-10-24 — Claude Code: P7-25 (DEC-096) đồng bộ ô trạng thái Đảo chuyển.
 
-### I.3 — Bổ sung 2026-10-25 (đọc trước — mới nhất)
+### I.4 — Bổ sung 2026-10-26 (đọc trước — mới nhất)
+**Cho bạn:** thử theo F4 bên dưới (dữ liệu test tự nạp lại — khóa lưu v13). Còn chờ bạn: Q-032 (ngân hàng), Q-037 → Q-040 (database, đang tạm hoãn), có bỏ ký hiệu TT/TTR/TTS ở khối chọn thanh toán + Excel Phiếu thu không, cont Nhập tàu có cần ô "Hạ kệ giám định" không.
+
+**F4. THỬ TÍNH NĂNG 26/10**
+1. Văn phòng → Hạ vỏ: số chứng từ / nội dung chuyển khoản = mã hồ sơ HV- (không còn CT-).
+2. **Góp ý** (góc phải): chọn Menu chính → Tính năng → Nội dung → Gửi; Admin → Báo cáo → Góp ý → bấm dòng → trạng thái + phản hồi.
+3. Phiếu thu trả trước: tạo → có ngay `PT-TTR-…` (chờ thanh toán) → thu → cùng mã; cột Mã hồ sơ "Dùng N lượt • còn X" (bấm xem chi tiết).
+4. Hóa đơn theo lượt: lấy mã bảo mật phiếu PT-TTR (khối Xuất hóa đơn) → `#/hoa-don` → chọn lượt → gửi; Kế toán (Đỗ Thị Thu) → Phiếu thu → mở phiếu → "Đã xuất hóa đơn" từng yêu cầu.
+5. Xe nâng / Tồn vỏ sửa vị trí: chọn Block → Bay → Row → Tier bằng nút, tóm tắt ở trên.
+6. Báo cáo Hạ vỏ / Cấp vỏ: cột Thanh toán + Mã phiếu thu (Excel cũng có).
+7. Tồn vỏ: cột AGE, Phân loại, Tiến độ sau Mã phiếu thu; mỗi cont 1 dòng; Excel cùng thứ tự.
+8. Xuất tàu MAERSK SEMARANG: `MSKU3000022` đang khóa "XUẤT TÀU MAERSK SEMARANG" ở Tồn vỏ (không cấp vỏ được) → Duyệt khi chưa đủ → nhập lý do → cont bị gạch, tự mở khóa.
+
+**Cho agent:**
+1. Hiện tới **DEC-132**. GĐ 4 vẫn tạm hoãn.
+2. **Mã:** không còn `CT-` (số chứng từ = mã hồ sơ — DEC-119) và `PTT-` (phiếu trả trước = `PT-TTR-` cấp ngay khi tạo — DEC-124); thêm `GY-` (góp ý).
+3. **Hóa đơn:** trạng thái phiếu luôn lấy `receiptInvoiceStatus` / `receiptInvoiceLabel`; phiếu trả trước dùng `invoiceGroups` (`submitPrepaidInvoiceGroup`, `cancelPrepaidInvoiceGroup`, `markInvoiceIssued({ groupId })`).
+4. **Thanh toán hiển thị:** `PaymentInfoCells` + `containerPaymentInfo` / `voucherPaymentInfo`; nhãn ngắn `PAYMENT_CATEGORY_SHORT_LABELS` (TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU).
+5. **Excel khớp màn hình (DEC-129):** đổi cột trên màn → sửa sheet; Tồn vỏ có test so thứ tự cột. Test đọc ô Excel phải dùng `columns.indexOf`, không dùng chỉ số cố định.
+6. **Xuất tàu (DEC-131):** `holdSource = 'VESSEL_EXPORT'` — chỉ `vesselLock` / `vesselUnlock` trong `vessel.ts` được đặt / gỡ; `toggleContainerHold` / `updateContainerOfficeNote` từ chối loại khóa này.
+7. **SlotPicker (DEC-125)** là component chọn từng bước — giữ nguyên props (state, value, onChange, onlyBlocks).
+8. Bẫy đã gặp hôm nay: chèn `import` vào giữa khối import nhiều dòng; chèn comment `//` giữa dòng mảng làm mất phần tử phía sau; đổi `const` → `let` bằng sed áp cho mọi dòng giống nhau — luôn kiểm `git diff` sau khi sửa bằng script.
+
+### I.3 — Bổ sung 2026-10-25
 **Cho bạn:** test theo mục F3 với dữ liệu test; ghi lại lỗi / chỗ chưa hợp lý; khi thấy ổn thì báo để mở GĐ 4 (trả lời Q-037 → Q-040) và tạo PR merge vào `main`.
 
 **Cho agent:**
@@ -317,3 +340,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-26 — Claude Code: DEC-130 hóa đơn phiếu thu trả trước theo từng lượt (khách tự gộp). 129/129 • build PASS.
 - 2026-10-26 — Claude Code: DEC-131 Xuất tàu tự khóa + ghi chú; duyệt tàu khi chưa đủ (gạch cont không kịp). 130/130 • build PASS.
 - 2026-10-26 — Claude Code: DEC-132 Tồn vỏ mỗi cont 1 dòng. 130/130 • build PASS.
+- 2026-10-26 — Claude Code: cập nhật tiến độ, F4, bàn giao I.4; kiểm tra + push đầy đủ (DEC-050 → DEC-132).
