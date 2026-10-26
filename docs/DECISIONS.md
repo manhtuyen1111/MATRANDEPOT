@@ -980,6 +980,17 @@ Quy ước trạng thái:
 - Góp ý được **giữ lại khi bấm "Xóa dữ liệu"**. Dữ liệu test có 2 góp ý mẫu (1 MỚI, 1 ĐÃ XỬ LÝ).
 - Kỹ thuật: `src/services/feedback.ts`, `queryFeedback` / `feedbackSheet` (`reports.ts`), `src/components/FeedbackButton.tsx`, `src/features/reports/FeedbackReport.tsx`.
 
+### DEC-121 — Phiếu thu trả trước: cột MÃ HỒ SƠ = các tác nghiệp đã dùng phiếu
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- Quyết định: Ở Văn phòng → Phiếu thu, dòng phiếu nạp tiền trả trước (`PT-TTR-…`) có cột **Mã hồ sơ** hiện **mã hồ sơ của các tác nghiệp đã dùng phiếu thu trả trước đó** (HV- / CV-).
+  - Mỗi mã là link mở hồ sơ.
+  - Hiện tối đa 3 mã, còn lại ghi "+N".
+  - Chưa dùng thì ghi "Chưa dùng"; vẫn kèm "Dùng N lượt • còn X".
+- Không hiện mã `PTT-…` ở cột này. Mã PTT vẫn có trong cửa sổ chi tiết, bảng sử dụng và cột Excel **PHIẾU THU TRẢ TRƯỚC**.
+- Excel: cột MÃ HỒ SƠ của phiếu nạp = danh sách mã hồ sơ đã dùng, ngăn cách bằng dấu phẩy.
+- Tên cột đổi từ "Mã hồ sơ / Phiếu thu trả trước" thành **"Mã hồ sơ"**.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1069,6 +1080,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-120 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-121 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

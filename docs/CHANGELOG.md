@@ -196,6 +196,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 
 ### Added (2026-10-26, DEC-120)
 - **Góp ý**: nút ở góc trên bên phải (chọn menu / tính năng + nội dung, xem "Góp ý của tôi"); **Báo cáo → Góp ý** chỉ Admin — lọc, Excel, cập nhật trạng thái MỚI / ĐANG XỬ LÝ / ĐÃ XỬ LÝ / KHÔNG ÁP DỤNG + phản hồi. Kiểm thử: 124/124 pass, build PASS.
+- Phiếu thu trả trước: cột **Mã hồ sơ** hiện mã các tác nghiệp đã dùng phiếu (link hồ sơ), không còn hiện PTT-; Excel cùng quy tắc (DEC-121). Kiểm thử: 125/125 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
