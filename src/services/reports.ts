@@ -418,7 +418,9 @@ export function receiptsSheet(state: DepotState, rows: ReceiptRow[]): SheetData 
     ],
     rows: rows.map(({ transaction: t, receipt: r }) => [
       r?.receiptNo || '', OP[receiptOperationOf(state, { ...t, operation: r?.operation })], t.containerNo || '', STATUS[t.status] || t.status, t.amount,
-      PAYMENT_CATEGORY_FULL_LABELS[t.paymentCategory] || t.paymentCategory, t.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản', t.payerName, t.dossierCode || '',
+      PAYMENT_CATEGORY_FULL_LABELS[t.paymentCategory] || t.paymentCategory, t.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản', t.payerName,
+      // DEC-121: phiếu thu trả trước → mã hồ sơ các tác nghiệp đã dùng phiếu
+      t.purpose === 'PREPAID_TOPUP' ? masterReceiptUsage(state, r?.masterReceiptCode || t.paymentRef)?.rows.map((u) => u.dossierCode).join(', ') || '' : t.dossierCode || '',
       r?.masterReceiptCode || (t.purpose === 'PREPAID_TOPUP' ? t.paymentRef : ''), t.paymentRef,
       t.providerTxRef || '', fmt(t.createdAt), t.createdBy, fmt(t.confirmedAt), t.confirmedBy || '', t.cancelReason || '',
       r?.printLog?.length || 0, r?.printLog?.length ? `${fmt(r.printLog[r.printLog.length - 1].at)} • ${r.printLog[r.printLog.length - 1].by}` : '',

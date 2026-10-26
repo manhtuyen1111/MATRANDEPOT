@@ -26,3 +26,20 @@ describe('DEC-108: dữ liệu test đầy đủ trường hợp', () => {
     expect(s.vesselLists.map((l) => l.mode).sort()).toEqual(['NHAP_TAU', 'XUAT_TAU']);
   });
 });
+
+describe('DEC-121: phiếu thu trả trước — cột MÃ HỒ SƠ là các tác nghiệp đã dùng phiếu', () => {
+  it('phiếu nạp PT-TTR- → Excel MÃ HỒ SƠ = các HV- đã trừ tiền (không phải PTT-)', async () => {
+    const { collectAllPages, queryReceipts, receiptsSheet } = await import('../src/services/reports');
+    const s = createDemoState();
+    const topup = s.paymentReceipts.find((r) => r.receiptNo.startsWith('PT-TTR-'))!;
+    const sheet = receiptsSheet(s, collectAllPages((p) => queryReceipts(s, { receiptNo: topup.receiptNo }, p)));
+    const cell = String(sheet.rows[0][sheet.columns.indexOf('MÃ HỒ SƠ')]);
+    expect(cell).toMatch(/^HV-/);
+    expect(cell).not.toMatch(/PTT-/);
+    const { masterReceiptUsage } = await import('../src/services/payments');
+    const used = masterReceiptUsage(s, topup.masterReceiptCode!)!.rows.length;
+    expect(used).toBe(2); // dữ liệu test: 2 lượt Hạ vỏ trả trước
+    expect(cell.split(', ')).toHaveLength(used);
+    expect(sheet.rows[0][sheet.columns.indexOf('PHIẾU THU TRẢ TRƯỚC')]).toMatch(/^PTT-/);
+  });
+});
