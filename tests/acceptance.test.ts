@@ -878,7 +878,11 @@ describe('DEC-067: Tồn vỏ — lưu bãi, khóa / ghi chú hàng loạt', () 
     expect(noted.state.containers.filter((c) => ids.includes(c.id)).every((c) => c.officeNote === 'Kiểm tra lại')).toBe(true);
     expect(() => bulkUpdateOfficeNote(as(s0, 'usr-forklift'), { containerIds: ids, officeNote: 'x' })).toThrow(/Không đủ quyền/);
     const sheet = yardStockSheet(noted.state.containers.filter((c) => ids.includes(c.id)));
-    expect(sheet.columns.indexOf('LƯU BÃI (NGÀY)')).toBe(sheet.columns.indexOf('TRẠNG THÁI') + 1);
+    // DEC-128: TRẠNG THÁI → PHÂN LOẠI (đóng hàng) → LƯU BÃI
+    expect(sheet.columns.indexOf('PHÂN LOẠI')).toBe(sheet.columns.indexOf('TRẠNG THÁI') + 1);
+    expect(sheet.columns.indexOf('LƯU BÃI (NGÀY)')).toBe(sheet.columns.indexOf('TRẠNG THÁI') + 2);
+    expect(sheet.columns).toContain('VỊ TRÍ');
+    for (const r of sheet.rows) expect(r.length).toBe(sheet.columns.length);
     expect(sheet.columns.slice(4, 7)).toEqual(['HÃNG TÀU', 'DATE IN', 'VÀO BÃI BẰNG']);
     expect(sheet.rows[0][6]).toBe('HẠ VỎ');
     expect(sheet.columns).toContain('GHI CHÚ');

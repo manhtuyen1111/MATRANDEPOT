@@ -149,7 +149,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
     }
   };
 
-  const colCount = canBulk ? 14 : 13;
+  const colCount = canBulk ? 15 : 14;
 
   return (
     <div className="w-full space-y-3">
@@ -241,7 +241,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
       )}
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="w-full min-w-[1400px] text-left text-xs">
+        <table className="w-full min-w-[1460px] text-left text-xs">
           <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
             <tr>
               {canBulk && (
@@ -261,6 +261,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
               <th className="w-20 whitespace-nowrap px-2 py-2.5">Hãng tàu</th>
               <th className="w-24 whitespace-nowrap px-2 py-2.5">Date in</th>
               <th className="w-20 whitespace-nowrap px-2 py-2.5 text-center">Trạng thái</th>
+              <th className="w-16 whitespace-nowrap px-2 py-2.5 text-center">Phân loại</th>{/* DEC-128: phân loại đóng hàng M / K / E */}
               <th className="w-16 whitespace-nowrap px-2 py-2.5 text-right">Lưu bãi</th>
               <th className="w-40 px-2 py-2.5">Vị trí</th>
               <th className="w-40 px-2 py-2.5">Tiến độ</th>
@@ -314,6 +315,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                         <span className="block text-[10px] text-slate-500">{formatDateTime(c.gateInAt).slice(11)}</span>
                       </td>
                       <td className={`px-2 py-2.5 text-center font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
+                      <td className="px-2 py-2.5 text-center font-mono font-bold">{c.stuffingClass}</td>
                       <td className="px-2 py-2.5 text-right font-mono font-bold">{storageDays(c.gateInAt, now)}</td>
                       <td className="px-2 py-2.5 font-mono" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-start justify-between gap-2">

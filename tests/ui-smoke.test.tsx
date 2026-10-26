@@ -60,6 +60,8 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('Lưu bãi');
     // DEC-074: cột Date in nằm giữa Hãng tàu và Trạng thái
     expect(html).toMatch(/Hãng tàu<\/th><th[^>]*>Date in<\/th><th[^>]*>Trạng thái/);
+    // DEC-128: cột Phân loại (đóng hàng) ngay bên phải Trạng thái
+    expect(html).toMatch(/>Trạng thái<\/th><th[^>]*>Phân loại<\/th>/);
     expect(html).toContain('Tìm hàng loạt');
     expect(html).toContain('Container không khóa');
     // DEC-099: cột thanh toán
