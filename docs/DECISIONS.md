@@ -827,7 +827,7 @@ Quy ước trạng thái:
 
 ### DEC-109 — Hạ vỏ: HẠ KỆ GIÁM ĐỊNH khi chưa giám định được ngay
 
-- Trạng thái: CONFIRMED (2026-10-25)
+- Trạng thái: CONFIRMED (2026-10-25). **Điểm 1 và 6 được thay bởi DEC-147** (lựa chọn GIÁM ĐỊNH SAU thay ô tích; có bước giám định bổ sung trên kệ trong hệ thống).
 - Tình huống: Giám định kiểm tra cont, chụp ảnh và gửi thông tin vào Văn phòng, nhưng chưa thể giám định ngay.
 - Quyết định:
   1. **Giám định:** chọn AV / DAMAGE như thường (tình trạng mô phỏng ban đầu), rồi tích ô **HẠ KỆ GIÁM ĐỊNH**.
@@ -1270,6 +1270,29 @@ Quy ước trạng thái:
 - Danh sách tàu: tách "Lập bởi" và "Thời gian lập". Khung dán cont: tách Size | Type.
 - Vị trí lúc lập hiển thị icon định vị thay chữ BLOCK- (DEC-136).
 
+### DEC-147 — Giám định → Hạ vỏ: GIÁM ĐỊNH SAU (LÊN KỆ) + giám định bổ sung trên kệ
+
+- Trạng thái: CONFIRMED (2026-10-26). Thay điểm 1 và 6 của DEC-109.
+- **Giám định:** mục 1 TRẠNG THÁI có 3 lựa chọn **DAMAGE / AV / GIÁM ĐỊNH SAU (LÊN KỆ)**; bỏ ô tích "HẠ KỆ GIÁM ĐỊNH".
+  - Chọn GIÁM ĐỊNH SAU → bỏ qua mục 2 (Đóng hàng) và 4 (AGE), chỉ chọn **mục 3 Vệ sinh** (1 hoặc nhiều) rồi gửi.
+  - Hệ thống tự đánh dấu HẠ KỆ GIÁM ĐỊNH.
+- **Văn phòng / Vệ sinh:** làm như thường (Văn phòng nhập Số cont, Size, Type…, thu phí, in K80 / EEIR). **EEIR ghi Trạng thái "GIÁM ĐỊNH SAU"**; Đóng hàng / AGE để trống ("-").
+- **Xe nâng:** sau Vệ sinh, chỉ hạ vào block Kệ giám định (như DEC-109).
+- **Giám định bổ sung:** màn Giám định → Hạ vỏ có tab **"Chờ giám định trên kệ (N)"**.
+  - Danh sách phiếu GIÁM ĐỊNH SAU, đã có Số cont + Size + Type từ Văn phòng.
+  - Cont chưa hạ lên kệ hiện "Chờ Xe nâng hạ kệ", chưa giám định được.
+  - Giám định nhập **AV / DAMAGE (+ lỗi) + Đóng hàng + AGE** (không hỏi lại Vệ sinh).
+  - Hệ thống cập nhật hồ sơ Hạ vỏ, K80 (EEIR in lại sẽ có thông tin mới), lượt lưu bãi.
+- **Sau giám định bổ sung — như Hạ vỏ thường:** DAMAGE → hàng chờ Báo giá → Sửa chữa; Xe nâng **Đảo chuyển** đưa cont khỏi kệ (xóa cờ kệ). AV → chỉ Đảo chuyển.
+- Số đếm menu Giám định – Hạ vỏ (DEC-075) tính cả phiếu trên kệ đã hạ.
+- **Claude bổ sung — cần người dùng xác nhận:** cont đang GIÁM ĐỊNH SAU **chưa cho Cấp vỏ** (`releaseBlocker`: "Chưa giám định (GIÁM ĐỊNH SAU)"). Ghi ở Q-042.
+- Kỹ thuật:
+  - `FieldConditionClass` thêm `'GIÁM ĐỊNH SAU'` (`CONDITION_DEFERRED`).
+  - `stuffingClass` / `manufactureYear` được để trống khi GIÁM ĐỊNH SAU.
+  - `pendingRackInspections`, `completeRackInspection` (`depotOperations.ts`); `GateInOrder.rackInspectedBy / rackInspectedAt`.
+  - Nhật ký `GIAM_DINH_TREN_KE`.
+  - `InspectionFields` prop `allowDeferred` (chỉ Hạ vỏ, không có ở Nhập tàu), `hideCleaning`.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1359,6 +1382,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-146 đã xác nhận (cập nhật 2026-10-26).
+- Quyết định nghiệp vụ: DEC-001 → DEC-147 đã xác nhận (cập nhật 2026-10-26).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

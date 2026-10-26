@@ -224,6 +224,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Giao diện **design system v2** bước 1 (DEC-145): token màu navy + accent ở `src/index.css`, font Be Vietnam Pro / JetBrains Mono, nút / ô nhập / nhãn / thẻ / thông báo / link / nhãn tác nghiệp theo token; tiêu đề thẻ và nhãn chữ thường. Bước 2–5: khung App / menu, Tồn vỏ, màn mobile, văn phòng / báo cáo / danh mục / phiếu thu / giấy tờ in đổi class slate / blue sang token. Kiểm thử: 139/139 pass, build PASS.
 - Lưu design system vào repo: `docs/DESIGN_SYSTEM.md`, `docs/design/` (tokens + mẫu); skill `matran-ui-screen` trỏ tới; test chặn class màu cũ (DEC-145). Kiểm thử: 140/140 pass, build PASS.
 - Văn phòng → Nhập / Xuất tàu: bảng chi tiết tàu mỗi cột 1 thông tin, 1 dòng (tách Size / Type / Hãng tàu / Trạng thái / Phân loại / Người thực hiện / Thời gian — DEC-146). Kiểm thử: 141/141 pass, build PASS.
+- Giám định → Hạ vỏ: lựa chọn **GIÁM ĐỊNH SAU (LÊN KỆ)** thay ô tích Hạ kệ; tab **Chờ giám định trên kệ** để giám định bổ sung AV / DAMAGE + Đóng hàng + AGE; EEIR ghi GIÁM ĐỊNH SAU; DAMAGE sau bổ sung vào Chờ báo giá (DEC-147, Q-042). Kiểm thử: 145/145 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
