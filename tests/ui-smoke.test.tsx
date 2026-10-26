@@ -10,7 +10,7 @@ import { InvoicePanel } from '../src/features/receipts/ReceiptsWorkspace';
 import { createDemoState } from '../src/services/demoData';
 import { YardFeature } from '../src/features/yard/YardFeature';
 import { OfficeCapVoWorkspace, OfficeHaVoWorkspace } from '../src/features/office/OfficeWorkspaces';
-import { ExportPicker, OfficeVesselWorkspace } from '../src/features/vessel/OfficeVesselWorkspace';
+import { ExportPicker, ListDetail, OfficeVesselWorkspace } from '../src/features/vessel/OfficeVesselWorkspace';
 import { VesselFieldMobile } from '../src/features/vessel/VesselFieldMobile';
 import { createVesselList, inspectVesselImportItem } from '../src/services/vessel';
 import { FieldQueueWorkspaces, FieldQueueMode, getFieldQueue, QueueListRow } from '../src/features/field-queues/FieldQueueWorkspaces';
@@ -821,5 +821,27 @@ describe('DEC-145: code giao diện chỉ dùng token design system (docs/DESIGN
     const banned = /(^|[\s"'`:])(bg-blue-600|text-blue-700|bg-slate-900|text-slate-(900|700|500)|border-slate-(200|300)|bg-slate-50)(?=$|[\s"'`])/m;
     const offenders = Object.entries(files).filter(([, src]) => banned.test(src)).map(([f]) => f);
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('DEC-146: Văn phòng → Nhập / Xuất tàu — bảng chi tiết tàu mỗi cột 1 thông tin, 1 dòng', () => {
+  it('tách Size | Type | Hãng tàu | Trạng thái | Phân loại | Người thực hiện | Thời gian; không còn cột gộp', () => {
+    const office = as(createInitialState(), 'usr-office');
+    const nt = createVesselList(office, {
+      mode: 'NHAP_TAU', vesselName: 'Ever Gentle', plannedAt: new Date().toISOString(), truckNos: ['15C-111.11'], shippingLineCode: 'MAERSK',
+      importItems: [{ containerNo: 'TCLU1234567', size: '40', type: 'HC' }],
+    }).state;
+    const yardId = nt.containers.find((c) => c.status === 'IN_YARD')!.id;
+    const both = createVesselList(nt, { mode: 'XUAT_TAU', vesselName: 'Wan Hai', plannedAt: new Date().toISOString(), truckNos: ['15C-333.33'], exportContainerIds: [yardId] }).state;
+    for (const mode of ['NHAP_TAU', 'XUAT_TAU'] as const) {
+      const list = both.vesselLists.find((l) => l.mode === mode)!;
+      const html = renderToString(<ListDetail list={list} mode={mode} state={both} canManage run={() => true} onDeleted={noop} />).replace(/<!-- -->/g, '');
+      expect(html).toMatch(/<table class="[^"]*whitespace-nowrap[^"]*" data-testid="vessel-detail-table"/);
+      expect(html).toMatch(/Mã hồ sơ<\/th><th[^>]*>Số container<\/th><th[^>]*>Size<\/th><th[^>]*>Type<\/th><th[^>]*>Hãng tàu<\/th><th[^>]*>Trạng thái<\/th><th[^>]*>Phân loại<\/th>/);
+      expect(html).toContain('>Người thực hiện</th>');
+      expect(html).toContain('>Thời gian</th>');
+      for (const merged of ['Size/Type', 'Trạng thái • Phân loại', 'Người / giờ', '>Giám định</th>']) expect(html).not.toContain(merged);
+    }
+    expect(renderToString(<ListDetail list={both.vesselLists.find((l) => l.mode === 'NHAP_TAU')!} mode="NHAP_TAU" state={both} canManage run={() => true} onDeleted={noop} />)).toContain('MAERSK');
   });
 });

@@ -18,7 +18,7 @@ import {
 import { formatLocation, parseContainerList, storageDays } from '../../services/core';
 import { formatDateTime, parseDateTime } from '../../services/datetime';
 import { can } from '../../services/permissions';
-import { linkCls, ContainerNo, DateTimeField, DetailDrawer, Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard, LocationText } from '../../components/shared';
+import { linkCls, ContainerNo, DateTimeField, DetailDrawer, Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard, LocationText, CellText, CELL_MAX, BlockIcon, blockLabel } from '../../components/shared';
 import { VesselListTitle, VesselProgressBar } from './VesselShared';
 
 interface Props {
@@ -141,7 +141,7 @@ export const OfficeVesselWorkspace: React.FC<Props> = ({ mode, state, onUpdateSt
           <p className="py-6 text-center text-xs text-ink-muted">Chưa có danh sách {modeLabel.toLowerCase()} nào đang thực hiện.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-xs">
+            <table className="w-full whitespace-nowrap text-left text-xs">
               <thead className="border-b border-line text-[11px] uppercase text-ink-muted">
                 <tr>
                   <th className="py-2 pr-2">Tên tàu</th>
@@ -150,7 +150,8 @@ export const OfficeVesselWorkspace: React.FC<Props> = ({ mode, state, onUpdateSt
                   <th className="py-2 pr-2 text-right">Số cont</th>
                   <th className="w-56 py-2 pr-2">Tiến độ</th>
                   <th className="py-2 pr-2">Số xe</th>
-                  <th className="py-2">Lập bởi</th>
+                  <th className="py-2 pr-2">Lập bởi</th>
+                  <th className="py-2">Thời gian lập</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -162,7 +163,8 @@ export const OfficeVesselWorkspace: React.FC<Props> = ({ mode, state, onUpdateSt
                     <td className="py-2.5 pr-2 text-right font-mono font-bold">{l.items.length}</td>
                     <td className="py-2.5 pr-2"><VesselProgressBar list={l} /></td>
                     <td className="py-2.5 pr-2">{l.truckNos.length} xe</td>
-                    <td className="py-2.5 text-[11px] text-ink-muted">{l.createdBy} • {formatDateTime(l.createdAt)}</td>
+                    <td className="py-2.5 pr-2"><CellText text={l.createdBy} max={CELL_MAX.SHORT} /></td>
+                    <td className="py-2.5 font-mono">{formatDateTime(l.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -255,7 +257,8 @@ const ImportPaste: React.FC<{ state: DepotState; text: string; onChange: (t: str
                 <tr key={r.containerNo}>
                   <td className="py-1 pr-2 text-ink-muted">{i + 1}</td>
                   <td className="py-1 pr-2"><ContainerNo no={r.containerNo} /></td>
-                  <td className="py-1">{r.size}/{r.type}</td>
+                  <td className="py-1 pr-2">{r.size}</td>
+                  <td className="py-1">{r.type}</td>
                 </tr>
               ))}
             </tbody>
@@ -448,7 +451,7 @@ const CreateListForm: React.FC<{
 // ---------------------------------------------------------------------------
 // CHI TIẾT DANH SÁCH: sửa thông tin, thêm cont, bỏ cont, xóa, duyệt
 // ---------------------------------------------------------------------------
-const ListDetail: React.FC<{
+export const ListDetail: React.FC<{
   list: VesselList;
   mode: VesselMode;
   state: DepotState;
@@ -562,44 +565,60 @@ const ListDetail: React.FC<{
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left">
-            <thead className="border-b border-line text-[11px] uppercase text-ink-muted">
+          {/* DEC-146: mỗi cột 1 thông tin, mỗi cont 1 dòng (DEC-134) — không gộp Size/Type, Trạng thái • Phân loại, Người / giờ */}
+          <table className="w-full whitespace-nowrap text-left" data-testid="vessel-detail-table">
+            <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
               <tr>
-                <th className="py-1.5 pr-2">#</th>
-                <th className="py-1.5 pr-2">Mã hồ sơ</th>
-                <th className="py-1.5 pr-2">Số container</th>
-                <th className="py-1.5 pr-2">Size/Type</th>
-                <th className="py-1.5 pr-2">{isImport ? 'Giám định' : 'Trạng thái • Phân loại'}</th>
-                {!isImport && <th className="py-1.5 pr-2">Vị trí lúc lập</th>}
-                <th className="py-1.5 pr-2">Số xe</th>
-                <th className="py-1.5 pr-2">Tiến độ</th>
-                <th className="py-1.5 pr-2">Người / giờ</th>
-                <th className="py-1.5" />
+                <th className="px-2 py-1.5">#</th>
+                <th className="px-2 py-1.5">Mã hồ sơ</th>
+                <th className="px-2 py-1.5">Số container</th>
+                <th className="px-2 py-1.5">Size</th>
+                <th className="px-2 py-1.5">Type</th>
+                <th className="px-2 py-1.5">Hãng tàu</th>
+                <th className="px-2 py-1.5">Trạng thái</th>
+                <th className="px-2 py-1.5">Phân loại</th>
+                {isImport ? <th className="px-2 py-1.5">Vệ sinh</th> : <th className="px-2 py-1.5">Vị trí lúc lập</th>}
+                <th className="px-2 py-1.5">Số xe</th>
+                <th className="px-2 py-1.5">Tiến độ</th>
+                <th className="px-2 py-1.5">Người thực hiện</th>
+                <th className="px-2 py-1.5">Thời gian</th>
+                <th className="px-2 py-1.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {items.map((i, idx) => {
                 const st = ITEM_STATUS[mode][i.status];
+                const line = list.shippingLineCode || (i.containerId ? state.containers.find((c) => c.id === i.containerId)?.shippingLineCode : undefined);
+                const by = i.doneBy || i.inspectedBy;
+                const at = i.doneBy ? i.doneAt : i.inspectedAt;
                 return (
                   <tr key={i.id} className={i.status === 'SKIPPED' ? 'text-ink-muted line-through' : ''}>
-                    <td className="py-1.5 pr-2 text-ink-muted">{idx + 1}</td>
-                    <td className="py-1.5 pr-2 font-mono">
+                    <td className="px-2 py-1.5 text-ink-muted">{idx + 1}</td>
+                    <td className="px-2 py-1.5 font-mono">
                       {i.dossierCode && i.status !== 'PENDING' ? (
                         <button type="button" onClick={() => onOpenDossier?.(i.dossierCode!)} className={linkCls}>{i.dossierCode}</button>
                       ) : (
                         <span className="text-ink-muted">{i.dossierCode || '-'}</span>
                       )}
                     </td>
-                    <td className="py-1.5 pr-2"><ContainerNo no={i.containerNo} /></td>
-                    <td className="py-1.5 pr-2">{i.size}/{i.type}</td>
-                    <td className="py-1.5 pr-2">{i.conditionClass ? `${i.conditionClass} • ${i.stuffingClass || '-'}` : '-'}{isImport && i.cleaningItems ? ` • ${i.cleaningItems.join(', ')}` : ''}</td>
-                    {!isImport && <td className="py-1.5 pr-2 font-mono">{i.locationAtList || '-'}</td>}
-                    <td className="py-1.5 pr-2">{i.truckNo || '-'}</td>
-                    <td className="py-1.5 pr-2"><span className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${st.cls}`}>{st.label}</span></td>
-                    <td className="py-1.5 pr-2 text-[11px] text-ink-muted">
-                      {i.doneBy ? `${i.doneBy} • ${formatDateTime(i.doneAt)}` : i.inspectedBy ? `${i.inspectedBy} • ${formatDateTime(i.inspectedAt)}` : '-'}
-                    </td>
-                    <td className="py-1.5 text-right">
+                    <td className="px-2 py-1.5"><ContainerNo no={i.containerNo} /></td>
+                    <td className="px-2 py-1.5">{i.size}</td>
+                    <td className="px-2 py-1.5">{i.type}</td>
+                    <td className="px-2 py-1.5">{line || '-'}</td>
+                    <td className="px-2 py-1.5">{i.conditionClass || '-'}</td>
+                    <td className="px-2 py-1.5">{i.stuffingClass || '-'}</td>
+                    {isImport ? (
+                      <td className="px-2 py-1.5"><CellText text={i.cleaningItems?.join(', ')} max={CELL_MAX.SHORT} /></td>
+                    ) : (
+                      <td className="px-2 py-1.5 font-mono">
+                        {i.locationAtList ? <span className="inline-flex items-center gap-0.5" title={i.locationAtList}><BlockIcon />{blockLabel(i.locationAtList)}</span> : '-'}
+                      </td>
+                    )}
+                    <td className="px-2 py-1.5">{i.truckNo || '-'}</td>
+                    <td className="px-2 py-1.5"><span className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${st.cls}`}>{st.label}</span></td>
+                    <td className="px-2 py-1.5"><CellText text={by} max={CELL_MAX.SHORT} /></td>
+                    <td className="px-2 py-1.5 font-mono">{at ? formatDateTime(at) : '-'}</td>
+                    <td className="px-2 py-1.5 text-right">
                       {canManage && i.status === 'PENDING' && (
                         <button type="button" onClick={() => run(() => removeVesselListItem(state, { listId: list.id, itemId: i.id, mode }), `Đã bỏ ${i.containerNo} khỏi danh sách.`)} className={secondaryBtn} title="Bỏ khỏi danh sách">
                           <Trash2 className="h-3.5 w-3.5" />
