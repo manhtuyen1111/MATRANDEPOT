@@ -86,7 +86,7 @@ Một việc chỉ "xong" khi:
 - **Góp ý (DEC-120):** nút Góp ý ở header (`FeedbackButton`) cho mọi người dùng; Báo cáo → Góp ý chỉ Admin (`FEEDBACK_MANAGE`). Nghiệp vụ ở `src/services/feedback.ts`; mã `GY-` qua `codes.ts`. Thêm menu mới thì tự có trong danh sách chọn góp ý (lấy từ `MENU` trong App).
 - **Màn văn phòng / báo cáo / tra cứu nhiều dữ liệu** (máy tính): theo **`docs/UI_DATA_LIST_STANDARD.md` (DEC-080)** — danh sách full chiều ngang, bắt buộc bộ lọc, `Pager` có chọn 20 / 50 / 100 dòng (`usePageSize`), **bấm dòng mở chi tiết bằng `DetailDrawer` (cửa sổ trượt bên phải)** — không hiện chi tiết bên dưới, nút tác nghiệp cùng hàng nút Tra cứu.
 - **Khách hàng (DEC-093):** ô khách hàng ở Hạ vỏ / Cấp vỏ dùng `CustomerInput` (gõ tay + gợi ý Danh mục). Khách ngoài Danh mục lưu được nhưng chỉ thanh toán Tiền mặt / Chuyển khoản — không TTS / TTT (kiểm tra ở `settleVoucher`).
-- **Văn phòng làm phần tài chính** (phiếu thu TTT, xác nhận tiền mặt) — không còn Kế toán (DEC-047).
+- **Văn phòng làm phần thu tiền** (phiếu thu trả trước, xác nhận tiền mặt — DEC-047). **Kế toán** (thêm lại DEC-111) chỉ xem Phiếu thu + cập nhật ĐÃ XHD.
 - **Luồng DAMAGE:** Báo giá — **cập nhật tình trạng sửa chữa + giờ công, rồi xác nhận chờ sửa chữa** (2 bước, DEC-086) → Sửa chữa (chọn tổ, mặc định chọn hết nhân viên) → AV. Không có bước QC (DEC-049).
 - Tóm tắt toàn bộ logic đã chốt: `devs/PROGRESS.md` mục C.
 - **Phiếu K80 = tờ hướng dẫn lái xe** (DEC-052): thông tin chung ở đầu (số cont, số xe, SĐT, thanh toán) → LỘ TRÌNH các bước đánh số có ô ☐ → mã QR. Lộ trình tính trong `src/services/driverRoute.ts` — thêm bộ phận mới vào luồng thì cập nhật `getDriverRoute`. Bước cuối luôn là **Văn phòng → Trả chứng từ** (in EEIR + phiếu thu).
