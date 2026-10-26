@@ -34,14 +34,25 @@ const noop = () => {};
 const base = createInitialState();
 const as = (s: DepotState, id: string) => ({ ...s, currentUser: s.staffUsers.find((u) => u.id === id)! });
 
+import { changePassword, DEFAULT_PASSWORD, login } from '../src/services/auth';
+// App đọc dữ liệu từ localStorage → nạp state giả rồi render
+function renderApp(s: DepotState): string {
+  const store: Record<string, string> = { matran_depot_erp_state_v13: JSON.stringify(s) };
+  const prev = (globalThis as { localStorage?: unknown }).localStorage;
+  (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } };
+  try { return renderToString(<App />).replace(/<!-- -->/g, ''); } finally { (globalThis as { localStorage?: unknown }).localStorage = prev; }
+}
+
 describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
   it('App khung menu', () => {
     // DEC-106: App mở với dữ liệu sạch; smoke này cần dữ liệu mẫu → nạp qua localStorage giả
-    const store: Record<string, string> = { matran_depot_erp_state_v13: JSON.stringify(base) };
-    const prev = (globalThis as { localStorage?: unknown }).localStorage;
-    (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } };
-    const html = renderToString(<App />);
-    (globalThis as { localStorage?: unknown }).localStorage = prev;
+    // DEC-143: chưa đăng nhập → màn Đăng nhập; đăng nhập + đã đổi mật khẩu → vào khung menu
+    expect(renderApp(base)).toContain('data-testid="login-screen"');
+    const fresh = login(base, { username: 'admin', password: DEFAULT_PASSWORD });
+    expect(renderApp(fresh)).toContain('data-testid="change-password-screen"'); // mật khẩu mặc định → bắt buộc đổi
+    const html = renderApp(changePassword(fresh, { currentPassword: DEFAULT_PASSWORD, newPassword: 'abc789', confirmPassword: 'abc789' }));
+    expect(html).toContain('data-testid="current-user"');
+    expect(html).toContain('Đăng xuất');
     expect(html).toContain('MATRAN DEPOT');
     expect(html).toContain('Đảo chuyển');
     expect(html).not.toContain('HẠ SỬA CHỮA');

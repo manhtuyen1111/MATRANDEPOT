@@ -4,6 +4,7 @@ import { AppRole, ROLE_LABELS, StaffUser, WorkspaceMenuId } from '../../types/de
 import { DepotState } from '../../services/depotStore';
 import { addStaffUser, updateStaffUser } from '../../services/depotOperations';
 import { ASSIGNABLE_ROLES, MENU_ACCESS } from '../../services/permissions';
+import { DEFAULT_PASSWORD, mustChangePassword, resetStaffPassword } from '../../services/auth';
 import { Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
 
 const MENU_LABELS: Partial<Record<WorkspaceMenuId, string>> = {
@@ -47,7 +48,7 @@ const RoleChecks: React.FC<{ value: AppRole[]; onChange: (r: AppRole[]) => void 
 
 // DANH MỤC CHUNG — USER & PHÂN QUYỀN (DEC-045). Chỉ ADMIN mở được màn này.
 export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next: DepotState) => void }> = ({ state, onUpdateState }) => {
-  const [form, setForm] = useState<{ fullName: string; email: string; roles: AppRole[] }>({ fullName: '', email: '', roles: [] });
+  const [form, setForm] = useState<{ fullName: string; username: string; email: string; roles: AppRole[] }>({ fullName: '', username: '', email: '', roles: [] });
   const [editing, setEditing] = useState<{ id: string; roles: AppRole[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -73,17 +74,21 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (run(() => addStaffUser(state, form), `Đã thêm user ${form.fullName}.`)) setForm({ fullName: '', email: '', roles: [] });
+            if (run(() => addStaffUser(state, form), `Đã tạo tài khoản ${form.username.trim().toLowerCase()} — mật khẩu ban đầu ${DEFAULT_PASSWORD}, nhân viên phải đổi ở lần đăng nhập đầu tiên.`)) setForm({ fullName: '', username: '', email: '', roles: [] });
           }}
           className="space-y-3"
         >
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <label>
               <span className={labelCls}>Họ tên *</span>
               <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className={inputCls} />
             </label>
             <label>
-              <span className={labelCls}>Email đăng nhập *</span>
+              <span className={labelCls}>Tên đăng nhập *</span>
+              <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/\s/g, '') })} placeholder="VD: gd.tuan" autoCapitalize="none" className={`${inputCls} font-mono`} />
+            </label>
+            <label>
+              <span className={labelCls}>Email (không bắt buộc)</span>
               <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />
             </label>
           </div>
@@ -91,21 +96,26 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
             <span className={labelCls}>Vai trò * (được chọn nhiều)</span>
             <RoleChecks value={form.roles} onChange={(roles) => setForm({ ...form, roles })} />
           </div>
-          <button type="submit" disabled={!form.fullName.trim() || !form.email.trim() || form.roles.length === 0} className={primaryBtn}>
-            Thêm user
+          <p className="text-[11px] text-slate-600" data-testid="default-password-note">
+            Mật khẩu ban đầu: <strong className="font-mono">{DEFAULT_PASSWORD}</strong> — giao tên đăng nhập + mật khẩu này cho nhân viên; lần đăng nhập đầu tiên nhân viên bắt buộc đổi mật khẩu (tối thiểu 6 ký tự).
+          </p>
+          <button type="submit" disabled={!form.fullName.trim() || !form.username.trim() || form.roles.length === 0} className={primaryBtn}>
+            Tạo tài khoản
           </button>
         </form>
       </SectionCard>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="w-full min-w-[720px] text-left text-xs">
+        <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
           <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
             <tr>
               <th className="px-3 py-2">Mã</th>
               <th className="px-3 py-2">Họ tên</th>
+              <th className="px-3 py-2">Tên đăng nhập</th>
               <th className="px-3 py-2">Email</th>
               <th className="px-3 py-2">Vai trò</th>
               <th className="px-3 py-2">Trạng thái</th>
+              <th className="px-3 py-2">Mật khẩu</th>
               <th className="px-3 py-2 text-right">Thao tác</th>
             </tr>
           </thead>
@@ -114,7 +124,8 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
               <tr key={u.id} className={u.isActive ? '' : 'text-slate-400'}>
                 <td className="px-3 py-2 font-mono">{u.staffCode}</td>
                 <td className="px-3 py-2 font-semibold">{u.fullName}</td>
-                <td className="px-3 py-2">{u.email}</td>
+                <td className="px-3 py-2 font-mono font-bold">{u.username}</td>
+                <td className="px-3 py-2">{u.email || '-'}</td>
                 <td className="px-3 py-2">
                   {editing?.id === u.id ? (
                     <div className="space-y-2">
@@ -131,9 +142,19 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
                   )}
                 </td>
                 <td className="px-3 py-2">{u.isActive ? 'Hoạt động' : 'Đã khóa'}</td>
+                <td className="px-3 py-2">
+                  {mustChangePassword(u) ? <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">Mặc định — chờ đổi</span> : <span className="text-emerald-700">Đã đổi</span>}
+                </td>
                 <td className="px-3 py-2 text-right">
                   <div className="inline-flex gap-1">
                     <button type="button" className={secondaryBtn} onClick={() => setEditing({ id: u.id, roles: u.roles })}>Sửa vai trò</button>
+                    <button
+                      type="button"
+                      className={secondaryBtn}
+                      onClick={() => window.confirm(`Đặt lại mật khẩu ${u.username} về ${DEFAULT_PASSWORD}? Nhân viên sẽ phải đổi mật khẩu khi đăng nhập.`) && run(() => resetStaffPassword(state, { userId: u.id }), `Đã đặt lại mật khẩu ${u.username} về ${DEFAULT_PASSWORD}.`)}
+                    >
+                      Đặt lại mật khẩu
+                    </button>
                     <button type="button" className={secondaryBtn} onClick={() => run(() => updateStaffUser(state, { userId: u.id, isActive: !u.isActive }), u.isActive ? 'Đã khóa user.' : 'Đã mở khóa user.')}>
                       {u.isActive ? 'Khóa' : 'Mở khóa'}
                     </button>
@@ -157,7 +178,7 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
           </tbody>
         </table>
         <p className="mt-2 text-[11px] text-slate-500">
-          Chế độ Demo: user là hồ sơ nhân viên, đổi người dùng ở góc phải để thử. Khi nối Supabase, tài khoản đăng nhập được tạo qua Supabase Auth và quyền được kiểm tra ở database.
+          Admin tạo tài khoản + gán vai trò; nhân viên chỉ nhận tài khoản và tác nghiệp (DEC-143). Chế độ Demo: mật khẩu lưu mã hóa trong trình duyệt — chưa phải bảo mật thật; khi nối Supabase, đăng nhập qua Supabase Auth và quyền được kiểm tra ở database.
         </p>
       </SectionCard>
     </div>
