@@ -4,9 +4,9 @@
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
 Cập nhật lần cuối: 2026-10-26 — Claude Code
-Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-135**), **đã push đầy đủ lên GitHub 2026-10-25**, chưa merge vào `main`. Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110); **xuất hóa đơn từ phiếu thu**: mã bảo mật 12 ký tự, trang khách `#/hoa-don`, trạng thái CHƯA / YÊU CẦU / ĐÃ XHD, **thêm lại vai trò Kế toán**, người thu tiền luôn là nhân viên (111 → 114); **Đảo chuyển mobile 2 dòng**, bỏ ghi chú tác nghiệp (115, 116); **ô nhập mobile chữ 16px** (không tự phóng to vỡ khung — 116); **mọi mã có hồ sơ đều là link, cùng kiểu Mã hồ sơ** (117, 118). Ngày 26/10: **bỏ mã CT-** (số chứng từ = mã hồ sơ — 119); **Góp ý** (nút góc phải + Báo cáo → Góp ý chỉ Admin — 120, 123); phiếu thu trả trước **một mã PT-TTR-** (bỏ PTT- — 124), cột Mã hồ sơ chỉ tóm tắt (121, 122), **hóa đơn theo từng lượt, khách tự gộp** (130); **chọn vị trí từng bước** (125); báo cáo Hạ / Cấp vỏ có Thanh toán + Mã phiếu thu, bỏ ký hiệu (126, 127); Tồn vỏ Phân loại / AGE / Tiến độ, **mỗi cont 1 dòng**, Excel khớp màn hình (128, 129, 132); **Xuất tàu tự khóa + ghi chú, duyệt tàu khi chưa đủ** (131). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
+Trạng thái chung: **GĐ 3 xong; GĐ 7 Nhập / Xuất tàu xong bản Demo; GĐ 4 Database đã có tư vấn nền tảng** — nhánh `agent/claude/p4-prep-xlsx` (DEC-050 → **DEC-137**), **đã push đầy đủ lên GitHub 2026-10-25**, chưa merge vào `main`. Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110); **xuất hóa đơn từ phiếu thu**: mã bảo mật 12 ký tự, trang khách `#/hoa-don`, trạng thái CHƯA / YÊU CẦU / ĐÃ XHD, **thêm lại vai trò Kế toán**, người thu tiền luôn là nhân viên (111 → 114); **Đảo chuyển mobile 2 dòng**, bỏ ghi chú tác nghiệp (115, 116); **ô nhập mobile chữ 16px** (không tự phóng to vỡ khung — 116); **mọi mã có hồ sơ đều là link, cùng kiểu Mã hồ sơ** (117, 118). Ngày 26/10: **bỏ mã CT-** (số chứng từ = mã hồ sơ — 119); **Góp ý** (nút góc phải + Báo cáo → Góp ý chỉ Admin — 120, 123); phiếu thu trả trước **một mã PT-TTR-** (bỏ PTT- — 124), cột Mã hồ sơ chỉ tóm tắt (121, 122), **hóa đơn theo từng lượt, khách tự gộp** (130); **chọn vị trí từng bước** (125); báo cáo Hạ / Cấp vỏ có Thanh toán + Mã phiếu thu, bỏ ký hiệu (126, 127); Tồn vỏ Phân loại / AGE / Tiến độ, **mỗi cont 1 dòng**, Excel khớp màn hình (128, 129, 132); **Xuất tàu tự khóa + ghi chú, duyệt tàu khi chưa đủ** (131). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
-**Điểm dừng 2026-10-26:** đã kiểm tra (130/130 test, build, quét khóa bí mật) + **push đầy đủ lên GitHub** (DEC-050 → DEC-132). **Đọc mục I (I.3) trước khi làm việc tiếp theo.**
+**Điểm dừng 2026-10-26 (tối):** đã kiểm tra (134/134 test, build, quét khóa bí mật) + **push đầy đủ lên GitHub** (DEC-050 → DEC-137). **Đọc mục I (I.4) trước khi làm việc tiếp theo.**
 
 **Quyết định 2026-10-25: TẠM HOÃN GĐ 4 Database** — người dùng test kỹ bản Demo trước (dữ liệu test đầy đủ đã có), khi thấy các luồng ổn định mới xây database. Lý do: sau khi có database, mỗi thay đổi nghiệp vụ phải sửa cả migration / RPC / pgTAP, tốn công hơn nhiều. API ngân hàng (GĐ 6) phụ thuộc GĐ 4. Khi mở lại cần chốt Q-037 → Q-040.
 Kiểm thử mới nhất: `npm test` **97/97 pass** (3 file test) • `npm run build` **PASS** • chưa kiểm thử thao tác trên trình duyệt • chưa có database.
@@ -14,7 +14,7 @@ Kiểm thử mới nhất: `npm test` **97/97 pass** (3 file test) • `npm run 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
 |---|---|---|
-| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push đầy đủ** (DEC-050 → DEC-132, 2026-10-26). **Thử trên trình duyệt + in giấy thật** (mục F, F2, F3) rồi tạo Pull Request merge vào `main` | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
+| 1 | Nhánh `agent/claude/p4-prep-xlsx` **đã push đầy đủ** (DEC-050 → DEC-137, 2026-10-26). **Thử trên trình duyệt + in giấy thật** (mục F, F2, F3) rồi tạo Pull Request merge vào `main` | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/p4-prep-xlsx |
 | 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |
 | 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
 | 4 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
@@ -260,16 +260,24 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 6. Báo cáo Hạ vỏ / Cấp vỏ: cột Thanh toán + Mã phiếu thu (Excel cũng có).
 7. Tồn vỏ: cột AGE, Phân loại, Tiến độ sau Mã phiếu thu; mỗi cont 1 dòng; Excel cùng thứ tự.
 8. Xuất tàu MAERSK SEMARANG: `MSKU3000022` đang khóa "XUẤT TÀU MAERSK SEMARANG" ở Tồn vỏ (không cấp vỏ được) → Duyệt khi chưa đủ → nhập lý do → cont bị gạch, tự mở khóa.
+9. Phiếu thu → mở phiếu PT-TTR- → bảng "Sử dụng phiếu thu trả trước" có cột **HÓA ĐƠN** từng lượt → bấm vào ô trạng thái → xem yêu cầu khách + nút Đã xuất hóa đơn (DEC-133).
+10. Phiếu thu, Báo cáo Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu / Sửa chữa: mỗi thông tin 1 dòng, bảng rộng thì cuộn ngang (DEC-134); chữ dài bị cắt "…", rê chuột xem đủ (DEC-135).
+11. Vị trí trên màn hình: icon định vị đỏ thay chữ "BLOCK-" (VD [icon] A / 17-02-02); Danh mục → Vị trí, Excel, giấy in vẫn ghi BLOCK-… (DEC-136).
+12. Văn phòng → Cấp vỏ: bấm chọn cont ở danh sách bên trái → khối "Container được chọn" tự điền 6 ô (Số container, Size/Type, Hãng tàu, Trạng thái, Đóng hàng, Vị trí) (DEC-137).
 
 **Cho agent:**
-1. Hiện tới **DEC-135**. GĐ 4 vẫn tạm hoãn.
+1. Hiện tới **DEC-137**. GĐ 4 vẫn tạm hoãn.
 2. **Mã:** không còn `CT-` (số chứng từ = mã hồ sơ — DEC-119) và `PTT-` (phiếu trả trước = `PT-TTR-` cấp ngay khi tạo — DEC-124); thêm `GY-` (góp ý).
 3. **Hóa đơn:** trạng thái phiếu luôn lấy `receiptInvoiceStatus` / `receiptInvoiceLabel`; phiếu trả trước dùng `invoiceGroups` (`submitPrepaidInvoiceGroup`, `cancelPrepaidInvoiceGroup`, `markInvoiceIssued({ groupId })`).
 4. **Thanh toán hiển thị:** `PaymentInfoCells` + `containerPaymentInfo` / `voucherPaymentInfo`; nhãn ngắn `PAYMENT_CATEGORY_SHORT_LABELS` (TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU).
 5. **Excel khớp màn hình (DEC-129):** đổi cột trên màn → sửa sheet; Tồn vỏ có test so thứ tự cột. Test đọc ô Excel phải dùng `columns.indexOf`, không dùng chỉ số cố định.
 6. **Xuất tàu (DEC-131):** `holdSource = 'VESSEL_EXPORT'` — chỉ `vesselLock` / `vesselUnlock` trong `vessel.ts` được đặt / gỡ; `toggleContainerHold` / `updateContainerOfficeNote` từ chối loại khóa này.
 7. **SlotPicker (DEC-125)** là component chọn từng bước — giữ nguyên props (state, value, onChange, onlyBlocks).
-8. Bẫy đã gặp hôm nay: chèn `import` vào giữa khối import nhiều dòng; chèn comment `//` giữa dòng mảng làm mất phần tử phía sau; đổi `const` → `let` bằng sed áp cho mọi dòng giống nhau — luôn kiểm `git diff` sau khi sửa bằng script.
+8. Bẫy đã gặp hôm nay: chèn `import` vào giữa khối import nhiều dòng; chèn comment `//` giữa dòng mảng làm mất phần tử phía sau; đổi `const` → `let` bằng sed áp cho mọi dòng giống nhau — luôn kiểm `git diff` sau khi sửa bằng script. Thêm: heredoc của shell làm mất dấu `\` trong regex — viết script bằng công cụ Write.
+9. **Bảng / danh sách (DEC-134, DEC-135):** `<table>` có `whitespace-nowrap` trong `overflow-x-auto`; ô chữ tự do dùng `<CellText text max={CELL_MAX.SHORT|MEDIUM|LONG} />` (20 / 30 / 40 ký tự) — không tự viết `truncate`. Smoke test kiểm `whitespace-nowrap` ở Phiếu thu + 5 báo cáo.
+10. **Vị trí (DEC-136):** giao diện dùng `<LocationText loc />` / `BlockIcon` / `blockLabel`; chỉ dữ liệu lưu, Danh mục, Excel, in, thông báo mới dùng `formatLocation` (có chữ BLOCK-).
+11. **Hóa đơn theo lượt (DEC-133):** `MasterUsagePanel` nhận prop `invoice` (view, canIssue, onIssue); chi tiết 1 yêu cầu = `InvoiceGroupDetail`.
+12. **Thông tin tự điền (DEC-137):** khu vực hiển thị thông tin được chọn từ danh sách (VD "Container được chọn" ở Cấp vỏ) phải chia **ô có nhãn, chỉ đọc** (nền xám nhạt), không nối chữ bằng "•".
 
 ### I.3 — Bổ sung 2026-10-25
 **Cho bạn:** test theo mục F3 với dữ liệu test; ghi lại lỗi / chỗ chưa hợp lý; khi thấy ổn thì báo để mở GĐ 4 (trả lời Q-037 → Q-040) và tạo PR merge vào `main`.
@@ -344,3 +352,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-26 — Claude Code: DEC-133 cột HÓA ĐƠN từng lượt ở bảng Sử dụng phiếu thu trả trước (`InvoiceGroupDetail`). 130/130 • build PASS.
 - 2026-10-26 — Claude Code: DEC-134 bảng / danh sách mỗi thông tin 1 dòng (Phiếu thu + 5 báo cáo), ghi thành quy tắc chung. 131/131 • build PASS.
 - 2026-10-26 — Claude Code: DEC-135 giới hạn chữ mỗi ô bảng (`CellText`, `CELL_MAX` 20/30/40). 132/132 • build PASS.
+- 2026-10-26 — Claude Code: DEC-136 vị trí hiển thị icon định vị thay chữ BLOCK- (`LocationText`). 133/133 • build PASS.
+- 2026-10-26 (tối) — Claude Code: cập nhật tiến độ, F4 (bước 9–11), bàn giao I.4 (mục 9–11); kiểm tra + push đầy đủ (DEC-050 → DEC-136).
+- 2026-10-26 — Claude Code: DEC-137 Cấp vỏ — Container được chọn chia 6 ô. 134/134 • build PASS.
+- 2026-10-26 (tối) — Claude Code: cập nhật tiến độ, F4 bước 12, bàn giao I.4 mục 12, AGENTS (DEC-137); kiểm tra + push đầy đủ (DEC-050 → DEC-137).

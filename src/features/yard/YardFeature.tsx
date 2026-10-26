@@ -32,6 +32,7 @@ import {
   SlotValue,
   CellText,
   CELL_MAX,
+  LocationText,
 } from '../../components/shared';
 
 interface Props {
@@ -322,7 +323,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                       <td className="px-2 py-2.5 text-right font-mono font-bold">{storageDays(c.gateInAt, now)}</td>
                       <td className="px-2 py-2.5 font-mono" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="whitespace-nowrap">{formatLocation(c)}</span>
+                          <LocationText loc={c} />
                           {canEditLocation && hasPosition && (
                             <button
                               type="button"

@@ -6,6 +6,7 @@ import {
   CreditCard,
   FileText,
   Lock,
+  MapPin,
   Plus,
   QrCode,
   Receipt,
@@ -24,7 +25,7 @@ import { can } from '../services/permissions';
 import { isSupabaseConfigured } from '../lib/env';
 import { DATETIME_PLACEHOLDER, formatDateTime, maskDateTimeInput, parseDateTime, QUICK_RANGE_OPTIONS, quickRange, QuickRangeKey } from '../services/datetime';
 import { PAGE_SIZE_OPTIONS, SheetData, toXlsxBuffer, XLSX_MIME } from '../services/reports';
-import { blockDimensions, SLOT_DIMENSION_LABELS, SlotDimension } from '../services/core';
+import { blockDimensions, formatLocation, SLOT_DIMENSION_LABELS, SlotDimension } from '../services/core';
 
 // ---------------------------------------------------------------------------
 // Thông báo lỗi / thành công thống nhất
@@ -109,6 +110,26 @@ export const clipText = (text: string | undefined | null, max: number): string =
   const s = (text || '').trim();
   return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s;
 };
+// DEC-136: hiển thị vị trí — bỏ chữ "BLOCK-" (tốn chỗ), thay bằng icon định vị. Mã lưu / Danh mục / Excel / in vẫn là BLOCK-…
+export const blockLabel = (code: string | null | undefined): string => (code || '').replace(/^BLOCK-/i, '');
+export const BlockIcon: React.FC<{ className?: string }> = ({ className = 'h-3 w-3' }) => (
+  <MapPin className={`inline-block shrink-0 text-rose-600 ${className}`} aria-label="Block" data-testid="block-icon" />
+);
+export const LocationText: React.FC<{
+  loc: { currentBlock: string | null; currentBay: string | null; currentRow: string | null; currentTier: string | null };
+  className?: string;
+  iconClassName?: string;
+}> = ({ loc, className = '', iconClassName }) => {
+  if (!loc.currentBlock) return <span className={className}>-</span>;
+  const text = formatLocation(loc);
+  return (
+    <span className={`inline-flex items-center gap-0.5 whitespace-nowrap ${className}`} title={text}>
+      <BlockIcon className={iconClassName} />
+      {text.replace(/^BLOCK-/i, '')}
+    </span>
+  );
+};
+
 export const CellText: React.FC<{ text?: string | null; max?: number; className?: string }> = ({ text, max = CELL_MAX.MEDIUM, className = '' }) => {
   const s = (text || '').trim();
   if (!s) return <>-</>;
@@ -493,7 +514,7 @@ export const SlotPicker: React.FC<{
       <div className="flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs" data-testid="slot-summary">
         <span className="mr-1 text-[11px] font-semibold uppercase text-slate-500">Vị trí</span>
         <button type="button" onClick={() => resetFrom('block')} disabled={!block} className={seg(Boolean(block), step === 'block')} title="Chọn lại Block">
-          {block ? block.blockCode : 'Block'}
+          {block ? <span className="inline-flex items-center gap-0.5"><BlockIcon />{blockLabel(block.blockCode)}</span> : 'Block'}
         </button>
         {dims.map((d, i) => (
           <React.Fragment key={d.key}>
@@ -513,7 +534,7 @@ export const SlotPicker: React.FC<{
           <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
             {blocks.map((b) => (
               <button key={b.blockCode} type="button" onClick={() => onChange({ blockCode: b.blockCode, bay: '', row: '', tier: '' })} className={btn(false)}>
-                {b.blockCode}
+                <span className="inline-flex items-center gap-1"><BlockIcon />{blockLabel(b.blockCode)}</span>
               </button>
             ))}
           </div>

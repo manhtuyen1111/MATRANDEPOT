@@ -1155,6 +1155,28 @@ Quy ước trạng thái:
   - Tồn vỏ: ghi chú.
 - Ô chữ tự do mới trong bảng phải dùng `CellText` (không tự viết `truncate`).
 
+### DEC-136 — Vị trí: icon định vị thay chữ "BLOCK-"
+
+- Trạng thái: CONFIRMED (2026-10-26). Bổ sung DEC-082, DEC-092.
+- Khi **hiển thị** vị trí trên màn hình, bỏ chữ `BLOCK-` vì tốn chỗ, thay bằng **icon định vị** (đỏ). Ví dụ `BLOCK-A / 17-02-02` hiện là [icon] `A / 17-02-02`. Rê chuột xem mã đầy đủ.
+- Áp dụng:
+  - Tồn vỏ;
+  - Xe nâng: Chờ hạ vỏ / Chờ cấp vỏ, Đảo chuyển (ô Block vẫn rộng cố định để thẳng cột);
+  - Chọn vị trí `SlotPicker`: nút Block và tóm tắt;
+  - Báo giá, Văn phòng, danh sách Xuất tàu.
+- **Không đổi:**
+  - Mã lưu vẫn là `BLOCK-…`.
+  - **Danh mục → Vị trí** (cấu hình) vẫn ghi đủ `BLOCK-…`.
+  - Excel, giấy in, hồ sơ container, nhật ký và thông báo vẫn ghi đủ.
+- Kỹ thuật (`shared.tsx`): `<LocationText loc />`, `BlockIcon`, `blockLabel(code)`. Màn mới hiển thị vị trí phải dùng `LocationText`, không in thẳng `formatLocation`.
+
+### DEC-137 — Văn phòng → Cấp vỏ: "Container được chọn" chia ô rõ ràng
+
+- Trạng thái: CONFIRMED (2026-10-26).
+- Khu vực **Container được chọn** (khối 1. Booking & container) hiển thị thành **6 ô có nhãn**, chỉ đọc: **Số container | Size/Type | Hãng tàu | Trạng thái | Đóng hàng | Vị trí**. Trước đây là một dòng chữ nối bằng "•".
+- Các ô **tự điền** khi bấm chọn container ở danh sách bên trái; không gõ tay. Chưa chọn thì ô hiện "-" kèm nhắc "bấm chọn ở danh sách bên trái".
+- Không đổi nghiệp vụ chọn container: cont khóa vẫn không chọn được.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1244,6 +1266,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-135 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-137 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

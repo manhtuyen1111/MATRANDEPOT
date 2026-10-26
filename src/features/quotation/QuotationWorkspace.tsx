@@ -17,6 +17,7 @@ import { linkCls,
   primaryBtn,
   secondaryBtn,
   usePageSize,
+  LocationText,
 } from '../../components/shared';
 
 // BÁO GIÁ → CHỜ BÁO GIÁ (DEC-084): danh sách giống Tồn vỏ; bấm dòng mở cửa sổ trượt nhập Remark sửa chữa + giờ công (DEC-080)
@@ -226,7 +227,7 @@ export const QuotationWorkspace: React.FC<{
                   </td>
                   <td className="px-2 py-2.5 text-center font-bold text-rose-700">{c.conditionClass}</td>
                   <td className="px-2 py-2.5 text-right font-mono font-bold">{storageDays(c.gateInAt, now)}</td>
-                  <td className="px-2 py-2.5 font-mono">{formatLocation(c)}</td>
+                  <td className="px-2 py-2.5 font-mono"><LocationText loc={c} /></td>
                   <td className="px-2 py-2.5">{c.quotationItems?.length ? <span className="font-semibold text-slate-900">{c.quotationItems.join(", ")}</span> : <span className="italic text-slate-400">Chưa cập nhật</span>}</td>
                   <td className="px-2 py-2.5 text-right font-mono font-bold">{c.quotationLaborHours ?? "-"}</td>
                   <td className={`px-2 py-2.5 ${c.officeNote ? 'bg-yellow-200 font-semibold' : 'text-slate-400'}`}>{c.officeNote || '-'}</td>
@@ -257,7 +258,7 @@ export const QuotationWorkspace: React.FC<{
               <dt className="text-slate-500">Size / Type</dt><dd className="font-semibold">{selected.size} / {selected.type}</dd>
               <dt className="text-slate-500">Hãng tàu</dt><dd className="font-semibold">{selected.shippingLineCode || '-'}</dd>
               <dt className="text-slate-500">AGE</dt><dd className="font-semibold">{selected.manufactureYear}</dd>
-              <dt className="text-slate-500">Vị trí</dt><dd className="font-mono">{formatLocation(selected)}</dd>
+              <dt className="text-slate-500">Vị trí</dt><dd className="font-mono"><LocationText loc={selected} /></dd>
               <dt className="text-slate-500">Lưu bãi</dt><dd className="font-mono">{storageDays(selected.gateInAt, now)} ngày</dd>
               <dt className="text-slate-500">Hư hỏng giám định</dt><dd className="font-semibold text-rose-800 sm:col-span-3">{selected.damageRemarks.join(', ') || '-'}</dd>
             </dl>
