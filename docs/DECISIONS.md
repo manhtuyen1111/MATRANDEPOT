@@ -1140,6 +1140,21 @@ Quy ước trạng thái:
 - Áp dụng ngay: Văn phòng → Phiếu thu; Báo cáo Hạ vỏ, Cấp vỏ, Nhập tàu, Xuất tàu, Sửa chữa (và Góp ý). Tồn vỏ đã làm ở DEC-132.
 - Màn / bảng mới phải theo quy tắc này. Danh sách thẻ trên mobile theo quy tắc riêng (DEC-089, DEC-115).
 
+### DEC-135 — Giới hạn số chữ mỗi ô bảng
+
+- Trạng thái: CONFIRMED (2026-10-26). Bổ sung DEC-134.
+- Mỗi ô chữ tự do chỉ hiển thị **tối đa N ký tự**. Dư thì cắt và thêm "…"; rê chuột xem đủ. **Dữ liệu lưu vẫn đầy đủ**, Excel xuất đủ.
+- Công thức chung (`shared.tsx`): `clipText(text, max)`, `<CellText text max />`, mức `CELL_MAX`:
+  - **SHORT = 20**: mã, số xe, tên ngắn.
+  - **MEDIUM = 30** (mặc định): tên khách hàng, người nhận, nhân viên, phản hồi.
+  - **LONG = 40**: ghi chú, remark, nội dung.
+- Đã áp dụng:
+  - Báo cáo Hạ vỏ / Cấp vỏ: khách hàng.
+  - Báo cáo Sửa chữa: remark, nhân viên.
+  - Báo cáo Góp ý: nội dung, phản hồi.
+  - Tồn vỏ: ghi chú.
+- Ô chữ tự do mới trong bảng phải dùng `CellText` (không tự viết `truncate`).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1229,6 +1244,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-134 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-135 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

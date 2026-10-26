@@ -64,4 +64,4 @@ Thứ tự từ trên xuống:
 ## Mỗi thông tin 1 dòng (DEC-134)
 
 - `<table>` có `whitespace-nowrap`, bọc trong `overflow-x-auto` (cuộn ngang khi rộng).
-- Ô chữ dài: `max-w-[…] truncate` + `title` để rê chuột xem đủ.
+- Ô chữ dài: `<CellText text max={CELL_MAX.SHORT | MEDIUM | LONG} />` — tối đa 20 / 30 / 40 ký tự, dư thì "…", rê chuột xem đủ (DEC-135). Excel vẫn xuất đủ.
