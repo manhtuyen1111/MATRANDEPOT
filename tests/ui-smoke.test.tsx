@@ -456,6 +456,30 @@ describe('DEC-082: chọn vị trí chỉ hiện chiều Block có cấu hình',
   });
 });
 
+describe('DEC-125: chọn vị trí từng bước (Block → Bay → Row → Tier), tóm tắt ở trên', () => {
+  it('chưa chọn: chỉ hiện toàn bộ Block dạng nút; chọn dần thì tóm tắt hiện giá trị đã chọn và bước tiếp theo', async () => {
+    const { SlotPicker } = await import('../src/components/shared');
+    const empty = renderToString(<SlotPicker state={base} value={{ blockCode: '', bay: '', row: '', tier: '' }} onChange={noop} />).replace(/<!-- -->/g, '');
+    expect(empty).toContain('Chọn Block *');
+    for (const b of base.yardBlocks) expect(empty).toContain(`>${b.blockCode}</button>`);
+    expect(empty).not.toContain('Chọn Bay');
+    const bay = renderToString(<SlotPicker state={base} value={{ blockCode: 'BLOCK-A', bay: '', row: '', tier: '' }} onChange={noop} />).replace(/<!-- -->/g, '');
+    expect(bay).toContain('Chọn Bay * (01 → 20)');
+    expect(bay).not.toContain('Chọn Block *');
+    expect(bay).toMatch(/data-testid="slot-summary"[\s\S]*>BLOCK-A<\/button>/);
+    const row = renderToString(<SlotPicker state={base} value={{ blockCode: 'BLOCK-A', bay: '05', row: '', tier: '' }} onChange={noop} />).replace(/<!-- -->/g, '');
+    expect(row).toContain('>05</button>');
+    expect(row).toContain('Chọn Row *');
+    expect(row).not.toContain('Chọn Tier');
+    const done = renderToString(<SlotPicker state={base} value={{ blockCode: 'BLOCK-A', bay: '05', row: '02', tier: '01' }} onChange={noop} />).replace(/<!-- -->/g, '');
+    expect(done).toContain('✓ Đủ vị trí');
+    expect(done).not.toContain('Chọn Tier');
+    const rack = renderToString(<SlotPicker state={base} value={{ blockCode: '', bay: '', row: '', tier: '' }} onChange={noop} onlyBlocks={['BLOCK-DAMAGE']} />);
+    expect(rack).toContain('>BLOCK-DAMAGE</button>');
+    expect(rack).not.toContain('>BLOCK-A</button>');
+  });
+});
+
 describe('DEC-083: nhãn tác nghiệp ở màn Vệ sinh / Xe nâng', () => {
   it('OperationBadge hiện HẠ VỎ cho cont thường', async () => {
     const { OperationBadge } = await import('../src/features/vessel/VesselShared');
