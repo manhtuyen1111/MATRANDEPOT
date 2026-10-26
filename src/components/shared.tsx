@@ -136,26 +136,6 @@ export const CellText: React.FC<{ text?: string | null; max?: number; className?
   return <span className={className} title={s.length > max ? s : undefined}>{clipText(s, max)}</span>;
 };
 
-// DEC-139: CỐ ĐỊNH CỘT ĐẦU khi cuộn ngang — Mã hồ sơ | Số container | Size | Type | Hãng tàu (tàu: Tên tàu + 5 cột này).
-// Mỗi cột cố định có độ rộng px riêng; left = tổng độ rộng các cột trước. Dòng bảng (<tr>) cần class "group" để ô cố định đổi màu khi rê chuột.
-export const FROZEN_W = { check: 36, vessel: 170, code: 150, cont: 140, size: 56, type: 56, line: 90 } as const;
-export type FrozenKey = keyof typeof FROZEN_W;
-export const FROZEN_STANDARD: FrozenKey[] = ['code', 'cont', 'size', 'type', 'line'];
-export function frozenCols(keys: FrozenKey[]) {
-  const lefts = keys.map((_, i) => keys.slice(0, i).reduce((s, k) => s + FROZEN_W[k], 0));
-  const style = (i: number): React.CSSProperties => {
-    const w = FROZEN_W[keys[i]];
-    return { left: lefts[i], width: w, minWidth: w, maxWidth: w };
-  };
-  const edge = (i: number) => (i === keys.length - 1 ? 'shadow-[inset_-2px_0_0_#cbd5e1]' : '');
-  return {
-    count: keys.length,
-    style,
-    th: (i: number) => `sticky z-20 overflow-hidden bg-slate-50 ${edge(i)}`,
-    // bg: màu nền riêng của dòng (VD dòng đang chọn); mặc định trắng, rê chuột xám nhạt
-    td: (i: number, bg = 'bg-white group-hover:bg-slate-50') => `sticky z-10 overflow-hidden ${bg} ${edge(i)}`,
-  };
-}
 export const primaryBtn =
   'inline-flex items-center justify-center gap-1.5 rounded-md bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
 export const secondaryBtn =

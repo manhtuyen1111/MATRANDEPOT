@@ -34,8 +34,6 @@ import {
   ContainerNo,
   CELL_MAX,
   LocationText,
-  frozenCols,
-  FROZEN_STANDARD,
 } from '../../components/shared';
 
 interface Props {
@@ -156,9 +154,6 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
   };
 
   const colCount = canBulk ? 16 : 15;
-  // DEC-139: cố định ô chọn + Mã hồ sơ | Số container | Size | Type | Hãng tàu khi cuộn ngang
-  const fz = frozenCols(canBulk ? ['check', ...FROZEN_STANDARD] : FROZEN_STANDARD);
-  const fo = canBulk ? 1 : 0;
 
   return (
     <div className="w-full space-y-3">
@@ -254,7 +249,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
           <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
             <tr>
               {canBulk && (
-                <th style={fz.style(0)} className={`${fz.th(0)} px-2 py-2.5`}>
+                <th className="px-2 py-2.5">
                   <input
                     type="checkbox"
                     aria-label="Chọn tất cả theo bộ lọc"
@@ -263,11 +258,11 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                   />
                 </th>
               )}
-              <th style={fz.style(fo)} className={`${fz.th(fo)} whitespace-nowrap px-2 py-2.5`}>Mã hồ sơ</th>
-              <th style={fz.style(fo + 1)} className={`${fz.th(fo + 1)} whitespace-nowrap px-2 py-2.5`}>Số container</th>
-              <th style={fz.style(fo + 2)} className={`${fz.th(fo + 2)} px-2 py-2.5 text-center`}>Size</th>
-              <th style={fz.style(fo + 3)} className={`${fz.th(fo + 3)} px-2 py-2.5 text-center`}>Type</th>
-              <th style={fz.style(fo + 4)} className={`${fz.th(fo + 4)} whitespace-nowrap px-2 py-2.5`}>Hãng tàu</th>
+              <th className="whitespace-nowrap px-2 py-2.5">Mã hồ sơ</th>
+              <th className="whitespace-nowrap px-2 py-2.5">Số container</th>
+              <th className="px-2 py-2.5 text-center">Size</th>
+              <th className="px-2 py-2.5 text-center">Type</th>
+              <th className="whitespace-nowrap px-2 py-2.5">Hãng tàu</th>
               <th className="w-14 px-2 py-2.5 text-center">AGE</th>{/* DEC-129 */}
               <th className="w-40 whitespace-nowrap px-2 py-2.5">Date in</th>
               <th className="w-20 whitespace-nowrap px-2 py-2.5 text-center">Trạng thái</th>
@@ -288,19 +283,18 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                 const hasNote = Boolean(c.officeNote?.trim());
                 const hasPosition = Boolean(c.currentBlock) && (c.status === 'IN_YARD' || c.status === 'ALLOCATED');
                 const panelOpen = panel?.id === c.id;
-                const rowBg = selected.has(c.id) ? 'bg-blue-50' : undefined; // DEC-139: ô cố định giữ màu dòng đang chọn
                 return (
                   <React.Fragment key={c.id}>
-                    <tr onClick={() => onOpenDossier?.(c.masterDossierCode)} className={`group cursor-pointer whitespace-nowrap hover:bg-slate-50 ${selected.has(c.id) ? 'bg-blue-50/60' : ''}`} data-testid="yard-row">{/* DEC-132: mỗi cont 1 dòng */}
+                    <tr onClick={() => onOpenDossier?.(c.masterDossierCode)} className={`cursor-pointer whitespace-nowrap hover:bg-slate-50 ${selected.has(c.id) ? 'bg-blue-50/60' : ''}`} data-testid="yard-row">{/* DEC-132: mỗi cont 1 dòng */}
                       {canBulk && (
-                        <td style={fz.style(0)} className={`${fz.td(0, rowBg)} px-2 py-2.5`} onClick={(e) => e.stopPropagation()}>
+                        <td className="px-2 py-2.5" onClick={(e) => e.stopPropagation()}>
                           <input type="checkbox" aria-label={`Chọn ${c.containerNo}`} checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
                         </td>
                       )}
-                      <td style={fz.style(fo)} className={`${fz.td(fo, rowBg)} whitespace-nowrap px-2 py-2.5`}>
+                      <td className="whitespace-nowrap px-2 py-2.5">
                         <button type="button" onClick={(e) => { e.stopPropagation(); onOpenDossier?.(c.masterDossierCode); }} className={linkCls}>{c.masterDossierCode}</button>
                       </td>
-                      <td style={fz.style(fo + 1)} className={`${fz.td(fo + 1, rowBg)} whitespace-nowrap px-2 py-2.5`}>
+                      <td className="whitespace-nowrap px-2 py-2.5">
                         <span className="inline-flex items-center gap-1.5 font-mono text-sm font-bold text-slate-900">
                           {c.containerNo}
                           <button
@@ -318,9 +312,9 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                           </button>
                         </span>
                       </td>
-                      <td style={fz.style(fo + 2)} className={`${fz.td(fo + 2, rowBg)} px-2 py-2.5 text-center`}>{c.size}</td>
-                      <td style={fz.style(fo + 3)} className={`${fz.td(fo + 3, rowBg)} px-2 py-2.5 text-center`}>{c.type}</td>
-                      <td style={fz.style(fo + 4)} className={`${fz.td(fo + 4, rowBg)} whitespace-nowrap px-2 py-2.5`}>{c.shippingLineCode}</td>
+                      <td className="px-2 py-2.5 text-center">{c.size}</td>
+                      <td className="px-2 py-2.5 text-center">{c.type}</td>
+                      <td className="whitespace-nowrap px-2 py-2.5">{c.shippingLineCode}</td>
                       <td className="px-2 py-2.5 text-center font-mono">{c.manufactureYear || '-'}</td>
                       <td className="whitespace-nowrap px-2 py-2.5 font-mono" title="Thời gian vào bãi (Hạ vỏ / Nhập tàu)">
                         {formatDateTime(c.gateInAt).slice(0, 10)} <span className="text-slate-500">{formatDateTime(c.gateInAt).slice(11)}</span>

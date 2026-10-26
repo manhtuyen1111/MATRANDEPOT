@@ -1188,9 +1188,9 @@ Quy ước trạng thái:
   - nút **Lưu vị trí** full chiều rộng ở cuối.
 - Nghiệp vụ không đổi: vẫn là sửa vị trí hành chính (`correctContainerLocation`), không ghi nhận là Đảo chuyển.
 
-### DEC-139 — Cố định các cột đầu khi kéo ngang (Tồn vỏ + báo cáo)
+### DEC-139 — Thứ tự 5 cột đầu thống nhất (Tồn vỏ + báo cáo)
 
-- Trạng thái: CONFIRMED (2026-10-26).
+- Trạng thái: CONFIRMED (2026-10-26). **Phần cố định cột đã bỏ theo DEC-141**; thứ tự cột giữ nguyên.
 - **5 cột đầu bắt buộc**, theo đúng thứ tự: **Mã hồ sơ | Số container | Size | Type | Hãng tàu**. Các cột này luôn **cố định** bên trái; kéo ngang chỉ cuộn các cột còn lại.
   - Áp dụng: **Tồn vỏ** (ô chọn hàng loạt cũng cố định), **Báo cáo Hạ vỏ, Cấp vỏ, Sửa chữa**.
   - Báo cáo Hạ vỏ tách Size/Type thành 2 cột. Báo cáo Cấp vỏ thêm Size, Type, Hãng tàu (lấy từ container). Báo cáo Sửa chữa thêm Size, Type.
@@ -1203,6 +1203,13 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-26).
 - Cột gộp "Trạng thái • Phân loại" tách thành 2 cột riêng: **Trạng thái** (AV / DAMAGE) | **Phân loại** (đóng hàng).
 - Excel: cột "ĐÓNG HÀNG" đổi tên thành **PHÂN LOẠI**, đứng ngay sau TRẠNG THÁI, cho khớp màn hình (DEC-129).
+
+### DEC-141 — Bỏ cố định cột khi kéo ngang
+
+- Trạng thái: CONFIRMED (2026-10-26). Sửa DEC-139.
+- **Bỏ** hiển thị cố định (sticky) các cột đầu ở Tồn vỏ và các báo cáo Hạ vỏ, Cấp vỏ, Sửa chữa, Nhập tàu, Xuất tàu. Kéo ngang thì cả bảng cuộn.
+- **Giữ nguyên** thứ tự cột đồng bộ của DEC-139 (5 cột đầu Mã hồ sơ | Số container | Size | Type | Hãng tàu; báo cáo tàu thêm Tên tàu đầu tiên), cả trên màn hình lẫn Excel.
+- Đã gỡ `frozenCols` / `FROZEN_W` / `FROZEN_STANDARD` khỏi `shared.tsx`.
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
@@ -1293,6 +1300,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-140 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-141 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

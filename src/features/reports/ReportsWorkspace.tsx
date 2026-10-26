@@ -19,7 +19,7 @@ import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportShe
 import { can } from '../../services/permissions';
 import { quickRange, fileStamp } from '../../services/datetime';
 import { VesselReport } from './VesselReport';
-import { linkCls, DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize, CellText, CELL_MAX, frozenCols, FROZEN_STANDARD } from '../../components/shared';
+import { linkCls, DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize, CellText, CELL_MAX } from '../../components/shared';
 import { PaymentInfoCells } from '../../components/PaymentInfoCells';
 import { voucherPaymentInfo } from '../../services/payments';
 
@@ -75,8 +75,6 @@ const GATE_OUT_STATUS: Record<GateOutOrder['status'], string> = {
   CANCELLED: 'Đã hủy',
 };
 
-// DEC-139: cố định 5 cột đầu khi cuộn ngang
-const fz = frozenCols(FROZEN_STANDARD);
 
 export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossier, onOpenReceipt }) => {
   // key theo section để reset bộ lọc khi đổi báo cáo
@@ -164,12 +162,11 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
               <table className="w-full min-w-[860px] whitespace-nowrap text-left text-xs">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                   <tr>
-                    {/* DEC-139: cố định Mã hồ sơ | Số container | Size | Type | Hãng tàu */}
-                    <th style={fz.style(0)} className={`${fz.th(0)} px-3 py-2`}>Mã hồ sơ</th>
-                    <th style={fz.style(1)} className={`${fz.th(1)} px-3 py-2`}>Số container</th>
-                    <th style={fz.style(2)} className={`${fz.th(2)} px-3 py-2 text-center`}>Size</th>
-                    <th style={fz.style(3)} className={`${fz.th(3)} px-3 py-2 text-center`}>Type</th>
-                    <th style={fz.style(4)} className={`${fz.th(4)} px-3 py-2`}>Hãng tàu</th>
+                    <th className="px-3 py-2">Mã hồ sơ</th>
+                    <th className="px-3 py-2">Số container</th>
+                    <th className="px-3 py-2 text-center">Size</th>
+                    <th className="px-3 py-2 text-center">Type</th>
+                    <th className="px-3 py-2">Hãng tàu</th>
                     <th className="px-3 py-2">Booking</th>
                     <th className="px-3 py-2">Khách hàng</th>
                     <th className="px-3 py-2">Số xe</th>
@@ -186,12 +183,12 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
                   {outRows.rows.map((o) => {
                     const c = state.containers.find((x) => x.masterDossierCode === o.masterDossierCode);
                     return (
-                    <tr key={o.id} className="group hover:bg-slate-50">
-                      <td style={fz.style(0)} className={`${fz.td(0)} px-3 py-2`}><button type="button" onClick={() => onOpenDossier(o.gateOutCode)} className={linkCls}>{o.gateOutCode}</button></td>
-                      <td style={fz.style(1)} className={`${fz.td(1)} px-3 py-2 font-mono font-bold`}>{o.containerNo}</td>
-                      <td style={fz.style(2)} className={`${fz.td(2)} px-3 py-2 text-center`}>{c?.size || '-'}</td>
-                      <td style={fz.style(3)} className={`${fz.td(3)} px-3 py-2 text-center`}>{c?.type || '-'}</td>
-                      <td style={fz.style(4)} className={`${fz.td(4)} px-3 py-2`}>{c?.shippingLineCode || '-'}</td>
+                    <tr key={o.id} className="hover:bg-slate-50">
+                      <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.gateOutCode)} className={linkCls}>{o.gateOutCode}</button></td>
+                      <td className="px-3 py-2 font-mono font-bold">{o.containerNo}</td>
+                      <td className="px-3 py-2 text-center">{c?.size || '-'}</td>
+                      <td className="px-3 py-2 text-center">{c?.type || '-'}</td>
+                      <td className="px-3 py-2">{c?.shippingLineCode || '-'}</td>
                       <td className="px-3 py-2 font-mono">{o.bookingNo}</td>
                       <td className="px-3 py-2"><CellText text={o.receiverRep} max={CELL_MAX.MEDIUM} /></td>
                       <td className="px-3 py-2">{o.truckNo}</td>
@@ -211,11 +208,11 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
               <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                   <tr>
-                    <th style={fz.style(0)} className={`${fz.th(0)} px-3 py-2`}>Mã hồ sơ</th>
-                    <th style={fz.style(1)} className={`${fz.th(1)} px-3 py-2`}>Số container</th>
-                    <th style={fz.style(2)} className={`${fz.th(2)} px-3 py-2 text-center`}>Size</th>
-                    <th style={fz.style(3)} className={`${fz.th(3)} px-3 py-2 text-center`}>Type</th>
-                    <th style={fz.style(4)} className={`${fz.th(4)} px-3 py-2`}>Hãng tàu</th>
+                    <th className="px-3 py-2">Mã hồ sơ</th>
+                    <th className="px-3 py-2">Số container</th>
+                    <th className="px-3 py-2 text-center">Size</th>
+                    <th className="px-3 py-2 text-center">Type</th>
+                    <th className="px-3 py-2">Hãng tàu</th>
                     <th className="px-3 py-2">Khách hàng</th>
                     <th className="px-3 py-2">Số xe</th>
                     <th className="px-3 py-2">SĐT lái xe</th>
@@ -230,12 +227,12 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {inRows.rows.map((o) => (
-                    <tr key={o.id} className="group hover:bg-slate-50">
-                      <td style={fz.style(0)} className={`${fz.td(0)} px-3 py-2`}><button type="button" onClick={() => onOpenDossier(o.masterDossierCode)} className={linkCls}>{o.masterDossierCode}</button></td>
-                      <td style={fz.style(1)} className={`${fz.td(1)} px-3 py-2 font-mono font-bold`}>{o.containerNo || '-'}</td>
-                      <td style={fz.style(2)} className={`${fz.td(2)} px-3 py-2 text-center`}>{o.size || '-'}</td>
-                      <td style={fz.style(3)} className={`${fz.td(3)} px-3 py-2 text-center`}>{o.type || '-'}</td>
-                      <td style={fz.style(4)} className={`${fz.td(4)} px-3 py-2`}>{o.shippingLineCode || '-'}</td>
+                    <tr key={o.id} className="hover:bg-slate-50">
+                      <td className="px-3 py-2"><button type="button" onClick={() => onOpenDossier(o.masterDossierCode)} className={linkCls}>{o.masterDossierCode}</button></td>
+                      <td className="px-3 py-2 font-mono font-bold">{o.containerNo || '-'}</td>
+                      <td className="px-3 py-2 text-center">{o.size || '-'}</td>
+                      <td className="px-3 py-2 text-center">{o.type || '-'}</td>
+                      <td className="px-3 py-2">{o.shippingLineCode || '-'}</td>
                       <td className="px-3 py-2"><CellText text={o.customerRep} max={CELL_MAX.MEDIUM} /></td>
                       <td className="px-3 py-2">{o.truckNo || '-'}</td>
                       <td className="px-3 py-2">{o.driverPhone || '-'}</td>
@@ -401,12 +398,11 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
             <table className="w-full min-w-[960px] whitespace-nowrap text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
                 <tr>
-                  {/* DEC-139: cố định Mã hồ sơ | Số container | Size | Type | Hãng tàu */}
-                  <th style={fz.style(0)} className={`${fz.th(0)} px-3 py-2`}>Mã hồ sơ</th>
-                  <th style={fz.style(1)} className={`${fz.th(1)} px-3 py-2`}>Số container</th>
-                  <th style={fz.style(2)} className={`${fz.th(2)} px-3 py-2 text-center`}>Size</th>
-                  <th style={fz.style(3)} className={`${fz.th(3)} px-3 py-2 text-center`}>Type</th>
-                  <th style={fz.style(4)} className={`${fz.th(4)} px-3 py-2`}>Hãng tàu</th>
+                  <th className="px-3 py-2">Mã hồ sơ</th>
+                  <th className="px-3 py-2">Số container</th>
+                  <th className="px-3 py-2 text-center">Size</th>
+                  <th className="px-3 py-2 text-center">Type</th>
+                  <th className="px-3 py-2">Hãng tàu</th>
                   <th className="px-3 py-2">Remark sửa chữa</th>
                   <th className="px-3 py-2 text-right">Giờ công</th>
                   <th className="px-3 py-2">Trạng thái</th>
@@ -418,14 +414,14 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {result.rows.map(({ workOrder: w, container: c }) => (
-                  <tr key={w.id} className="group hover:bg-slate-50">
-                    <td style={fz.style(0)} className={`${fz.td(0)} px-3 py-2`}>
+                  <tr key={w.id} className="hover:bg-slate-50">
+                    <td className="px-3 py-2">
                       <button type="button" onClick={() => onOpenDossier(w.masterDossierCode)} className={linkCls}>{w.masterDossierCode}</button>
                     </td>
-                    <td style={fz.style(1)} className={`${fz.td(1)} px-3 py-2 font-mono font-bold`}>{w.containerNo}</td>
-                    <td style={fz.style(2)} className={`${fz.td(2)} px-3 py-2 text-center`}>{c?.size || '-'}</td>
-                    <td style={fz.style(3)} className={`${fz.td(3)} px-3 py-2 text-center`}>{c?.type || '-'}</td>
-                    <td style={fz.style(4)} className={`${fz.td(4)} px-3 py-2`}>{c?.shippingLineCode || '-'}</td>
+                    <td className="px-3 py-2 font-mono font-bold">{w.containerNo}</td>
+                    <td className="px-3 py-2 text-center">{c?.size || '-'}</td>
+                    <td className="px-3 py-2 text-center">{c?.type || '-'}</td>
+                    <td className="px-3 py-2">{c?.shippingLineCode || '-'}</td>
                     <td className="px-3 py-2"><CellText text={w.items.join(', ')} max={CELL_MAX.LONG} /></td>
                     <td className="px-3 py-2 text-right font-mono">{w.laborHours ?? '-'}</td>
                     <td className="px-3 py-2">{REPAIR_STATUS[w.workStatus] || w.workStatus}</td>
