@@ -9,7 +9,7 @@ import {
   toggleContainerHold,
   updateContainerOfficeNote,
 } from '../../services/depotOperations';
-import { formatLocation, getContainerProgress, parseContainerList, PROGRESS_LABELS, storageDays } from '../../services/core';
+import { getContainerProgress, parseContainerList, PROGRESS_LABELS, storageDays } from '../../services/core';
 import { can } from '../../services/permissions';
 import { yardStockSheet } from '../../services/reports';
 import { containerPaymentInfo } from '../../services/payments';
@@ -31,6 +31,7 @@ import {
   SlotPicker,
   SlotValue,
   CellText,
+  ContainerNo,
   CELL_MAX,
   LocationText,
 } from '../../components/shared';
@@ -379,19 +380,34 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                       <tr className="bg-slate-50">
                         <td colSpan={colCount} className="px-4 py-3">
                           {panel!.kind === 'LOCATION' ? (
-                            <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-                              <div className="flex-1">
-                                <p className="mb-2 text-[11px] text-slate-600">
-                                  SỬA VỊ TRÍ hành chính cho <strong>{c.containerNo}</strong> (hiện tại {formatLocation(c)}). Không ghi nhận là tác nghiệp ĐẢO CHUYỂN.
-                                </p>
+                            /* DEC-138: khung SỬA VỊ TRÍ gọn như Đảo chuyển — thẻ rộng tối đa max-w-lg, dính trái (sticky) để không bị đẩy ra ngoài khi bảng cuộn ngang; nút Lưu full chiều rộng ở cuối */
+                            <div className="sticky left-4 w-full max-w-lg space-y-3 whitespace-normal rounded-lg border border-blue-600 bg-white p-4 text-xs" data-testid="yard-location-editor">
+                              <div className="flex items-center justify-between">
+                                <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.officeNote || c.holdReason} className="text-base" />
+                                <button type="button" onClick={() => setPanel(null)} aria-label="Đóng" className="p-1 text-slate-400 hover:text-slate-700">
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                              <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
+                                <dt className="text-slate-500">Size / Type</dt>
+                                <dd className="font-semibold">{c.size}/{c.type}</dd>
+                                <dt className="text-slate-500">Trạng thái</dt>
+                                <dd className="font-semibold">{c.conditionClass} • {getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</dd>
+                                <dt className="text-slate-500">Vị trí hiện tại</dt>
+                                <dd className="font-mono font-bold"><LocationText loc={c} /></dd>
+                              </dl>
+                              <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+                                <span className="block font-bold text-slate-800">Vị trí mới *</span>
                                 <SlotPicker state={state} value={slot} onChange={setSlot} />
                               </div>
+                              <p className="text-[11px] text-slate-500">Sửa vị trí hành chính — không ghi nhận là tác nghiệp ĐẢO CHUYỂN.</p>
                               <button
                                 type="button"
                                 disabled={!isSlotComplete(slot, state)}
                                 onClick={() => run(() => correctContainerLocation(state, { containerId: c.id, ...slot }), `Đã sửa vị trí ${c.containerNo}.`)}
-                                className={primaryBtn}
+                                className={`${primaryBtn} w-full py-3`}
                               >
+                                <Check className="h-4 w-4" />
                                 Lưu vị trí
                               </button>
                             </div>
