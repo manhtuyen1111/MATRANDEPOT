@@ -16,7 +16,6 @@ import {
   ReleaseBooking,
   ServiceWorkOrder,
 } from '../types/depot';
-import { validateUsername } from './auth';
 import { DepotState, hasRolePermission } from './depotStore';
 import { allocateCode } from './codes';
 import { markVesselImportPlaced } from './vessel';
@@ -1826,26 +1825,24 @@ function assertKeepsAdmin(state: DepotState, users: StaffUser[]): void {
 
 export function addStaffUser(
   state: DepotState,
-  input: { fullName: string; username: string; email?: string; roles: AppRole[] }
+  input: { fullName: string; email: string; roles: AppRole[] }
 ): DepotState {
   assertAdmin(state);
   const fullName = input.fullName.trim();
-  const email = (input.email || '').trim().toLowerCase();
+  const email = input.email.trim().toLowerCase();
   if (!fullName) throw new Error('Vui lòng nhập họ tên.');
-  const username = validateUsername(state, input.username); // DEC-143
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Email không hợp lệ.');
-  if (email && state.staffUsers.some((u) => u.email.toLowerCase() === email)) throw new Error(`Email ${email} đã tồn tại.`);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Email không hợp lệ.');
+  if (state.staffUsers.some((u) => u.email.toLowerCase() === email)) throw new Error(`Email ${email} đã tồn tại.`);
   const roles = cleanRoles(input.roles);
   const maxNo = state.staffUsers.reduce((m, u) => Math.max(m, Number(u.staffCode.replace(/\D/g, '')) || 0), 0);
   const staffCode = `NV-${String(maxNo + 1).padStart(3, '0')}`;
-  // DEC-143: mật khẩu ban đầu 123456 (chưa có passwordHash), bắt buộc đổi ở lần đăng nhập đầu tiên
-  const user: StaffUser = { id: newId('usr'), staffCode, fullName, email, username, roles, isActive: true, mustChangePassword: true };
+  const user: StaffUser = { id: newId('usr'), staffCode, fullName, email, roles, isActive: true };
   return appendAudit(
     { ...state, staffUsers: [...state.staffUsers, user] },
     'ADMIN_ADD_USER',
     'USER',
     staffCode,
-    `[Admin] Thêm user ${staffCode} ${fullName} (đăng nhập: ${username}) — vai trò ${roles.join(', ')}`
+    `[Admin] Thêm user ${staffCode} ${fullName} — vai trò ${roles.join(', ')}`
   );
 }
 

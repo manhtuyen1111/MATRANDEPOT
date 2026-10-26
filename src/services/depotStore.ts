@@ -33,7 +33,6 @@ const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7', 'matran_depot_erp_stat
 
 export interface DepotState {
   currentUser: StaffUser;
-  sessionUserId?: string | null; // DEC-143: người đang đăng nhập; null = chưa đăng nhập → màn Đăng nhập
   staffUsers: StaffUser[];
   partners: Partner[];
   yardBlocks: YardBlock[];
@@ -77,7 +76,6 @@ export const INITIAL_STAFF: StaffUser[] = [
     staffCode: 'NV-001',
     fullName: 'Nguyễn Quản Trị (Admin)',
     email: 'admin@matrandepot.vn',
-    username: 'admin',
     roles: ['ADMIN', 'MANAGER'],
     isActive: true,
   },
@@ -86,7 +84,6 @@ export const INITIAL_STAFF: StaffUser[] = [
     staffCode: 'NV-002',
     fullName: 'Trần Thị Minh (Văn Phòng)',
     email: 'office@matrandepot.vn',
-    username: 'office',
     roles: ['OFFICE'],
     isActive: true,
   },
@@ -95,7 +92,6 @@ export const INITIAL_STAFF: StaffUser[] = [
     staffCode: 'NV-003',
     fullName: 'Lê Hoàng Giám Định (Hạ vỏ & Báo giá)',
     email: 'inspector@matrandepot.vn',
-    username: 'inspector',
     roles: ['INSPECTOR'],
     isActive: true,
   },
@@ -104,7 +100,6 @@ export const INITIAL_STAFF: StaffUser[] = [
     staffCode: 'NV-008',
     fullName: 'Ngô Thị Báo Giá',
     email: 'quotation@matrandepot.vn',
-    username: 'quotation',
     roles: ['QUOTATION'],
     isActive: true,
   },
@@ -113,7 +108,6 @@ export const INITIAL_STAFF: StaffUser[] = [
     staffCode: 'NV-004',
     fullName: 'Phạm Hoàng Xe Nâng',
     email: 'forklift@matrandepot.vn',
-    username: 'forklift',
     roles: ['FORKLIFT'],
     isActive: true,
   },
@@ -122,7 +116,6 @@ export const INITIAL_STAFF: StaffUser[] = [
     staffCode: 'NV-005',
     fullName: 'Vũ Văn Vệ Sinh',
     email: 'cleaning@matrandepot.vn',
-    username: 'cleaning',
     roles: ['CLEANING'],
     isActive: true,
   },
@@ -131,7 +124,6 @@ export const INITIAL_STAFF: StaffUser[] = [
     staffCode: 'NV-006',
     fullName: 'Đặng Kỹ Thuật Sửa Chữa',
     email: 'repair@matrandepot.vn',
-    username: 'repair',
     roles: ['REPAIR_STAFF'],
     isActive: true,
   },
@@ -140,7 +132,6 @@ export const INITIAL_STAFF: StaffUser[] = [
     staffCode: 'NV-007',
     fullName: 'Đỗ Thị Thu (Kế toán)',
     email: 'accounting@matrandepot.vn',
-    username: 'accounting',
     roles: ['ACCOUNTANT'], // DEC-111
     isActive: true,
   },
@@ -809,7 +800,6 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
   const LEGACY_ROLE: Record<string, AppRole> = { GATE_STAFF: 'INSPECTOR', YARD_STAFF: 'INSPECTOR', REPAIR_QC: 'REPAIR_STAFF' };
   const staffUsers = (raw.staffUsers || base.staffUsers).map((u) => ({
     ...u,
-    username: u.username || (u.email || u.staffCode).split('@')[0].toLowerCase(), // DEC-143: dữ liệu cũ chưa có tên đăng nhập
     roles: Array.from(new Set(u.roles.map((r) => LEGACY_ROLE[r as string] || r))) as AppRole[],
   }));
   for (const seed of INITIAL_STAFF) {

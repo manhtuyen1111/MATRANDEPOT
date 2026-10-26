@@ -192,10 +192,6 @@ export interface StaffUser {
   email: string;
   roles: AppRole[];
   isActive: boolean;
-  // DEC-143: tài khoản do Admin tạo — tên đăng nhập + mật khẩu (băm). Chưa có passwordHash = mật khẩu mặc định 123456
-  username: string;
-  passwordHash?: string;
-  mustChangePassword?: boolean;
 }
 
 export interface Partner {

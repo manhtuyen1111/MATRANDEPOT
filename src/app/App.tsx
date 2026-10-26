@@ -1,6 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { isLoggedIn, logout, mustChangePassword } from '../services/auth';
-import { ChangePasswordScreen, LoginScreen } from '../features/auth/LoginScreen';
 import {
   Boxes,
   Building2,
@@ -121,7 +119,7 @@ const MENU: MenuGroup[] = [
       { id: 'DM_BIEU_GIA', label: 'Biểu giá' },
       { id: 'DM_CONG_TY', label: 'Công ty' },
       { id: 'DM_SUA_CHUA', label: 'Sửa chữa' },
-      { id: 'DM_USER', label: 'User - Role' }, // DEC-144
+      { id: 'DM_USER', label: 'User - Phân quyền' },
     ],
   },
 ];
@@ -173,7 +171,6 @@ export const App: React.FC = () => {
     : undefined;
   const [prefs, setPrefs] = useState(readPrefs);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [showChangePw, setShowChangePw] = useState(false); // DEC-143
 
   // DEC-120: danh sách MENU / TÍNH NĂNG để chọn khi góp ý (menu người dùng được thấy) và để Admin lọc báo cáo (mọi menu)
   const toOptions = (groups: MenuGroup[]) => groups.flatMap((g) => g.items.map((i) => ({ id: i.id, label: `${g.label} → ${i.label}`, group: g.label, item: i.label })));
@@ -368,10 +365,6 @@ export const App: React.FC = () => {
     </div>
   );
 
-  // DEC-143: chưa đăng nhập → màn Đăng nhập; mật khẩu còn mặc định → bắt buộc đổi trước khi làm việc
-  if (!isLoggedIn(state)) return <LoginScreen state={state} onUpdateState={handleUpdateState} demo={!isSupabaseConfigured} />;
-  if (mustChangePassword(state.currentUser)) return <ChangePasswordScreen state={state} onUpdateState={handleUpdateState} forced />;
-
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900">
       {/* Menu máy tính */}
@@ -422,19 +415,24 @@ export const App: React.FC = () => {
             {/* DEC-120: Góp ý — mọi người dùng, góc trên bên phải */}
             <FeedbackButton state={state} onUpdateState={handleUpdateState} menuOptions={feedbackMenuOptions} />
             {!isSupabaseConfigured && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">DEMO</span>}
-            {/* DEC-143: người đang đăng nhập + Đổi mật khẩu / Đăng xuất (thay ô chọn người dùng Demo) */}
-            <span className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1" data-testid="current-user">
+            <label className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1">
               <UserCheck className="h-3.5 w-3.5 text-slate-500" />
-              <span className="max-w-[220px] truncate font-medium text-slate-800" title={`${state.currentUser.fullName} (${state.currentUser.roles.map((r) => ROLE_LABELS[r]).join(', ')})`}>
-                {state.currentUser.fullName} <span className="font-mono text-slate-500">({state.currentUser.username})</span>
-              </span>
-            </span>
-            <button type="button" onClick={() => setShowChangePw(true)} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
-              Đổi mật khẩu
-            </button>
-            <button type="button" onClick={() => handleUpdateState(logout(state))} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 font-semibold text-rose-700 hover:bg-rose-50">
-              Đăng xuất
-            </button>
+              <span className="sr-only">Người dùng (Demo)</span>
+              <select
+                value={state.currentUser.id}
+                onChange={(e) => {
+                  const found = state.staffUsers.find((u) => u.id === e.target.value);
+                  if (found) handleUpdateState({ ...state, currentUser: found });
+                }}
+                className="max-w-[220px] bg-transparent font-medium text-slate-800 focus:outline-hidden"
+              >
+                {state.staffUsers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.fullName} ({u.roles.map((r) => ROLE_LABELS[r]).join(', ')})
+                  </option>
+                ))}
+              </select>
+            </label>
             <button type="button" onClick={() => { if (window.confirm('Xóa toàn bộ dữ liệu tác nghiệp (container, lệnh, phiếu thu…)? Danh mục và góp ý được giữ lại.')) handleUpdateState({ ...resetDepotState(), feedbacks: state.feedbacks || [] }); }} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
               <RefreshCw className="h-3 w-3" />
               Xóa dữ liệu
@@ -446,7 +444,6 @@ export const App: React.FC = () => {
           </div>
         </header>
 
-        {showChangePw && <ChangePasswordScreen state={state} onUpdateState={handleUpdateState} onClose={() => setShowChangePw(false)} />}
         <main className="flex-1 p-3 sm:p-4">
           {activeMenu === 'TON_VO' && (
             <YardFeature state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} onOpenK80Ticket={setActiveK80Ticket} onOpenReceipt={openReceipt} />

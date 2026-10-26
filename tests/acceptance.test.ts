@@ -535,12 +535,11 @@ describe('DEC-045 USER - PHÂN QUYỀN & Báo cáo Hạ vỏ', () => {
 
   it('Chỉ ADMIN thêm / sửa user; giữ ít nhất 1 ADMIN; không tự khóa', () => {
     const s0 = createInitialState();
-    const input = { fullName: 'Nguyễn QC', username: 'qc2', email: 'qc2@matrandepot.vn', roles: ['REPAIR_STAFF' as const] };
+    const input = { fullName: 'Nguyễn QC', email: 'qc2@matrandepot.vn', roles: ['REPAIR_STAFF' as const] };
     expect(() => addStaffUser(as(s0, 'usr-office'), input)).toThrow(/ADMIN/);
     let s = addStaffUser(as(s0, 'usr-admin'), input);
-    expect(() => addStaffUser(s, input)).toThrow(/đã có người dùng/); // DEC-143: trùng tên đăng nhập
-    expect(() => addStaffUser(s, { ...input, username: 'qc9' })).toThrow(/đã tồn tại/); // trùng email
-    expect(() => addStaffUser(s, { ...input, username: 'qc3', email: 'x@y.vn', roles: [] })).toThrow(/ít nhất 1 vai trò/);
+    expect(() => addStaffUser(s, input)).toThrow(/đã tồn tại/);
+    expect(() => addStaffUser(s, { ...input, email: 'x@y.vn', roles: [] })).toThrow(/ít nhất 1 vai trò/);
     const added = s.staffUsers.find((x) => x.email === 'qc2@matrandepot.vn')!;
     s = updateStaffUser(s, { userId: added.id, roles: ['CLEANING'] });
     expect(s.staffUsers.find((x) => x.id === added.id)!.roles).toEqual(['CLEANING']);
@@ -560,12 +559,12 @@ describe('DEC-045 USER - PHÂN QUYỀN & Báo cáo Hạ vỏ', () => {
 describe('DEC-047 / DEC-048', () => {
   it('Vai trò cũ trong dữ liệu đã lưu: cổng / hiện trường → Giám định, Kế toán giữ nguyên (DEC-111 thêm lại)', () => {
     const legacy = createInitialState() as Partial<DepotState>;
-    legacy.staffUsers = [{ id: 'u1', staffCode: 'X', fullName: 'A', email: 'a@b.vn', isActive: true, roles: ['GATE_STAFF', 'YARD_STAFF', 'ACCOUNTANT'] } as never];
+    legacy.staffUsers = [{ id: 'u1', staffCode: 'X', fullName: 'A', email: 'a@b.vn', isActive: true, roles: ['GATE_STAFF', 'YARD_STAFF', 'ACCOUNTANT'] as never }];
     expect(normalizeDepotState(legacy).staffUsers.find((u) => u.id === 'u1')!.roles).toEqual(['INSPECTOR', 'ACCOUNTANT']);
   });
 
   it('Thêm user Sửa chữa có sẵn vào tổ; không thêm trùng; user bị khóa không thêm được', () => {
-    let s = addStaffUser(as(createInitialState(), 'usr-admin'), { fullName: 'Thợ Test', username: 'tho.test', email: 'tho@test.vn', roles: ['REPAIR_STAFF'] });
+    let s = addStaffUser(as(createInitialState(), 'usr-admin'), { fullName: 'Thợ Test', email: 'tho@test.vn', roles: ['REPAIR_STAFF'] });
     const u = s.staffUsers.find((x) => x.email === 'tho@test.vn')!;
     s = addRepairTeamMember(s, { teamId: 'rt-1', staffUserId: u.id });
     const m = s.repairTeams[0].members.find((x) => x.staffUserId === u.id)!;
@@ -580,7 +579,7 @@ describe('DEC-047 / DEC-048', () => {
 describe('DEC-049: bỏ QC Sửa chữa', () => {
   it('Sửa chữa hoàn tất là AV; vai trò QC cũ trong dữ liệu lưu → Sửa chữa; container "chờ nghiệm thu" cũ → AV', () => {
     const legacy = createInitialState() as Partial<DepotState>;
-    legacy.staffUsers = [{ id: 'u-qc', staffCode: 'Q', fullName: 'QC', email: 'qc@x.vn', isActive: true, roles: ['REPAIR_QC'] } as never];
+    legacy.staffUsers = [{ id: 'u-qc', staffCode: 'Q', fullName: 'QC', email: 'qc@x.vn', isActive: true, roles: ['REPAIR_QC'] as never }];
     legacy.containers = [{ ...legacy.containers![2], needsQcInspection: true } as never];
     const s = normalizeDepotState(legacy);
     expect(s.staffUsers[0].roles).toEqual(['REPAIR_STAFF']);

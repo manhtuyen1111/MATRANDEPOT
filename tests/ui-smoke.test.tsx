@@ -34,25 +34,14 @@ const noop = () => {};
 const base = createInitialState();
 const as = (s: DepotState, id: string) => ({ ...s, currentUser: s.staffUsers.find((u) => u.id === id)! });
 
-import { changePassword, DEFAULT_PASSWORD, login } from '../src/services/auth';
-// App đọc dữ liệu từ localStorage → nạp state giả rồi render
-function renderApp(s: DepotState): string {
-  const store: Record<string, string> = { matran_depot_erp_state_v13: JSON.stringify(s) };
-  const prev = (globalThis as { localStorage?: unknown }).localStorage;
-  (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } };
-  try { return renderToString(<App />).replace(/<!-- -->/g, ''); } finally { (globalThis as { localStorage?: unknown }).localStorage = prev; }
-}
-
 describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
   it('App khung menu', () => {
     // DEC-106: App mở với dữ liệu sạch; smoke này cần dữ liệu mẫu → nạp qua localStorage giả
-    // DEC-143: chưa đăng nhập → màn Đăng nhập; đăng nhập + đã đổi mật khẩu → vào khung menu
-    expect(renderApp(base)).toContain('data-testid="login-screen"');
-    const fresh = login(base, { username: 'admin', password: DEFAULT_PASSWORD });
-    expect(renderApp(fresh)).toContain('data-testid="change-password-screen"'); // mật khẩu mặc định → bắt buộc đổi
-    const html = renderApp(changePassword(fresh, { currentPassword: DEFAULT_PASSWORD, newPassword: 'abc789', confirmPassword: 'abc789' }));
-    expect(html).toContain('data-testid="current-user"');
-    expect(html).toContain('Đăng xuất');
+    const store: Record<string, string> = { matran_depot_erp_state_v13: JSON.stringify(base) };
+    const prev = (globalThis as { localStorage?: unknown }).localStorage;
+    (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } };
+    const html = renderToString(<App />);
+    (globalThis as { localStorage?: unknown }).localStorage = prev;
     expect(html).toContain('MATRAN DEPOT');
     expect(html).toContain('Đảo chuyển');
     expect(html).not.toContain('HẠ SỬA CHỮA');
@@ -811,24 +800,5 @@ describe('DEC-142: Chờ báo giá 1 dòng', () => {
     expect(html).toMatch(/<table class="[^"]*whitespace-nowrap/);
     expect(html).toContain('data-testid="quote-row"');
     expect(html).not.toContain('block text-[10px] text-slate-500');
-  });
-});
-
-// DEC-144: User - Role — bộ lọc + tìm kiếm + nút Thêm nhân viên mới; khung thêm chỉ mở khi bấm
-describe('DEC-144: màn User - Role', () => {
-  it('có bộ lọc, tìm kiếm, nút Thêm nhân viên mới; khung thêm chưa mở sẵn', () => {
-    const html = renderToString(<UserRoleCatalog state={as(base, 'usr-admin')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
-    expect(html).toContain('data-testid="user-filter"');
-    expect(html).toContain('Tìm kiếm');
-    expect(html).toContain('data-testid="add-user-btn"');
-    expect(html).toContain('Thêm nhân viên mới');
-    expect(html).not.toContain('data-testid="add-user-form"');
-    expect(html).toContain('>Tên đăng nhập<');
-  });
-  it('menu đổi tên User - Role', () => {
-    const fresh = changePassword(login(base, { username: 'admin', password: DEFAULT_PASSWORD }), { currentPassword: DEFAULT_PASSWORD, newPassword: 'x', confirmPassword: 'x' });
-    const html = renderApp(fresh);
-    expect(html).toContain('User - Role');
-    expect(html).not.toContain('User - Phân quyền');
   });
 });
