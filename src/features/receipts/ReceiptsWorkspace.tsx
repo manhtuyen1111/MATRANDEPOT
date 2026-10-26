@@ -412,7 +412,7 @@ export const ReceiptsWorkspace: React.FC<{
                       </button>
                       {(() => {
                         const m = state.masterReceipts.find((x) => x.id === selected.transaction.masterReceiptId);
-                        return m ? ` • QR ${m.qrCode} • Dư ${formatVnd(m.remainingAmount)}` : '';
+                        return m ? ` • QR ${m.qrCode} • Dư ${formatVnd(m.remainingAmount)}` : ''; // DEC-124: mã = số phiếu PT-TTR-
                       })()}
                     </dd>
                   </>

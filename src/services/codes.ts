@@ -7,7 +7,7 @@ import type { DepotState } from './depotStore';
 //   Hồ sơ CẤP VỎ   : CV-YYMMDD-NNN   (đánh số lại mỗi ngày)
 //   Phiếu thu      : PT-TT-YYMMDD-NNNN (TT trực tiếp) / PT-TTR-YYMMDD-NNNN (nạp quỹ thu trước) — DEC-098
 //                    (dữ liệu cũ PT-YYYY-NNNNNN giữ nguyên)
-//   Phiếu thu trước: PTT-YYYY-NNN    (phiếu thu trả trước TTT)
+//   Phiếu thu trước: KHÔNG còn PTT- — dùng PT-TTR-YYMMDD-NNNN cấp ngay khi tạo (DEC-124); PTT- chỉ còn ở dữ liệu cũ
 //   Góp ý          : GY-YYMMDD-NNN (DEC-120)
 //   Chứng từ       : KHÔNG cấp mã riêng — số chứng từ = mã hồ sơ tác nghiệp (HV- / CV-) (DEC-119)
 // Mã cũ (IN-/HS-, OUT-/GO-, PTM-) được đổi khi nạp dữ liệu: renameLegacyCodes
@@ -52,7 +52,8 @@ function existingCodes(state: DepotState, series: CodeSeries): string[] {
     case 'PT':
     case 'PT-TT':
     case 'PT-TTR':
-      return (state.paymentReceipts || []).map((r) => r.receiptNo);
+      // DEC-124: mã PT-TTR- có thể đã nằm ở phiếu thu trả trước đang chờ thanh toán
+      return [...(state.paymentReceipts || []).map((r) => r.receiptNo), ...state.masterReceipts.map((m) => m.receiptCode)];
     case 'PTT':
       return state.masterReceipts.map((r) => r.receiptCode);
     case 'GY':

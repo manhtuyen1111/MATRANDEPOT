@@ -40,6 +40,8 @@ describe('DEC-121: phiếu thu trả trước — cột MÃ HỒ SƠ là các t�
     const used = masterReceiptUsage(s, topup.masterReceiptCode!)!.rows.length;
     expect(used).toBe(2); // dữ liệu test: 2 lượt Hạ vỏ trả trước
     expect(cell.split(', ')).toHaveLength(used);
-    expect(sheet.rows[0][sheet.columns.indexOf('PHIẾU THU TRẢ TRƯỚC')]).toMatch(/^PTT-/);
+    // DEC-124: một mã duy nhất — phiếu thu trả trước = số phiếu PT-TTR-
+    expect(sheet.rows[0][sheet.columns.indexOf('PHIẾU THU TRẢ TRƯỚC')]).toBe(topup.receiptNo);
+    expect(s.masterReceipts.every((m) => m.receiptCode.startsWith('PT-TTR-'))).toBe(true);
   });
 });

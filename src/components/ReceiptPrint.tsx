@@ -91,7 +91,7 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
   const op = RECEIPT_OPERATION_LABELS[opKey];
   const tx = state.paymentTransactions.find((t) => t.id === r.transactionId);
   const voucher = r.voucherId ? state.vouchers.find((v) => v.id === r.voucherId) : undefined;
-  // DEC-077: PHIẾU THU TRƯỚC — cùng khung, khác tên, có khung nổi bật Phiếu thu trả trước PTT-
+  // DEC-077: PHIẾU THU TRƯỚC — cùng khung, khác tên, có khung nổi bật mã QR trừ dần (DEC-124: mã = số phiếu PT-TTR-)
   const master = r.purpose === "PREPAID_TOPUP" ? state.masterReceipts.find((m) => m.id === r.masterReceiptId || m.receiptCode === r.masterReceiptCode) : undefined;
   const isPrepaid = opKey === "THU_TRUOC" || Boolean(master);
   const lines = master?.feeLines?.length ? master.feeLines : voucher?.feeLines || [];

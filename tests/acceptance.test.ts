@@ -435,7 +435,9 @@ describe('CR-04 PHIẾU THU — Văn phòng tạo phiếu thu TTT', () => {
     let s = createMasterPrepaidReceipt(as(s0, 'usr-office'), input);
     const master = s.masterReceipts[0];
     expect(master.status).toBe('PENDING_PAYMENT');
-    expect(master.receiptCode).toMatch(/^PTT-\d{4}-003$/);
+    // DEC-124: cấp ngay mã PT-TTR- (chờ thanh toán), QR = QR-<mã>
+    expect(master.receiptCode).toMatch(/^PT-TTR-\d{6}-0001$/);
+    expect(master.qrCode).toBe(`QR-${master.receiptCode}`);
     expect(s.paymentReceipts).toHaveLength(0);
 
     // Dùng QR khi chưa thu tiền nạp → từ chối
@@ -907,7 +909,7 @@ describe('DEC-077: phiếu thu trước chọn biểu giá kèm số lượng', 
     const customer = s0.partners.find((p) => p.isCustomer)!.code;
     const s = createMasterPrepaidReceipt(s0, { customerCode: customer, lotDescription: 'Lô 20 cont', method: 'CASH', feeItems: [{ catalogId: fee.id, quantity: 20 }] });
     const m = s.masterReceipts[0];
-    expect(m.receiptCode).toMatch(/^PTT-\d{4}-\d{3}$/);
+    expect(m.receiptCode).toMatch(/^PT-TTR-\d{6}-\d{4}$/);
     expect(m.totalAmount).toBe(fee.defaultAmountInclVat * 20);
     expect(m.feeLines![0]).toMatchObject({ quantity: 20, unitAmountInclVat: fee.defaultAmountInclVat, amountInclVat: fee.defaultAmountInclVat * 20 });
     expect(s.paymentTransactions[0]).toMatchObject({ amount: fee.defaultAmountInclVat * 20, status: 'PENDING', purpose: 'PREPAID_TOPUP' });

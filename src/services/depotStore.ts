@@ -28,8 +28,8 @@ import {
 } from '../types/depot';
 
 // DEC-106, DEC-108, DEC-111: đổi khóa để mọi máy nạp lại dữ liệu test mới; khóa cũ bị xóa khi nạp
-const STORAGE_KEY = 'matran_depot_erp_state_v11';
-const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7', 'matran_depot_erp_state_v8', 'matran_depot_erp_state_v9', 'matran_depot_erp_state_v10'];
+const STORAGE_KEY = 'matran_depot_erp_state_v12';
+const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7', 'matran_depot_erp_state_v8', 'matran_depot_erp_state_v9', 'matran_depot_erp_state_v10', 'matran_depot_erp_state_v11'];
 
 export interface DepotState {
   currentUser: StaffUser;

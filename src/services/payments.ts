@@ -88,7 +88,11 @@ function issueReceipt(state: DepotState, transactionId: string, issuedBy: string
   if (tx.receiptId || state.paymentReceipts.some((r) => r.transactionId === tx.id)) return state;
 
   // DEC-098: mã phiếu thu cho biết hình thức + ngày thu
-  const allocated = allocateCode(state, tx.purpose === 'PREPAID_TOPUP' ? 'PT-TTR' : 'PT-TT');
+  // DEC-124: phiếu nạp trả trước dùng lại mã PT-TTR- đã cấp khi tạo (dữ liệu cũ mã PTT- → cấp PT-TTR- mới)
+  const topupMaster = tx.purpose === 'PREPAID_TOPUP' ? state.masterReceipts.find((m) => m.id === tx.masterReceiptId) : undefined;
+  const allocated = topupMaster?.receiptCode.startsWith('PT-TTR-')
+    ? { code: topupMaster.receiptCode, state }
+    : allocateCode(state, tx.purpose === 'PREPAID_TOPUP' ? 'PT-TTR' : 'PT-TT');
   const voucher = tx.voucherId ? allocated.state.vouchers.find((v) => v.id === tx.voucherId) : undefined;
   const master = tx.masterReceiptId
     ? allocated.state.masterReceipts.find((r) => r.id === tx.masterReceiptId)
@@ -393,9 +397,10 @@ export function createMasterPrepaidReceipt(
     throw new Error('Chọn hình thức thanh toán: Chuyển khoản (API QR) hoặc Tiền mặt.');
   }
 
-  const allocated = allocateCode(state, 'PTT');
-  const seq = allocated.code.split('-').pop();
-  const qrCode = `QR-TTT-${partner.code.replace(/[^A-Z0-9]/g, '').slice(0, 8)}-${seq}`;
+  // DEC-124: MỘT mã duy nhất — cấp PT-TTR-YYMMDD-NNNN ngay khi tạo (CHỜ THANH TOÁN); thu xong chính mã này là phiếu thu.
+  //   QR trừ dần = QR-<mã>; mã cũng là nội dung chuyển khoản. Không còn cấp PTT-.
+  const allocated = allocateCode(state, 'PT-TTR');
+  const qrCode = `QR-${allocated.code}`;
   const master: MasterPrepaidReceipt = {
     id: newId('mpr'),
     receiptCode: allocated.code,
@@ -539,7 +544,7 @@ export function masterReceiptUsage(state: DepotState, receiptCode: string): Mast
 
 // DEC-099: THÔNG TIN THANH TOÁN của lượt cont vào bãi (dùng ở Tồn vỏ + Excel)
 //   (DEC-100: ký hiệu hiển thị TT / TTS / TTR; mã nội bộ vẫn TTTT / TTS / TTT)
-//   DEC-104: chỉ hiện MÃ PHIẾU THU của lượt — TT → PT-TT-…; TTR → mã phiếu thu trả trước PTT-…;
+//   DEC-104: chỉ hiện MÃ PHIẾU THU của lượt — TT → PT-TT-…; TTR → mã phiếu thu trả trước PT-TTR-… (DEC-124; dữ liệu cũ PTT-);
 //   TTS (không có phiếu thu) / chưa thanh toán / Nhập tàu → để trống. Số chứng từ = mã hồ sơ (DEC-119).
 export const PAYMENT_CATEGORY_FULL_LABELS: Record<PaymentCategory, string> = {
   TTTT: 'TT — TRỰC TIẾP',
