@@ -813,3 +813,22 @@ describe('DEC-142: Chờ báo giá 1 dòng', () => {
     expect(html).not.toContain('block text-[10px] text-slate-500');
   });
 });
+
+// DEC-144: User - Role — bộ lọc + tìm kiếm + nút Thêm nhân viên mới; khung thêm chỉ mở khi bấm
+describe('DEC-144: màn User - Role', () => {
+  it('có bộ lọc, tìm kiếm, nút Thêm nhân viên mới; khung thêm chưa mở sẵn', () => {
+    const html = renderToString(<UserRoleCatalog state={as(base, 'usr-admin')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('data-testid="user-filter"');
+    expect(html).toContain('Tìm kiếm');
+    expect(html).toContain('data-testid="add-user-btn"');
+    expect(html).toContain('Thêm nhân viên mới');
+    expect(html).not.toContain('data-testid="add-user-form"');
+    expect(html).toContain('>Tên đăng nhập<');
+  });
+  it('menu đổi tên User - Role', () => {
+    const fresh = changePassword(login(base, { username: 'admin', password: DEFAULT_PASSWORD }), { currentPassword: DEFAULT_PASSWORD, newPassword: 'x', confirmPassword: 'x' });
+    const html = renderApp(fresh);
+    expect(html).toContain('User - Role');
+    expect(html).not.toContain('User - Phân quyền');
+  });
+});

@@ -49,14 +49,14 @@ describe('DEC-143: tài khoản do Admin tạo, mật khẩu mặc định 12345
     expect(() => resetStaffPassword(as(s, 'usr-office'), { userId: id })).toThrow(/Admin/);
   });
 
-  it('Đổi mật khẩu: tối thiểu 6 ký tự, khác 123456, khác mật khẩu cũ, nhập lại khớp, đúng mật khẩu hiện tại', () => {
+  it('Đổi mật khẩu: bao nhiêu ký tự cũng được (DEC-144) nhưng không trống, khác 123456, khác mật khẩu cũ, nhập lại khớp, đúng mật khẩu hiện tại', () => {
     const s = login(createInitialState(), { username: 'office', password: DEFAULT_PASSWORD });
     const ch = (cur: string, pw: string, cf = pw) => () => changePassword(s, { currentPassword: cur, newPassword: pw, confirmPassword: cf });
-    expect(ch(DEFAULT_PASSWORD, '12345')).toThrow(/tối thiểu 6/);
+    expect(ch(DEFAULT_PASSWORD, '')).toThrow(/nhập mật khẩu mới/);
+    expect(ch(DEFAULT_PASSWORD, '1')).not.toThrow(); // 1 ký tự cũng được
     expect(ch(DEFAULT_PASSWORD, DEFAULT_PASSWORD)).toThrow(/mặc định/);
     expect(ch(DEFAULT_PASSWORD, 'abcdef', 'abcdeg')).toThrow(/không khớp/);
     expect(ch('sai', 'abcdef')).toThrow(/hiện tại không đúng/);
-    expect(ch(DEFAULT_PASSWORD, 'abcdef')).not.toThrow(); // đúng 6 ký tự là đạt
     expect(() => changePassword(logout(s), { currentPassword: DEFAULT_PASSWORD, newPassword: 'abcdef', confirmPassword: 'abcdef' })).toThrow(/đăng nhập/);
   });
 
@@ -70,6 +70,18 @@ describe('DEC-143: tài khoản do Admin tạo, mật khẩu mặc định 12345
     expect(() => login(s, { username: 'office', password: 'vp2026' })).toThrow();
     s = login(s, { username: 'office', password: DEFAULT_PASSWORD });
     expect(mustChangePassword(s.currentUser)).toBe(true);
+  });
+
+  it('DEC-144: gợi ý tên đăng nhập ten.hoten — Lê Văn Tuấn → tuan.lv; trùng thêm số', async () => {
+    const { suggestUsername } = await import('../src/services/auth');
+    let s = admin();
+    expect(suggestUsername(s, 'Lê Văn Tuấn')).toBe('tuan.lv');
+    expect(suggestUsername(s, 'Đỗ Thị Thu')).toBe('thu.dt');
+    expect(suggestUsername(s, '  nguyễn   quang   đức ')).toBe('duc.nq');
+    expect(suggestUsername(s, 'Hùng')).toBe('hung');
+    expect(suggestUsername(s, '')).toBe('');
+    s = addStaffUser(s, { fullName: 'Lê Văn Tuấn', username: suggestUsername(s, 'Lê Văn Tuấn'), roles: ['INSPECTOR'] });
+    expect(suggestUsername(s, 'Lý Vĩnh Tuấn')).toBe('tuan.lv2');
   });
 
   it('Dữ liệu cũ chưa có tên đăng nhập → lấy phần trước @ của email; trạng thái đăng nhập giữ khi nạp lại', () => {

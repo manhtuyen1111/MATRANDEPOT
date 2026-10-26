@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { KeyRound, LogIn } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
-import { changePassword, DEFAULT_PASSWORD, login, logout, PASSWORD_MIN_LENGTH } from '../../services/auth';
+import { changePassword, DEFAULT_PASSWORD, login, logout } from '../../services/auth';
 import { Feedback, inputCls, labelCls, primaryBtn, secondaryBtn } from '../../components/shared';
 
 // DEC-143: màn ĐĂNG NHẬP — tài khoản do Admin tạo (Danh mục → User). Khung một cột dùng được trên điện thoại.
@@ -79,7 +79,7 @@ export const ChangePasswordScreen: React.FC<{ state: DepotState; onUpdateState: 
           <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" className={inputCls} />
         </label>
         <label className="block">
-          <span className={labelCls}>Mật khẩu mới * (tối thiểu {PASSWORD_MIN_LENGTH} ký tự)</span>
+          <span className={labelCls}>Mật khẩu mới * <span className="font-normal normal-case text-slate-500">(không được dùng {DEFAULT_PASSWORD})</span></span>
           <input type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" className={inputCls} />
         </label>
         <label className="block">

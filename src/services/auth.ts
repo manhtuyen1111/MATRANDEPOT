@@ -2,7 +2,8 @@
 // TÀI KHOẢN / ĐĂNG NHẬP (DEC-143)
 //   - Admin tạo tài khoản cho nhân viên: đặt TÊN ĐĂNG NHẬP + gán vai trò. Nhân viên chỉ nhận tài khoản và tác nghiệp.
 //   - Mật khẩu ban đầu luôn là DEFAULT_PASSWORD (123456); Admin "Đặt lại mật khẩu" cũng về 123456.
-//   - Lần đăng nhập đầu tiên (hoặc sau khi đặt lại) BẮT BUỘC đổi mật khẩu — tối thiểu 6 ký tự, khác 123456.
+//   - Lần đăng nhập đầu tiên (hoặc sau khi đặt lại) BẮT BUỘC đổi mật khẩu — bao nhiêu ký tự cũng được (DEC-144), khác 123456.
+//   - Tên đăng nhập gợi ý tự động dạng ten.hoten: "Lê Văn Tuấn" → tuan.lv (DEC-144); Admin sửa được.
 //   - BẢN DEMO: mật khẩu lưu dạng băm SHA-256 + salt ngẫu nhiên trong trình duyệt — KHÔNG phải bảo mật thật.
 //     Giai đoạn 4 chuyển sang Supabase Auth (băm phía máy chủ), giữ nguyên màn hình và quy tắc.
 // ============================================================================
@@ -16,11 +17,27 @@ function assertAdmin(state: DepotState): void {
 }
 
 export const DEFAULT_PASSWORD = '123456';
-export const PASSWORD_MIN_LENGTH = 6;
+export const PASSWORD_MIN_LENGTH = 1; // DEC-144: không giới hạn độ dài, chỉ không để trống
 export const USERNAME_PATTERN = /^[a-z0-9._-]{3,30}$/;
 
 export function normalizeUsername(raw: string): string {
   return raw.trim().toLowerCase();
+}
+
+// DEC-144: gợi ý tên đăng nhập từ họ tên — tên + "." + chữ cái đầu của họ và tên đệm, không dấu.
+//   "Lê Văn Tuấn" → tuan.lv; "Đỗ Thị Thu" → thu.dt; trùng thì thêm số: tuan.lv2, tuan.lv3…
+export function stripVietnamese(text: string): string {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
+export function suggestUsername(state: DepotState, fullName: string, exceptUserId?: string): string {
+  const words = stripVietnamese(fullName).toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '';
+  const given = words[words.length - 1];
+  const initials = words.slice(0, -1).map((w) => w[0]).join('');
+  const base = initials ? `${given}.${initials}` : given;
+  const taken = new Set(state.staffUsers.filter((u) => u.id !== exceptUserId).map((u) => normalizeUsername(u.username || '')));
+  if (!taken.has(base)) return base;
+  for (let n = 2; ; n++) if (!taken.has(`${base}${n}`)) return `${base}${n}`;
 }
 
 export function validateUsername(state: DepotState, raw: string, exceptUserId?: string): string {
@@ -130,7 +147,7 @@ export function changePassword(state: DepotState, input: { currentPassword: stri
   if (!user) throw new Error('Không tìm thấy tài khoản.');
   if (!verifyPassword(user, input.currentPassword)) throw new Error('Mật khẩu hiện tại không đúng.');
   const pw = input.newPassword;
-  if (pw.length < PASSWORD_MIN_LENGTH) throw new Error(`Mật khẩu mới tối thiểu ${PASSWORD_MIN_LENGTH} ký tự.`);
+  if (pw.length < PASSWORD_MIN_LENGTH) throw new Error('Vui lòng nhập mật khẩu mới.');
   if (pw === DEFAULT_PASSWORD) throw new Error('Không được dùng mật khẩu mặc định 123456.');
   if (pw === input.currentPassword) throw new Error('Mật khẩu mới phải khác mật khẩu hiện tại.');
   if (pw !== input.confirmPassword) throw new Error('Nhập lại mật khẩu mới không khớp.');
