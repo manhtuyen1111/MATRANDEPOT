@@ -1229,7 +1229,7 @@ Quy ước trạng thái:
 - Nhân viên chỉ nhận tài khoản và tác nghiệp; không tự đăng ký.
 - **Mật khẩu ban đầu = 123456** cho mọi tài khoản mới và sau khi Admin đặt lại.
 - **Lần đăng nhập đầu tiên** (hoặc sau khi đặt lại): bắt buộc đổi mật khẩu trước khi vào làm việc.
-  - Mật khẩu mới **tối thiểu 6 ký tự**, khác 123456, khác mật khẩu hiện tại, nhập lại phải khớp.
+  - Mật khẩu mới khác 123456, khác mật khẩu hiện tại, nhập lại phải khớp. ~~Tối thiểu 6 ký tự~~: đã bỏ theo DEC-144, bao nhiêu ký tự cũng được.
   - Nhân viên tự đổi mật khẩu bất cứ lúc nào (nút **Đổi mật khẩu** góc phải).
 - **Đăng nhập** bằng tên đăng nhập + mật khẩu. Tài khoản bị khóa không đăng nhập được. Báo lỗi chung "Sai tên đăng nhập hoặc mật khẩu", không lộ tài khoản nào tồn tại. Có nút **Đăng xuất**.
 - Ô chọn người dùng Demo ở góc phải đã bỏ.
@@ -1242,6 +1242,20 @@ Quy ước trạng thái:
   - `src/services/auth.ts`: `login`, `logout`, `changePassword`, `resetStaffPassword`, `mustChangePassword`, `isLoggedIn`, `validateUsername`.
   - `StaffUser.username`, `passwordHash`, `mustChangePassword`; `DepotState.sessionUserId`.
   - Màn hình: `src/features/auth/LoginScreen.tsx`.
+
+### DEC-144 — User - Role: tên đăng nhập tự tạo, mật khẩu không giới hạn độ dài, bộ lọc + nút Thêm
+
+- Trạng thái: CONFIRMED (2026-10-26). Sửa DEC-143.
+- Menu **"User - Phân quyền"** đổi tên thành **"User - Role"**.
+- **Tên đăng nhập tự tạo** khi nhập họ tên, dạng `ten.hoten`: **tên + "." + chữ cái đầu của họ và tên đệm**, không dấu.
+  - Ví dụ: "Lê Văn Tuấn" → `tuan.lv`; "Đỗ Thị Thu" → `thu.dt`.
+  - Trùng thì thêm số: `tuan.lv2`, `tuan.lv3`…
+  - Người cấu hình **sửa được**; đã tự sửa thì đổi họ tên không ghi đè nữa.
+- **Mật khẩu mới**: bao nhiêu ký tự cũng được, không để trống. **Vẫn cấm 123456**, khác mật khẩu hiện tại, nhập lại phải khớp.
+- **Bố cục màn:**
+  - khu vực trên cùng là **bộ lọc** (Tìm kiếm họ tên / tên đăng nhập / mã NV, không phân biệt dấu; Vai trò; Trạng thái; Mật khẩu mặc định / đã đổi) + nút **Thêm nhân viên mới (+)**, giống Văn phòng → Phiếu thu;
+  - **bấm Thêm** mới mở khung "Thêm nhân viên mới"; tạo xong thì khung tự đóng.
+- Kỹ thuật: `suggestUsername`, `stripVietnamese` (`auth.ts`); `PASSWORD_MIN_LENGTH = 1`.
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
@@ -1332,6 +1346,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-143 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-144 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
