@@ -1110,6 +1110,17 @@ Quy ước trạng thái:
   - Lý do được lưu (`approveNote`) và hiện ở đầu danh sách.
 - Kỹ thuật: `ContainerRecord.holdSource = 'VESSEL_EXPORT'`, `vesselLock` / `vesselUnlock` (`vessel.ts`), `VesselItemStatus 'SKIPPED'`, `approveVesselList({ reason })`.
 
+### DEC-132 — Tồn vỏ: mỗi cont đúng 1 dòng
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- Quyết định:
+  - Cả dòng cont **không xuống dòng**.
+  - **Date in** ghi ngày + giờ trên cùng 1 dòng (giờ màu nhạt).
+  - Các cột **Date in, Vị trí, Tiến độ** rộng ra cho đủ một dòng.
+  - **Ghi chú** dài thì cắt bớt (tối đa khoảng 18rem), rê chuột vào xem đủ.
+  - Bảng rộng hơn màn hình thì cuộn ngang.
+- Không đổi thứ tự / số cột, nên Excel giữ nguyên (DEC-129).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1199,6 +1210,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-131 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-132 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
