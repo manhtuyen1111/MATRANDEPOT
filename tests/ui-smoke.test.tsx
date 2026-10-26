@@ -791,3 +791,15 @@ describe('DEC-139: cố định cột đầu', () => {
     expect(r.vesselReportSheet('XUAT_TAU', []).columns.slice(0, 6)).toEqual(['TÊN TÀU', 'MÃ HỒ SƠ', ...STDX]);
   });
 });
+
+// DEC-140: Báo cáo Nhập / Xuất tàu — Trạng thái và Phân loại là 2 cột riêng (Excel cùng tên)
+describe('DEC-140: báo cáo tàu tách Trạng thái / Phân loại', () => {
+  it('Excel có cột TRẠNG THÁI và PHÂN LOẠI riêng', async () => {
+    const r = await import('../src/services/reports');
+    for (const m of ['NHAP_TAU', 'XUAT_TAU'] as const) {
+      const cols = r.vesselReportSheet(m, []).columns;
+      expect(cols.indexOf('PHÂN LOẠI')).toBe(cols.indexOf('TRẠNG THÁI') + 1);
+      expect(cols).not.toContain('ĐÓNG HÀNG');
+    }
+  });
+});

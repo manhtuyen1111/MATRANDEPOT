@@ -513,7 +513,7 @@ export function vesselReportSheet(mode: VesselMode, rows: VesselReportRow[]): Sh
     columns: [
       'TÊN TÀU', 'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', // DEC-139: 6 cột đầu cố định
       isImport ? 'THỜI GIAN NHẬP TÀU' : 'THỜI GIAN XUẤT TÀU', 'DUYỆT DANH SÁCH',
-      'TIẾN ĐỘ', 'SỐ XE', 'TRẠNG THÁI', 'ĐÓNG HÀNG', ...(isImport ? ['VỆ SINH', 'AGE', 'GHI CHÚ HƯ HỎNG', 'GIÁM ĐỊNH', 'GIÁM ĐỊNH LÚC'] : ['VỊ TRÍ LÚC LẬP']),
+      'TIẾN ĐỘ', 'SỐ XE', 'TRẠNG THÁI', 'PHÂN LOẠI', ...(isImport ? ['VỆ SINH', 'AGE', 'GHI CHÚ HƯ HỎNG', 'GIÁM ĐỊNH', 'GIÁM ĐỊNH LÚC'] : ['VỊ TRÍ LÚC LẬP']),
       isImport ? 'HẠ BÃI BỞI' : 'XUẤT BỞI', isImport ? 'HẠ BÃI LÚC' : 'XUẤT LÚC', 'LẬP DANH SÁCH', 'LẬP LÚC',
     ],
     rows: rows.map(({ list: l, item: i }) => [

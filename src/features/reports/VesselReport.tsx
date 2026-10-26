@@ -79,7 +79,8 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
                   <th style={fz.style(4)} className={`${fz.th(4)} px-3 py-2 text-center`}>Type</th>
                   <th style={fz.style(5)} className={`${fz.th(5)} px-3 py-2`}>Hãng tàu</th>
                   <th className="px-3 py-2">Thời gian {label.toLowerCase()}</th>
-                  <th className="px-3 py-2">Trạng thái • Phân loại</th>
+                  <th className="px-3 py-2 text-center">Trạng thái</th>
+                  <th className="px-3 py-2 text-center">Phân loại</th>
                   <th className="px-3 py-2">Số xe</th>
                   <th className="px-3 py-2">Tiến độ</th>
                   <th className="px-3 py-2">{isImport ? 'Hạ bãi' : 'Xuất'} lúc</th>
@@ -102,7 +103,8 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
                     <td style={fz.style(4)} className={`${fz.td(4)} px-3 py-2 text-center`}>{i.type}</td>
                     <td style={fz.style(5)} className={`${fz.td(5)} px-3 py-2`}>{l.shippingLineCode || '-'}</td>
                     <td className="px-3 py-2 font-mono">{formatDateTime(l.plannedAt)}</td>
-                    <td className="px-3 py-2">{i.conditionClass ? `${i.conditionClass} • ${i.stuffingClass || '-'}` : '-'}</td>
+                    <td className="px-3 py-2 text-center">{i.conditionClass || '-'}</td>
+                    <td className="px-3 py-2 text-center">{i.stuffingClass || '-'}</td>
                     <td className="px-3 py-2">{i.truckNo || '-'}</td>
                     <td className="px-3 py-2">{STATUS[mode][i.status]}</td>
                     <td className="px-3 py-2 font-mono">{formatDateTime(i.doneAt)}</td>
