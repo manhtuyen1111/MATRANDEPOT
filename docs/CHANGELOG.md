@@ -218,6 +218,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Báo cáo Nhập / Xuất tàu: tách cột Trạng thái | Phân loại; Excel đổi ĐÓNG HÀNG → PHÂN LOẠI (DEC-140). Kiểm thử: 138/138 pass, build PASS.
 - Bỏ cố định cột khi kéo ngang (Tồn vỏ + 5 báo cáo); giữ nguyên thứ tự cột đồng bộ và Excel (DEC-141). Kiểm thử: 137/137 pass, build PASS.
 - Báo giá → Chờ báo giá: mỗi cont 1 dòng như Tồn vỏ (Date in cùng dòng, Tình trạng sửa chữa / Ghi chú cắt bớt) (DEC-142). Kiểm thử: 138/138 pass, build PASS.
+- Tài khoản & đăng nhập: Admin tạo tài khoản (tên đăng nhập + vai trò), mật khẩu mặc định 123456, đặt lại mật khẩu; màn Đăng nhập, bắt buộc đổi mật khẩu lần đầu (≥ 6 ký tự), Đổi mật khẩu / Đăng xuất; bỏ ô chọn người dùng Demo (DEC-143). Kiểm thử: 144/144 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

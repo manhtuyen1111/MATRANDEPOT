@@ -124,3 +124,8 @@ Ma trận trên là bản nháp để thảo luận, không phải cấu hình q
 - Quyền thao tác: mục 2A đã áp dụng ở tầng nghiệp vụ chế độ Demo; ma trận mục 4 vẫn là bản tham khảo cho các phân hệ chưa làm.
 - Quy tắc phân tách nhiệm vụ: không tách người làm / người duyệt cho Vệ sinh, Xe nâng, Báo giá, Sửa chữa (DEC-035); các thao tác khác chưa chốt.
 - Cấu hình RLS và quyền backend Supabase: chưa triển khai (migration 0001 là bản nháp, sẽ viết lại).
+
+## Tài khoản & đăng nhập (DEC-143)
+
+- Chỉ **Admin** tạo tài khoản, gán vai trò, khóa / mở khóa, **đặt lại mật khẩu** (về 123456).
+- Mọi người dùng: đăng nhập, **tự đổi mật khẩu**, đăng xuất. Lần đăng nhập đầu (hoặc sau khi đặt lại) bắt buộc đổi mật khẩu (≥ 6 ký tự).

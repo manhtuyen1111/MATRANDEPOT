@@ -1219,6 +1219,30 @@ Quy ước trạng thái:
 - **Tình trạng sửa chữa** và **Ghi chú** dài: cắt bớt (`CellText`, tối đa 40 ký tự), rê chuột xem đủ.
 - Thứ tự cột không đổi, nên Excel giữ nguyên.
 
+### DEC-143 — Tài khoản do Admin tạo; mật khẩu mặc định 123456, bắt buộc đổi ở lần đăng nhập đầu
+
+- Trạng thái: CONFIRMED (2026-10-26). Người dùng chọn làm luôn bản Demo, chưa chờ giai đoạn 4.
+- **Admin** (Danh mục → User) tạo tài khoản cho nhân viên:
+  - nhập **họ tên**, **tên đăng nhập** và gán **vai trò**; email không bắt buộc.
+  - Tên đăng nhập do Admin đặt: 3–30 ký tự, chữ thường không dấu, số và `. _ -` (VD `gd.tuan`). Không trùng.
+  - Admin khóa / mở khóa tài khoản, sửa vai trò, **Đặt lại mật khẩu** (về 123456).
+- Nhân viên chỉ nhận tài khoản và tác nghiệp; không tự đăng ký.
+- **Mật khẩu ban đầu = 123456** cho mọi tài khoản mới và sau khi Admin đặt lại.
+- **Lần đăng nhập đầu tiên** (hoặc sau khi đặt lại): bắt buộc đổi mật khẩu trước khi vào làm việc.
+  - Mật khẩu mới **tối thiểu 6 ký tự**, khác 123456, khác mật khẩu hiện tại, nhập lại phải khớp.
+  - Nhân viên tự đổi mật khẩu bất cứ lúc nào (nút **Đổi mật khẩu** góc phải).
+- **Đăng nhập** bằng tên đăng nhập + mật khẩu. Tài khoản bị khóa không đăng nhập được. Báo lỗi chung "Sai tên đăng nhập hoặc mật khẩu", không lộ tài khoản nào tồn tại. Có nút **Đăng xuất**.
+- Ô chọn người dùng Demo ở góc phải đã bỏ.
+- Nhật ký ghi: đăng nhập, đăng xuất, đổi mật khẩu, Admin đặt lại mật khẩu.
+- **Bản Demo:** mật khẩu lưu dạng băm SHA-256 + salt ngẫu nhiên trong trình duyệt. **Chưa phải bảo mật thật**, vì ai mở được máy là xem được dữ liệu trình duyệt.
+  - Giai đoạn 4 chuyển sang **Supabase Auth** (băm và kiểm tra phía máy chủ), giữ nguyên màn hình và quy tắc.
+  - Màn đăng nhập Demo có dòng nhắc các tài khoản có sẵn; dòng này **không** hiện khi đã nối Supabase.
+- Tài khoản test có sẵn: admin, office, inspector, quotation, forklift, cleaning, repair, accounting. Mật khẩu 123456, đăng nhập lần đầu phải đổi. "Xóa dữ liệu" / "Nạp dữ liệu test" đưa tài khoản về mặc định.
+- Kỹ thuật:
+  - `src/services/auth.ts`: `login`, `logout`, `changePassword`, `resetStaffPassword`, `mustChangePassword`, `isLoggedIn`, `validateUsername`.
+  - `StaffUser.username`, `passwordHash`, `mustChangePassword`; `DepotState.sessionUserId`.
+  - Màn hình: `src/features/auth/LoginScreen.tsx`.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1308,6 +1332,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-142 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-143 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

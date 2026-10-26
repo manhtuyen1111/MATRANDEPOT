@@ -83,3 +83,4 @@ Cập nhật lần cuối: 2026-10-22.
 - Nếu câu trả lời làm thay đổi tài liệu khác, phải cập nhật tài liệu liên quan.
 - Không tự suy đoán quy tắc nghiệp vụ để bắt đầu viết SQL hoặc code.
 - Ưu tiên giải quyết các câu hỏi ảnh hưởng đến cấu trúc database và tính đúng đắn của giao dịch trước.
+- [ ] Q-041: (GĐ 4) Khi chuyển sang Supabase Auth: tài khoản đăng nhập bằng tên đăng nhập (Supabase cần email nội bộ dạng `<tên>@matrandepot.local`?), có cần khóa tạm sau nhiều lần đăng nhập sai, thời gian tự đăng xuất? Bản Demo hiện chưa giới hạn (DEC-143).
