@@ -258,12 +258,12 @@ export const App: React.FC = () => {
               aria-label={g.label}
               onClick={() => selectMenu(g.items[0].id)}
               className={`relative flex h-10 w-10 items-center justify-center rounded-md ${
-                containsActive ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+                containsActive ? 'bg-navy-900 text-white' : 'text-ink-muted hover:bg-navy-50'
               }`}
             >
               <Icon className="h-[18px] w-[18px]" />
               {groupBadge > 0 && !single && (
-                <span className={`absolute -right-0.5 -top-0.5 rounded-full px-1 text-[9px] font-bold text-white ${groupUrgent ? "animate-pulse bg-amber-500" : "bg-slate-900"}`}>{groupBadge}</span>
+                <span className={`absolute -right-0.5 -top-0.5 rounded-full px-1 text-[9px] font-bold text-white ${groupUrgent ? "animate-pulse bg-amber-500" : "bg-navy-900"}`}>{groupBadge}</span>
               )}
             </button>
           );
@@ -278,7 +278,7 @@ export const App: React.FC = () => {
               onClick={() => selectMenu(item.id)}
               aria-current={activeMenu === item.id ? 'page' : undefined}
               className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 font-semibold ${
-                activeMenu === item.id ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-100'
+                activeMenu === item.id ? 'bg-navy-900 text-white' : 'text-ink hover:bg-navy-50'
               }`}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
@@ -295,16 +295,16 @@ export const App: React.FC = () => {
               onClick={() => toggleGroup(g.key)}
               aria-expanded={!collapsed}
               className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 font-semibold ${
-                containsActive ? 'text-blue-700' : 'text-slate-700'
-              } hover:bg-slate-100`}
+                containsActive ? 'text-navy-700' : 'text-ink'
+              } hover:bg-navy-50`}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
               <span className="flex-1 text-left">{g.label}</span>
-              {collapsed && groupBadge > 0 && <span className={`font-mono text-[11px] ${groupUrgent ? "rounded bg-amber-500 px-1.5 font-bold text-white" : "text-slate-500"}`}>{groupBadge}</span>}
-              <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+              {collapsed && groupBadge > 0 && <span className={`font-mono text-[11px] ${groupUrgent ? "rounded bg-amber-500 px-1.5 font-bold text-white" : "text-ink-muted"}`}>{groupBadge}</span>}
+              <ChevronDown className={`h-3.5 w-3.5 text-ink-muted transition-transform ${collapsed ? '-rotate-90' : ''}`} />
             </button>
             {!collapsed && (
-              <ul className="ml-[18px] mt-0.5 space-y-0.5 border-l border-slate-200 pl-3">
+              <ul className="ml-[18px] mt-0.5 space-y-0.5 border-l border-line pl-3">
                 {g.items.map((item) => {
                   const active = activeMenu === item.id;
                   return (
@@ -314,7 +314,7 @@ export const App: React.FC = () => {
                         onClick={() => selectMenu(item.id)}
                         aria-current={active ? 'page' : undefined}
                         className={`flex w-full items-center gap-1.5 rounded-md px-2.5 py-1.5 text-left ${
-                          active ? 'bg-blue-600 font-semibold text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                          active ? 'bg-navy-900 font-semibold text-white' : 'text-ink-muted hover:bg-navy-50 hover:text-ink'
                         }`}
                       >
                         {/* DEC-078: 3 cột cố định — tên | biểu tượng mobile | số đếm — để biểu tượng mobile thẳng hàng */}
@@ -335,7 +335,7 @@ export const App: React.FC = () => {
                             <span
                               title={urgent(item.id) ? "Có việc đang chờ" : undefined}
                               className={`inline-flex items-center gap-1 rounded px-1.5 font-mono text-[10px] font-bold ${
-                                urgent(item.id) ? "bg-amber-500 text-white" : active ? "bg-white/20" : "bg-slate-100 text-slate-700"
+                                urgent(item.id) ? "bg-amber-500 text-white" : active ? "bg-white/20" : "bg-navy-50 text-ink"
                               }`}
                             >
                               {urgent(item.id) && !active && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" aria-label="Có việc đang chờ" />}
@@ -357,21 +357,21 @@ export const App: React.FC = () => {
 
   const brand = (
     <div className="flex items-center gap-2">
-      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-900 text-[11px] font-black text-white">MD</div>
+      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-900 text-[11px] font-black text-white">MD</div>
       <div className="leading-tight">
-        <p className="text-sm font-bold text-slate-900">MATRAN DEPOT</p>
-        <p className="text-[10px] text-slate-500">Quản lý bãi container rỗng</p>
+        <p className="text-sm font-bold text-ink">MATRAN DEPOT</p>
+        <p className="text-[10px] text-ink-muted">Quản lý bãi container rỗng</p>
       </div>
     </div>
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen bg-canvas text-ink">
       {/* Menu máy tính */}
-      <aside className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-slate-200 bg-white lg:flex ${prefs.railMode ? 'w-16 items-center' : 'w-60'}`}>
-        <div className={`flex items-center border-b border-slate-200 py-3 ${prefs.railMode ? 'justify-center' : 'justify-between px-3'}`}>
+      <aside className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-line bg-white lg:flex ${prefs.railMode ? 'w-16 items-center' : 'w-60'}`}>
+        <div className={`flex items-center border-b border-line py-3 ${prefs.railMode ? 'justify-center' : 'justify-between px-3'}`}>
           {!prefs.railMode && brand}
-          <button type="button" onClick={toggleRail} aria-label={prefs.railMode ? 'Mở rộng menu' : 'Thu gọn menu'} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100">
+          <button type="button" onClick={toggleRail} aria-label={prefs.railMode ? 'Mở rộng menu' : 'Thu gọn menu'} className="rounded-md p-1.5 text-ink-muted hover:bg-navy-50">
             <PanelLeft className="h-4 w-4" />
           </button>
         </div>
@@ -383,9 +383,9 @@ export const App: React.FC = () => {
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <button type="button" aria-label="Đóng menu" className="absolute inset-0 bg-black/40" onClick={() => setDrawerOpen(false)} />
           <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-3 py-3">
+            <div className="flex items-center justify-between border-b border-line px-3 py-3">
               {brand}
-              <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Đóng menu" className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100">
+              <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Đóng menu" className="rounded-md p-1.5 text-ink-muted hover:bg-navy-50">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -395,14 +395,14 @@ export const App: React.FC = () => {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 py-2">
+        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-line bg-white px-4 py-2">
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setDrawerOpen(true)} aria-label="Mở menu" className="rounded-md border border-slate-200 p-1.5 text-slate-600 lg:hidden">
+            <button type="button" onClick={() => setDrawerOpen(true)} aria-label="Mở menu" className="rounded-md border border-line p-1.5 text-ink-muted lg:hidden">
               <Menu className="h-4 w-4" />
             </button>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-ink-muted">
               {activeGroup && activeGroup.items.length > 1 && <span>{activeGroup.label} / </span>}
-              <span className="font-bold text-slate-900">{activeItem?.label}</span>
+              <span className="font-bold text-ink">{activeItem?.label}</span>
             </p>
             {activeItem?.mobile && (
               <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
@@ -415,8 +415,8 @@ export const App: React.FC = () => {
             {/* DEC-120: Góp ý — mọi người dùng, góc trên bên phải */}
             <FeedbackButton state={state} onUpdateState={handleUpdateState} menuOptions={feedbackMenuOptions} />
             {!isSupabaseConfigured && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">DEMO</span>}
-            <label className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1">
-              <UserCheck className="h-3.5 w-3.5 text-slate-500" />
+            <label className="flex items-center gap-1.5 rounded-md border border-line bg-canvas px-2 py-1">
+              <UserCheck className="h-3.5 w-3.5 text-ink-muted" />
               <span className="sr-only">Người dùng (Demo)</span>
               <select
                 value={state.currentUser.id}
@@ -424,7 +424,7 @@ export const App: React.FC = () => {
                   const found = state.staffUsers.find((u) => u.id === e.target.value);
                   if (found) handleUpdateState({ ...state, currentUser: found });
                 }}
-                className="max-w-[220px] bg-transparent font-medium text-slate-800 focus:outline-hidden"
+                className="max-w-[220px] bg-transparent font-medium text-ink focus:outline-hidden"
               >
                 {state.staffUsers.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -433,11 +433,11 @@ export const App: React.FC = () => {
                 ))}
               </select>
             </label>
-            <button type="button" onClick={() => { if (window.confirm('Xóa toàn bộ dữ liệu tác nghiệp (container, lệnh, phiếu thu…)? Danh mục và góp ý được giữ lại.')) handleUpdateState({ ...resetDepotState(), feedbacks: state.feedbacks || [] }); }} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
+            <button type="button" onClick={() => { if (window.confirm('Xóa toàn bộ dữ liệu tác nghiệp (container, lệnh, phiếu thu…)? Danh mục và góp ý được giữ lại.')) handleUpdateState({ ...resetDepotState(), feedbacks: state.feedbacks || [] }); }} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas">
               <RefreshCw className="h-3 w-3" />
               Xóa dữ liệu
             </button>
-            <button type="button" onClick={() => { if (window.confirm('Thay toàn bộ dữ liệu hiện tại bằng DỮ LIỆU TEST (đủ các trường hợp)?')) setState(resetDepotState(createDemoState)); }} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50">
+            <button type="button" onClick={() => { if (window.confirm('Thay toàn bộ dữ liệu hiện tại bằng DỮ LIỆU TEST (đủ các trường hợp)?')) setState(resetDepotState(createDemoState)); }} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas">
               <RefreshCw className="h-3 w-3" />
               Nạp dữ liệu test
             </button>
