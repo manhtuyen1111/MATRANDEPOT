@@ -6,7 +6,7 @@ Thiết kế: `docs/DATABASE_SCHEMA.md`. **Agent chỉ viết file. Người dù
 
 | Bước | File | Nội dung | Trạng thái |
 |---|---|---|---|
-| 1 | `20261027000001` → `000005` | enum, nhân viên, danh mục, bộ đếm mã, nhật ký, chống bấm lặp, quyền, RPC Danh mục / nhân viên, RLS nền | **Đã viết, chưa chạy thử** |
+| 1 | `20261027000001` → `000005` | enum, nhân viên, danh mục, bộ đếm mã, nhật ký, chống bấm lặp, quyền, RPC Danh mục / nhân viên, RLS nền | **Đã chạy thử local 2026-10-27: apply OK, pgTAP 18/18** |
 | 2 | — | Hạ vỏ, lượt lưu bãi, K80, vị trí, vệ sinh / báo giá / sửa chữa, W-SURVEY | Chưa làm |
 | 3 | — | Thanh toán, phiếu thu, trả trước, hóa đơn | Chưa làm |
 | 4 | — | Cấp vỏ, booking, Nhập / Xuất tàu | Chưa làm |
@@ -27,7 +27,7 @@ npx supabase test db        # chạy test pgTAP trong supabase/tests/
 1. Tạo project trên supabase.com, vùng **Singapore**. Làm cho đủ 3 project: dev, staging, production. Bật PITR cho production (DEC-152).
 2. **Authentication → Providers → Email:**
    - tắt "Confirm email";
-   - đặt độ dài mật khẩu tối thiểu = 1 (DEC-143: bao nhiêu ký tự cũng được).
+   - độ dài mật khẩu tối thiểu giữ **6** (giới hạn của Supabase). App tự ghép chuỗi cố định để nhân viên đặt mật khẩu ngắn hơn được (DEC-153).
 3. Apply migration theo thứ tự tên file:
    - dùng `npx supabase link` rồi `npx supabase db push`;
    - hoặc dán từng file vào SQL Editor.
