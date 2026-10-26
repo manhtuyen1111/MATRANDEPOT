@@ -191,6 +191,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Link dữ liệu thống nhất kiểu Mã hồ sơ toàn app (`linkCls`); Tồn vỏ cột MÃ PHIẾU THU cùng định dạng Mã hồ sơ (DEC-117). Kiểm thử: 117/117 pass, build PASS.
 - Mọi mã có hồ sơ lưu trữ đều là link: Phiếu thu (mã phiếu thu, mã hồ sơ, phiếu thu trả trước), Tồn vỏ (mã hồ sơ), Báo giá, Trả chứng từ (DEC-118). Kiểm thử: 117/117 pass, build PASS.
 
+### Changed (2026-10-26, DEC-119)
+- Bỏ mã chứng từ `CT-`: số chứng từ = mã hồ sơ tác nghiệp (HV- / CV-), cũng là mã tham chiếu chuyển khoản; bỏ dòng / ô / cột "Chứng từ" trùng ở phiếu thu in, hồ sơ, Excel Hạ vỏ / Cấp vỏ. Kiểm thử: 118/118 pass, build PASS.
+
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
 

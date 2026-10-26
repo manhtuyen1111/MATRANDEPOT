@@ -951,6 +951,21 @@ Quy ước trạng thái:
   - Danh sách chờ ở Văn phòng Hạ vỏ (bấm dòng để chọn; khung chi tiết bên phải đã có link hồ sơ).
   - Màn Giám định Hạ vỏ mobile (hồ sơ chưa qua Văn phòng).
 
+### DEC-119 — Bỏ mã chứng từ CT-: số chứng từ = MÃ HỒ SƠ của tác nghiệp
+
+- Trạng thái: CONFIRMED (2026-10-26). **Thay phần "giữ 2 mã bên trong" của DEC-099 / DEC-104.**
+- Quyết định:
+  - Không cấp mã chứng từ `CT-…` riêng nữa. **Số chứng từ = mã hồ sơ của tác nghiệp**: Hạ vỏ `HV-…`, Cấp vỏ `CV-…`. Mã này cũng là **mã tham chiếu / nội dung chuyển khoản**.
+  - Tiền đã thu thì chứng từ là **MÃ PHIẾU THU** (`PT-TT-…` / `PT-TTR-…`).
+  - TTS (công nợ) theo dõi bằng mã hồ sơ.
+- Vì mỗi lượt Hạ vỏ / Cấp vỏ chỉ có 1 chứng từ chi phí, mã hồ sơ đủ duy nhất. Khớp tiền ngân hàng chỉ tìm giao dịch đang chờ, nên hủy và tạo lại yêu cầu chuyển khoản vẫn đúng.
+- Đã bỏ các chỗ hiển thị trùng:
+  - Dòng "Chứng từ" trên phiếu thu in (đã có Mã hồ sơ).
+  - Ô "Chứng từ" trong hồ sơ container.
+  - Cột "SỐ CHỨNG TỪ" ở Excel báo cáo Hạ vỏ / Cấp vỏ.
+  - Giữ cột "SỐ LỆNH / CHỨNG TỪ": đây là số EIR / lệnh của khách, không phải mã nội bộ.
+- Dữ liệu trình duyệt được nạp lại dữ liệu test mới (khóa lưu v11).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1040,6 +1055,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-118 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-119 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
