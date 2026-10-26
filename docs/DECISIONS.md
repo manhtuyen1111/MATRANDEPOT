@@ -1286,7 +1286,7 @@ Quy ước trạng thái:
   - Hệ thống cập nhật hồ sơ Hạ vỏ, K80 (EEIR in lại sẽ có thông tin mới), lượt lưu bãi.
 - **Sau giám định bổ sung — như Hạ vỏ thường:** DAMAGE → hàng chờ Báo giá → Sửa chữa; Xe nâng **Đảo chuyển** đưa cont khỏi kệ (xóa cờ kệ). AV → chỉ Đảo chuyển.
 - Số đếm menu Giám định – Hạ vỏ (DEC-075) tính cả phiếu trên kệ đã hạ.
-- **Claude bổ sung — cần người dùng xác nhận:** cont đang W-SURVEY **chưa cho Cấp vỏ** (`releaseBlocker`: "Chưa giám định (W-SURVEY)"). Ghi ở Q-042.
+- **Đã xác nhận (DEC-150):** cont đang W-SURVEY **không cho Cấp vỏ** (`releaseBlocker`: "Chưa giám định (W-SURVEY)"). Ghi ở Q-042.
 - Kỹ thuật:
   - `FieldConditionClass` thêm `'W-SURVEY'` (`CONDITION_DEFERRED`).
   - `stuffingClass` / `manufactureYear` được để trống khi W-SURVEY.
@@ -1323,6 +1323,78 @@ Quy ước trạng thái:
   - Cấp vỏ: 24 lệnh (đã xuất / TTS chờ Xe nâng / chờ thanh toán).
   - Nhập tàu: 3 tàu × 20 cont (xong / dở / chưa làm). Xuất tàu: 1 tàu 12 cont, xuất một nửa.
   - Góp ý: nhiều màn.
+
+### DEC-149 — Mở Giai đoạn 4 (Database): nền tảng Supabase Singapore; trạng thái theo bản Demo
+
+- Trạng thái: CONFIRMED (2026-10-26). Trả lời Q-040 và cách chốt OPEN-003.
+- **Mốc lưu bản Demo** (chưa có database), để quay lại khi cần:
+  - nhánh `backup/demo-truoc-database`;
+  - tag `demo-truoc-database-2026-10-26` (commit `33584bd`).
+- **Nền tảng:** **Supabase vùng Singapore**, gói Pro + PITR, 3 môi trường dev / staging / production (theo `docs/DATABASE_PLATFORM_ADVICE.md`).
+  - Người dùng tự tạo project và giữ khóa.
+  - Agent chỉ viết migration, không apply.
+- **Danh mục trạng thái (OPEN-003):** lấy theo bản Demo. Bảng ở `docs/STATUS_CATALOG.md` — **chờ người dùng duyệt** các mã ⚪ (chưa dùng) trước khi viết schema.
+- Việc database làm trên nhánh `agent/claude/p4-database`.
+- Vẫn mở: Q-037 (lưu ảnh), Q-038 (số người dùng cùng lúc), Q-039 (sao lưu — đã có đề xuất), Q-041 (tài khoản), Q-042.
+
+### DEC-150 — Database: quy mô, ảnh, thời gian lưu, trạng thái, W-SURVEY
+
+- Trạng thái: CONFIRMED (2026-10-26). Trả lời Q-037, Q-038, Q-042 và duyệt `docs/STATUS_CATALOG.md`. **Sửa DEC-066 mục 10.5** (thời gian lưu).
+- **Quy mô (Q-038):** **50–70 nhân viên** dùng đồng thời; **10.000–15.000 container ra vào / tháng** (~500 lượt / ngày, 120–180 nghìn lượt / năm).
+- **Trạng thái:** dùng các mã ✅ trong `STATUS_CATALOG.md`; **bỏ hết 12 mã ⚪**:
+  - `PENDING_GATE_IN`, `OFFICE_VERIFIED`, `SPECIAL_RETURN`;
+  - `IN_PROGRESS`, `REWORK_REQUIRED`, `REJECTED`, `REFUNDED`, `HA_SUA_CHUA`;
+  - `YARD_MOVE`, `SHIFT_REPAIR`, `SHIFT_INSPECTION_RACK`.
+  - Cần thì thêm sau bằng migration.
+- **Ảnh cửa container (Q-037):**
+  - Nén trên thiết bị còn ~200 KB / ảnh trước khi gửi (~2 GB / tháng).
+  - Lưu Supabase Storage **24 tháng**, quá hạn tự xóa ảnh. Hồ sơ vẫn giữ, ghi "ảnh đã hết hạn lưu".
+- **Dữ liệu tác nghiệp:**
+  - Giữ **trực tuyến 3 năm** (tra cứu / báo cáo trên app).
+  - Quá 3 năm → **chuyển ra kho lưu trữ** (file nén + mã hóa, ngoài database) và xóa khỏi bảng trực tuyến.
+  - Phần lưu kho vẫn giữ đủ thời hạn chứng từ kế toán theo luật; không tra trên app, khôi phục khi cần.
+  - Chuyển kho theo từng tháng (phạm vi partition chỉnh ở DEC-151).
+- **W-SURVEY (Q-042):** **không được Cấp vỏ** khi chưa giám định bổ sung — chưa có tình trạng thì không cấp (giữ chặn ở `releaseBlocker`, DEC-147).
+
+### DEC-151 — Database: đăng nhập, mất mạng hiện trường; chỉnh phạm vi partition
+
+- Trạng thái: CONFIRMED (2026-10-26). Trả lời Q-041.
+- **Đăng nhập:** nhân viên gõ **tên đăng nhập** (`tuan.lv`); hệ thống đổi thành email nội bộ `tuan.lv@matrandepot.local` cho Supabase Auth (không cần email thật).
+- **Không khóa** tài khoản khi nhập sai mật khẩu nhiều lần; **không tự đăng xuất**.
+- **Mất mạng ở hiện trường:**
+  - Không lưu tạm trên điện thoại. Thao tác chỉ thành công khi máy chủ xác nhận; mất mạng thì báo lỗi, giữ dữ liệu trên màn để bấm lại.
+  - Mỗi thao tác gửi kèm `request_id` để bấm lại không tạo trùng.
+- **Chỉnh DEC-150 về partition** (Claude rà lại theo quy mô thật, ~3–6 GB / 3 năm):
+  - Chỉ `audit_logs` và `location_history` chia partition theo tháng.
+  - Bảng nghiệp vụ dùng chỉ mục thời gian; chuyển kho theo tháng bằng truy vấn ngày đóng.
+- Thiết kế đầy đủ: `docs/DATABASE_SCHEMA.md` (chờ duyệt).
+
+### DEC-152 — Duyệt thiết kế database v1; sao lưu; ngân hàng làm sau; hoàn tiền giữ chặn
+
+- Trạng thái: CONFIRMED (2026-10-26).
+- **Duyệt `docs/DATABASE_SCHEMA.md` v1.** Viết migration theo 5 bước (mục 11). Tiến độ ở `supabase/README.md`.
+- **Sao lưu (Q-039):**
+  - PITR 7 ngày (khôi phục về thời điểm bất kỳ, mất tối đa ~5 phút).
+  - Mỗi đêm 1 bản sao mã hóa ra ngoài Supabase, giữ 30 bản.
+  - Diễn tập khôi phục mỗi quý trên staging.
+- **Ngân hàng (Q-032): làm sau.** Migration 3 làm khung nhận thông báo ngân hàng chung (chống xử lý lặp theo mã giao dịch). Tạm thời Văn phòng xác nhận tay tiền chuyển khoản.
+- **Hoàn tiền (OPEN-008): chưa làm, giữ chặn.** Lệnh đã thu phí không hủy được trên hệ thống; hoàn tiền xử lý ngoài hệ thống.
+- **Bước 1 đã viết** (`supabase/migrations/20261027000001` → `000005`, test `supabase/tests/0001_foundation.test.sql`, `supabase/seed.sql`, `supabase/README.md`).
+  - Gồm: enum, nhân viên, danh mục, bộ đếm mã, nhật ký partition tháng, chống bấm lặp, ma trận quyền, RPC Danh mục / nhân viên, RLS nền.
+  - Thay bản nháp cũ `20261021000001` (chưa từng apply, không khớp nghiệp vụ).
+  - **Chưa chạy thử**: máy chưa có Docker / Postgres.
+
+### DEC-153 — Mật khẩu ngắn hơn 6 ký tự trên Supabase; kết quả chạy thử bước 1
+
+- Trạng thái: CONFIRMED (2026-10-27).
+- **Vấn đề:** Supabase Auth bắt buộc mật khẩu **tối thiểu 6 ký tự** (không chỉnh xuống thấp hơn). Điều này trái DEC-143 ("bao nhiêu ký tự cũng được").
+- **Người dùng chọn giữ DEC-143.** App tự ghép thêm một **chuỗi cố định** vào sau mật khẩu người dùng gõ, rồi mới gửi Supabase (cả lúc đăng nhập và lúc đổi mật khẩu), nên luôn đủ 6 ký tự.
+  - Nhân viên chỉ thấy và gõ mật khẩu của mình.
+  - Chuỗi ghép là hằng số trong code frontend, không phải bí mật.
+  - Kiểm tra "không được dùng 123456" làm trên mật khẩu **trước khi ghép**.
+  - Claude đã cảnh báo: mật khẩu ngắn dễ bị dò hơn. Người dùng chấp nhận.
+- Làm ở phần đăng nhập frontend GĐ 4 (chưa làm).
+- **Chạy thử migration bước 1 trên Supabase local (Docker, 2026-10-27):** 5 file apply không lỗi; pgTAP **18/18 PASS**. Thêm `supabase/config.toml` (cấu hình local, không chứa khóa bí mật).
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
@@ -1413,6 +1485,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-148 đã xác nhận (cập nhật 2026-10-26).
+- Quyết định nghiệp vụ: DEC-001 → DEC-153 đã xác nhận (cập nhật 2026-10-26).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

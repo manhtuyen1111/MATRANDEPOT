@@ -227,7 +227,8 @@ Các quan hệ một-nhiều, nhiều-nhiều và điều kiện bắt buộc ph
 
 - Nhóm dữ liệu: đã phác thảo; bổ sung mục 8.
 - Quan hệ dữ liệu: đã hiện thực ở tầng nghiệp vụ chế độ Demo (`src/services/`), chưa có ở database.
-- SQL và migration: có bản nháp `supabase/migrations/20261021000001_init_matran_depot_schema.sql` — **chưa áp dụng lên Supabase nào** (người dùng xác nhận 2026-10-22), **không khớp** với mục 8 và có lỗ hổng bảo mật (RPC `SECURITY DEFINER` không kiểm tra quyền, RLS thiếu policy). Không được apply; sẽ viết lại toàn bộ ở giai đoạn database.
+- **Cập nhật 2026-10-26 (DEC-152):** bản nháp cũ đã xóa; migration mới theo `docs/DATABASE_SCHEMA.md` ở `supabase/migrations/20261027*` (xem `supabase/README.md`).
+- (Lịch sử) SQL và migration: có bản nháp `supabase/migrations/20261021000001_init_matran_depot_schema.sql` — **chưa áp dụng lên Supabase nào** (người dùng xác nhận 2026-10-22), **không khớp** với mục 8 và có lỗ hổng bảo mật (RPC `SECURITY DEFINER` không kiểm tra quyền, RLS thiếu policy). Không được apply; sẽ viết lại toàn bộ ở giai đoạn database.
 - Chính sách RLS: chưa triển khai.
 
 ## 10. Hiệu năng & lưu trữ dữ liệu lớn (DEC-066 — bắt buộc khi viết schema P4-01)
@@ -235,6 +236,8 @@ Các quan hệ một-nhiều, nhiều-nhiều và điều kiện bắt buộc ph
 > Nơi đặt database, gói, sao lưu 3-2-1, tình huống vận hành (mất mạng hiện trường, thao tác đồng thời, chuyển từ Demo sang thật…): xem `docs/DATABASE_PLATFORM_ADVICE.md` (đề xuất, chờ chốt Q-037 → Q-040).
 
 ### 10.1. Quy mô thiết kế
+
+> **Cập nhật DEC-150:** 50–70 nhân viên; 10.000–15.000 container ra vào / tháng. Các con số dưới đây nhân ~1,5 cho mức cao.
 | Bảng | Mỗi tháng | 10 năm |
 |---|---|---|
 | Hồ sơ Hạ vỏ + Cấp vỏ | ~10.000 | ~1,2 triệu |
@@ -265,7 +268,8 @@ Dung lượng dữ liệu (không ảnh) ước 5–15 GB / 10 năm.
 - Thay `collectAllPages` (Demo) bằng hàm lấy theo lô từ RPC; giữ nguyên cột của các hàm `*Sheet` trong `src/services/reports.ts`.
 
 ### 10.5. Lưu trữ
-- Giữ **đủ 10 năm, không xóa** hồ sơ, chứng từ, phiếu thu.
-- `audit_logs` **chia partition theo năm**; partition cũ có thể chuyển kho lưu trữ khi cần, vẫn tra cứu được. Bảng khác không cần partition.
-- Ảnh lưu ở Supabase Storage; database chỉ lưu đường dẫn.
+- **Sửa theo DEC-150:**
+  - Dữ liệu trực tuyến **3 năm**; quá 3 năm chuyển ra kho lưu trữ (file nén, mã hóa) theo từng tháng, vẫn đủ thời hạn chứng từ kế toán.
+  - Chỉ `audit_logs` và `location_history` **chia partition theo tháng** (DEC-151); bảng khác dùng chỉ mục thời gian. Thiết kế: `docs/DATABASE_SCHEMA.md`.
+- Ảnh lưu ở Supabase Storage, nén ~200 KB, **giữ 24 tháng** rồi tự xóa; database chỉ lưu đường dẫn + ngày hết hạn.
 - Chế độ Demo (localStorage ~5 MB) chỉ để chạy thử — không dùng cho dữ liệu thật.

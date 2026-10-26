@@ -5,7 +5,7 @@
 ## 1. Dự án là gì, đang ở đâu
 
 - ERP quản lý **bãi container rỗng**. React 19 + TypeScript + Vite + Tailwind; backend dự kiến Supabase/PostgreSQL.
-- **Hiện trạng thật:** ứng dụng chạy **chế độ Demo** — dữ liệu ở localStorage, mọi quy tắc nghiệp vụ và kiểm tra quyền nằm trong `src/services/`. **Chưa có database thật.** Migration trong `supabase/migrations/` là **bản nháp chưa áp dụng, không khớp nghiệp vụ** — không được apply.
+- **Hiện trạng thật:** ứng dụng chạy **chế độ Demo** — dữ liệu ở localStorage, mọi quy tắc nghiệp vụ và kiểm tra quyền nằm trong `src/services/`. **Chưa có database thật.** GĐ 4 đang làm trên nhánh `agent/claude/p4-database`: migration mới `supabase/migrations/2026102*` theo `docs/DATABASE_SCHEMA.md` — **chỉ chạy thử trên Supabase local (Docker)**; agent **không** apply lên project thật, người dùng tự apply. Tiến độ ở `supabase/README.md`, bàn giao ở `devs/PROGRESS.md` mục I.5.
 - Ngôn ngữ nghiệp vụ, giao diện, tài liệu: **tiếng Việt**.
 
 ## 2. Nguồn sự thật (theo thứ tự ưu tiên)

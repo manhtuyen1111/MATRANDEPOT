@@ -48,7 +48,7 @@ Cập nhật lần cuối: 2026-10-22.
 - [ ] Q-023: Công nợ TTS quản lý theo khách hàng, hãng tàu hay bên chịu phí? Quy trình thu nợ TTS phát hành phiếu thu như thế nào?
 - [ ] Q-024: Quy trình xử lý giao dịch thất bại / hoàn tiền (OPEN-008).
 - [ ] Q-025: Ai được điều chỉnh giao dịch đã ghi nhận?
-- [ ] Q-032: Ngân hàng / cổng thanh toán nào dùng cho chuyển khoản API QR, và định dạng nội dung chuyển khoản?
+- [ ] Q-032: **(DEC-152: làm sau — tạm xác nhận tay)** Ngân hàng / cổng thanh toán nào dùng cho chuyển khoản API QR, và định dạng nội dung chuyển khoản?
 
 ## 7. Người dùng và phân quyền
 
@@ -63,10 +63,10 @@ Cập nhật lần cuối: 2026-10-22.
 - [x] Q-034: Xuất Excel .xlsx chuẩn (DEC-050).
 - [x] Q-035: Không còn hiệu lực — đã bỏ bước QC (DEC-049).
 - [x] Q-036: Giới hạn lọc báo cáo, ngưỡng xuất Excel phía máy chủ, thời gian lưu dữ liệu (DEC-066).
-- [ ] Q-037: Ảnh giám định / sửa chữa — số ảnh mỗi lượt, giữ ảnh gốc bao lâu (ảnh hưởng dung lượng Storage).
-- [ ] Q-038: Số người dùng đồng thời giờ cao điểm (chọn gói Supabase).
-- [ ] Q-039: Chính sách sao lưu — khôi phục về bao lâu trước, có cần bản sao ngoài Supabase. **Đề xuất:** PITR 7 ngày (mất tối đa ~5 phút dữ liệu) + dump mã hóa hằng đêm ra kho ngoài (30 ngày / 12 tháng / 10 năm) + diễn tập khôi phục mỗi quý — `docs/DATABASE_PLATFORM_ADVICE.md` mục 4.
-- [ ] Q-040: Nơi đặt database và ngân sách tháng — **đề xuất** Supabase vùng Singapore, gói Pro + PITR, 3 môi trường dev / staging / production; cần xác nhận có yêu cầu lưu dữ liệu tại Việt Nam không (Nghị định 53/2022) — `docs/DATABASE_PLATFORM_ADVICE.md` mục 1–3.
+- [x] Q-037: **ĐÃ CHỐT 2026-10-26 (DEC-150).** Ảnh giám định / sửa chữa — số ảnh mỗi lượt, giữ ảnh gốc bao lâu (ảnh hưởng dung lượng Storage).
+- [x] Q-038: **ĐÃ CHỐT 2026-10-26 (DEC-150).** Số người dùng đồng thời giờ cao điểm (chọn gói Supabase).
+- [x] Q-039: **ĐÃ CHỐT 2026-10-26 (DEC-152): PITR 7 ngày + bản sao mã hóa hằng đêm (giữ 30) + diễn tập quý.** Chính sách sao lưu — khôi phục về bao lâu trước, có cần bản sao ngoài Supabase. **Đề xuất:** PITR 7 ngày (mất tối đa ~5 phút dữ liệu) + dump mã hóa hằng đêm ra kho ngoài (30 ngày / 12 tháng / 10 năm) + diễn tập khôi phục mỗi quý — `docs/DATABASE_PLATFORM_ADVICE.md` mục 4.
+- [x] Q-040: **ĐÃ CHỐT 2026-10-26 (DEC-149): Supabase Singapore** (người dùng chọn). Nơi đặt database và ngân sách tháng — **đề xuất** Supabase vùng Singapore, gói Pro + PITR, 3 môi trường dev / staging / production; cần xác nhận có yêu cầu lưu dữ liệu tại Việt Nam không (Nghị định 53/2022) — `docs/DATABASE_PLATFORM_ADVICE.md` mục 1–3.
 - [x] Q-041 (ĐÃ CHỐT — DEC-111: mã bảo mật + trang khách hàng + Kế toán cập nhật ĐÃ XHD; API MISA làm sau): Xuất hóa đơn từ phiếu thu (công ty đang viết phiếu thu giấy). Kế toán xuất hóa đơn khi khách mang phiếu thu đến, tổng hóa đơn phải đủ tiền phiếu thu.
   - **Đề xuất:**
     - Mỗi phiếu thu có mục "Hóa đơn đã xuất" (số, ngày, số tiền).
@@ -83,9 +83,9 @@ Cập nhật lần cuối: 2026-10-22.
 - Nếu câu trả lời làm thay đổi tài liệu khác, phải cập nhật tài liệu liên quan.
 - Không tự suy đoán quy tắc nghiệp vụ để bắt đầu viết SQL hoặc code.
 - Ưu tiên giải quyết các câu hỏi ảnh hưởng đến cấu trúc database và tính đúng đắn của giao dịch trước.
-- [ ] Q-041: (GĐ 4) Khi chuyển sang Supabase Auth: tài khoản đăng nhập bằng tên đăng nhập (Supabase cần email nội bộ dạng `<tên>@matrandepot.local`?), có cần khóa tạm sau nhiều lần đăng nhập sai, thời gian tự đăng xuất? Bản Demo hiện chưa giới hạn (DEC-143).
+- [x] Q-041: **ĐÃ CHỐT 2026-10-26 (DEC-151): tên đăng nhập → email nội bộ @matrandepot.local; không khóa, không tự đăng xuất.** (GĐ 4) Khi chuyển sang Supabase Auth: tài khoản đăng nhập bằng tên đăng nhập (Supabase cần email nội bộ dạng `<tên>@matrandepot.local`?), có cần khóa tạm sau nhiều lần đăng nhập sai, thời gian tự đăng xuất? Bản Demo hiện chưa giới hạn (DEC-143).
 
 ## Q-042 — Cont W-SURVEY có được Cấp vỏ trước khi giám định bổ sung? (DEC-147)
 
-- Trạng thái: OPEN (2026-10-26).
+- Trạng thái: **ĐÃ CHỐT 2026-10-26 (DEC-150): không cho Cấp vỏ.**
 - Hiện code **chặn Cấp vỏ** cho đến khi Giám định bổ sung trên kệ xong (Claude đề xuất, vì chưa biết AV / DAMAGE). Người dùng xác nhận giữ hay bỏ.

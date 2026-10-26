@@ -227,6 +227,12 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Giám định → Hạ vỏ: lựa chọn **W-SURVEY (LÊN KỆ)** thay ô tích Hạ kệ; tab **Chờ giám định trên kệ** để giám định bổ sung AV / DAMAGE + Đóng hàng + AGE; EEIR ghi W-SURVEY; DAMAGE sau bổ sung vào Chờ báo giá (DEC-147, Q-042). Kiểm thử: 145/145 pass, build PASS.
 - Dữ liệu test: hãng tàu MSK, 10 khách hàng, công ty CÔNG TY CỔ PHẦN MATRAN, biểu giá 20DC / 40DC / 40HC / 45HC + rác LV1 / LV2; thêm danh sách lớn cho mọi tác nghiệp (DEC-148). Kiểm thử: 147/147 pass, build PASS.
 - Khóa lưu localStorage nâng lên v14 → trình duyệt tự nạp dữ liệu test mới (dữ liệu Demo cũ bị thay).
+- Mở GĐ 4 Database (DEC-149): lưu mốc Demo (nhánh `backup/demo-truoc-database`, tag `demo-truoc-database-2026-10-26`); nền tảng Supabase Singapore; danh mục trạng thái `docs/STATUS_CATALOG.md` chờ duyệt.
+- DEC-150: quy mô 50–70 nhân viên / 10–15 nghìn cont mỗi tháng; bỏ 12 mã trạng thái chưa dùng; ảnh nén ~200 KB giữ 24 tháng; dữ liệu trực tuyến 3 năm rồi chuyển kho; W-SURVEY không cho Cấp vỏ (Q-037, Q-038, Q-042 đã chốt).
+- DEC-151: đăng nhập bằng tên đăng nhập (email nội bộ), không khóa / không tự đăng xuất, mất mạng thì báo lỗi; partition chỉ 2 bảng nhật ký. Thiết kế database v1: `docs/DATABASE_SCHEMA.md` (chờ duyệt).
+- DEC-152: duyệt thiết kế; sao lưu PITR 7 ngày + bản sao đêm; ngân hàng làm sau; hoàn tiền giữ chặn. **Migration bước 1** (enum, nhân viên, danh mục, mã, nhật ký, quyền, RLS) + pgTAP + seed + README; xóa bản nháp cũ. Chưa chạy thử (chưa có Docker / Postgres).
+- DEC-153: chạy thử bước 1 trên Supabase local — apply OK, pgTAP 18/18; thêm `supabase/config.toml`. Mật khẩu: giữ "bao nhiêu ký tự cũng được" bằng cách app ghép chuỗi cố định (Supabase tối thiểu 6).
+- Migration bước 2/5: bảng Hạ vỏ / lượt lưu bãi / K80 / lịch sử vị trí / vệ sinh – báo giá – sửa chữa + 12 RPC hiện trường (chép đúng quy tắc `depotOperations.ts`). Chạy thử local: pgTAP 50/50 (bước 1 + 2). Văn phòng Hạ vỏ + GATE IN OK làm cùng bước 3 (thanh toán).
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
