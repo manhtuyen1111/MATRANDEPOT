@@ -15,7 +15,7 @@ import { VesselFieldMobile } from '../src/features/vessel/VesselFieldMobile';
 import { createVesselList, inspectVesselImportItem } from '../src/services/vessel';
 import { FieldQueueWorkspaces, FieldQueueMode, getFieldQueue, QueueListRow } from '../src/features/field-queues/FieldQueueWorkspaces';
 import { YardShiftWorkspace } from '../src/features/forklift/YardShiftWorkspace';
-import { MasterUsagePanel, ReceiptsWorkspace } from '../src/features/receipts/ReceiptsWorkspace';
+import { InvoiceGroupDetail, MasterUsagePanel, ReceiptsWorkspace } from '../src/features/receipts/ReceiptsWorkspace';
 import { ReportsWorkspace } from '../src/features/reports/ReportsWorkspace';
 import { MasterCatalogWorkspace } from '../src/features/catalog/MasterCatalogWorkspace';
 import { MasterDossierModal } from '../src/components/MasterDossierModal';
@@ -636,9 +636,18 @@ describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
     const { prepaidInvoiceView } = await import('../src/services/invoice');
     const topup = demo.paymentReceipts.find((x) => x.purpose === 'PREPAID_TOPUP' && (x.invoiceGroups || []).length)!;
     const pp = renderToString(<InvoicePanel receipt={topup} canIssue onIssue={noop} prepaid={prepaidInvoiceView(demo, topup)} />).replace(/<!-- -->/g, '');
-    expect(pp).toContain('data-testid="prepaid-invoice-groups"');
-    expect(pp).toContain('Yêu cầu 1 — 1 lượt');
-    expect(pp).toContain('Đã xuất hóa đơn</button>');
+    // DEC-133: khối Xuất hóa đơn chỉ tóm tắt; trạng thái + yêu cầu nằm ở cột HÓA ĐƠN từng lượt
+    expect(pp).toContain('data-testid="prepaid-invoice-summary"');
+    const view = prepaidInvoiceView(demo, topup)!;
+    const usage = renderToString(<MasterUsagePanel state={demo} code={topup.masterReceiptCode!} invoice={{ view, canIssue: true, onIssue: noop }} />).replace(/<!-- -->/g, '');
+    expect(usage).toContain('>Hóa đơn<');
+    expect((usage.match(/data-testid="lot-invoice"/g) || []).length).toBe(view.lots.length);
+    const g = view.groups.find((x) => x.status === 'YEU_CAU_XHD') || view.groups[0];
+    const detail = renderToString(<InvoiceGroupDetail view={view} groupId={g.id} canIssue onIssue={noop} />).replace(/<!-- -->/g, '');
+    expect(detail).toContain('Yêu cầu 1');
+    expect(detail).toContain(g.taxCode);
+    if (g.status === 'YEU_CAU_XHD') expect(detail).toContain('Đã xuất hóa đơn</button>');
+    expect(renderToString(<InvoiceGroupDetail view={view} canIssue onIssue={noop} />)).toContain('chưa gửi yêu cầu');
   });
 });
 

@@ -428,7 +428,16 @@ export const ReceiptsWorkspace: React.FC<{
                 />
               )}
               {selected.transaction.purpose === "PREPAID_TOPUP" && (
-                <MasterUsagePanel state={state} code={selected.receipt?.masterReceiptCode || selected.transaction.paymentRef} onOpenDossier={onOpenDossier} />
+                <MasterUsagePanel
+                  state={state}
+                  code={selected.receipt?.masterReceiptCode || selected.transaction.paymentRef}
+                  onOpenDossier={onOpenDossier}
+                  invoice={selected.receipt ? {
+                    view: prepaidInvoiceView(state, selected.receipt),
+                    canIssue: can(state.currentUser, 'INVOICE_ISSUE'),
+                    onIssue: (invoiceNo, groupId) => run(() => markInvoiceIssued(state, { receiptNo: selected.receipt!.receiptNo, invoiceNo, groupId }), 'Đã cập nhật ĐÃ XHD.'),
+                  } : undefined}
+                />
               )}
 
               {selected.transaction.status === 'PENDING' && (
@@ -476,8 +485,15 @@ export const ReceiptsWorkspace: React.FC<{
 };
 
 // DEC-079: SỬ DỤNG PHIẾU THU TRẢ TRƯỚC — mỗi lần trừ tiền gắn chứng từ, hồ sơ; tổng nạp / số lượt / đã dùng / còn lại
-export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpenDossier?: (code: string) => void }> = ({ state, code, onOpenDossier }) => {
+export const MasterUsagePanel: React.FC<{
+  state: DepotState;
+  code: string;
+  onOpenDossier?: (code: string) => void;
+  invoice?: { view?: PrepaidInvoiceView; canIssue: boolean; onIssue: (invoiceNo: string, groupId?: string) => void }; // DEC-133
+}> = ({ state, code, onOpenDossier, invoice }) => {
   const usage = masterReceiptUsage(state, code);
+  const [openLot, setOpenLot] = useState('');
+  const view = invoice?.view;
   if (!usage) return null;
   const tile = (label: string, value: React.ReactNode, tone: string) => (
     <div className={`rounded-md border px-2.5 py-1.5 ${tone}`}>
@@ -498,7 +514,7 @@ export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpe
         <p className="text-slate-500">{usage.master.status === 'PENDING_PAYMENT' ? 'Chưa thu tiền nạp — chưa dùng được để trừ.' : 'Chưa có lượt tác nghiệp nào trừ vào phiếu thu trả trước này.'}</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left">
+          <table className="w-full min-w-[820px] text-left">
             <thead className="border-b border-slate-200 text-[11px] uppercase text-slate-500">
               <tr>
                 <th className="py-1.5 pr-2">#</th>
@@ -508,12 +524,16 @@ export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpe
                 <th className="py-1.5 pr-2">Số cont</th>
                 <th className="py-1.5 pr-2 text-right">Số tiền trừ</th>
                 <th className="py-1.5 pr-2 text-right">Số dư sau</th>
-                <th className="py-1.5">Nhân viên</th>
+                <th className="py-1.5 pr-2">Nhân viên</th>
+                {view && <th className="py-1.5">Hóa đơn</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {usage.rows.map((u, i) => (
-                <tr key={u.deductionId}>
+              {usage.rows.map((u, i) => {
+                const lot = view?.lots.find((l) => l.deductionId === u.deductionId);
+                return (
+                <React.Fragment key={u.deductionId}>
+                <tr className={openLot === u.deductionId ? 'bg-blue-50/60' : ''}>
                   <td className="py-1.5 pr-2 text-slate-400">{usage.rows.length - i}</td>
                   <td className="whitespace-nowrap py-1.5 pr-2 font-mono text-[11px]">{formatViTime(u.performedAt)}</td>
                   <td className="py-1.5 pr-2 font-bold">{u.operation}</td>
@@ -525,9 +545,26 @@ export const MasterUsagePanel: React.FC<{ state: DepotState; code: string; onOpe
                   <td className="py-1.5 pr-2 font-mono">{u.containerNo}</td>
                   <td className="py-1.5 pr-2 text-right font-mono font-bold">{formatVnd(u.amount)}</td>
                   <td className="py-1.5 pr-2 text-right font-mono">{formatVnd(u.balanceAfter)}</td>
-                  <td className="py-1.5 text-[11px]">{u.performedBy}</td>
+                  <td className="py-1.5 pr-2 text-[11px]">{u.performedBy}</td>
+                  {view && (
+                    <td className="py-1.5">
+                      {/* DEC-133: trạng thái hóa đơn từng lượt — bấm xem yêu cầu của khách */}
+                      <button type="button" onClick={() => setOpenLot(openLot === u.deductionId ? '' : u.deductionId)} title="Xem yêu cầu hóa đơn" data-testid="lot-invoice">
+                        <InvoiceBadge status={lot?.status || 'CHUA_XHD'} label={`${INVOICE_STATUS_LABELS[lot?.status || 'CHUA_XHD']} ${openLot === u.deductionId ? '▴' : '▾'}`} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
-              ))}
+                {view && openLot === u.deductionId && (
+                  <tr>
+                    <td colSpan={9} className="bg-blue-50/60 px-2 pb-2">
+                      <InvoiceGroupDetail view={view} groupId={lot?.groupId} canIssue={invoice!.canIssue} onIssue={invoice!.onIssue} />
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -574,7 +611,10 @@ export const InvoicePanel: React.FC<{
         </dl>
       )}
       {prepaid ? (
-        <PrepaidInvoiceGroups view={prepaid} canIssue={canIssue} onIssue={onIssue} />
+        <p className="text-slate-600" data-testid="prepaid-invoice-summary">
+          {prepaid.lots.length} lượt đã dùng • {prepaid.lots.filter((l) => !l.groupId).length} lượt chưa yêu cầu • {prepaid.groups.filter((g) => g.status === 'YEU_CAU_XHD').length} yêu cầu chờ xuất • còn {formatVnd(prepaid.remainingAmount)} chưa dùng (chưa xuất hóa đơn được).
+          {' '}Trạng thái + yêu cầu của khách xem ở cột <b>HÓA ĐƠN</b> từng lượt bên dưới.
+        </p>
       ) : req ? (
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
           <dt className="text-slate-500">Mã số thuế</dt><dd className="font-mono font-bold">{req.taxCode}</dd>
@@ -603,44 +643,33 @@ export const InvoicePanel: React.FC<{
   );
 };
 
-// DEC-130: phiếu thu trả trước — các lượt đã dùng + từng yêu cầu hóa đơn (nhóm lượt) do khách gửi; Kế toán cập nhật theo yêu cầu
-const PrepaidInvoiceGroups: React.FC<{ view: PrepaidInvoiceView; canIssue: boolean; onIssue: (invoiceNo: string, groupId?: string) => void }> = ({ view, canIssue, onIssue }) => {
-  const [nos, setNos] = useState<Record<string, string>>({});
-  const free = view.lots.filter((l) => !l.groupId);
+// DEC-133: chi tiết 1 yêu cầu hóa đơn (nhóm lượt) — mở từ ô HÓA ĐƠN của bảng Sử dụng phiếu thu trả trước
+export const InvoiceGroupDetail: React.FC<{ view: PrepaidInvoiceView; groupId?: string; canIssue: boolean; onIssue: (invoiceNo: string, groupId?: string) => void }> = ({ view, groupId, canIssue, onIssue }) => {
+  const [no, setNo] = useState('');
+  const g = view.groups.find((x) => x.id === groupId);
+  if (!g) return <p className="text-slate-500" data-testid="invoice-group-detail">Khách hàng chưa gửi yêu cầu hóa đơn cho lượt này.</p>;
+  const no_ = view.groups.indexOf(g) + 1;
+  const lots = view.lots.filter((l) => g.deductionIds.includes(l.deductionId));
   return (
-    <div className="space-y-2" data-testid="prepaid-invoice-groups">
-      <p className="text-slate-600">
-        {view.lots.length} lượt đã dùng • {free.length} lượt chưa yêu cầu hóa đơn • còn {formatVnd(view.remainingAmount)} chưa dùng (chưa xuất hóa đơn được)
-      </p>
-      {view.groups.length === 0 ? (
-        <p className="text-slate-500">Khách hàng chưa gửi yêu cầu hóa đơn cho lượt nào.</p>
-      ) : (
-        view.groups.map((g, i) => {
-          const lots = view.lots.filter((l) => g.deductionIds.includes(l.deductionId));
-          return (
-            <div key={g.id} className="space-y-1 rounded border border-slate-200 p-2">
-              <div className="flex items-center justify-between">
-                <span className="font-bold">Yêu cầu {i + 1} — {lots.length} lượt • {formatVnd(g.amount)}</span>
-                <InvoiceBadge status={g.status} />
-              </div>
-              <p className="font-mono text-[11px] text-slate-600">{lots.map((l) => `${l.dossierCode} (${l.containerNo})`).join(', ')}</p>
-              <dl className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-                <dt className="text-slate-500">Mã số thuế</dt><dd className="font-mono font-bold">{g.taxCode}</dd>
-                <dt className="text-slate-500">Gmail nhận HĐ</dt><dd className="break-all">{g.email}</dd>
-                <dt className="text-slate-500">Tên công ty</dt><dd>{g.companyName}</dd>
-                <dt className="text-slate-500">Địa chỉ</dt><dd>{g.address}</dd>
-                {g.note && (<><dt className="text-slate-500">Ghi chú</dt><dd>{g.note}</dd></>)}
-                {g.status === 'DA_XHD' && (<><dt className="text-slate-500">Số hóa đơn</dt><dd className="font-mono font-bold">{g.invoiceNo || '-'} • {g.issuedBy}</dd></>)}
-              </dl>
-              {g.status === 'YEU_CAU_XHD' && canIssue && (
-                <div className="flex gap-2 pt-1">
-                  <input value={nos[g.id] || ''} onChange={(e) => setNos({ ...nos, [g.id]: e.target.value })} placeholder="Số hóa đơn MISA (không bắt buộc)" className={`${inputCls} font-mono`} />
-                  <button type="button" onClick={() => onIssue(nos[g.id] || '', g.id)} className={`${primaryBtn} shrink-0`}>Đã xuất hóa đơn</button>
-                </div>
-              )}
-            </div>
-          );
-        })
+    <div className="space-y-1 rounded border border-slate-200 bg-white p-2" data-testid="invoice-group-detail">
+      <div className="flex items-center justify-between">
+        <span className="font-bold">Yêu cầu {no_} — {lots.length} lượt • {formatVnd(g.amount)}</span>
+        <InvoiceBadge status={g.status} />
+      </div>
+      <p className="font-mono text-[11px] text-slate-600">Gộp: {lots.map((l) => `${l.dossierCode} (${l.containerNo})`).join(', ')}</p>
+      <dl className="grid grid-cols-[7rem_1fr] gap-x-3 gap-y-0.5">
+        <dt className="text-slate-500">Mã số thuế</dt><dd className="font-mono font-bold">{g.taxCode}</dd>
+        <dt className="text-slate-500">Gmail nhận HĐ</dt><dd className="break-all">{g.email}</dd>
+        <dt className="text-slate-500">Tên công ty</dt><dd>{g.companyName}</dd>
+        <dt className="text-slate-500">Địa chỉ</dt><dd>{g.address}</dd>
+        {g.note && (<><dt className="text-slate-500">Ghi chú</dt><dd>{g.note}</dd></>)}
+        {g.status === 'DA_XHD' && (<><dt className="text-slate-500">Số hóa đơn</dt><dd className="font-mono font-bold">{g.invoiceNo || '-'} • {g.issuedBy}</dd></>)}
+      </dl>
+      {g.status === 'YEU_CAU_XHD' && canIssue && (
+        <div className="flex gap-2 pt-1">
+          <input value={no} onChange={(e) => setNo(e.target.value)} placeholder="Số hóa đơn MISA (không bắt buộc)" className={`${inputCls} font-mono`} />
+          <button type="button" onClick={() => onIssue(no, g.id)} className={`${primaryBtn} shrink-0`}>Đã xuất hóa đơn</button>
+        </div>
       )}
     </div>
   );
