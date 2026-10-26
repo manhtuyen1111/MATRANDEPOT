@@ -1074,6 +1074,26 @@ Quy ước trạng thái:
 - **Quy tắc chung (người dùng yêu cầu):** khi thêm, bớt hoặc đổi thứ tự cột trên màn hình danh sách / báo cáo thì **phải sửa file Excel xuất ra cho tương xứng**.
   - Riêng Tồn vỏ có test tự động so thứ tự cột màn hình với cột Excel.
 
+### DEC-130 — Phiếu thu trả trước: hóa đơn theo TỪNG LƯỢT, khách tự gộp
+
+- Trạng thái: CONFIRMED (2026-10-26). Bổ sung DEC-111 cho phiếu `PT-TTR-…`.
+- Quyết định:
+  - **Mã bảo mật:** khách dùng **một** mã của phiếu thu trả trước và thấy **mọi lượt đã dùng** (ngày, mã hồ sơ, số cont, tác nghiệp, số tiền trừ).
+  - **Gửi yêu cầu:** khách **tự chọn 1 hoặc nhiều lượt** → gửi **1 yêu cầu hóa đơn** với MST / Gmail / Tên công ty / Địa chỉ / Ghi chú riêng. Số tiền = tổng các lượt đã chọn. Gửi được nhiều yêu cầu (gộp hoặc tách tùy ý), có nút "Dùng lại thông tin yêu cầu trước".
+  - **Chống xuất trùng:** mỗi lượt chỉ thuộc **1** yêu cầu. Phiếu trả trước **không** yêu cầu hóa đơn cho cả phiếu.
+  - **Số dư chưa dùng: chưa xuất được.** Dùng tiếp thì lượt mới tự hiện để yêu cầu.
+  - **Sửa / hủy:** khi yêu cầu chưa xuất, khách được sửa (đổi lượt, đổi thông tin) hoặc **hủy để gộp / tách lại**. Đã xuất thì khóa.
+  - **Kế toán:** cập nhật **ĐÃ XHD theo từng yêu cầu**, kèm số hóa đơn MISA (không bắt buộc).
+  - **Trạng thái phiếu** (tính lại mỗi lần, vì có thể phát sinh lượt mới), nhãn kèm "đã xuất x/y lượt":
+    - YÊU CẦU XHD khi còn yêu cầu chờ Kế toán.
+    - ĐÃ XHD khi mọi lượt đã dùng đều đã xuất.
+    - Còn lại là CHƯA XHD.
+- **Excel Phiếu thu:** các cột hóa đơn của phiếu trả trước ghép theo từng yêu cầu, ngăn cách "; ". Bộ lọc "Hóa đơn" dùng trạng thái tính lại.
+- Kỹ thuật:
+  - `PaymentReceipt.invoiceGroups` (`InvoiceGroup`).
+  - `prepaidInvoiceView`, `submitPrepaidInvoiceGroup`, `cancelPrepaidInvoiceGroup`, `receiptInvoiceStatus` / `receiptInvoiceLabel`, `markInvoiceIssued({ groupId })` trong `invoice.ts`.
+  - Dữ liệu trình duyệt nạp lại (khóa lưu v13).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1163,6 +1183,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-129 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-130 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

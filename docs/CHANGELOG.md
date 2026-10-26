@@ -205,6 +205,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Cột Thanh toán chỉ ghi TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU / Không thu phí (bỏ ký hiệu TT —, TTR —, TTS —) (DEC-127).
 - Tồn vỏ: cột Phân loại (đóng hàng) bên phải Trạng thái; Excel đổi ĐÓNG HÀNG → PHÂN LOẠI, đặt ngay sau TRẠNG THÁI (DEC-128). Kiểm thử: 127/127 pass, build PASS.
 - Tồn vỏ: cột AGE sau Hãng tàu, Tiến độ sau Mã phiếu thu (màn hình + Excel cùng thứ tự); quy tắc "đổi cột màn hình → sửa Excel tương ứng" + test tự động cho Tồn vỏ (DEC-129). Kiểm thử: 128/128 pass, build PASS.
+- Phiếu thu trả trước: khách yêu cầu hóa đơn **theo từng lượt đã dùng**, tự gộp nhiều lượt / tách riêng (mỗi yêu cầu 1 MST, 1 địa chỉ), sửa / hủy khi chưa xuất; Kế toán xuất theo từng yêu cầu; trạng thái "đã xuất x/y lượt"; Excel ghép theo yêu cầu (DEC-130). Kiểm thử: 129/129 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

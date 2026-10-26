@@ -106,6 +106,7 @@ Một việc chỉ "xong" khi:
   - Hiển thị ký hiệu **TT** (TRỰC TIẾP) / **TTR** (TRẢ TRƯỚC) / **TTS** (THANH TOÁN SAU). Mã nội bộ vẫn là TTTT / TTT / TTS.
   - Gọi là **PHIẾU THU TRẢ TRƯỚC**, không viết "phiếu thu mẹ" (DEC-103).
   - **Xuất hóa đơn (DEC-111):** nghiệp vụ ở `src/services/invoice.ts`. Mã bảo mật 12 ký tự chỉ sinh bằng `generateInvoiceSecret` (crypto). Mã in trên phiếu và hiện ở khối Xuất hóa đơn của chi tiết phiếu thu, kèm đường link (DEC-112, DEC-113); **không** đưa vào Excel.
+  - **Phiếu trả trước (DEC-130):** hóa đơn theo **từng lượt** — khách tự gộp lượt thành yêu cầu (`invoiceGroups`); 1 lượt chỉ thuộc 1 yêu cầu; Kế toán xuất theo `groupId`. Trạng thái hóa đơn phiếu luôn lấy từ `receiptInvoiceStatus` (không đọc thẳng `invoiceStatus`).
   - **Người thu tiền** trên phiếu luôn là nhân viên — dùng `receiptCollectorName`, không in "HỆ THỐNG (Ngân hàng)" (DEC-113). Trạng thái CHƯA XHD → YÊU CẦU XHD (khách, trang `#/hoa-don`) → ĐÃ XHD (Kế toán).
   - Mã phiếu thu `PT-TT-YYMMDD-NNNN` / `PT-TTR-YYMMDD-NNNN`, chỉ cấp qua `codes.ts`.
   - Cột **Thanh toán | Mã phiếu thu** ở Tồn vỏ, Báo cáo Hạ vỏ, Báo cáo Cấp vỏ dùng chung `PaymentInfoCells` + `containerPaymentInfo` / `voucherPaymentInfo` (DEC-126). Ghi "Thanh toán", không viết "Hình thức TT".
