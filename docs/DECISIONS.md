@@ -1018,6 +1018,19 @@ Quy ước trạng thái:
 - Bộ đếm PT-TTR tính cả phiếu đang chờ thanh toán, nên mã không bị trùng.
 - Dữ liệu trình duyệt được nạp lại dữ liệu test mới (khóa lưu v12).
 
+### DEC-125 — Chọn / sửa vị trí từng bước: Block → Bay → Row → Tier
+
+- Trạng thái: CONFIRMED (2026-10-26). Áp dụng cho mọi tác nghiệp có vị trí, vì tất cả dùng chung `SlotPicker`: Xe nâng (Chờ hạ vỏ, Đảo chuyển, Nhập tàu), Tồn vỏ (sửa vị trí).
+- Quyết định:
+  - Chỉ hiện **bước đang chọn**, với **toàn bộ giá trị dạng nút lớn**.
+    - Bước đầu là tất cả Block (theo `onlyBlocks` nếu có, VD Kệ giám định).
+    - Chọn xong mới hiện bước tiếp theo, chỉ các chiều Block có cấu hình (DEC-082).
+  - **Dòng tóm tắt ở trên cùng** luôn hiện giá trị đã chọn, VD `BLOCK-A / 05 - Row - Tier`.
+    - Bấm vào một phần để **chọn lại** phần đó; các phần sau tự xóa để chọn lại cho đủ.
+    - Đủ thì hiện "✓ Đủ vị trí".
+  - Nút xác nhận vẫn chỉ bấm được khi `isSlotComplete`, nên người dùng **bắt buộc chọn đủ**.
+  - Chiều nào có hơn 60 giá trị thì dùng ô chọn thả xuống thay cho nút.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1107,6 +1120,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-124 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-125 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
