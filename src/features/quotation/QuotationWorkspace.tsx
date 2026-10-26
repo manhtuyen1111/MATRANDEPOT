@@ -18,6 +18,8 @@ import { linkCls,
   secondaryBtn,
   usePageSize,
   LocationText,
+  CellText,
+  CELL_MAX,
 } from '../../components/shared';
 
 // BÁO GIÁ → CHỜ BÁO GIÁ (DEC-084): danh sách giống Tồn vỏ; bấm dòng mở cửa sổ trượt nhập Remark sửa chữa + giờ công (DEC-080)
@@ -184,7 +186,7 @@ export const QuotationWorkspace: React.FC<{
       )}
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="w-full min-w-[1120px] text-left text-xs">
+        <table className="w-full min-w-[1320px] whitespace-nowrap text-left text-xs">{/* DEC-142: mỗi cont 1 dòng như Tồn vỏ */}
           <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase text-slate-600">
             <tr>
               <th className="w-8 px-2 py-2.5">
@@ -195,10 +197,10 @@ export const QuotationWorkspace: React.FC<{
               <th className="w-12 px-2 py-2.5 text-center">Size</th>
               <th className="w-12 px-2 py-2.5 text-center">Type</th>
               <th className="w-20 whitespace-nowrap px-2 py-2.5">Hãng tàu</th>
-              <th className="w-24 whitespace-nowrap px-2 py-2.5">Date in</th>
+              <th className="w-40 whitespace-nowrap px-2 py-2.5">Date in</th>
               <th className="w-20 whitespace-nowrap px-2 py-2.5 text-center">Trạng thái</th>
               <th className="w-16 whitespace-nowrap px-2 py-2.5 text-right">Lưu bãi</th>
-              <th className="w-40 px-2 py-2.5">Vị trí</th>
+              <th className="w-44 whitespace-nowrap px-2 py-2.5">Vị trí</th>
               <th className="min-w-[12rem] px-2 py-2.5">Tình trạng sửa chữa</th>
               <th className="w-16 whitespace-nowrap px-2 py-2.5 text-right">Giờ công</th>
               <th className="min-w-[10rem] px-2 py-2.5">Ghi chú</th>
@@ -210,7 +212,7 @@ export const QuotationWorkspace: React.FC<{
               <tr><td colSpan={14} className="px-4 py-8 text-center text-slate-500">Không có container DAMAGE nào đang chờ báo giá.</td></tr>
             ) : (
               rows.map((c) => (
-                <tr key={c.id} onClick={() => open(c)} className={`cursor-pointer ${selectedId === c.id || picked.has(c.id) ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
+                <tr key={c.id} onClick={() => open(c)} className={`cursor-pointer whitespace-nowrap ${selectedId === c.id || picked.has(c.id) ? 'bg-blue-50' : 'hover:bg-slate-50'}`} data-testid="quote-row">
                   <td className="px-2 py-2.5" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" aria-label={`Chọn ${c.containerNo}`} checked={picked.has(c.id)} onChange={() => togglePick(c.id)} />
                   </td>
@@ -221,16 +223,15 @@ export const QuotationWorkspace: React.FC<{
                   <td className="px-2 py-2.5 text-center">{c.size}</td>
                   <td className="px-2 py-2.5 text-center">{c.type}</td>
                   <td className="whitespace-nowrap px-2 py-2.5">{c.shippingLineCode}</td>
-                  <td className="whitespace-nowrap px-2 py-2.5 font-mono leading-tight">
-                    <span className="block">{formatDateTime(c.gateInAt).slice(0, 10)}</span>
-                    <span className="block text-[10px] text-slate-500">{formatDateTime(c.gateInAt).slice(11)}</span>
+                  <td className="whitespace-nowrap px-2 py-2.5 font-mono">
+                    {formatDateTime(c.gateInAt).slice(0, 10)} <span className="text-slate-500">{formatDateTime(c.gateInAt).slice(11)}</span>
                   </td>
                   <td className="px-2 py-2.5 text-center font-bold text-rose-700">{c.conditionClass}</td>
                   <td className="px-2 py-2.5 text-right font-mono font-bold">{storageDays(c.gateInAt, now)}</td>
                   <td className="px-2 py-2.5 font-mono"><LocationText loc={c} /></td>
-                  <td className="px-2 py-2.5">{c.quotationItems?.length ? <span className="font-semibold text-slate-900">{c.quotationItems.join(", ")}</span> : <span className="italic text-slate-400">Chưa cập nhật</span>}</td>
+                  <td className="px-2 py-2.5">{c.quotationItems?.length ? <CellText text={c.quotationItems.join(", ")} max={CELL_MAX.LONG} className="font-semibold text-slate-900" /> : <span className="italic text-slate-400">Chưa cập nhật</span>}</td>
                   <td className="px-2 py-2.5 text-right font-mono font-bold">{c.quotationLaborHours ?? "-"}</td>
-                  <td className={`px-2 py-2.5 ${c.officeNote ? 'bg-yellow-200 font-semibold' : 'text-slate-400'}`}>{c.officeNote || '-'}</td>
+                  <td className={`px-2 py-2.5 ${c.officeNote ? 'bg-yellow-200 font-semibold' : 'text-slate-400'}`}><CellText text={c.officeNote} max={CELL_MAX.LONG} /></td>
                   <td className="px-2 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                     <span className="inline-flex gap-1">
                       <button type="button" onClick={() => open(c)} className={secondaryBtn}>Cập nhật</button>

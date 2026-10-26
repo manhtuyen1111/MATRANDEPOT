@@ -791,3 +791,14 @@ describe('DEC-140: báo cáo tàu tách Trạng thái / Phân loại', () => {
     }
   });
 });
+
+// DEC-142: Báo giá → Chờ báo giá — mỗi cont 1 dòng như Tồn vỏ
+describe('DEC-142: Chờ báo giá 1 dòng', () => {
+  it('bảng whitespace-nowrap, Date in ngày + giờ cùng dòng', () => {
+    const demo = createDemoState();
+    const html = renderToString(<FieldQueueWorkspaces mode="BG_CHO_BAO_GIA" state={as(demo, 'usr-quotation')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    expect(html).toMatch(/<table class="[^"]*whitespace-nowrap/);
+    expect(html).toContain('data-testid="quote-row"');
+    expect(html).not.toContain('block text-[10px] text-slate-500');
+  });
+});
