@@ -1031,6 +1031,20 @@ Quy ước trạng thái:
   - Nút xác nhận vẫn chỉ bấm được khi `isSlotComplete`, nên người dùng **bắt buộc chọn đủ**.
   - Chiều nào có hơn 60 giá trị thì dùng ô chọn thả xuống thay cho nút.
 
+### DEC-126 — Báo cáo Hạ vỏ / Cấp vỏ có cột THANH TOÁN + MÃ PHIẾU THU; đổi "Hình thức TT" thành "Thanh toán"
+
+- Trạng thái: CONFIRMED (2026-10-26)
+- Quyết định:
+  - **Báo cáo Hạ vỏ** và **Báo cáo Cấp vỏ** (màn hình và Excel) thêm 2 cột **Thanh toán** | **Mã phiếu thu**, cùng quy tắc với Tồn vỏ (DEC-099, DEC-104, DEC-105).
+    - TT: hiện `PT-TT-…`.
+    - TTR: hiện mã phiếu thu trả trước `PT-TTR-…`.
+    - TTS: để trống.
+    - Mã phiếu thu là link mở phiếu.
+  - Cấp vỏ lấy theo chứng từ của lệnh cấp (`voucherPaymentInfo`). Excel Cấp vỏ thay cột cũ "HÌNH THỨC THANH TOÁN" (đang ghi mã kỹ thuật) bằng 2 cột này.
+  - **Đổi tên cột "Hình thức TT" → "Thanh toán"** (Excel: "THANH TOÁN") ở Tồn vỏ, Hạ vỏ, Cấp vỏ, để không viết tắt.
+- Kỹ thuật: 2 ô dùng chung `PaymentInfoCells` (`src/components/PaymentInfoCells.tsx`).
+- Sửa kèm: ô Mã hồ sơ ở bảng Báo cáo Hạ vỏ / Cấp vỏ bị mất khoảng đệm, do lần đổi kiểu link ở DEC-117 gắn nhầm class vào ô thay vì vào nút.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1120,6 +1134,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-125 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-126 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
