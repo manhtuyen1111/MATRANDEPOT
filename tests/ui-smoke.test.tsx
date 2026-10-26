@@ -61,7 +61,7 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     // DEC-074: cột Date in nằm giữa Hãng tàu và Trạng thái
     // DEC-132: mỗi cont 1 dòng (không xuống dòng), Date in ngày + giờ cùng 1 dòng
     expect(html).toMatch(/cursor-pointer whitespace-nowrap[^"]*" data-testid="yard-row"/);
-    expect(html).not.toContain('block text-[10px] text-slate-500');
+    expect(html).not.toContain('block text-[10px] text-ink-muted');
     // DEC-129: AGE ngay sau Hãng tàu; Date in vẫn trước Trạng thái
     expect(html).toMatch(/Hãng tàu<\/th><th[^>]*>AGE<\/th><th[^>]*>Date in<\/th><th[^>]*>Trạng thái/);
     expect(html).toMatch(/>Mã phiếu thu<\/th><th[^>]*>Tiến độ<\/th>/);
@@ -799,7 +799,7 @@ describe('DEC-142: Chờ báo giá 1 dòng', () => {
     const html = renderToString(<FieldQueueWorkspaces mode="BG_CHO_BAO_GIA" state={as(demo, 'usr-quotation')} onUpdateState={noop} />).replace(/<!-- -->/g, '');
     expect(html).toMatch(/<table class="[^"]*whitespace-nowrap/);
     expect(html).toContain('data-testid="quote-row"');
-    expect(html).not.toContain('block text-[10px] text-slate-500');
+    expect(html).not.toContain('block text-[10px] text-ink-muted');
   });
 });
 
