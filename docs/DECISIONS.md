@@ -1188,6 +1188,22 @@ Quy ước trạng thái:
   - nút **Lưu vị trí** full chiều rộng ở cuối.
 - Nghiệp vụ không đổi: vẫn là sửa vị trí hành chính (`correctContainerLocation`), không ghi nhận là Đảo chuyển.
 
+### DEC-139 — Cố định các cột đầu khi kéo ngang (Tồn vỏ + báo cáo)
+
+- Trạng thái: CONFIRMED (2026-10-26).
+- **5 cột đầu bắt buộc**, theo đúng thứ tự: **Mã hồ sơ | Số container | Size | Type | Hãng tàu**. Các cột này luôn **cố định** bên trái; kéo ngang chỉ cuộn các cột còn lại.
+  - Áp dụng: **Tồn vỏ** (ô chọn hàng loạt cũng cố định), **Báo cáo Hạ vỏ, Cấp vỏ, Sửa chữa**.
+  - Báo cáo Hạ vỏ tách Size/Type thành 2 cột. Báo cáo Cấp vỏ thêm Size, Type, Hãng tàu (lấy từ container). Báo cáo Sửa chữa thêm Size, Type.
+- **Báo cáo Nhập tàu / Xuất tàu:** cố định **6 cột**: **Tên tàu** | Mã hồ sơ | Số container | Size | Type | Hãng tàu. Thời gian nhập / xuất chuyển ra sau.
+- **Excel cùng thứ tự** (DEC-129): sheet Hạ vỏ, Cấp vỏ, Sửa chữa, Tồn vỏ bắt đầu bằng 5 cột trên (Cấp vỏ: MÃ HỒ SƠ CẤP); sheet Nhập / Xuất tàu bắt đầu bằng 6 cột.
+- Kỹ thuật (`shared.tsx`): `frozenCols(keys)`, `FROZEN_W` (độ rộng px từng cột cố định), `FROZEN_STANDARD`. Dòng bảng cần class `group` để ô cố định đổi màu khi rê chuột. Bảng mới có các cột này phải dùng `frozenCols`.
+
+### DEC-140 — Báo cáo Nhập / Xuất tàu: tách cột Trạng thái và Phân loại
+
+- Trạng thái: CONFIRMED (2026-10-26).
+- Cột gộp "Trạng thái • Phân loại" tách thành 2 cột riêng: **Trạng thái** (AV / DAMAGE) | **Phân loại** (đóng hàng).
+- Excel: cột "ĐÓNG HÀNG" đổi tên thành **PHÂN LOẠI**, đứng ngay sau TRẠNG THÁI, cho khớp màn hình (DEC-129).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1277,6 +1293,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-138 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-140 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
