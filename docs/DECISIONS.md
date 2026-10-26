@@ -1369,6 +1369,21 @@ Quy ước trạng thái:
   - Bảng nghiệp vụ dùng chỉ mục thời gian; chuyển kho theo tháng bằng truy vấn ngày đóng.
 - Thiết kế đầy đủ: `docs/DATABASE_SCHEMA.md` (chờ duyệt).
 
+### DEC-152 — Duyệt thiết kế database v1; sao lưu; ngân hàng làm sau; hoàn tiền giữ chặn
+
+- Trạng thái: CONFIRMED (2026-10-26).
+- **Duyệt `docs/DATABASE_SCHEMA.md` v1.** Viết migration theo 5 bước (mục 11). Tiến độ ở `supabase/README.md`.
+- **Sao lưu (Q-039):**
+  - PITR 7 ngày (khôi phục về thời điểm bất kỳ, mất tối đa ~5 phút).
+  - Mỗi đêm 1 bản sao mã hóa ra ngoài Supabase, giữ 30 bản.
+  - Diễn tập khôi phục mỗi quý trên staging.
+- **Ngân hàng (Q-032): làm sau.** Migration 3 làm khung nhận thông báo ngân hàng chung (chống xử lý lặp theo mã giao dịch). Tạm thời Văn phòng xác nhận tay tiền chuyển khoản.
+- **Hoàn tiền (OPEN-008): chưa làm, giữ chặn.** Lệnh đã thu phí không hủy được trên hệ thống; hoàn tiền xử lý ngoài hệ thống.
+- **Bước 1 đã viết** (`supabase/migrations/20261027000001` → `000005`, test `supabase/tests/0001_foundation.test.sql`, `supabase/seed.sql`, `supabase/README.md`).
+  - Gồm: enum, nhân viên, danh mục, bộ đếm mã, nhật ký partition tháng, chống bấm lặp, ma trận quyền, RPC Danh mục / nhân viên, RLS nền.
+  - Thay bản nháp cũ `20261021000001` (chưa từng apply, không khớp nghiệp vụ).
+  - **Chưa chạy thử**: máy chưa có Docker / Postgres.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1458,6 +1473,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-151 đã xác nhận (cập nhật 2026-10-26).
+- Quyết định nghiệp vụ: DEC-001 → DEC-152 đã xác nhận (cập nhật 2026-10-26).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

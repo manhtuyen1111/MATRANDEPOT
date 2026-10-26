@@ -48,7 +48,7 @@ Cập nhật lần cuối: 2026-10-22.
 - [ ] Q-023: Công nợ TTS quản lý theo khách hàng, hãng tàu hay bên chịu phí? Quy trình thu nợ TTS phát hành phiếu thu như thế nào?
 - [ ] Q-024: Quy trình xử lý giao dịch thất bại / hoàn tiền (OPEN-008).
 - [ ] Q-025: Ai được điều chỉnh giao dịch đã ghi nhận?
-- [ ] Q-032: Ngân hàng / cổng thanh toán nào dùng cho chuyển khoản API QR, và định dạng nội dung chuyển khoản?
+- [ ] Q-032: **(DEC-152: làm sau — tạm xác nhận tay)** Ngân hàng / cổng thanh toán nào dùng cho chuyển khoản API QR, và định dạng nội dung chuyển khoản?
 
 ## 7. Người dùng và phân quyền
 
@@ -65,7 +65,7 @@ Cập nhật lần cuối: 2026-10-22.
 - [x] Q-036: Giới hạn lọc báo cáo, ngưỡng xuất Excel phía máy chủ, thời gian lưu dữ liệu (DEC-066).
 - [x] Q-037: **ĐÃ CHỐT 2026-10-26 (DEC-150).** Ảnh giám định / sửa chữa — số ảnh mỗi lượt, giữ ảnh gốc bao lâu (ảnh hưởng dung lượng Storage).
 - [x] Q-038: **ĐÃ CHỐT 2026-10-26 (DEC-150).** Số người dùng đồng thời giờ cao điểm (chọn gói Supabase).
-- [ ] Q-039: Chính sách sao lưu — khôi phục về bao lâu trước, có cần bản sao ngoài Supabase. **Đề xuất:** PITR 7 ngày (mất tối đa ~5 phút dữ liệu) + dump mã hóa hằng đêm ra kho ngoài (30 ngày / 12 tháng / 10 năm) + diễn tập khôi phục mỗi quý — `docs/DATABASE_PLATFORM_ADVICE.md` mục 4.
+- [x] Q-039: **ĐÃ CHỐT 2026-10-26 (DEC-152): PITR 7 ngày + bản sao mã hóa hằng đêm (giữ 30) + diễn tập quý.** Chính sách sao lưu — khôi phục về bao lâu trước, có cần bản sao ngoài Supabase. **Đề xuất:** PITR 7 ngày (mất tối đa ~5 phút dữ liệu) + dump mã hóa hằng đêm ra kho ngoài (30 ngày / 12 tháng / 10 năm) + diễn tập khôi phục mỗi quý — `docs/DATABASE_PLATFORM_ADVICE.md` mục 4.
 - [x] Q-040: **ĐÃ CHỐT 2026-10-26 (DEC-149): Supabase Singapore** (người dùng chọn). Nơi đặt database và ngân sách tháng — **đề xuất** Supabase vùng Singapore, gói Pro + PITR, 3 môi trường dev / staging / production; cần xác nhận có yêu cầu lưu dữ liệu tại Việt Nam không (Nghị định 53/2022) — `docs/DATABASE_PLATFORM_ADVICE.md` mục 1–3.
 - [x] Q-041 (ĐÃ CHỐT — DEC-111: mã bảo mật + trang khách hàng + Kế toán cập nhật ĐÃ XHD; API MISA làm sau): Xuất hóa đơn từ phiếu thu (công ty đang viết phiếu thu giấy). Kế toán xuất hóa đơn khi khách mang phiếu thu đến, tổng hóa đơn phải đủ tiền phiếu thu.
   - **Đề xuất:**

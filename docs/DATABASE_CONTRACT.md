@@ -227,7 +227,8 @@ Các quan hệ một-nhiều, nhiều-nhiều và điều kiện bắt buộc ph
 
 - Nhóm dữ liệu: đã phác thảo; bổ sung mục 8.
 - Quan hệ dữ liệu: đã hiện thực ở tầng nghiệp vụ chế độ Demo (`src/services/`), chưa có ở database.
-- SQL và migration: có bản nháp `supabase/migrations/20261021000001_init_matran_depot_schema.sql` — **chưa áp dụng lên Supabase nào** (người dùng xác nhận 2026-10-22), **không khớp** với mục 8 và có lỗ hổng bảo mật (RPC `SECURITY DEFINER` không kiểm tra quyền, RLS thiếu policy). Không được apply; sẽ viết lại toàn bộ ở giai đoạn database.
+- **Cập nhật 2026-10-26 (DEC-152):** bản nháp cũ đã xóa; migration mới theo `docs/DATABASE_SCHEMA.md` ở `supabase/migrations/20261027*` (xem `supabase/README.md`).
+- (Lịch sử) SQL và migration: có bản nháp `supabase/migrations/20261021000001_init_matran_depot_schema.sql` — **chưa áp dụng lên Supabase nào** (người dùng xác nhận 2026-10-22), **không khớp** với mục 8 và có lỗ hổng bảo mật (RPC `SECURITY DEFINER` không kiểm tra quyền, RLS thiếu policy). Không được apply; sẽ viết lại toàn bộ ở giai đoạn database.
 - Chính sách RLS: chưa triển khai.
 
 ## 10. Hiệu năng & lưu trữ dữ liệu lớn (DEC-066 — bắt buộc khi viết schema P4-01)

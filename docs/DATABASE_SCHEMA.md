@@ -1,6 +1,6 @@
 # THIẾT KẾ DATABASE v1 — MATRAN DEPOT (P4-01, DEC-149 → DEC-151)
 
-**Trạng thái: CHỜ NGƯỜI DÙNG DUYỆT.** Duyệt xong mới viết migration SQL vào `supabase/migrations/`. Agent không apply; người dùng tự apply lên project của mình.
+**Trạng thái: ĐÃ DUYỆT 2026-10-26 (DEC-152).** Migration viết vào `supabase/migrations/` theo mục 11 — tiến độ ở `supabase/README.md`. Agent không apply; người dùng tự apply lên project của mình.
 
 Nguồn: bản Demo (mốc `demo-truoc-database-2026-10-26`), `docs/STATUS_CATALOG.md` (đã duyệt), `docs/DATABASE_CONTRACT.md`, `docs/API_RPC_CONTRACT.md`.
 
@@ -43,7 +43,7 @@ Tổng ~3–6 GB dữ liệu, ~50 GB ảnh. Mức này là nhỏ với Postgres 
 
 | Enum | Giá trị |
 |---|---|
-| `app_role` | ADMIN, MANAGER, OFFICE, FORKLIFT, CLEANING, INSPECTOR, QUOTATION, REPAIR, ACCOUNTANT |
+| `app_role` | ADMIN, MANAGER, OFFICE, FORKLIFT, CLEANING, INSPECTOR, QUOTATION, REPAIR_STAFF, ACCOUNTANT |
 | `condition_class` | AV, DAMAGE, W-SURVEY |
 | `stuffing_class` | M, K, E |
 | `container_status` | WAITING_PLACEMENT, IN_YARD, ALLOCATED, GATED_OUT |
@@ -238,7 +238,7 @@ Quy tắc truy vấn (giữ DEC-066):
 - Admin không xem được mật khẩu; chỉ **Đặt lại** về 123456.
 - Tài khoản khóa (`is_active = false`) thì RPC từ chối mọi thao tác dù phiên còn hạn.
 
-## 9. Sao lưu (Q-039 — đề xuất, chờ chốt)
+## 9. Sao lưu (Q-039 — ĐÃ CHỐT, DEC-152)
 
 PITR 7 ngày (mất tối đa ~5 phút dữ liệu) + bản dump mã hóa hằng đêm ra kho ngoài Supabase + diễn tập khôi phục mỗi quý trên staging.
 
@@ -261,6 +261,5 @@ Mỗi bước có kèm test pgTAP: trường hợp thành công và bị từ ch
 
 ## 12. Còn chờ
 
-- **Q-039:** sao lưu (mục 9).
-- **Q-032:** ngân hàng / cổng thanh toán cho chuyển khoản API QR. Cần trước Migration 3 phần callback; phần còn lại làm được trước.
-- **OPEN-008:** hoàn tiền. Hiện không có trạng thái REFUNDED (DEC-150).
+- **Q-032:** ngân hàng — **làm sau** (DEC-152): Migration 3 làm khung nhận thông báo ngân hàng chung; tạm thời Văn phòng xác nhận tay tiền chuyển khoản.
+- **OPEN-008:** hoàn tiền — **chưa làm, giữ chặn** (DEC-152): lệnh đã thu phí không hủy trên hệ thống; hoàn tiền xử lý ngoài hệ thống.
