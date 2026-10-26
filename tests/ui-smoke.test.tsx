@@ -59,6 +59,9 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('>-<');
     expect(html).toContain('Lưu bãi');
     // DEC-074: cột Date in nằm giữa Hãng tàu và Trạng thái
+    // DEC-132: mỗi cont 1 dòng (không xuống dòng), Date in ngày + giờ cùng 1 dòng
+    expect(html).toMatch(/cursor-pointer whitespace-nowrap[^"]*" data-testid="yard-row"/);
+    expect(html).not.toContain('block text-[10px] text-slate-500');
     // DEC-129: AGE ngay sau Hãng tàu; Date in vẫn trước Trạng thái
     expect(html).toMatch(/Hãng tàu<\/th><th[^>]*>AGE<\/th><th[^>]*>Date in<\/th><th[^>]*>Trạng thái/);
     expect(html).toMatch(/>Mã phiếu thu<\/th><th[^>]*>Tiến độ<\/th>/);
