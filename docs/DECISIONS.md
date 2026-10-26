@@ -1294,6 +1294,36 @@ Quy ước trạng thái:
   - Nhật ký `GIAM_DINH_TREN_KE`.
   - `InspectionFields` prop `allowDeferred` (chỉ Hạ vỏ, không có ở Nhập tàu), `hideCleaning`.
 
+### DEC-148 — Dữ liệu test (Demo): danh mục theo người dùng + danh sách lớn
+
+- Trạng thái: CONFIRMED (2026-10-26). Bổ sung DEC-106 / DEC-108.
+  - Chỉ áp cho `createDemoState()` (nút Nạp dữ liệu test).
+  - `createCleanState()` và `createInitialState()` (dùng cho test) không đổi.
+- **Danh mục** (tạo bằng hàm Danh mục của Admin):
+  - Hãng tàu: chỉ **MSK**.
+  - Khách hàng: **10 khách** `KH01` → `KH10`, tên "Khách hàng 01…10" (tên chung — người dùng chưa cung cấp tên thật). KH09, KH10 không cho TTS để thử chặn.
+  - Công ty: **CÔNG TY CỔ PHẦN MATRAN** / MATRAN DEPOT / Số 189, đường Đình Vũ, phường Hải An, thành phố Hải Phòng. / 0912907980 / Matran@gmail.com. MST và tài khoản ngân hàng để trống (chưa có).
+  - Biểu giá (đã gồm VAT, mọi hãng tàu):
+
+    | Mục | Giá (đồng) |
+    |---|---|
+    | 20DC | 1.000.000 |
+    | 40DC | 1.500.000 |
+    | 40HC | 1.500.000 |
+    | 45HC | 1.500.000 |
+    | THU GOM RÁC LV1 | 200.000 |
+    | THU GOM RÁC LV2 | 500.000 |
+
+  - Phí rác: cont 20 / 40 dùng LV1, cont 45 dùng LV2.
+- **Danh sách lớn** cho mọi tác nghiệp (`bulkData`):
+  - Hạ vỏ: thêm 80 lượt, đủ size / type / khách / thanh toán (TT tiền mặt, chuyển khoản, TTS), DAMAGE, vệ sinh, W-SURVEY, chờ thanh toán.
+  - Vệ sinh; Xe nâng hạ vào Block A / B / DAMAGE; một số chờ hạ.
+  - Báo giá → Sửa chữa → AV; Giám định trên kệ.
+  - Khóa container; Đảo chuyển.
+  - Cấp vỏ: 24 lệnh (đã xuất / TTS chờ Xe nâng / chờ thanh toán).
+  - Nhập tàu: 3 tàu × 20 cont (xong / dở / chưa làm). Xuất tàu: 1 tàu 12 cont, xuất một nửa.
+  - Góp ý: nhiều màn.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1383,6 +1413,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-147 đã xác nhận (cập nhật 2026-10-26).
+- Quyết định nghiệp vụ: DEC-001 → DEC-148 đã xác nhận (cập nhật 2026-10-26).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

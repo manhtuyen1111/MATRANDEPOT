@@ -268,7 +268,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 14. Tồn vỏ + Báo cáo Hạ vỏ / Cấp vỏ / Sửa chữa (bấm Tra cứu): 5 cột đầu **Mã hồ sơ | Số container | Size | Type | Hãng tàu**; Báo cáo Nhập / Xuất tàu: **Tên tàu** + 5 cột đó, cột **Trạng thái** và **Phân loại** riêng. Kéo ngang thì cả bảng cuộn (không cố định cột). Tải Excel → cùng thứ tự cột (DEC-139 → DEC-141).
 
 **Cho agent:**
-1. Hiện tới **DEC-147**. GĐ 4 vẫn tạm hoãn.
+1. Hiện tới **DEC-148**. GĐ 4 vẫn tạm hoãn.
 2. **Mã:** không còn `CT-` (số chứng từ = mã hồ sơ — DEC-119) và `PTT-` (phiếu trả trước = `PT-TTR-` cấp ngay khi tạo — DEC-124); thêm `GY-` (góp ý).
 3. **Hóa đơn:** trạng thái phiếu luôn lấy `receiptInvoiceStatus` / `receiptInvoiceLabel`; phiếu trả trước dùng `invoiceGroups` (`submitPrepaidInvoiceGroup`, `cancelPrepaidInvoiceGroup`, `markInvoiceIssued({ groupId })`).
 4. **Thanh toán hiển thị:** `PaymentInfoCells` + `containerPaymentInfo` / `voucherPaymentInfo`; nhãn ngắn `PAYMENT_CATEGORY_SHORT_LABELS` (TRỰC TIẾP / TRẢ TRƯỚC / THANH TOÁN SAU).
@@ -375,3 +375,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-26 — Claude Code: lưu design system vào repo (`docs/DESIGN_SYSTEM.md`, `docs/design/`), skill UI + test chặn màu cũ. 140/140 • build PASS.
 - 2026-10-26 — Claude Code: DEC-146 bảng chi tiết tàu không gộp cột, 1 dòng. 141/141 • build PASS.
 - 2026-10-26 — Claude Code: DEC-147 W-SURVEY (LÊN KỆ) + giám định bổ sung trên kệ; Q-042 mở (chặn Cấp vỏ). 145/145 • build PASS.
+- 2026-10-26 — Claude Code: DEC-148 dữ liệu test (MSK, 10 khách, công ty MATRAN, biểu giá mới, danh sách lớn ~96 Hạ vỏ / 26 Cấp vỏ / 6 tàu). 147/147 • build PASS.
