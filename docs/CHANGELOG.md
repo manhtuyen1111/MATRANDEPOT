@@ -221,7 +221,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Tài khoản & đăng nhập: Admin tạo tài khoản (tên đăng nhập + vai trò), mật khẩu mặc định 123456, đặt lại mật khẩu; màn Đăng nhập, bắt buộc đổi mật khẩu lần đầu (≥ 6 ký tự), Đổi mật khẩu / Đăng xuất; bỏ ô chọn người dùng Demo (DEC-143). Kiểm thử: 144/144 pass, build PASS.
 - User - Role (đổi tên menu): tên đăng nhập tự tạo dạng tuan.lv (sửa được); mật khẩu mới không giới hạn độ dài (vẫn cấm 123456); bộ lọc + tìm kiếm + nút Thêm nhân viên mới, bấm mới mở khung thêm (DEC-144). Kiểm thử: 147/147 pass, build PASS.
 - **Hoàn tác** đăng nhập / tài khoản bản Demo (DEC-143, DEC-144) theo yêu cầu: quay về tài khoản demo (chọn người dùng góc phải). Quy tắc tài khoản giữ trong DEC-143 để làm ở GĐ 4. Giữ tên menu **User - Role**. Kiểm thử: 138/138 pass, build PASS.
-- Giao diện **design system v2** bước 1 (DEC-145): token màu navy + accent ở `src/index.css`, font Be Vietnam Pro / JetBrains Mono, nút / ô nhập / nhãn / thẻ / thông báo / link / nhãn tác nghiệp theo token; tiêu đề thẻ và nhãn chữ thường. Kiểm thử: 139/139 pass, build PASS.
+- Giao diện **design system v2** bước 1 (DEC-145): token màu navy + accent ở `src/index.css`, font Be Vietnam Pro / JetBrains Mono, nút / ô nhập / nhãn / thẻ / thông báo / link / nhãn tác nghiệp theo token; tiêu đề thẻ và nhãn chữ thường. Bước 2–5: khung App / menu, Tồn vỏ, màn mobile, văn phòng / báo cáo / danh mục / phiếu thu / giấy tờ in đổi class slate / blue sang token. Kiểm thử: 139/139 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

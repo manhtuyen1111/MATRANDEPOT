@@ -1259,7 +1259,7 @@ Quy ước trạng thái:
 - **Chữ:** Be Vietnam Pro (giao diện), JetBrains Mono (số cont, mã) — tải từ Google Fonts, có font dự phòng của hệ thống. Cỡ mặc định máy tính 14px; ô nhập điện thoại vẫn 16px (DEC-116).
 - **Chữ thường** cho tiêu đề thẻ và nhãn ô nhập; IN HOA chỉ còn ở nhãn tác nghiệp.
 - Nút / ô nhập cao tối thiểu 40px, bo 8px; thẻ bo 12px, không bóng đổ.
-- **Áp dần theo từng bước** (mỗi bước một commit): (1) token + font + thành phần dùng chung trong `shared.tsx` và `OperationBadge` — **đã làm**; (2) khung App / menu; (3) Tồn vỏ; (4) màn Xe nâng và các màn mobile; (5) các màn còn lại. Màn mới phải dùng token, không viết thêm `blue-600` / `slate-*` cho màu chính.
+- **Áp dần theo từng bước** (mỗi bước một commit): (1) token + font + thành phần dùng chung; (2) khung App / menu; (3) Tồn vỏ; (4) màn mobile hiện trường; (5) văn phòng, báo cáo, danh mục, phiếu thu, giấy tờ in — **đã làm cả 5 bước** (đổi class slate / blue sang token). Còn giữ ~20 chỗ màu slate trên nền đậm (chữ / viền phụ). Màn mới phải dùng token, không viết thêm `blue-600` / `slate-*` cho màu chính.
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
