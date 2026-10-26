@@ -1007,6 +1007,17 @@ Quy ước trạng thái:
   3. **Nội dung góp ý**.
 - Báo cáo vẫn lưu và hiển thị dạng "Menu chính → Tính năng".
 
+### DEC-124 — Phiếu thu trả trước chỉ có MỘT mã: PT-TTR-YYMMDD-NNNN (bỏ PTT-)
+
+- Trạng thái: CONFIRMED (2026-10-26). **Thay mã `PTT-YYYY-NNN` của DEC-068 / DEC-077** cho phiếu thu trả trước.
+- Quyết định:
+  - Văn phòng **tạo phiếu thu trả trước** → hệ thống cấp ngay **`PT-TTR-YYMMDD-NNNN`**, trạng thái **CHỜ THANH TOÁN**: chưa in, QR chưa dùng được (DEC-031).
+  - Thu tiền xong (tiền mặt hoặc ngân hàng báo có) → **chính mã đó** là số phiếu thu, không cấp thêm mã khác.
+  - Mã QR trừ dần = `QR-<mã PT-TTR>`. Nội dung chuyển khoản = mã PT-TTR.
+  - Không còn cấp mã `PTT-`. Phiếu đã có mã PTT- trong dữ liệu cũ vẫn dùng được (thu tiền sẽ cấp PT-TTR mới).
+- Bộ đếm PT-TTR tính cả phiếu đang chờ thanh toán, nên mã không bị trùng.
+- Dữ liệu trình duyệt được nạp lại dữ liệu test mới (khóa lưu v12).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1096,6 +1107,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-123 đã xác nhận (cập nhật 2026-10-25).
+- Quyết định nghiệp vụ: DEC-001 → DEC-124 đã xác nhận (cập nhật 2026-10-25).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

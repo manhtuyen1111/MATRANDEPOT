@@ -199,6 +199,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Phiếu thu trả trước: cột **Mã hồ sơ** hiện mã các tác nghiệp đã dùng phiếu (link hồ sơ), không còn hiện PTT-; Excel cùng quy tắc (DEC-121). Kiểm thử: 125/125 pass, build PASS.
 - Phiếu thu trả trước: cột Mã hồ sơ chỉ hiện "Dùng N lượt • còn X ₫" (link) — bấm mở chi tiết các lượt đã dùng; Excel vẫn ghi đủ mã hồ sơ (DEC-122).
 - Góp ý: chọn Menu chính → Tính năng → mới hiện ô Nội dung (DEC-123). Kiểm thử: 125/125 pass, build PASS.
+- Phiếu thu trả trước chỉ còn **một mã** `PT-TTR-YYMMDD-NNNN` (cấp ngay khi tạo, chờ thanh toán; thu xong là số phiếu thu; QR = `QR-<mã>`); bỏ mã PTT- (DEC-124). Kiểm thử: 125/125 pass, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
