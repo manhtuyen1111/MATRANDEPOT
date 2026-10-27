@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
+import { addRepairTeam, addRepairTeamMember, setRepairTeamActive, setRepairTeamMemberActive } from '../../services/api';
 import { Plus, Users, Wrench } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
-import {
-  addRepairTeam,
-  addRepairTeamMember,
-  setRepairTeamActive,
-  setRepairTeamMemberActive,
-} from '../../services/depotOperations';
+
 import { hasRolePermission } from '../../services/permissions';
 import { Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
 

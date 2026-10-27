@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { submitFeedback } from '../services/api';
 import { MessageSquarePlus, Send, X } from 'lucide-react';
 import type { DepotState } from '../services/depotStore';
-import { FEEDBACK_MAX_LENGTH, FEEDBACK_OTHER_MENU, FEEDBACK_STATUS_LABELS, myFeedbacks, submitFeedback } from '../services/feedback';
+import { FEEDBACK_MAX_LENGTH, FEEDBACK_OTHER_MENU, FEEDBACK_STATUS_LABELS, myFeedbacks } from '../services/feedback';
 import { formatDateTime } from '../services/datetime';
 import { Feedback, inputCls, labelCls, primaryBtn } from './shared';
 import type { FeedbackStatus } from '../types/depot';

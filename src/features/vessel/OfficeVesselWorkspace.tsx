@@ -1,20 +1,9 @@
 import React, { useMemo, useState } from 'react';
+import { addVesselListItems, approveVesselList, createVesselList, deleteVesselList, removeVesselListItem, updateVesselList } from '../../services/api';
 import { CheckCircle2, ClipboardList, ListChecks, ListPlus, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { FieldConditionClass, VesselList, VesselMode, VESSEL_MODE_LABELS } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
-import {
-  addVesselListItems,
-  approveVesselList,
-  createVesselList,
-  deleteVesselList,
-  parseTruckList,
-  parseVesselImportText,
-  removeVesselListItem,
-  sortVesselItems,
-  updateVesselList,
-  vesselExportBlocker,
-  vesselListProgress,
-} from '../../services/vessel';
+import { parseTruckList, parseVesselImportText, sortVesselItems, vesselExportBlocker, vesselListProgress } from '../../services/vessel';
 import { formatLocation, parseContainerList, storageDays } from '../../services/core';
 import { formatDateTime, parseDateTime } from '../../services/datetime';
 import { can } from '../../services/permissions';

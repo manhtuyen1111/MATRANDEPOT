@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './app/App';
+import { RemoteApp } from './app/RemoteApp';
+import { isSupabaseConfigured } from './lib/env';
 import { InvoicePortalPage } from './features/invoice/InvoicePortal';
 import { INVOICE_PORTAL_HASH } from './services/invoice';
 import './index.css';
@@ -13,7 +15,9 @@ const Root: React.FC = () => {
     window.addEventListener('hashchange', onChange);
     return () => window.removeEventListener('hashchange', onChange);
   }, []);
-  return hash.startsWith(INVOICE_PORTAL_HASH) ? <InvoicePortalPage /> : <App />;
+  // DEC-155: có cấu hình Supabase → đăng nhập + database; không có → Demo như cũ
+  if (hash.startsWith(INVOICE_PORTAL_HASH)) return <InvoicePortalPage />;
+  return isSupabaseConfigured ? <RemoteApp /> : <App />;
 };
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

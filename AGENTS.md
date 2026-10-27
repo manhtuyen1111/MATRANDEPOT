@@ -21,7 +21,7 @@ Code mâu thuẫn với DECISIONS → báo lại, không tự chọn bên nào.
 
 - **Không tự suy đoán quy tắc nghiệp vụ.** Thiếu thông tin → hỏi người dùng hoặc ghi vào `docs/OPEN_QUESTIONS.md`.
 - **Không tạo dữ liệu giả** để giao diện "có vẻ chạy" (không mặc định số tiền, tên nhân viên, biển số, booking, ảnh mẫu).
-- **Không đọc / in / commit** `.env` hay bất kỳ khóa bí mật nào. Không đưa service role key vào frontend.
+- **Không đọc / in / commit** `.env` hay bất kỳ khóa bí mật nào. Không đưa service role key vào frontend. Ngoại lệ duy nhất (DEC-155): được tạo `.env.local` chỉ chứa địa chỉ + khóa anon của Supabase **local** để chạy thử.
 - **Không kết nối, ghi dữ liệu hay chạy migration** lên bất kỳ project Supabase nào. Agent chỉ được viết file migration; người dùng mới là người apply.
 - **Không cài / gỡ / nâng cấp package** khi chưa được người dùng đồng ý.
 - **Không xóa chức năng đang hoạt động** khi chưa xác định ảnh hưởng (kiểm tra import / tham chiếu trước).

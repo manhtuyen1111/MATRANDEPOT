@@ -1,70 +1,81 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FileText, KeyRound, Send } from 'lucide-react';
-import { DepotState, formatVnd, loadDepotState, saveDepotState } from '../../services/depotStore';
-import { createDemoState } from '../../services/demoData';
+import { formatVnd } from '../../services/depotStore';
 import { formatDateTime } from '../../services/datetime';
-import {
-  cancelPrepaidInvoiceGroup,
-  INVOICE_SECRET_LENGTH,
-  INVOICE_STATUS_LABELS,
-  InvoicePortalView,
-  lookupInvoicePortal,
-  PrepaidInvoiceView,
-  submitInvoiceRequest,
-  submitPrepaidInvoiceGroup,
-} from '../../services/invoice';
+import { INVOICE_SECRET_LENGTH, INVOICE_STATUS_LABELS, InvoicePortalView, PrepaidInvoiceView } from '../../services/invoice';
 import { Feedback, inputCls, labelCls, primaryBtn } from '../../components/shared';
+import { supabase } from '../../lib/supabase';
+import { demoBackend, type PortalBackend, type PortalInfo, remoteBackend } from './portalBackend';
+
+const EMPTY_INFO: PortalInfo = { taxCode: '', email: '', companyName: '', address: '', note: '' };
+const errText = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback);
 
 // DEC-111: TRANG KHÁCH HÀNG — YÊU CẦU XUẤT HÓA ĐƠN (không cần đăng nhập, chỉ cần mã bảo mật in trên phiếu thu)
-export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: DepotState) => void }> = ({ state, onUpdateState }) => {
+// Nguồn dữ liệu: Demo (trên máy) hoặc database (RPC công khai) — portalBackend.ts (DEC-155)
+export const InvoicePortal: React.FC<{ backend: PortalBackend }> = ({ backend }) => {
+  const [company, setCompany] = useState({ name: '', phone: '' });
   const [code, setCode] = useState('');
   const [view, setView] = useState<InvoicePortalView | null>(null);
-  const [form, setForm] = useState({ taxCode: '', email: '', companyName: '', address: '', note: '' });
+  const [form, setForm] = useState<PortalInfo>(EMPTY_INFO);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const lookup = (e: React.FormEvent) => {
+  useEffect(() => {
+    backend.company().then(setCompany).catch(() => {});
+  }, [backend]);
+
+  const fillForm = (v: InvoicePortalView) =>
+    setForm({ taxCode: v.request?.taxCode || '', email: v.request?.email || '', companyName: v.request?.companyName || '', address: v.request?.address || '', note: v.request?.note || '' });
+
+  const lookup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setBusy(true);
     try {
-      const v = lookupInvoicePortal(state, code);
+      const v = await backend.lookup(code);
       setView(v);
-      setForm({
-        taxCode: v.request?.taxCode || '',
-        email: v.request?.email || '',
-        companyName: v.request?.companyName || '',
-        address: v.request?.address || '',
-        note: v.request?.note || '',
-      });
+      fillForm(v);
     } catch (err) {
       setView(null);
-      setError(err instanceof Error ? err.message : 'Không tra cứu được.');
+      setError(errText(err, 'Không tra cứu được.'));
+    } finally {
+      setBusy(false);
     }
   };
 
-  const submit = (e: React.FormEvent) => {
+  // Sau mỗi lần gửi: tra cứu lại để hiện đúng trạng thái mới
+  const done = async (message: string) => {
+    const v = await backend.lookup(code);
+    setView(v);
+    setError(null);
+    setSuccess(message);
+  };
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setBusy(true);
     try {
-      const next = submitInvoiceRequest(state, { secret: code, ...form });
-      onUpdateState(next);
-      setView(lookupInvoicePortal(next, code));
-      setSuccess('Đã gửi yêu cầu xuất hóa đơn. Hóa đơn sẽ được gửi tới Gmail của bạn sau khi Kế toán xuất.');
+      await backend.submitRequest(code, form);
+      await done('Đã gửi yêu cầu xuất hóa đơn. Hóa đơn sẽ được gửi tới Gmail của bạn sau khi Kế toán xuất.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không gửi được yêu cầu.');
+      setError(errText(err, 'Không gửi được yêu cầu.'));
+    } finally {
+      setBusy(false);
     }
   };
 
   const locked = view?.status === 'DA_XHD';
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm({ ...form, [k]: e.target.value });
+  const set = (k: keyof PortalInfo) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm({ ...form, [k]: e.target.value });
 
   return (
     <div className="min-h-screen bg-canvas px-4 py-6 text-ink">
       <div className="mx-auto w-full max-w-lg space-y-4">
         <div className="rounded-lg border border-line bg-white px-4 py-3">
-          <p className="text-[11px] font-semibold uppercase text-ink-muted">{state.companyProfile.name}</p>
+          <p className="text-[11px] font-semibold uppercase text-ink-muted">{company.name}</p>
           <h1 className="flex items-center gap-1.5 text-base font-bold"><FileText className="h-4 w-4 text-ink-muted" />Yêu cầu xuất hóa đơn</h1>
         </div>
         <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
@@ -83,13 +94,13 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
             />
           </label>
           <p className="text-[11px] text-ink-muted">Phân biệt chữ hoa / chữ thường.</p>
-          <button type="submit" disabled={code.length !== INVOICE_SECRET_LENGTH} className={`${primaryBtn} w-full py-3`}>
+          <button type="submit" disabled={busy || code.length !== INVOICE_SECRET_LENGTH} className={`${primaryBtn} w-full py-3`}>
             <KeyRound className="h-4 w-4" />
             Tra cứu phiếu thu
           </button>
         </form>
 
-        <InvoiceGuide state={state} />
+        <InvoiceGuide phone={company.phone} />
 
         {view && (
           <div className="space-y-3 rounded-lg border border-navy-900 bg-white p-4 text-xs">
@@ -111,13 +122,8 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
               <PrepaidPortal
                 secret={code}
                 prepaid={view.prepaid}
-                state={state}
-                onDone={(next, message) => {
-                  onUpdateState(next);
-                  setView(lookupInvoicePortal(next, code));
-                  setError(null);
-                  setSuccess(message);
-                }}
+                backend={backend}
+                onDone={done}
                 onError={(m) => { setSuccess(null); setError(m); }}
               />
             ) : (
@@ -130,7 +136,7 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
               {locked ? (
                 <p className="rounded bg-emerald-50 p-2 text-center font-semibold text-emerald-800">Phiếu thu đã xuất hóa đơn — không sửa được thông tin.</p>
               ) : (
-                <button type="submit" className={`${primaryBtn} w-full py-3`}>
+                <button type="submit" disabled={busy} className={`${primaryBtn} w-full py-3`}>
                   <Send className="h-4 w-4" />
                   {view.status === 'YEU_CAU_XHD' ? 'Cập nhật yêu cầu' : 'Gửi yêu cầu xuất hóa đơn'}
                 </button>
@@ -145,8 +151,7 @@ export const InvoicePortal: React.FC<{ state: DepotState; onUpdateState: (next: 
 };
 
 // DEC-113, DEC-114: HƯỚNG DẪN NGẮN cho khách — 3 bước + 2 trường hợp sai thông tin
-export const InvoiceGuide: React.FC<{ state: DepotState }> = ({ state }) => {
-  const phone = state.companyProfile.phone;
+export const InvoiceGuide: React.FC<{ phone?: string }> = ({ phone }) => {
   const steps = ['Nhập mã bảo mật trên phiếu thu → Tra cứu', 'Điền Mã số thuế, Tên công ty, Địa chỉ, Gmail → Gửi', 'Nhận hóa đơn qua Gmail'];
   return (
     <div className="space-y-2 rounded-lg border border-line bg-white p-4 text-xs" data-testid="invoice-guide">
@@ -166,47 +171,46 @@ export const InvoiceGuide: React.FC<{ state: DepotState }> = ({ state }) => {
   );
 };
 
-// Trang độc lập (mở bằng đường link #/hoa-don) — tự nạp / lưu dữ liệu, không qua menu nội bộ
+// Trang độc lập (mở bằng đường link #/hoa-don) — không qua đăng nhập / menu nội bộ
 export const InvoicePortalPage: React.FC = () => {
-  const [state, setState] = useState<DepotState>(() => loadDepotState(createDemoState));
-  return (
-    <InvoicePortal
-      state={state}
-      onUpdateState={(next) => {
-        setState(next);
-        saveDepotState(next);
-      }}
-    />
-  );
+  const backend = useMemo(() => (supabase ? remoteBackend(supabase) : demoBackend()), []);
+  return <InvoicePortal backend={backend} />;
 };
 
 // DEC-130: PHIẾU THU TRẢ TRƯỚC — khách chọn các LƯỢT đã dùng (gộp 1 hoặc nhiều lượt) → 1 yêu cầu hóa đơn / 1 MST
-const EMPTY_INFO = { taxCode: '', email: '', companyName: '', address: '', note: '' };
 const PrepaidPortal: React.FC<{
   secret: string;
   prepaid: PrepaidInvoiceView;
-  state: DepotState;
-  onDone: (next: DepotState, message: string) => void;
+  backend: PortalBackend;
+  onDone: (message: string) => Promise<void>;
   onError: (message: string) => void;
-}> = ({ secret, prepaid, state, onDone, onError }) => {
+}> = ({ secret, prepaid, backend, onDone, onError }) => {
   const [picked, setPicked] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [info, setInfo] = useState(EMPTY_INFO);
+  const [busy, setBusy] = useState(false);
   const selectable = prepaid.lots.filter((l) => !l.groupId || l.groupId === editingId);
   const total = prepaid.lots.filter((l) => picked.includes(l.deductionId)).reduce((s, l) => s + l.amount, 0);
   const last = [...prepaid.groups].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
-  const set = (k: keyof typeof EMPTY_INFO) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setInfo({ ...info, [k]: e.target.value });
+  const set = (k: keyof PortalInfo) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setInfo({ ...info, [k]: e.target.value });
   const reset = () => { setPicked([]); setEditingId(null); setInfo(EMPTY_INFO); };
+  const act = async (fn: () => Promise<void>, message: string, fallback: string) => {
+    setBusy(true);
+    try {
+      await fn();
+      reset();
+      await onDone(message);
+    } catch (err) {
+      onError(errText(err, fallback));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const next = submitPrepaidInvoiceGroup(state, { secret, deductionIds: picked, groupId: editingId || undefined, ...info });
-      reset();
-      onDone(next, editingId ? 'Đã cập nhật yêu cầu hóa đơn.' : 'Đã gửi yêu cầu hóa đơn cho các lượt đã chọn.');
-    } catch (err) {
-      onError(err instanceof Error ? err.message : 'Không gửi được yêu cầu.');
-    }
+    void act(() => backend.submitGroup(secret, picked, info, editingId || undefined),
+      editingId ? 'Đã cập nhật yêu cầu hóa đơn.' : 'Đã gửi yêu cầu hóa đơn cho các lượt đã chọn.', 'Không gửi được yêu cầu.');
   };
 
   return (
@@ -231,10 +235,8 @@ const PrepaidPortal: React.FC<{
                 <button type="button" onClick={() => { setEditingId(g.id); setPicked(g.deductionIds); setInfo({ taxCode: g.taxCode, email: g.email, companyName: g.companyName, address: g.address, note: g.note || '' }); }} className="font-semibold text-navy-700 underline">Sửa</button>
                 <button
                   type="button"
-                  onClick={() => {
-                    try { onDone(cancelPrepaidInvoiceGroup(state, { secret, groupId: g.id }), 'Đã hủy yêu cầu — các lượt được chọn lại.'); reset(); }
-                    catch (err) { onError(err instanceof Error ? err.message : 'Không hủy được.'); }
-                  }}
+                  disabled={busy}
+                  onClick={() => void act(() => backend.cancelGroup(secret, g.id), 'Đã hủy yêu cầu — các lượt được chọn lại.', 'Không hủy được.')}
                   className="font-semibold text-rose-700 underline"
                 >
                   Hủy yêu cầu
@@ -277,7 +279,7 @@ const PrepaidPortal: React.FC<{
           <label className="block"><span className={labelCls}>Địa chỉ *</span><input value={info.address} onChange={set('address')} className={inputCls} /></label>
           <label className="block"><span className={labelCls}>Ghi chú</span><textarea value={info.note} onChange={set('note')} rows={2} className={inputCls} /></label>
           <div className="flex gap-2">
-            <button type="submit" disabled={picked.length === 0} className={`${primaryBtn} flex-1 py-3`}>
+            <button type="submit" disabled={busy || picked.length === 0} className={`${primaryBtn} flex-1 py-3`}>
               <Send className="h-4 w-4" />
               {editingId ? 'Cập nhật yêu cầu' : 'Gửi yêu cầu hóa đơn'}
             </button>

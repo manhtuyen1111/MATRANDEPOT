@@ -89,3 +89,7 @@ Cập nhật lần cuối: 2026-10-22.
 
 - Trạng thái: **ĐÃ CHỐT 2026-10-26 (DEC-150): không cho Cấp vỏ.**
 - Hiện code **chặn Cấp vỏ** cho đến khi Giám định bổ sung trên kệ xong (Claude đề xuất, vì chưa biết AV / DAMAGE). Người dùng xác nhận giữ hay bỏ.
+
+## Q-043 — Booking cấp vỏ có số lượng cont yêu cầu không?
+
+- Trạng thái: **ĐÃ CHỐT 2026-10-27: giữ như hiện tại** — Văn phòng chỉ nhập số booking, không nhập số lượng; booking không tự chuyển Hoàn thành. Database đã có sẵn cột `release_bookings.requested_qty` (để trống) — bật lại sau chỉ cần thêm ô nhập ở giao diện.

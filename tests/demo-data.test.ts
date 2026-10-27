@@ -93,3 +93,17 @@ describe('DEC-126: Báo cáo Hạ vỏ / Cấp vỏ có cột THANH TOÁN + MÃ 
     for (const sh of [gin, gout]) for (const r of sh.rows) expect(r.length).toBe(sh.columns.length);
   });
 });
+
+describe('Dữ liệu test: hạng mục vệ sinh dùng đúng tên chuẩn (database chỉ nhận CLEANING_ITEM_OPTIONS)', () => {
+  it('mọi cont / hồ sơ / danh sách tàu chỉ chứa tên chuẩn', async () => {
+    const { CLEANING_ITEM_OPTIONS } = await import('../src/types/depot');
+    const s = createDemoState();
+    const all = [
+      ...s.gateInOrders.flatMap((o) => o.cleaningItems),
+      ...s.containers.flatMap((c) => c.cleaningItems),
+      ...s.vesselLists.flatMap((l) => l.items.flatMap((i) => i.cleaningItems || [])),
+    ];
+    expect(all.length).toBeGreaterThan(0);
+    expect(all.filter((x) => !(CLEANING_ITEM_OPTIONS as string[]).includes(x))).toEqual([]);
+  });
+});

@@ -5,7 +5,7 @@ import { DepotState, formatVnd } from '../services/depotStore';
 import { formatLocation } from '../services/core';
 import { paymentLabelOf, receiptOperationOf } from '../services/payments';
 import { documentPackOf, isTicketClosed } from "../services/driverRoute";
-import { recordReceiptPrint } from "../services/depotOperations";
+import { recordReceiptPrint } from "../services/api";
 import { formatDateTime } from "../services/datetime";
 import { EeirPrintSheet, PrintPortal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
 import { findVesselItemByCode } from '../services/vessel';

@@ -7,6 +7,8 @@ import {
   ChevronDown,
   ClipboardCheck,
   Forklift,
+  KeyRound,
+  LogOut,
   Menu,
   PanelLeft,
   RefreshCw,
@@ -155,8 +157,23 @@ function writePrefs(p: { collapsedGroups: string[]; railMode: boolean }) {
   }
 }
 
-export const App: React.FC = () => {
-  const [state, setState] = useState<DepotState>(() => loadDepotState(createDemoState));
+// DEC-155: chế độ database — RemoteApp truyền dữ liệu đã tải + thông tin phiên; không có thì chạy Demo như cũ
+export interface RemoteSessionProps {
+  fullName: string;
+  username: string;
+  onSignOut: () => void;
+  onChangePassword: () => void;
+  onReload?: () => void;
+}
+
+export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionProps }> = ({ initialState, remote }) => {
+  const [state, setState] = useState<DepotState>(() => initialState || loadDepotState(createDemoState));
+  // Chế độ database: dữ liệu thật vừa tải lại → thay dữ liệu đang hiển thị (giữ menu / bộ lọc đang mở)
+  const isRemote = Boolean(remote);
+  useEffect(() => {
+    // Chỉ chạy khi có dữ liệu mới từ database (không chạy lại mỗi lần RemoteApp vẽ lại)
+    if (isRemote && initialState) setState(initialState);
+  }, [initialState, isRemote]);
   const [activeMenu, setActiveMenu] = useState<WorkspaceMenuId>('GD_HA_VO');
   const [activeK80Ticket, setActiveK80Ticket] = useState<K80InternalTicket | null>(null);
   const [activeDossierCode, setActiveDossierCode] = useState<string | null>(null);
@@ -179,7 +196,8 @@ export const App: React.FC = () => {
 
   const handleUpdateState = (next: DepotState) => {
     setState(next);
-    saveDepotState(next);
+    // Chế độ database: thao tác đã xếp hàng chờ ghi (services/api.ts); không ghi localStorage để không lẫn với Demo
+    if (!remote) saveDepotState(next);
   };
 
   const visibleMenu = useMemo(
@@ -417,6 +435,29 @@ export const App: React.FC = () => {
             {/* DEC-120: Góp ý — mọi người dùng, góc trên bên phải */}
             <FeedbackButton state={state} onUpdateState={handleUpdateState} menuOptions={feedbackMenuOptions} />
             {!isSupabaseConfigured && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">DEMO</span>}
+            {remote ? (
+              <>
+                <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-canvas px-2 py-1" data-testid="session-user">
+                  <UserCheck className="h-3.5 w-3.5 text-ink-muted" />
+                  <span className="font-medium text-ink">{remote.fullName}</span>
+                  <span className="font-mono text-ink-muted">{remote.username}</span>
+                </span>
+                {remote.onReload && (
+                  <button type="button" onClick={remote.onReload} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas" data-testid="reload-data">
+                    <RefreshCw className="h-3 w-3" />
+                    Tải lại
+                  </button>
+                )}
+                <button type="button" onClick={remote.onChangePassword} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas">
+                  <KeyRound className="h-3 w-3" />
+                  Đổi mật khẩu
+                </button>
+                <button type="button" onClick={remote.onSignOut} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas" data-testid="sign-out">
+                  <LogOut className="h-3 w-3" />
+                  Đăng xuất
+                </button>
+              </>
+            ) : (<>
             <label className="flex items-center gap-1.5 rounded-md border border-line bg-canvas px-2 py-1">
               <UserCheck className="h-3.5 w-3.5 text-ink-muted" />
               <span className="sr-only">Người dùng (Demo)</span>
@@ -443,6 +484,7 @@ export const App: React.FC = () => {
               <RefreshCw className="h-3 w-3" />
               Nạp dữ liệu test
             </button>
+            </>)}
           </div>
         </header>
 

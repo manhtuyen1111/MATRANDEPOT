@@ -6,6 +6,7 @@ import { App } from '../src/app/App';
 import { FeedbackButton, FeedbackPanel } from '../src/components/FeedbackButton';
 import { FeedbackReport } from '../src/features/reports/FeedbackReport';
 import { InvoicePortal } from '../src/features/invoice/InvoicePortal';
+import { demoBackend } from '../src/features/invoice/portalBackend';
 import { InvoicePanel } from '../src/features/receipts/ReceiptsWorkspace';
 import { createDemoState } from '../src/services/demoData';
 import { YardFeature } from '../src/features/yard/YardFeature';
@@ -605,7 +606,7 @@ describe('DEC-097: Hình thức thanh toán — TTTT Trực tiếp đứng đầ
 describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
   const demo = createDemoState();
   it('trang khách hàng: ô dán mã bảo mật, chưa hiện form khi chưa tra cứu', () => {
-    const html = renderToString(<InvoicePortal state={demo} onUpdateState={noop} />);
+    const html = renderToString(<InvoicePortal backend={demoBackend()} />);
     expect(html).toContain('Yêu cầu xuất hóa đơn');
     expect(html).toContain('aria-label="Mã bảo mật"');
     expect(html).not.toContain('Gmail nhận hóa đơn *'); // form chỉ hiện sau khi tra cứu đúng mã
@@ -853,5 +854,30 @@ describe('DEC-147: Giám định – Hạ vỏ có tab Chờ giám định trên
     expect(html).toContain('data-testid="inspector-tab-TREN_KE"');
     expect(html).toMatch(/Chờ giám định trên kệ \([1-9]/);
     expect(html).toContain('max-w-lg');
+  });
+});
+
+describe('DEC-155: màn đăng nhập (chế độ database)', () => {
+  it('dựng được, không dùng màu cũ', async () => {
+    const { LoginScreen } = await import('../src/features/auth/LoginScreen');
+    const html = renderToString(<LoginScreen onSignIn={async () => {}} />);
+    expect(html).toContain('data-testid="login-screen"');
+    expect(html).toContain('bg-navy-900');
+  });
+});
+
+describe('DEC-155: giao diện ghi dữ liệu chỉ qua services/api.ts', () => {
+  it('màn hình / thành phần không import hàm ghi thẳng từ file nghiệp vụ gốc', async () => {
+    const api = await import('../src/services/api');
+    const writeNames = new Set(Object.keys(api));
+    const files = import.meta.glob(['../src/features/**/*.tsx', '../src/components/**/*.tsx', '../src/app/**/*.tsx'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+    const bad: string[] = [];
+    const re = /import\s*\{([^}]*)\}\s*from\s*['"][./]*services\/(depotOperations|payments|vessel|invoice|feedback|driverRoute)['"]/g;
+    for (const [path, src] of Object.entries(files)) {
+      for (const m of src.matchAll(re)) {
+        m[1].split(',').map((x) => x.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0]).filter((n) => writeNames.has(n)).forEach((n) => bad.push(`${path}: ${n} (${m[2]})`));
+      }
+    }
+    expect(bad).toEqual([]);
   });
 });

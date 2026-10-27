@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { completeRackInspection, deleteGateInFieldRecord, recordGateInFieldStep } from '../../services/api';
 import { EMPTY_INSPECTION, InspectionFields, InspectionValue, inspectionRemarks, isInspectionComplete } from '../../components/InspectionFields';
 import { ContainerNo, LocationText, linkCls } from '../../components/shared';
 import {
@@ -22,12 +23,7 @@ import {
   GateInOrder,
 } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
-import {
-  completeRackInspection,
-  deleteGateInFieldRecord,
-  pendingRackInspections,
-  recordGateInFieldStep,
-} from '../../services/depotOperations';
+import { pendingRackInspections } from '../../services/depotOperations';
 import { peekNextCode } from '../../services/codes';
 import { formatDateTime } from '../../services/datetime';
 
@@ -36,8 +32,6 @@ interface Props {
   onUpdateState: (next: DepotState) => void;
   onOpenDossier?: (masterDossierCode: string) => void;
 }
-
-
 
 // DEC-147: màu ô trạng thái giám định
 const conditionTone = (c: string) =>

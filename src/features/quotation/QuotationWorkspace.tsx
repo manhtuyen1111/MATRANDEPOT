@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { FileSpreadsheet, ListChecks, Search } from "lucide-react";
 import { ContainerRecord } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
-import { bulkConfirmQuotationToRepair, confirmQuotationToRepair, saveQuotationDraft } from "../../services/depotOperations";
+import { bulkConfirmQuotationToRepair, confirmQuotationToRepair, saveQuotationDraft } from "../../services/api";
 import { formatLocation, parseContainerList, storageDays } from "../../services/core";
 import { formatDateTime, fileStamp } from '../../services/datetime';
 import { yardStockSheet } from '../../services/reports';

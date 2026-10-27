@@ -1,13 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { completeCleaningTask, completeRepairTask, executeGateOut, updateContainerLocation } from '../../services/api';
 import { Camera, CheckCircle2, ChevronDown, ChevronUp, MapPin, QrCode, X } from 'lucide-react';
 import { ContainerRecord } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
-import {
-  completeCleaningTask,
-  completeRepairTask,
-  executeGateOut,
-  updateContainerLocation,
-} from '../../services/depotOperations';
+
 import { formatLocation } from '../../services/core';
 import { findTicketByQr, isTicketClosed } from '../../services/driverRoute';
 import { OperationBadge } from '../vessel/VesselShared';
