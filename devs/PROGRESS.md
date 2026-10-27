@@ -251,15 +251,25 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 
 ### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-27 trưa — đọc trước — mới nhất)
 
-**PHIÊN SAU LÀM GÌ ĐẦU TIÊN (bạn):**
-1. Dựng môi trường TEST theo `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`: Bước 1–3 (Supabase project `matran-test` Singapore → `db push` + `functions deploy` → chạy 2 script `supabase/test-data/`) rồi **Bước 5A Vercel** (đổi Production Branch sang `agent/claude/p4-database`, thêm 3 biến môi trường). Cloudflare Pages (Bước 5) để dành khi chạy thật.
-2. Đăng nhập `admin` → tạo tài khoản người test (Bước 6) → cả nhóm thử theo Bước 7; lỗi → nút Góp ý / chụp màn hình gửi Claude.
-3. Song song: điền `docs/IMPORT_TON_VO_BAN_DAU.md` (Q-044) + gửi 1 file mẫu tồn vỏ.
+**MÔI TRƯỜNG TEST NHIỀU NGƯỜI — ĐÃ DỰNG XONG (2026-10-27 chiều):**
+- Supabase cloud project **`matran-test`** (Singapore, ref `rtbpmnfwkzndujjzxuxf`): `db push` đủ migration, đủ 3 Edge Function, đã chạy danh mục test + Admin đầu tiên (`admin` / `123456`).
+- App: **Vercel**, build nhánh **`main`** (đã merge PR #15 — commit `ed60761`), 3 biến `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` / `VITE_APP_ENV=test`. Đăng nhập Admin OK. Cloudflare Pages để dành khi chạy thật.
+- `main` thiếu đúng 1 commit `d709be9` (sửa file SQL danh mục test — không ảnh hưởng app); merge PR sau.
 
-**PHIÊN SAU (agent):** đọc mục này → sửa lỗi người dùng báo từ đợt test; khi Q-044 chốt → script xóa dữ liệu test + công cụ import tồn đầu. Không apply / link project thật (người dùng tự làm).
+**PHIÊN SAU — BẠN CẦN CHÚ Ý:**
+1. **Đang test:** tạo tài khoản người test (User - Role → Thêm — lần đầu thử hàm `admin-create-staff` trên cloud), cả nhóm thử theo Bước 7 `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`. Ghi lỗi bằng nút **Góp ý** (Admin xem Báo cáo → Góp ý) hoặc chụp màn hình → mở phiên mới gửi Claude.
+2. **Code mới phải đi qua `main`** (Vercel build `main`): agent làm trên nhánh → bạn tạo PR → merge → Vercel tự build lại. Có migration mới → bạn chạy `npx supabase db push` (đúng project `matran-test`) **trước** khi merge.
+3. **Ổ C gần đầy** (từng còn 4 MB → Docker hỏng). Giữ trống ≥ 5 GB. Supabase local đang dừng — cần thì `npx supabase start` (mở Docker Desktop trước).
+4. **Deploy Edge Function:** dùng `npx supabase functions deploy <tên> --use-api` từng hàm (cách thường bị "request timed out").
+5. **Terminal PowerShell:** dán lệnh bằng **chuột phải**, mỗi lần 1 lệnh; thấy `>>` → Ctrl + C. Không gõ `<…>` trong lệnh mẫu — thay bằng giá trị thật.
+6. **Mật khẩu tạo tay trên trang Supabase** luôn thêm `::matran` (DEC-153); trên app thì không.
+7. **Song song:** điền `docs/IMPORT_TON_VO_BAN_DAU.md` (Q-044) + gửi 1 file Excel tồn vỏ mẫu.
+8. Khi test xong: Claude viết script xóa dữ liệu test + công cụ import tồn đầu → import thử trên `matran-test` → tạo project production → chạy thật.
+
+**PHIÊN SAU (agent):** đọc mục này → sửa lỗi người dùng báo từ đợt test (đọc góp ý / ảnh chụp). Không link / push project thật (người dùng tự làm). Đổi database → migration MỚI (đã apply lên `matran-test`, không sửa file cũ). Q-044 chốt → script xóa dữ liệu test + công cụ import.
 
 **Trạng thái thật (đã kiểm lại code + chạy test):**
-- Nhánh `agent/claude/p4-database` — **đã push đầy đủ 2026-10-27 trưa**. Mốc Demo cũ: tag `demo-truoc-database-2026-10-26`.
+- Nhánh `agent/claude/p4-database` — **đã push đầy đủ 2026-10-27 chiều**; `main` đã merge (PR #15). Mốc Demo cũ: tag `demo-truoc-database-2026-10-26`.
 - Database: migration 5 bước + `20261101000001_app_support.sql` + `20261102000001_sync_delta.sql` (đồng bộ — DEC-158) xong. pgTAP 180/180, Edge Function 16/16 (đều trên Supabase local).
 - Nối app (DEC-155, `docs/APP_DB_INTEGRATION.md`): **N1 → N8 xong phần code**. Hàm ghi đi qua `src/services/api.ts` + hàng chờ `remote/sync.ts` (mất mạng → báo lỗi ngay). Dữ liệu: `remote/loadWorking.ts` — `createWorkingSync`: mở app tải đủ (trong bãi + 7 ngày), sau đó chỉ tải phần thay đổi; báo cáo xa hơn tải riêng (`reportSource.ts`).
 - `npm test`: 163 pass, 3 bỏ qua (`tests/remote*.local.test.ts` chạy khi bật Supabase local; `tests/perf.local.test.ts` khi thêm `MATRAN_PERF=1`). `npm run build`: PASS (cảnh báo file JS > 500 kB, chưa ảnh hưởng).
@@ -454,3 +464,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-27 (khuya) — Claude Code: N8 (DEC-158) đồng bộ phần thay đổi + mất mạng + đo tốc độ quy mô thật; DEC-159 ảnh giữ 2 tháng; Q-044 import tồn vỏ. 163 test (3 bỏ qua, chạy thật local pass) • pgTAP 180/180 • build PASS.
 - 2026-10-27 (khuya) — Claude Code: hướng dẫn môi trường TEST nhiều người, script danh mục test + Admin đầu tiên (chạy thử local OK, sửa lỗi hướng dẫn thiếu ::matran), bộ câu hỏi import tồn vỏ (Q-044). 163 test • pgTAP 180/180.
 - 2026-10-27 (trưa) — Claude Code: thêm Bước 5A Vercel cho giai đoạn test (giữ Cloudflare cho chạy thật); bàn giao I.5 "phiên sau làm gì đầu tiên"; push đầy đủ nhánh.
+- 2026-10-27 (chiều) — Claude Code + bạn: dựng môi trường TEST trên cloud (Supabase `matran-test` + Vercel từ `main`), đăng nhập Admin OK; sửa script danh mục test thiếu Size / Type; ghi chú phiên sau (I.5).

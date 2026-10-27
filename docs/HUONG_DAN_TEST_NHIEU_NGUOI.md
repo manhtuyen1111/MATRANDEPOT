@@ -31,7 +31,9 @@ Mở terminal trong thư mục dự án (nhánh `agent/claude/p4-database`), r�
 npx supabase login                               # mở trình duyệt để đăng nhập Supabase
 npx supabase link --project-ref <mã-project>     # mã ở Project Settings → General → Reference ID
 npx supabase db push                             # chạy toàn bộ migration lên project TEST
-npx supabase functions deploy                    # đưa 3 Edge Function (tạo nhân viên, đặt lại mật khẩu, xóa ảnh hết hạn)
+npx supabase functions deploy admin-create-staff --use-api      # 3 Edge Function — từng hàm, --use-api (cách thường hay "request timed out")
+npx supabase functions deploy admin-reset-password --use-api
+npx supabase functions deploy purge-expired-photos --use-api
 ```
 
 - `db push` hỏi xác nhận thì gõ `y`.
@@ -40,7 +42,7 @@ npx supabase functions deploy                    # đưa 3 Edge Function (tạo 
 ## Bước 3 — Danh mục test + Admin đầu tiên
 
 1. **SQL Editor → New query:** dán toàn bộ `supabase/test-data/01_danh_muc_test.sql`, bấm **Run**.
-   - Kết quả: hãng tàu MSK, khách KH01–KH10, biểu giá, 4 Block, tổ sửa chữa, thông tin công ty.
+   - Kết quả: Size / Type container, hãng tàu MSK, khách KH01–KH10, biểu giá, 4 Block, tổ sửa chữa, thông tin công ty.
 2. **Authentication → Users → Add user → Create new user:**
    - Email `admin@matrandepot.local`.
    - Password **`<mật khẩu>::matran`**. Ví dụ muốn dùng `123456` thì gõ `123456::matran` (DEC-153).
