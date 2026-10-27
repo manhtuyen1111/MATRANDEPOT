@@ -237,6 +237,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Migration bước 3/5 (DEC-154): thanh toán, phiếu thu, phiếu thu trả trước, hóa đơn, Văn phòng Hạ vỏ + GATE IN OK. Mã bảo mật hóa đơn lưu mã gốc (khóa quyền đọc); xác nhận tay chuyển khoản bởi Văn phòng / Quản lý, mã ngân hàng tùy chọn. Chạy thử local: pgTAP 107/107.
 - Migration bước 4/5: Cấp vỏ (booking, lệnh, thanh toán, K80, hủy lệnh, xuất bãi 5 điều kiện) + Nhập / Xuất tàu; Xe nâng hạ cont Nhập tàu tự hoàn thành danh sách. Chạy thử local: pgTAP 147/147.
 - Migration bước 5a: pg_cron (tạo partition trước, dọn request_log), kho ảnh door-photos riêng tư + phân quyền, hàm ảnh hết hạn 24 tháng. Chạy thử local: pgTAP 158/158. Chuyển kho > 36 tháng để 2029; callback ngân hàng chờ Q-032.
+- Migration bước 5b: Edge Function `admin-create-staff`, `admin-reset-password`, `purge-expired-photos` (chỉ Admin / chỉ service_role; tạo lỗi thì xóa lại tài khoản Auth). Chạy thử local 16/16. Mã nhân viên NV- tính theo số lớn nhất + 1 (không đếm dòng).
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).

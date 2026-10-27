@@ -1394,6 +1394,7 @@ Quy ước trạng thái:
   - Kiểm tra "không được dùng 123456" làm trên mật khẩu **trước khi ghép**.
   - Claude đã cảnh báo: mật khẩu ngắn dễ bị dò hơn. Người dùng chấp nhận.
 - Làm ở phần đăng nhập frontend GĐ 4 (chưa làm).
+- **Cách ghép (chốt kỹ thuật 2026-10-27):** luôn nối `::matran` vào cuối mật khẩu (`PASSWORD_SUFFIX` / `toAuthPassword` trong `supabase/functions/_shared/auth.ts`). Edge Function tạo tài khoản / đặt lại mật khẩu đã dùng; frontend phải dùng đúng hằng này.
 - **Chạy thử migration bước 1 trên Supabase local (Docker, 2026-10-27):** 5 file apply không lỗi; pgTAP **18/18 PASS**. Thêm `supabase/config.toml` (cấu hình local, không chứa khóa bí mật).
 
 ### DEC-154 — Database bước 3: mã bảo mật hóa đơn, xác nhận tay tiền chuyển khoản
