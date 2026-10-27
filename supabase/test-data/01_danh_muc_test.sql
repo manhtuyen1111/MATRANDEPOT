@@ -3,8 +3,12 @@
 -- KHÔNG chạy trên production: production nhập danh mục thật.
 -- Chạy lại nhiều lần được (bỏ qua dòng đã có).
 -- Cách chạy trên project test: Supabase → SQL Editor → dán toàn bộ file → Run.
--- Local: tự chạy khi `npx supabase db reset` (config.toml → db.seed).
+-- Local: dán vào Studio (http://127.0.0.1:54323 → SQL Editor).
 -- ============================================================================
+
+-- Size / Type container (giống seed.sql — `db push` lên cloud không chạy seed.sql)
+insert into public.container_sizes (code, sort_order) values ('20', 1), ('40', 2), ('45', 3) on conflict do nothing;
+insert into public.container_types (code, sort_order) values ('DC', 1), ('HC', 2), ('OT', 3), ('FR', 4), ('RF', 5) on conflict do nothing;
 
 -- Công ty (in ở đầu phiếu thu / EEIR / K80)
 insert into public.company_profile (id, name, short_name, address, phone, email)

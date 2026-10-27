@@ -40,7 +40,7 @@ npx supabase functions deploy                    # đưa 3 Edge Function (tạo 
 ## Bước 3 — Danh mục test + Admin đầu tiên
 
 1. **SQL Editor → New query:** dán toàn bộ `supabase/test-data/01_danh_muc_test.sql`, bấm **Run**.
-   - Kết quả: hãng tàu MSK, khách KH01–KH10, biểu giá, 4 Block, tổ sửa chữa, thông tin công ty.
+   - Kết quả: Size / Type container, hãng tàu MSK, khách KH01–KH10, biểu giá, 4 Block, tổ sửa chữa, thông tin công ty.
 2. **Authentication → Users → Add user → Create new user:**
    - Email `admin@matrandepot.local`.
    - Password **`<mật khẩu>::matran`**. Ví dụ muốn dùng `123456` thì gõ `123456::matran` (DEC-153).
