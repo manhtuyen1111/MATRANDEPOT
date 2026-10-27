@@ -4,7 +4,8 @@ import { VesselMode, VESSEL_MODE_LABELS } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import { collectAllPages, queryVesselReport, VesselReportFilter, vesselReportSheet } from '../../services/reports';
 import { quickRange, fileStamp, formatDateTime } from '../../services/datetime';
-import { linkCls, ContainerNo, DateRangeFilter, ExportExcelButton, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize, CellText, CELL_MAX } from '../../components/shared';
+import { linkCls, ContainerNo, DateRangeFilter, ExportExcelButton, Feedback, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize, CellText, CELL_MAX } from '../../components/shared';
+import { useReportState } from '../../components/useReportState';
 
 const STATUS: Record<VesselMode, Record<string, string>> = {
   NHAP_TAU: { PENDING: 'Chờ xe về', INSPECTED: 'Đã giám định — chờ hạ', DONE: 'Đã hạ bãi', SKIPPED: 'Không kịp (gạch)' },
@@ -12,7 +13,9 @@ const STATUS: Record<VesselMode, Record<string, string>> = {
 };
 
 // BÁO CÁO NHẬP TÀU / XUẤT TÀU (DEC-069): lọc theo thời gian nhập / xuất tàu, tên tàu, số cont
-export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpenDossier?: (code: string) => void }> = ({ state, mode, onOpenDossier }) => {
+export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpenDossier?: (code: string) => void }> = ({ state: live, mode, onOpenDossier }) => {
+  const report = useReportState(live); // N7
+  const state = report.data;
   const isImport = mode === 'NHAP_TAU';
   const label = VESSEL_MODE_LABELS[mode];
   const [draft, setDraft] = useState<VesselReportFilter>(() => ({ containerNo: '', vesselName: '', ...quickRange('TODAY') }));
@@ -33,7 +36,7 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
   return (
     <div className="space-y-4">
       <SectionCard title={`Báo cáo ${isImport ? 'Nhập tàu' : 'Xuất tàu'}`} icon={<Search className="h-4 w-4 text-ink-muted" />}>
-        <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+        <form onSubmit={(e) => { e.preventDefault(); report.run(draft, () => { setApplied({ ...draft }); setPage(1); }); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2 sm:col-span-1">
             <span className={labelCls}>Số container</span>
             <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
@@ -44,9 +47,9 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
           </label>
           <DateRangeFilter label={`Thời gian ${label.toLowerCase()}`} value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <div className="col-span-2 flex flex-wrap items-end gap-2">
-            <button type="submit" className={primaryBtn}>
+            <button type="submit" className={primaryBtn} disabled={report.loading}>
               <Search className="h-4 w-4" />
-              Tra cứu
+              {report.loading ? 'Đang tải…' : 'Tra cứu'}
             </button>
             {applied && result && result.total > 0 && (
               <ExportExcelButton
@@ -57,6 +60,8 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
           </div>
         </form>
       </SectionCard>
+
+      <Feedback error={report.loadError} />
 
       <div className="overflow-x-auto rounded-lg border border-line bg-white">
         {!applied ? (

@@ -19,6 +19,7 @@ import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportShe
 import { can } from '../../services/permissions';
 import { quickRange, fileStamp } from '../../services/datetime';
 import { VesselReport } from './VesselReport';
+import { useReportState } from '../../components/useReportState';
 import { linkCls, DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize, CellText, CELL_MAX } from '../../components/shared';
 import { PaymentInfoCells } from '../../components/PaymentInfoCells';
 import { voucherPaymentInfo } from '../../services/payments';
@@ -89,7 +90,9 @@ export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossie
   );
 };
 
-const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpenReceipt }) => {
+const OperationReport: React.FC<Props> = ({ state: live, section, onOpenDossier, onOpenReceipt }) => {
+  const report = useReportState(live); // N7: lọc ngoài 90 ngày ở chế độ database → tải riêng
+  const state = report.data;
   const [draft, setDraft] = useState<OperationReportFilter>(() => ({ containerNo: '', ...quickRange('TODAY'), shippingLineCode: '', size: '' }));
   const [applied, setApplied] = useState<OperationReportFilter | null>(null);
   const [page, setPage] = useState(1);
@@ -114,7 +117,7 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
   return (
     <div className="space-y-4">
       <SectionCard title={TITLES[section]} icon={<Search className="h-4 w-4 text-ink-muted" />}>
-        <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+        <form onSubmit={(e) => { e.preventDefault(); report.run(draft, () => { setApplied({ ...draft }); setPage(1); }); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2">
             <span className={labelCls}>Số container</span>
             <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
@@ -135,9 +138,9 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
             </select>
           </label>
           <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-6">
-            <button type="submit" className={primaryBtn}>
+            <button type="submit" className={primaryBtn} disabled={report.loading}>
               <Search className="h-4 w-4" />
-              Tra cứu
+              {report.loading ? 'Đang tải…' : 'Tra cứu'}
             </button>
             {applied && result && result.total > 0 && (
               <ExportExcelButton
@@ -148,6 +151,8 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
           </div>
         </form>
       </SectionCard>
+
+      <Feedback error={report.loadError} />
 
       <div className="overflow-x-auto rounded-lg border border-line bg-white">
         {!applied ? (
@@ -255,7 +260,8 @@ const OperationReport: React.FC<Props> = ({ state, section, onOpenDossier, onOpe
   );
 };
 
-const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
+const SummaryReport: React.FC<{ state: DepotState }> = ({ state: live }) => {
+  const report = useReportState(live);
   const [range, setRange] = useState(() => quickRange('TODAY'));
   const [sheets, setSheets] = useState<SheetData[] | null>(null);
   const [generatedAt, setGeneratedAt] = useState('');
@@ -264,13 +270,15 @@ const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
   const generate = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    try {
-      setSheets(buildSummaryReport(state, range));
-      setGeneratedAt(new Date().toISOString());
-    } catch (err) {
-      setSheets(null);
-      setError(err instanceof Error ? err.message : 'Lỗi tạo báo cáo');
-    }
+    report.run(range, (data) => {
+      try {
+        setSheets(buildSummaryReport(data, range));
+        setGeneratedAt(new Date().toISOString());
+      } catch (err) {
+        setSheets(null);
+        setError(err instanceof Error ? err.message : 'Lỗi tạo báo cáo');
+      }
+    });
   };
 
   return (
@@ -278,14 +286,14 @@ const SummaryReport: React.FC<{ state: DepotState }> = ({ state }) => {
       <SectionCard title="Báo cáo Tổng hợp" icon={<FileSpreadsheet className="h-4 w-4 text-ink-muted" />}>
         <form onSubmit={generate} className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <DateRangeFilter value={range} onChange={(r) => setRange(r)} required />
-          <button type="submit" className={primaryBtn}>Tạo báo cáo</button>
+          <button type="submit" className={primaryBtn} disabled={report.loading}>{report.loading ? 'Đang tải…' : 'Tạo báo cáo'}</button>
         </form>
         <p className="mt-2 text-[11px] text-ink-muted">
           Gồm 5 sheet: HẠ VỎ, CẤP VỎ, XUẤT VỎ, NHẬP VỎ (theo khoảng thời gian) và TỒN VỎ (tại thời điểm lập báo cáo).
         </p>
       </SectionCard>
 
-      <Feedback error={error} />
+      <Feedback error={error || report.loadError} />
 
       {sheets && (
         <SectionCard
@@ -318,7 +326,9 @@ const REPAIR_STATUS: Record<string, string> = {
 };
 
 // BÁO CÁO SỬA CHỮA CHI TIẾT (DEC-044): bắt buộc lọc, phân trang, xuất Excel kết quả lọc
-const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) => void }> = ({ state, onOpenDossier }) => {
+const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) => void }> = ({ state: live, onOpenDossier }) => {
+  const report = useReportState(live);
+  const state = report.data;
   const [draft, setDraft] = useState<RepairReportFilter>(() => ({ containerNo: '', ...quickRange('TODAY'), teamCode: '', shippingLineCode: '', status: 'ALL' }));
   const [applied, setApplied] = useState<RepairReportFilter | null>(null);
   const [page, setPage] = useState(1);
@@ -342,7 +352,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
   return (
     <div className="space-y-4">
       <SectionCard title="Báo cáo Sửa chữa" icon={<Search className="h-4 w-4 text-ink-muted" />}>
-        <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+        <form onSubmit={(e) => { e.preventDefault(); report.run(draft, () => { setApplied({ ...draft }); setPage(1); }); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2 sm:col-span-1">
             <span className={labelCls}>Số container</span>
             <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
@@ -372,9 +382,9 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
             </select>
           </label>
           <div className="col-span-2 flex gap-2 sm:col-span-6">
-            <button type="submit" className={primaryBtn}>
+            <button type="submit" className={primaryBtn} disabled={report.loading}>
               <Search className="h-4 w-4" />
-              Tra cứu
+              {report.loading ? 'Đang tải…' : 'Tra cứu'}
             </button>
             {result && result.total > 0 && (
               <ExportExcelButton
@@ -385,6 +395,8 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
           </div>
         </form>
       </SectionCard>
+
+      <Feedback error={report.loadError} />
 
       <div className="overflow-x-auto rounded-lg border border-line bg-white">
         {!applied ? (

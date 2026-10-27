@@ -1320,3 +1320,49 @@ describe('DEC-147: W-SURVEY (LÊN KỆ) + giám định bổ sung trên kệ', (
     expect(a.workOrders.some((w) => w.category === 'INSPECTION' && w.masterDossierCode === dc.masterDossierCode)).toBe(false);
   });
 });
+
+// N7 (DEC-157): báo cáo chế độ database lọc ngoài 90 ngày → tải riêng theo khoảng lọc, tối đa 3 tháng
+import { assertRemoteRange, needsRangeLoad, setReportLoader, stateForRange } from '../src/services/remote/reportSource';
+import { formatDateTime as fmtDt } from '../src/services/datetime';
+
+describe('N7: nguồn dữ liệu báo cáo theo khoảng lọc', () => {
+  const daysAgo = (n: number) => fmtDt(new Date(Date.now() - n * 86_400_000));
+
+  it('Demo hoặc lọc trong 90 ngày → không tải riêng, dùng state hiện tại', async () => {
+    const state = createInitialState();
+    expect(needsRangeLoad({ dateFrom: daysAgo(200), dateTo: daysAgo(150) }, new Date(), false)).toBe(false);
+    expect(needsRangeLoad({ dateFrom: daysAgo(30), dateTo: daysAgo(0) }, new Date(), true)).toBe(false);
+    expect(await stateForRange(state, { dateFrom: daysAgo(200), dateTo: daysAgo(150) })).toBe(state);
+  });
+
+  it('Database lọc cũ hơn 90 ngày → tải đúng khoảng, giữ người dùng hiện tại', async () => {
+    const state = createInitialState();
+    const loaded = { ...createInitialState(), currentUser: { ...state.currentUser, id: 'khac' } };
+    let asked: { from: string; to: string } | null = null;
+    setReportLoader(async (r) => { asked = r; return loaded; });
+    try {
+      const range = { dateFrom: daysAgo(150), dateTo: daysAgo(100) };
+      expect(needsRangeLoad(range)).toBe(true);
+      const out = await stateForRange(state, range);
+      expect(out.currentUser).toBe(state.currentUser);
+      expect(out.containers).toBe(loaded.containers);
+      expect(asked).not.toBeNull();
+      expect(new Date(asked!.from).getTime()).toBeLessThan(new Date(asked!.to).getTime());
+    } finally {
+      setReportLoader(null);
+    }
+  });
+
+  it('Từ chối: khoảng quá 3 tháng, TỪ sau ĐẾN, thiếu ngày; lỗi tải được báo lại', async () => {
+    expect(() => assertRemoteRange({ dateFrom: daysAgo(200), dateTo: daysAgo(100) })).toThrow('tối đa 3 tháng');
+    expect(() => assertRemoteRange({ dateFrom: daysAgo(100), dateTo: daysAgo(120) })).toThrow('TỪ phải trước');
+    expect(() => assertRemoteRange({ dateFrom: '', dateTo: daysAgo(1) })).toThrow('Chọn đủ thời gian');
+    setReportLoader(async () => { throw new Error('Không tải được dữ liệu: mất mạng'); });
+    try {
+      await expect(stateForRange(createInitialState(), { dateFrom: daysAgo(150), dateTo: daysAgo(100) })).rejects.toThrow('mất mạng');
+      await expect(stateForRange(createInitialState(), { dateFrom: daysAgo(300), dateTo: daysAgo(100) })).rejects.toThrow('tối đa 3 tháng');
+    } finally {
+      setReportLoader(null);
+    }
+  });
+});

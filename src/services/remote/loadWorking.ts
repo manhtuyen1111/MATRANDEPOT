@@ -1,7 +1,7 @@
 // ============================================================================
 // CHẾ ĐỘ DATABASE — tải DỮ LIỆU ĐANG LÀM VIỆC (DEC-155): mọi thứ đang mở / trong bãi + 90 ngày gần nhất,
-// chuyển về đúng kiểu DepotState mà giao diện đang dùng. Báo cáo (lọc tối đa 3 tháng) chạy trên dữ liệu này.
-// Trước khi chạy chính thức (15.000 cont / tháng): báo cáo chuyển sang lấy theo trang từ database (N7).
+// chuyển về đúng kiểu DepotState mà giao diện đang dùng. Báo cáo lọc ngoài 90 ngày → tải riêng theo khoảng lọc
+// (tối đa 3 tháng, reportSource.ts — N7) rồi chạy cùng hàm báo cáo.
 // ============================================================================
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -55,49 +55,51 @@ const feeLine = (f: Row): FeeLineItem => ({
   id: f.id, catalogCode: f.catalog_code, name: f.name, amountInclVat: num(f.amount), quantity: f.quantity, unitAmountInclVat: num(f.unit_amount),
 });
 
-export async function loadWorkingState(client: SupabaseClient, me: StaffSession): Promise<DepotState> {
+// range (ISO) có → tải hồ sơ trong khoảng đó thay cho 90 ngày gần nhất — dùng cho báo cáo lọc xa hơn (N7)
+export async function loadWorkingState(client: SupabaseClient, me: StaffSession, range?: { from: string; to: string }): Promise<DepotState> {
   const base = await loadCatalogState(client, me);
-  const since = new Date(Date.now() - WORKING_DAYS * 86400000).toISOString();
+  const since = range?.from ?? new Date(Date.now() - WORKING_DAYS * 86400000).toISOString();
+  const until = range?.to ?? '9999-12-31T23:59:59Z';
 
   // --- Hồ sơ / lượt lưu bãi ---
   const containers = merge(
     await all((a, b) => client.from('containers').select('*').neq('status', 'GATED_OUT').range(a, b)),
-    await all((a, b) => client.from('containers').select('*').gte('gate_in_at', since).range(a, b)),
+    await all((a, b) => client.from('containers').select('*').gte('gate_in_at', since).lte('gate_in_at', until).range(a, b)),
   );
   const gateIns = merge(
     await all((a, b) => client.from('gate_in_orders').select('*').in('status', ['FIELD_RECORDED', 'PAYMENT_PENDING']).range(a, b)),
-    await all((a, b) => client.from('gate_in_orders').select('*').gte('created_at', since).range(a, b)),
+    await all((a, b) => client.from('gate_in_orders').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
     await byIds(client, 'gate_in_orders', 'id', containers.map((c) => c.gate_in_id)),
   );
   const gateOuts = merge(
     await all((a, b) => client.from('gate_out_orders').select('*').in('status', ['PAYMENT_PENDING', 'PENDING_FORKLIFT']).range(a, b)),
-    await all((a, b) => client.from('gate_out_orders').select('*').gte('created_at', since).range(a, b)),
+    await all((a, b) => client.from('gate_out_orders').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
   );
   const bookings = merge(
-    await all((a, b) => client.from('release_bookings').select('*').gte('created_at', since).range(a, b)),
+    await all((a, b) => client.from('release_bookings').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
     await byIds(client, 'release_bookings', 'id', gateOuts.map((o) => o.booking_id)),
   );
 
   // --- Tiền ---
   const prepaids = merge(
     await all((a, b) => client.from('prepaid_receipts').select('*').in('status', ['PENDING_PAYMENT', 'ACTIVE']).range(a, b)),
-    await all((a, b) => client.from('prepaid_receipts').select('*').gte('created_at', since).range(a, b)),
+    await all((a, b) => client.from('prepaid_receipts').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
   );
   const vouchers = merge(
-    await all((a, b) => client.from('vouchers').select('*').gte('created_at', since).range(a, b)),
+    await all((a, b) => client.from('vouchers').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
     await byIds(client, 'vouchers', 'id', [...gateIns.map((g) => g.voucher_id), ...gateOuts.map((o) => o.voucher_id)]),
   );
   const txs = merge(
-    await all((a, b) => client.from('payment_transactions').select('*').gte('created_at', since).range(a, b)),
+    await all((a, b) => client.from('payment_transactions').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
     await all((a, b) => client.from('payment_transactions').select('*').eq('status', 'PENDING').range(a, b)),
     await byIds(client, 'payment_transactions', 'prepaid_id', prepaids.map((p) => p.id)),
   );
   const receipts = merge(
-    await all((a, b) => client.from('payment_receipts').select('*').gte('issued_at', since).range(a, b)),
+    await all((a, b) => client.from('payment_receipts').select('*').gte('issued_at', since).lte('issued_at', until).range(a, b)),
     await byIds(client, 'payment_receipts', 'transaction_id', txs.map((t) => t.id)),
   );
   const deductions = merge(
-    await all((a, b) => client.from('prepaid_deductions').select('*').gte('performed_at', since).range(a, b)),
+    await all((a, b) => client.from('prepaid_deductions').select('*').gte('performed_at', since).lte('performed_at', until).range(a, b)),
     await byIds(client, 'prepaid_deductions', 'prepaid_id', prepaids.map((p) => p.id)),
   );
   const prints = await byIds(client, 'receipt_prints', 'receipt_id', receipts.map((r) => r.id));
@@ -107,7 +109,7 @@ export async function loadWorkingState(client: SupabaseClient, me: StaffSession)
 
   // --- Hiện trường ---
   const tickets = merge(
-    await all((a, b) => client.from('k80_tickets').select('*').gte('issued_at', since).range(a, b)),
+    await all((a, b) => client.from('k80_tickets').select('*').gte('issued_at', since).lte('issued_at', until).range(a, b)),
     await byIds(client, 'k80_tickets', 'dossier_code', containers.map((c) => c.dossier_code)),
   );
   const works = await byIds(client, 'work_orders', 'container_id', containers.map((c) => c.id));
@@ -115,10 +117,10 @@ export async function loadWorkingState(client: SupabaseClient, me: StaffSession)
   const history = await byIds(client, 'location_history', 'container_id', containers.map((c) => c.id));
   const lists = merge(
     await all((a, b) => client.from('vessel_lists').select('*').eq('status', 'OPEN').range(a, b)),
-    await all((a, b) => client.from('vessel_lists').select('*').gte('created_at', since).range(a, b)),
+    await all((a, b) => client.from('vessel_lists').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
   );
   const items = await byIds(client, 'vessel_list_items', 'list_id', lists.map((l) => l.id));
-  const feedbacks = await all((a, b) => client.from('feedbacks').select('*').gte('created_at', since).range(a, b));
+  const feedbacks = await all((a, b) => client.from('feedbacks').select('*').gte('created_at', since).lte('created_at', until).range(a, b));
 
   // --- Ảnh cửa container: kho riêng tư → đường dẫn xem tạm 1 giờ (ảnh dạng link giữ nguyên) ---
   const photoUrl = new Map<string, string>();

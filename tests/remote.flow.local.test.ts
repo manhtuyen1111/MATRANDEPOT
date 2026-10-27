@@ -96,5 +96,15 @@ describe.skipIf(!run)('N2–N6 — luồng Hạ vỏ → Bãi → Cấp vỏ ch�
     s = await flush();
     expect(s.gateOutOrders.find((o) => o.id === out.id)!.status).toBe('GATE_OUT_OK');
     expect(s.containers.find((c) => c.id === cont.id)?.gateOutAt).toBeTruthy();
+
+    // N7: tải theo khoảng lọc — khoảng cũ không có cont đã OUT hôm nay, khoảng có hôm nay thì có
+    const me = (await loadStaffSession(client))!;
+    const day = 86_400_000;
+    const old = await loadWorkingState(client, me, { from: new Date(Date.now() - 200 * day).toISOString(), to: new Date(Date.now() - 150 * day).toISOString() });
+    expect(old.containers.some((c) => c.id === cont.id)).toBe(false);
+    expect(old.gateOutOrders.some((o) => o.id === out.id)).toBe(false);
+    const recent = await loadWorkingState(client, me, { from: new Date(Date.now() - day).toISOString(), to: new Date(Date.now() + day).toISOString() });
+    expect(recent.containers.some((c) => c.id === cont.id)).toBe(true);
+    expect(recent.gateOutOrders.some((o) => o.id === out.id)).toBe(true);
   }, 60000);
 });

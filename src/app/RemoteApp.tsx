@@ -4,6 +4,7 @@ import { ChangePasswordScreen, LoginScreen } from '../features/auth/LoginScreen'
 import { changePassword, loadStaffSession, signIn, signOut, type StaffSession } from '../services/remote/session';
 import { loadWorkingState } from '../services/remote/loadWorking';
 import { clearIdMap, setRemoteSink, type RemoteOp } from '../services/remote/sync';
+import { setReportLoader } from '../services/remote/reportSource';
 import type { DepotState } from '../services/depotStore';
 import { App } from './App';
 
@@ -85,6 +86,16 @@ export const RemoteApp: React.FC = () => {
     });
     return () => setRemoteSink(null);
   }, [flush]);
+
+  // Báo cáo lọc ngoài 90 ngày → tải riêng theo khoảng lọc (N7)
+  useEffect(() => {
+    setReportLoader(async (range) => {
+      const me = meRef.current;
+      if (!me) throw new Error('Phiên đăng nhập đã hết, vui lòng đăng nhập lại.');
+      return loadWorkingState(client, me, range);
+    });
+    return () => setReportLoader(null);
+  }, [client]);
 
   useEffect(() => {
     void refresh();

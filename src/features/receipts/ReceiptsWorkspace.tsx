@@ -13,6 +13,7 @@ import { DepotState, formatVnd } from '../../services/depotStore';
 
 import { masterReceiptUsage, receiptOperationOf } from '../../services/payments';
 import { collectAllPages, queryReceipts, ReceiptQueryFilter, ReceiptRow, receiptsSheet } from '../../services/reports';
+import { useReportState } from '../../components/useReportState';
 import { can } from '../../services/permissions';
 import { INVOICE_STATUS_LABELS, invoicePortalUrl, prepaidInvoiceView, PrepaidInvoiceView, receiptInvoiceLabel, receiptInvoiceStatus } from '../../services/invoice';
 import type { InvoiceStatus, PaymentReceipt } from '../../types/depot';
@@ -63,6 +64,9 @@ export const ReceiptsWorkspace: React.FC<{
   const [cancelReason, setCancelReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  // N7: danh sách + Excel có thể chạy trên dữ liệu tải riêng (lọc ngoài 90 ngày); thao tác ghi luôn trên state hiện tại
+  const report = useReportState(state);
+  const listState = report.data;
 
   // Bấm từ hồ sơ container → tra cứu đúng phiếu thu đó và mở chi tiết
   useEffect(() => {
@@ -77,22 +81,23 @@ export const ReceiptsWorkspace: React.FC<{
   }, [focus?.nonce]);
 
   const operationOf = (row: ReceiptRow): ReceiptOperation =>
-    receiptOperationOf(state, { ...row.transaction, operation: row.receipt?.operation });
+    receiptOperationOf(listState, { ...row.transaction, operation: row.receipt?.operation });
 
   const canCreate = can(state.currentUser, 'PREPAID_RECEIPT_CREATE');
   let result: ReturnType<typeof queryReceipts> | null = null;
   let queryError: string | null = null;
   if (applied) {
     try {
-      result = queryReceipts(state, applied, page, pageSize);
+      result = queryReceipts(listState, applied, page, pageSize);
     } catch (err) {
       queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
     }
   }
   const selected: ReceiptRow | undefined = selectedTxId
     ? (() => {
-        const transaction = state.paymentTransactions.find((t) => t.id === selectedTxId);
-        return transaction ? { transaction, receipt: state.paymentReceipts.find((r) => r.transactionId === transaction.id) } : undefined;
+        const src = state.paymentTransactions.some((t) => t.id === selectedTxId) ? state : listState;
+        const transaction = src.paymentTransactions.find((t) => t.id === selectedTxId);
+        return transaction ? { transaction, receipt: src.paymentReceipts.find((r) => r.transactionId === transaction.id) } : undefined;
       })()
     : undefined;
 
@@ -134,11 +139,11 @@ export const ReceiptsWorkspace: React.FC<{
 
   return (
     <div className="space-y-4">
-      <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
+      <Feedback error={error || report.loadError} success={success} onClose={() => (setError(null), setSuccess(null))} />
 
       <SectionCard title="Tra cứu phiếu thu" icon={<ReceiptText className="h-4 w-4 text-ink-muted" />}>
         <form
-          onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); setSelectedTxId(''); }}
+          onSubmit={(e) => { e.preventDefault(); report.run(draft, () => { setApplied({ ...draft }); setPage(1); setSelectedTxId(''); }); }}
           className="grid grid-cols-2 gap-2 sm:grid-cols-6"
         >
           <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
@@ -180,14 +185,14 @@ export const ReceiptsWorkspace: React.FC<{
             </select>
           </label>
           <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-6">
-            <button type="submit" className={primaryBtn}>
+            <button type="submit" className={primaryBtn} disabled={report.loading}>
               <Search className="h-4 w-4" />
-              Tra cứu
+              {report.loading ? 'Đang tải…' : 'Tra cứu'}
             </button>
             {applied && result && result.total > 0 && (
               <ExportExcelButton
                 fileName={`MATRAN_PHIEU_THU_${fileStamp(applied.dateFrom) || applied.receiptNo || "tra-cuu"}.xlsx`}
-                getSheets={() => [receiptsSheet(state, collectAllPages((p) => queryReceipts(state, applied, p)))]}
+                getSheets={() => [receiptsSheet(listState, collectAllPages((p) => queryReceipts(listState, applied, p)))]}
               />
             )}
             {canCreate && (
