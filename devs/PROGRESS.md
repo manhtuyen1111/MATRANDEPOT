@@ -266,7 +266,10 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 4. Tốc độ + giao diện chờ: tải dữ liệu theo đợt song song; tách file theo màn hình (file đầu 1.013 → 260 KB); màn chờ hiện ngay khi mở trang.
 5. **Giao diện chờ nhẹ nhàng (người dùng phàn nàn thanh chạy gây khó chịu):** bỏ hẳn thanh chạy trên cùng; mọi chỉ báo chờ chỉ hiện khi > 300 ms, vòng xoay chậm, màu nhạt; "Đang lưu…" / "Đang tải lại…" là viên nhỏ dưới màn hình. App **tải sẵn các màn hình chạy ngầm** khi rảnh → bấm menu mở ngay (đổi menu không tải lại dữ liệu — dữ liệu dùng chung). **Không thêm lại thanh chạy / hiệu ứng nhấp nháy.**
 6. **Mã QR thật + quét camera:** trước đây mã QR trên K80 chỉ là hình minh họa và camera chỉ bật hình, không đọc mã → không dùng được. Nay in QR thật (K80, phiếu trả trước) + camera quét thật ở Vệ sinh / Xe nâng / Sửa chữa, Trả chứng từ, ô QR TTT (bắt mã tự tra, bíp + rung, đèn flash; súng quét cầm tay vẫn dùng). Thư viện `qrcode` + `qr-scanner` (bạn đồng ý cài). **Cần thử trên điện thoại thật** (camera chỉ chạy qua HTTPS — link Vercel; lần đầu trình duyệt hỏi quyền camera → Cho phép).
-- Mục 5, 6 chờ merge vào `main` (không có migration).
+   Đã bỏ nút "Quét" thừa ở ô quét hiện trường (chỉ còn ô nhập + camera; súng quét / Enter vẫn tự tra). Trả chứng từ trên máy tính: súng quét cầm tay quét được (ô nhập tự đặt con trỏ, súng gõ mã + Enter → xác nhận & in).
+7. **Lưu mượt hơn (DEC-160):** bấm Lưu → màn hình đổi **ngay** theo kết quả kiểm trên máy, database ghi ngầm phía sau; **bỏ lớp chặn cả màn** lúc lưu (chỉ còn viên "Đang lưu…" nhỏ khi > 300 ms); bấm tiếp trong lúc lưu → nối hàng chờ, chạy luôn. Sau khi lưu chỉ tải phần thay đổi, **không tải lại danh mục** (trừ khi vừa sửa Danh mục / nhân viên); bớt 1 lượt chờ mạng. Database từ chối → dải đỏ báo lỗi + tự tải lại dữ liệu đúng.
+   **Lưu ý theo dõi khi test:** (a) thao tác lưu xong màn có "nhảy" không; (b) bấm 2 lần liên tiếp có tạo trùng không; (c) lỗi từ database có báo rõ không. Ghi lại màn + thao tác nếu gặp. Hướng làm tiếp nếu vẫn chậm: gộp nhiều RPC trong 1 lần bấm thành 1 lời gọi; dùng Supabase Realtime thay tự làm mới 30 giây.
+- Mục 5, 6, 7 chờ merge vào `main` (không có migration).
 
 **BẠN — VIỆC TIẾP THEO:**
 1. **Test tiếp** theo Bước 7 `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`. Thử lại 4 điểm vừa sửa; xem tốc độ mở app (ghi số giây + wifi / 4G + máy tính / điện thoại nếu vẫn chậm).
@@ -476,3 +479,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-28 — Claude Code: cập nhật bàn giao I.5 (đang test nhiều người trên matran-test + Vercel; quy trình đưa bản sửa; lưu ý).
 - 2026-10-28 — Claude Code: giao diện chờ nhẹ nhàng (bỏ thanh chạy, chỉ hiện khi > 300 ms) + tải sẵn màn hình chạy ngầm. 165 test • build PASS.
 - 2026-10-28 — Claude Code: mã QR tác nghiệp thật + quét camera (qrcode, qr-scanner). 167 test • build PASS. Chưa thử camera trên điện thoại thật.
+- 2026-10-28 — Claude Code: bỏ nút Quét thừa; lưu ngầm không chặn màn + không tải lại danh mục sau mỗi lần lưu (DEC-160). 167 test • build PASS. Chưa đo trên cloud.
