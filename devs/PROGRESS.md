@@ -254,7 +254,13 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 **MÔI TRƯỜNG TEST NHIỀU NGƯỜI — ĐÃ DỰNG XONG (2026-10-27 chiều):**
 - Supabase cloud project **`matran-test`** (Singapore, ref `rtbpmnfwkzndujjzxuxf`): `db push` đủ migration, đủ 3 Edge Function, đã chạy danh mục test + Admin đầu tiên (`admin` / `123456`).
 - App: **Vercel**, build nhánh **`main`** (đã merge PR #15 — commit `ed60761`), 3 biến `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` / `VITE_APP_ENV=test`. Đăng nhập Admin OK. Cloudflare Pages để dành khi chạy thật.
-- `main` thiếu đúng 1 commit `d709be9` (sửa file SQL danh mục test — không ảnh hưởng app); merge PR sau.
+- `main` đã merge PR #16 (`04a303a`).
+
+**ĐỢT SỬA SAU TEST 1 (2026-10-28):**
+1. Biểu giá THU GOM RÁC / KHÁC lỗi "Hãng tàu không có" → migration `20261103000001` (pgTAP 184/184 local) — **bạn chạy `npx supabase db push`** lên `matran-test` rồi thử lại.
+2. Danh mục chung → Sửa chữa: bảng mỗi tổ 1 dòng, bấm dòng → cửa sổ chi tiết + gán nhân viên.
+3. Văn phòng Hạ vỏ + Hồ sơ container: kính lúp khi rê chuột, bấm ảnh → xem toàn màn hình, phóng to 1× → 4×.
+- Giao diện (2, 3) lên Vercel khi tạo PR merge `agent/claude/p4-database` → `main`.
 
 **PHIÊN SAU — BẠN CẦN CHÚ Ý:**
 1. **Đang test:** tạo tài khoản người test (User - Role → Thêm — lần đầu thử hàm `admin-create-staff` trên cloud), cả nhóm thử theo Bước 7 `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`. Ghi lỗi bằng nút **Góp ý** (Admin xem Báo cáo → Góp ý) hoặc chụp màn hình → mở phiên mới gửi Claude.
@@ -465,3 +471,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-27 (khuya) — Claude Code: hướng dẫn môi trường TEST nhiều người, script danh mục test + Admin đầu tiên (chạy thử local OK, sửa lỗi hướng dẫn thiếu ::matran), bộ câu hỏi import tồn vỏ (Q-044). 163 test • pgTAP 180/180.
 - 2026-10-27 (trưa) — Claude Code: thêm Bước 5A Vercel cho giai đoạn test (giữ Cloudflare cho chạy thật); bàn giao I.5 "phiên sau làm gì đầu tiên"; push đầy đủ nhánh.
 - 2026-10-27 (chiều) — Claude Code + bạn: dựng môi trường TEST trên cloud (Supabase `matran-test` + Vercel từ `main`), đăng nhập Admin OK; sửa script danh mục test thiếu Size / Type; ghi chú phiên sau (I.5).
+- 2026-10-28 — Claude Code: sửa 3 điểm từ đợt test 1 (biểu giá rác / khác, danh mục tổ sửa chữa, kính lúp ảnh). 165 test • pgTAP 184/184 • build PASS.

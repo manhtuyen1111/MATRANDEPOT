@@ -13,9 +13,12 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - N8 (DEC-158): dữ liệu làm việc 7 ngày, mở app tải đủ rồi chỉ tải phần thay đổi (migration `20261102000001_sync_delta.sql`, pgTAP 180/180); báo mất mạng; bài đo tốc độ `tests/perf.local.test.ts` (mở app 6,8 giây, đồng bộ ~2 KB).
 - DEC-159: ảnh cửa Hạ vỏ giữ 2 tháng (thay 24 tháng).
 - Q-044 mở: import tồn vỏ ban đầu.
+- Danh mục chung → Sửa chữa: bảng mỗi tổ 1 dòng, bấm mở chi tiết + gán nhân viên (DEC-080, DEC-134).
+- Ảnh cửa container: kính lúp khi rê chuột + xem toàn màn hình có phóng to (`PhotoZoom` trong `shared.tsx`) ở Văn phòng Hạ vỏ và Hồ sơ container.
 
 ### Fixed
 - Database: tổ sửa chữa chỉ Admin quản lý (khớp DEC-042).
+- Biểu giá: thêm THU GOM RÁC / KHÁC trên database báo "Hãng tàu không có trong Danh mục chung" — sửa bằng migration `20261103000001_fix_catalog_add_fee.sql`.
 - `devs/PROGRESS.md` bị nhân bản 5 lần do lỗi `String.replace` — đã gỡ, không mất nội dung.
 
 ## [0.4.1] — 2026-10-23 (nhánh `agent/claude/p4-prep-xlsx`)
