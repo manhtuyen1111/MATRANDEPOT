@@ -1,4 +1,4 @@
-// Edge Function: xóa FILE ảnh cửa container đã quá 24 tháng (DEC-150), rồi bỏ đường dẫn khỏi hồ sơ.
+// Edge Function: xóa FILE ảnh cửa container đã quá 2 tháng (DEC-159), rồi bỏ đường dẫn khỏi hồ sơ.
 // Gọi theo lịch (pg_cron + pg_net, cấu hình ở supabase/README.md) bằng khóa service_role — không cho người dùng gọi.
 // Mỗi lần xử lý tối đa 500 ảnh; còn thì lần sau làm tiếp.
 import { json, serviceClient } from '../_shared/auth.ts';

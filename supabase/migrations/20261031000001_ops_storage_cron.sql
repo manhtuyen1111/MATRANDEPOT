@@ -1,6 +1,6 @@
 -- ============================================================================
 -- MATRAN DEPOT — Migration 5/5 (phần 1): VẬN HÀNH — lịch tự động (pg_cron), kho ảnh, dọn dữ liệu tạm
--- Thiết kế: docs/DATABASE_SCHEMA.md mục 4 (partition, ảnh 24 tháng — DEC-150, DEC-151).
+-- Thiết kế: docs/DATABASE_SCHEMA.md mục 4 (partition, ảnh 2 tháng — DEC-159, DEC-151).
 --   - Partition tháng cho audit_logs / location_history được tạo TRƯỚC 2 tháng (ngày 25 hằng tháng).
 --   - request_log (chống bấm lặp) chỉ cần vài ngày → xóa bản ghi > 7 ngày (mỗi đêm).
 --   - Ảnh cửa container: bucket riêng tư door-photos. Xóa FILE ảnh hết hạn phải qua Storage API → Edge Function
@@ -45,12 +45,12 @@ create policy door_photos_upload on storage.objects for insert to authenticated
 create policy door_photos_read on storage.objects for select to authenticated
   using (bucket_id = 'door-photos' and public.is_active_staff());
 
--- Ảnh đã quá hạn lưu (Hạ vỏ: photo_expires_at; Nhập tàu: 24 tháng sau Giám định)
+-- Ảnh đã quá hạn lưu (Hạ vỏ: photo_expires_at; Nhập tàu: 2 tháng sau Giám định — DEC-156 không chụp, giữ quy tắc phòng dữ liệu cũ)
 create or replace function public.expired_photo_paths(p_limit int default 500) returns table (path text)
 language sql stable security definer set search_path = public as $$
   select door_photo_path from public.gate_in_orders where door_photo_path is not null and photo_expires_at < current_date
   union all
-  select door_photo_path from public.vessel_list_items where door_photo_path is not null and inspected_at < now() - interval '24 months'
+  select door_photo_path from public.vessel_list_items where door_photo_path is not null and inspected_at < now() - interval '2 months'
   limit p_limit;
 $$;
 
@@ -68,7 +68,7 @@ begin
   if v_a + v_b > 0 then
     insert into public.audit_logs (actor_name, actor_role, action_code, entity_type, entity_code, summary)
     values ('HỆ THỐNG', 'SYSTEM', 'PURGE_EXPIRED_PHOTOS', 'STORAGE', 'door-photos',
-      format('Xóa %s ảnh cửa container đã quá 24 tháng (DEC-150)', v_a + v_b));
+      format('Xóa %s ảnh cửa container đã quá 2 tháng (DEC-159)', v_a + v_b));
   end if;
   return v_a + v_b;
 end $$;

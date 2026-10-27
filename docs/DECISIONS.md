@@ -1348,7 +1348,7 @@ Quy ước trạng thái:
   - Cần thì thêm sau bằng migration.
 - **Ảnh cửa container (Q-037):**
   - Nén trên thiết bị còn ~200 KB / ảnh trước khi gửi (~2 GB / tháng).
-  - Lưu Supabase Storage **24 tháng**, quá hạn tự xóa ảnh. Hồ sơ vẫn giữ, ghi "ảnh đã hết hạn lưu".
+  - Lưu Supabase Storage ~~24 tháng~~ → **2 tháng** (sửa bởi DEC-159), quá hạn tự xóa ảnh. Hồ sơ vẫn giữ, ghi "ảnh đã hết hạn lưu".
 - **Dữ liệu tác nghiệp:**
   - Giữ **trực tuyến 3 năm** (tra cứu / báo cáo trên app).
   - Quá 3 năm → **chuyển ra kho lưu trữ** (file nén + mã hóa, ngoài database) và xóa khỏi bảng trực tuyến.
