@@ -17,6 +17,7 @@ import { loadCatalogState } from './loadState';
 export const WORKING_DAYS = 90;
 const PAGE = 1000;
 const CHUNK = 150;
+const PARALLEL = 6;
 
 type Row = Record<string, any>;
 
@@ -34,10 +35,13 @@ async function all(build: (from: number, to: number) => PromiseLike<{ data: Row[
 // Đọc theo danh sách id (chia nhỏ để không quá dài URL)
 async function byIds(client: SupabaseClient, table: string, column: string, ids: (string | null | undefined)[], select = '*'): Promise<Row[]> {
   const uniq = Array.from(new Set(ids.filter(Boolean) as string[]));
+  const parts: string[][] = [];
+  for (let i = 0; i < uniq.length; i += CHUNK) parts.push(uniq.slice(i, i + CHUNK));
   const out: Row[] = [];
-  for (let i = 0; i < uniq.length; i += CHUNK) {
-    const part = uniq.slice(i, i + CHUNK);
-    out.push(...(await all((a, b) => client.from(table).select(select).in(column, part).range(a, b))));
+  // Chạy song song từng đợt PARALLEL lô (N8: tuần tự hàng trăm lô quá chậm)
+  for (let i = 0; i < parts.length; i += PARALLEL) {
+    const batch = await Promise.all(parts.slice(i, i + PARALLEL).map((part) => all((a, b) => client.from(table).select(select).in(column, part).range(a, b))));
+    for (const rows of batch) out.push(...rows);
   }
   return out;
 }
@@ -49,6 +53,18 @@ const merge = (...lists: Row[][]): Row[] => {
 };
 const opt = <T>(v: T | null | undefined): T | undefined => (v === null || v === undefined ? undefined : v);
 const num = (v: any): number => Number(v || 0);
+// Gom theo khóa → tra cứu O(1) khi ghép (tránh filter / find lồng nhau: 45.000 × 45.000 phép so sánh — N8)
+const groupBy = (rows: Row[], key: string): Map<string, Row[]> => {
+  const map = new Map<string, Row[]>();
+  for (const r of rows) {
+    const k = r[key];
+    if (k === null || k === undefined) continue;
+    const list = map.get(k);
+    if (list) list.push(r);
+    else map.set(k, [r]);
+  }
+  return map;
+};
 const desc = (key: string) => (a: Row, b: Row) => String(b[key] || '').localeCompare(String(a[key] || ''));
 
 const feeLine = (f: Row): FeeLineItem => ({
@@ -133,7 +149,16 @@ export async function loadWorkingState(client: SupabaseClient, me: StaffSession,
   const photo = (p: string | null) => (p ? photoUrl.get(p) || p : '');
 
   // --- Ghép ---
-  const feeOf = (ownerId: string) => fees.filter((f) => f.owner_id === ownerId).sort((a, b) => a.sort_order - b.sort_order).map(feeLine);
+  const feesByOwner = groupBy(fees, 'owner_id');
+  const gateOutsByBooking = groupBy(gateOuts, 'booking_id');
+  const gateOutByVoucher = new Map(gateOuts.filter((o) => o.voucher_id).map((o) => [o.voucher_id, o]));
+  const receiptByTx = new Map(receipts.map((r) => [r.transaction_id, r]));
+  const printsByReceipt = groupBy(prints, 'receipt_id');
+  const groupsByReceipt = groupBy(groups, 'receipt_id');
+  const itemsByGroup = groupBy(groupItems, 'group_id');
+  const membersByWork = groupBy(members, 'work_order_id');
+  const itemsByList = groupBy(items, 'list_id');
+  const feeOf = (ownerId: string) => (feesByOwner.get(ownerId) || []).sort((a, b) => a.sort_order - b.sort_order).map(feeLine);
   const voucherNoById = new Map(vouchers.map((v) => [v.id, v.voucher_no]));
   const prepaidById = new Map(prepaids.map((p) => [p.id, p]));
   const gateOutByContainer = new Map(gateOuts.filter((o) => ['PAYMENT_PENDING', 'PENDING_FORKLIFT'].includes(o.status)).map((o) => [o.container_id, o]));
@@ -181,7 +206,7 @@ export async function loadWorkingState(client: SupabaseClient, me: StaffSession,
   } as GateOutOrder);
 
   const mapBooking = (b: Row): ReleaseBooking => {
-    const orders = gateOuts.filter((o) => o.booking_id === b.id);
+    const orders = gateOutsByBooking.get(b.id) || [];
     return {
       id: b.id, bookingNo: b.booking_no, releaseType: b.release_type, shippingLineCode: b.shipping_line_code, requesterName: b.requester_name,
       receiverName: b.receiver_name, size: b.size, type: b.type, requestedQty: opt(b.requested_qty),
@@ -195,7 +220,7 @@ export async function loadWorkingState(client: SupabaseClient, me: StaffSession,
   };
 
   const mapVoucher = (v: Row): PaymentVoucher => ({
-    id: v.id, masterDossierCode: v.service_type === 'GATE_OUT' ? (gateOuts.find((o) => o.voucher_id === v.id)?.dossier_code || v.dossier_code) : v.dossier_code,
+    id: v.id, masterDossierCode: v.service_type === 'GATE_OUT' ? (gateOutByVoucher.get(v.id)?.dossier_code || v.dossier_code) : v.dossier_code,
     voucherNo: v.voucher_no, serviceType: v.service_type, referenceCode: v.dossier_code, containerNo: v.container_no,
     shippingLineCode: v.shipping_line_code, payerName: v.payer_name, amount: num(v.amount), feeLines: feeOf(v.id),
     paymentCategory: opt(v.payment_category), directMethod: opt(v.direct_method), scannedQrCode: opt(v.scanned_qr_code),
@@ -208,7 +233,7 @@ export async function loadWorkingState(client: SupabaseClient, me: StaffSession,
     dossierCode: opt(t.dossier_code), containerNo: opt(t.container_no), payerName: t.payer_name, method: t.method, paymentCategory: t.payment_category,
     amount: num(t.amount), status: t.status, qrPayload: opt(t.qr_payload), providerTxRef: opt(t.provider_tx_ref), createdBy: t.created_by_name,
     createdAt: t.created_at, confirmedBy: opt(t.confirmed_by_name), confirmedAt: opt(t.confirmed_at), cancelReason: opt(t.cancel_reason),
-    receiptId: receipts.find((r) => r.transaction_id === t.id)?.id,
+    receiptId: receiptByTx.get(t.id)?.id,
   });
 
   const mapReceipt = (r: Row): PaymentReceipt => ({
@@ -216,14 +241,14 @@ export async function loadWorkingState(client: SupabaseClient, me: StaffSession,
     method: r.method, paymentCategory: r.payment_category, voucherId: opt(r.voucher_id), voucherNo: opt(r.voucher_no),
     masterReceiptId: opt(r.prepaid_id), masterReceiptCode: opt(r.prepaid_code), dossierCode: opt(r.dossier_code), containerNo: opt(r.container_no),
     payerName: r.payer_name, providerTxRef: opt(r.provider_tx_ref), issuedAt: r.issued_at, issuedBy: r.issued_by_name,
-    printLog: prints.filter((p) => p.receipt_id === r.id).sort((a, b) => a.printed_at.localeCompare(b.printed_at)).map((p) => ({ at: p.printed_at, by: p.printed_by_name })),
+    printLog: (printsByReceipt.get(r.id) || []).sort((a, b) => a.printed_at.localeCompare(b.printed_at)).map((p) => ({ at: p.printed_at, by: p.printed_by_name })),
     invoiceSecret: r.invoice_secret, invoiceStatus: r.invoice_status,
     invoiceRequest: r.invoice_tax_code
       ? { taxCode: r.invoice_tax_code, email: r.invoice_email, companyName: r.invoice_company, address: r.invoice_address, note: opt(r.invoice_note), requestedAt: r.invoice_requested_at, updatedAt: r.invoice_updated_at }
       : undefined,
     invoiceIssued: r.invoice_issued_at ? { invoiceNo: opt(r.invoice_no), issuedAt: r.invoice_issued_at, issuedBy: r.invoice_issued_by_name } : undefined,
-    invoiceGroups: groups.filter((g) => g.receipt_id === r.id).map((g): InvoiceGroup => ({
-      id: g.id, deductionIds: groupItems.filter((i) => i.group_id === g.id).map((i) => i.deduction_id), amount: num(g.amount),
+    invoiceGroups: (groupsByReceipt.get(r.id) || []).map((g): InvoiceGroup => ({
+      id: g.id, deductionIds: (itemsByGroup.get(g.id) || []).map((i) => i.deduction_id), amount: num(g.amount),
       taxCode: g.tax_code, email: g.email, companyName: g.company_name, address: g.address, note: opt(g.note), status: g.status,
       requestedAt: g.requested_at, updatedAt: g.updated_at, invoiceNo: opt(g.invoice_no), issuedAt: opt(g.issued_at), issuedBy: opt(g.issued_by_name),
     })),
@@ -256,7 +281,7 @@ export async function loadWorkingState(client: SupabaseClient, me: StaffSession,
     items: w.items || [], estimateCost: 0, approvalStatus: w.approval_status, approvedBy: opt(w.approved_by_name), workStatus: w.work_status,
     assignedTo: w.assigned_to, resultNotes: opt(w.result_notes), createdAt: w.created_at, completedAt: opt(w.completed_at), completedBy: opt(w.completed_by_name),
     laborHours: w.labor_hours === null ? undefined : num(w.labor_hours), repairTeamCode: opt(w.repair_team_code), repairTeamName: opt(w.repair_team_name),
-    repairMembers: members.filter((m) => m.work_order_id === w.id).map((m) => m.member_name),
+    repairMembers: (membersByWork.get(w.id) || []).map((m) => m.member_name),
   });
 
   const mapHistory = (h: Row): LocationHistoryItem => ({
@@ -273,7 +298,7 @@ export async function loadWorkingState(client: SupabaseClient, me: StaffSession,
 
   const mapList = (l: Row): VesselList => ({
     id: l.id, mode: l.mode, vesselName: l.vessel_name, shippingLineCode: opt(l.shipping_line_code), plannedAt: l.planned_at, truckNos: l.truck_nos || [],
-    items: items.filter((i) => i.list_id === l.id).map(mapItem), status: l.status, createdBy: l.created_by_name, createdAt: l.created_at,
+    items: (itemsByList.get(l.id) || []).map(mapItem), status: l.status, createdBy: l.created_by_name, createdAt: l.created_at,
     approvedBy: opt(l.approved_by_name), approvedAt: opt(l.approved_at), approveNote: opt(l.approve_note),
   });
 
