@@ -15,7 +15,7 @@ Kiểm thử mới nhất: `npm test` **97/97 pass** (3 file test) • `npm run 
 | # | Nội dung | Ảnh hưởng |
 |---|---|---|
 | 1 | Nhánh **`agent/claude/ui-design-v2`** **đã push đầy đủ** (DEC-050 → DEC-148, 2026-10-26 — bao gồm cả `p4-prep-xlsx`). **Thử trên trình duyệt + in giấy thật** (mục F → F5) rồi tạo Pull Request merge vào `main` | https://github.com/manhtuyen1111/MATRANDEPOT/pull/new/agent/claude/ui-design-v2 |
-| 1a | **Sửa dữ liệu test:** một số cont mẫu ghi hạng mục vệ sinh `WP` / `WW` thay vì tên chuẩn `WP - QUÉT` / `WW - RỬA NƯỚC` — database thật từ chối. Đồng ý để Claude sửa `demoData.ts`? | Chỉ dữ liệu test |
+| 1a | ~~Sửa tên hạng mục vệ sinh trong dữ liệu test~~ — đã sửa 2026-10-27 (người dùng đồng ý) | — |
 | 1b | ~~Q-042~~ — đã chốt: W-SURVEY không cấp vỏ (DEC-150) | — |
 | 1c | Tên thật 10 khách hàng test (đang để "Khách hàng 01…10"); phí rác cont 40 dùng LV1 hay LV2 (đang LV1) | Chỉ dữ liệu test |
 | 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |

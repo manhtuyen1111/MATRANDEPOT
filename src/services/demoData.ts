@@ -149,7 +149,7 @@ const place = (s: DepotState, containerNo: string, blockCode: string, bay?: stri
 const BULK_GATE_IN = 80;
 const PAYS: Pay[] = [{ kind: 'TT_CASH' }, { kind: 'TT_BANK' }, { kind: 'TTS' }, { kind: 'TT_CASH' }, { kind: 'TTS' }];
 const DAMAGES = [['Móp vách trái'], ['Thủng sàn', 'Rỉ sét nóc'], ['Cong khung cửa'], ['Rách mái'], ['Gãy tay khóa cửa']];
-const CLEANINGS = [['WP'], ['WW'], ['WP', 'CC'], ['RM'], ['ML', 'WW']];
+const CLEANINGS = [['WP - QUÉT'], ['WW - RỬA NƯỚC'], ['WP - QUÉT', 'CC - HÓA CHẤT'], ['RM - NHỔ ĐINH'], ['ML - BÓC TEM', 'WW - RỬA NƯỚC']];
 
 function bulkData(state: DepotState): DepotState {
   let s = state;
@@ -258,7 +258,7 @@ function bulkData(state: DepotState): DepotState {
       s = inspectVesselImportItem(as(s, 'usr-inspector'), {
         listId: r.listId, itemId: it.id, actualContainerNo: it.containerNo, truckNo: trucks[j % 2],
         conditionClass: dmg ? 'DAMAGE' : 'AV', damageRemarks: dmg ? ['Móp vách sau'] : [], stuffingClass: (['E', 'M', 'K'] as const)[j % 3],
-        cleaningItems: j % 4 === 0 ? ['WP'] : ['KHÔNG VỆ SINH'], manufactureYear: 2012 + (j % 10),
+        cleaningItems: j % 4 === 0 ? ['WP - QUÉT'] : ['KHÔNG VỆ SINH'], manufactureYear: 2012 + (j % 10),
       });
       const c = s.containers.find((x) => x.containerNo === it.containerNo && x.status === 'WAITING_PLACEMENT');
       if (v === 0 && c && !c.needsCleaning) s = place(s, it.containerNo, 'BLOCK-B');
@@ -311,12 +311,12 @@ export function createDemoState(): DepotState {
     { containerNo: 'MSKU1000055', size: '20', customer: KH(6), pay: { kind: 'TT_CASH' }, damage: ['Móp vách trái', 'Thủng sàn'], truckNo: '15C-105.05' },
     { containerNo: 'MSKU1000066', size: '40', customer: KH(7), pay: { kind: 'TTS' }, damage: ['Rách mái'], truckNo: '15C-106.06' },
     { containerNo: 'MSKU1000077', size: '40', customer: KH(1), pay: { kind: 'TTR', qr }, damage: ['Cong khung cửa'], truckNo: '15C-107.07' },
-    { containerNo: 'MSKU1000088', size: '20', customer: KH(9), pay: { kind: 'TT_CASH' }, cleaning: ['WW'], truckNo: '15C-108.08' },
+    { containerNo: 'MSKU1000088', size: '20', customer: KH(9), pay: { kind: 'TT_CASH' }, cleaning: ['WW - RỬA NƯỚC'], truckNo: '15C-108.08' },
     { containerNo: 'MSKU1000099', size: '45', customer: KH(8), pay: { kind: 'TTS' }, truckNo: '15C-109.09' },
     { containerNo: 'MSKU1000100', size: '20', customer: KH(10), pay: { kind: 'NONE' }, truckNo: '15C-110.10' },
     // DEC-109: chưa giám định ngay được → Hạ kệ giám định (1 cont đã lên kệ, 1 cont chờ Xe nâng)
     { containerNo: 'MSKU1000111', size: '40', customer: KH(2), pay: { kind: 'TT_CASH' }, rack: true, truckNo: '15C-111.11' },
-    { containerNo: 'MSKU1000122', size: '20', customer: KH(3), pay: { kind: 'TTS' }, rack: true, cleaning: ['WP'], truckNo: '15C-112.12' },
+    { containerNo: 'MSKU1000122', size: '20', customer: KH(3), pay: { kind: 'TTS' }, rack: true, cleaning: ['WP - QUÉT'], truckNo: '15C-112.12' },
     // Dùng cho Cấp vỏ / Xuất tàu
     { containerNo: 'MSKU2000011', size: '40', customer: KH(4), pay: { kind: 'TTS' }, truckNo: '15C-201.01' },
     { containerNo: 'MSKU2000022', size: '20', customer: KH(5), pay: { kind: 'TTS' }, truckNo: '15C-202.02' },
@@ -374,7 +374,7 @@ export function createDemoState(): DepotState {
   s = place(s, 'MSKU4000011', 'BLOCK-A', '03', '01', '01');
   s = inspectVesselImportItem(as(s, 'usr-inspector'), {
     listId: nt.listId, itemId: ntItem('MSKU4000022').id, actualContainerNo: 'MSKU4000022', truckNo: '15C-402.02',
-    conditionClass: 'DAMAGE', damageRemarks: ['Móp vách sau'], stuffingClass: 'E', cleaningItems: ['WW'], manufactureYear: 2016,
+    conditionClass: 'DAMAGE', damageRemarks: ['Móp vách sau'], stuffingClass: 'E', cleaningItems: ['WW - RỬA NƯỚC'], manufactureYear: 2016,
   });
 
   // ── XUẤT TÀU: 1 cont đã xuất, 1 cont chờ xuất

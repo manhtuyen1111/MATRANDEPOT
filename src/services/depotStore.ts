@@ -28,8 +28,8 @@ import {
 } from '../types/depot';
 
 // DEC-106, DEC-108, DEC-111: đổi khóa để mọi máy nạp lại dữ liệu test mới; khóa cũ bị xóa khi nạp
-const STORAGE_KEY = 'matran_depot_erp_state_v14'; // v14: W-SURVEY + danh mục test DEC-148
-const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7', 'matran_depot_erp_state_v8', 'matran_depot_erp_state_v9', 'matran_depot_erp_state_v10', 'matran_depot_erp_state_v11', 'matran_depot_erp_state_v12', 'matran_depot_erp_state_v13'];
+const STORAGE_KEY = 'matran_depot_erp_state_v15'; // v15: tên chuẩn hạng mục vệ sinh trong dữ liệu test
+const LEGACY_STORAGE_KEYS = ['matran_depot_erp_state_v7', 'matran_depot_erp_state_v8', 'matran_depot_erp_state_v9', 'matran_depot_erp_state_v10', 'matran_depot_erp_state_v11', 'matran_depot_erp_state_v12', 'matran_depot_erp_state_v13', 'matran_depot_erp_state_v14'];
 
 export interface DepotState {
   currentUser: StaffUser;
