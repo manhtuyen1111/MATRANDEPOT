@@ -268,8 +268,8 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 
 **Việc còn lại (theo thứ tự đề xuất):**
 1. ~~N7~~ ✅ (DEC-157) • ~~Ảnh Nhập tàu~~ ✅ không chụp (DEC-156) • ~~N8~~ ✅ (DEC-158) • ảnh giữ 2 tháng (DEC-159).
-2. **Bạn thử tay toàn bộ trên database** (Supabase local; hướng dẫn trong báo cáo phiên 2026-10-27). Lỗi phát hiện → Claude sửa.
-3. **Import tồn vỏ ban đầu** — chờ Q-044 (file mẫu + cách cấp mã / thanh toán cho cont tồn cũ).
+2. **Dựng môi trường TEST nhiều người** theo `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md` (bạn làm: Supabase project test + Cloudflare Pages; script danh mục test + Admin đầu tiên ở `supabase/test-data/`). Rồi cả nhóm thử tay toàn bộ; lỗi → Claude sửa. (Supabase local đã có sẵn danh mục test + `admin` / `123456`.)
+3. **Import tồn vỏ ban đầu** — trả lời bộ câu hỏi `docs/IMPORT_TON_VO_BAN_DAU.md` (Q-044) + gửi file mẫu; Claude làm công cụ import + script xóa dữ liệu test khi test xong.
 4. Hướng dẫn bạn tạo project Supabase thật, apply migration, reset sạch → import tồn vỏ → chạy thật.
 - Đã biết: mở Hồ sơ cont đã OUT quá 7 ngày từ màn báo cáo có thể không thấy; phiếu thu cũ hơn 7 ngày chỉ xem (DEC-157, DEC-158).
 
@@ -445,3 +445,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-27 (tối) — Claude Code: sửa PROGRESS.md bị nhân bản 5 lần (lỗi String.replace từ commit d01b08b, 1.890 → ~430 dòng, không mất nội dung); viết lại I.5 theo trạng thái thật. 157 test (2 bỏ qua) • build PASS.
 - 2026-10-27 (tối) — Claude Code: N7 báo cáo theo khoảng lọc (DEC-157), Nhập tàu không chụp ảnh (DEC-156). 160 test (2 bỏ qua, chạy thật local pass) • build PASS.
 - 2026-10-27 (khuya) — Claude Code: N8 (DEC-158) đồng bộ phần thay đổi + mất mạng + đo tốc độ quy mô thật; DEC-159 ảnh giữ 2 tháng; Q-044 import tồn vỏ. 163 test (3 bỏ qua, chạy thật local pass) • pgTAP 180/180 • build PASS.
+- 2026-10-27 (khuya) — Claude Code: hướng dẫn môi trường TEST nhiều người, script danh mục test + Admin đầu tiên (chạy thử local OK, sửa lỗi hướng dẫn thiếu ::matran), bộ câu hỏi import tồn vỏ (Q-044). 163 test • pgTAP 180/180.
