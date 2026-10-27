@@ -260,7 +260,8 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 1. Biểu giá THU GOM RÁC / KHÁC lỗi "Hãng tàu không có" → migration `20261103000001` (pgTAP 184/184 local) — **bạn chạy `npx supabase db push`** lên `matran-test` rồi thử lại.
 2. Danh mục chung → Sửa chữa: bảng mỗi tổ 1 dòng, bấm dòng → cửa sổ chi tiết + gán nhân viên.
 3. Văn phòng Hạ vỏ + Hồ sơ container: kính lúp khi rê chuột, bấm ảnh → xem toàn màn hình, phóng to 1× → 4×.
-- Giao diện (2, 3) lên Vercel khi tạo PR merge `agent/claude/p4-database` → `main`.
+4. **Tốc độ + giao diện chờ:** tải dữ liệu theo đợt song song (thay ~25 lượt nối tiếp); tách file theo màn hình (file đầu 1.013 → 260 KB); màn chờ hiện ngay khi mở trang, có bước "đang kiểm tra đăng nhập / đang tải dữ liệu bãi"; mở màn lần đầu có khung xương; "Đang lưu" chỉ hiện khi lâu > 300 ms; thanh chạy khi bấm Tải lại. Thành phần chờ dùng chung: `src/components/LoadingScreens.tsx` — màn mới thêm vào `App.tsx` theo kiểu `named(() => import(...), 'Ten')` (tải khi cần).
+- Giao diện (2, 3, 4) lên Vercel khi tạo PR merge `agent/claude/p4-database` → `main`.
 
 **PHIÊN SAU — BẠN CẦN CHÚ Ý:**
 1. **Đang test:** tạo tài khoản người test (User - Role → Thêm — lần đầu thử hàm `admin-create-staff` trên cloud), cả nhóm thử theo Bước 7 `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`. Ghi lỗi bằng nút **Góp ý** (Admin xem Báo cáo → Góp ý) hoặc chụp màn hình → mở phiên mới gửi Claude.
@@ -472,3 +473,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-27 (trưa) — Claude Code: thêm Bước 5A Vercel cho giai đoạn test (giữ Cloudflare cho chạy thật); bàn giao I.5 "phiên sau làm gì đầu tiên"; push đầy đủ nhánh.
 - 2026-10-27 (chiều) — Claude Code + bạn: dựng môi trường TEST trên cloud (Supabase `matran-test` + Vercel từ `main`), đăng nhập Admin OK; sửa script danh mục test thiếu Size / Type; ghi chú phiên sau (I.5).
 - 2026-10-28 — Claude Code: sửa 3 điểm từ đợt test 1 (biểu giá rác / khác, danh mục tổ sửa chữa, kính lúp ảnh). 165 test • pgTAP 184/184 • build PASS.
+- 2026-10-28 — Claude Code: tốc độ mở app + giao diện chờ (tải song song, tách file theo màn, màn chờ ngay từ HTML). 165 test • test thật local pass • build PASS.

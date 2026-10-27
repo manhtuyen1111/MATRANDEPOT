@@ -7,6 +7,7 @@ import { clearIdMap, friendlyError, isOffline, setRemoteSink, type RemoteOp } fr
 import { setReportLoader } from '../services/remote/reportSource';
 import type { DepotState } from '../services/depotStore';
 import { App } from './App';
+import { AppLoading, SavingIndicator, TopProgress } from '../components/LoadingScreens';
 
 // ============================================================================
 // CHẾ ĐỘ DATABASE (DEC-155): đăng nhập → (bắt buộc đổi mật khẩu) → tải dữ liệu đang làm việc → App.
@@ -17,7 +18,7 @@ const ENV = import.meta.env.VITE_APP_ENV as string | undefined;
 const AUTO_REFRESH_MS = 30_000;
 
 type Phase =
-  | { kind: 'loading' }
+  | { kind: 'loading'; step?: string }
   | { kind: 'signedOut'; error?: string | null }
   | { kind: 'mustChange'; me: StaffSession }
   | { kind: 'ready'; me: StaffSession; state: DepotState };
@@ -27,6 +28,7 @@ export const RemoteApp: React.FC = () => {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const [changing, setChanging] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [reloading, setReloading] = useState(false); // bấm Tải lại → thanh chạy trên cùng
   const [syncError, setSyncError] = useState<{ message: string; reloaded: boolean } | null>(null);
   const [offline, setOffline] = useState(isOffline());
   const queue = useRef<RemoteOp[]>([]);
@@ -40,6 +42,7 @@ export const RemoteApp: React.FC = () => {
       meRef.current = me;
       if (!me) return setPhase({ kind: 'signedOut' });
       if (me.mustChangePassword) return setPhase({ kind: 'mustChange', me });
+      setPhase({ kind: 'loading', step: `Xin chào ${me.fullName} — đang tải dữ liệu bãi…` });
       syncRef.current = createWorkingSync(client, me);
       setPhase({ kind: 'ready', me, state: await syncRef.current.full() });
     } catch (err) {
@@ -142,7 +145,7 @@ export const RemoteApp: React.FC = () => {
   };
 
   if (phase.kind === 'loading') {
-    return <div className="flex min-h-screen items-center justify-center bg-canvas text-sm text-ink-muted">Đang tải dữ liệu…</div>;
+    return <AppLoading step={phase.step || 'Đang kiểm tra đăng nhập…'} />;
   }
   if (phase.kind === 'signedOut') {
     return (
@@ -151,6 +154,7 @@ export const RemoteApp: React.FC = () => {
         initialError={phase.error}
         onSignIn={async (u, p) => {
           await signIn(client, u, p);
+          setPhase({ kind: 'loading', step: 'Đăng nhập thành công — đang tải dữ liệu…' });
           await refresh();
         }}
       />
@@ -181,14 +185,14 @@ export const RemoteApp: React.FC = () => {
           username: phase.me.username,
           onSignOut: doSignOut,
           onChangePassword: () => setChanging(true),
-          onReload: () => void reloadData('full'),
+          onReload: () => {
+            setReloading(true);
+            void reloadData('full').catch(() => {}).finally(() => setReloading(false));
+          },
         }}
       />
-      {busy && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/30" role="status" data-testid="saving-overlay">
-          <div className="rounded-xl bg-surface px-6 py-4 text-sm font-semibold text-ink shadow-[0_8px_32px_rgba(11,37,69,0.16)]">Đang lưu vào database…</div>
-        </div>
-      )}
+      <SavingIndicator active={busy} />
+      {reloading && !busy && <TopProgress />}
       {offline && (
         <div className="fixed inset-x-0 bottom-0 z-[70] bg-danger-bg px-4 py-2 text-center text-sm font-semibold text-danger-fg" role="alert" data-testid="offline-banner">
           Mất kết nối mạng — thao tác sẽ không được lưu. Có mạng lại, dữ liệu tự tải lại.

@@ -85,67 +85,70 @@ export interface RawData {
 }
 
 async function fetchRaw(client: SupabaseClient, since: string, until: string): Promise<RawData> {
+  // Chạy theo ĐỢT: truy vấn không phụ thuộc nhau gửi cùng lúc (trước đây ~25 lượt nối tiếp → chậm qua mạng thật)
+  const win = (table: string, col: string) => all((a, b) => client.from(table).select('*').gte(col, since).lte(col, until).range(a, b));
 
-  // --- Hồ sơ / lượt lưu bãi ---
-  const containers = merge(
-    await all((a, b) => client.from('containers').select('*').neq('status', 'GATED_OUT').range(a, b)),
-    await all((a, b) => client.from('containers').select('*').gte('gate_in_at', since).lte('gate_in_at', until).range(a, b)),
-  );
-  const gateIns = merge(
-    await all((a, b) => client.from('gate_in_orders').select('*').in('status', ['FIELD_RECORDED', 'PAYMENT_PENDING']).range(a, b)),
-    await all((a, b) => client.from('gate_in_orders').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
-    await byIds(client, 'gate_in_orders', 'id', containers.map((c) => c.gate_in_id)),
-  );
-  const gateOuts = merge(
-    await all((a, b) => client.from('gate_out_orders').select('*').in('status', ['PAYMENT_PENDING', 'PENDING_FORKLIFT']).range(a, b)),
-    await all((a, b) => client.from('gate_out_orders').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
-  );
-  const bookings = merge(
-    await all((a, b) => client.from('release_bookings').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
-    await byIds(client, 'release_bookings', 'id', gateOuts.map((o) => o.booking_id)),
-  );
+  // Đợt 1: mọi thứ lọc theo trạng thái / thời gian
+  const [contOpen, contWin, giOpen, giWin, goOpen, goWin, bkWin, ppOpen, ppWin, vcWin, txWin, txPending, rcWin, ddWin, tkWin, lsOpen, lsWin, feedbacks] = await Promise.all([
+    all((a, b) => client.from('containers').select('*').neq('status', 'GATED_OUT').range(a, b)),
+    win('containers', 'gate_in_at'),
+    all((a, b) => client.from('gate_in_orders').select('*').in('status', ['FIELD_RECORDED', 'PAYMENT_PENDING']).range(a, b)),
+    win('gate_in_orders', 'created_at'),
+    all((a, b) => client.from('gate_out_orders').select('*').in('status', ['PAYMENT_PENDING', 'PENDING_FORKLIFT']).range(a, b)),
+    win('gate_out_orders', 'created_at'),
+    win('release_bookings', 'created_at'),
+    all((a, b) => client.from('prepaid_receipts').select('*').in('status', ['PENDING_PAYMENT', 'ACTIVE']).range(a, b)),
+    win('prepaid_receipts', 'created_at'),
+    win('vouchers', 'created_at'),
+    win('payment_transactions', 'created_at'),
+    all((a, b) => client.from('payment_transactions').select('*').eq('status', 'PENDING').range(a, b)),
+    win('payment_receipts', 'issued_at'),
+    win('prepaid_deductions', 'performed_at'),
+    win('k80_tickets', 'issued_at'),
+    all((a, b) => client.from('vessel_lists').select('*').eq('status', 'OPEN').range(a, b)),
+    win('vessel_lists', 'created_at'),
+    win('feedbacks', 'created_at'),
+  ]);
+  const containers = merge(contOpen, contWin);
+  const gateOuts = merge(goOpen, goWin);
+  const prepaids = merge(ppOpen, ppWin);
+  const lists = merge(lsOpen, lsWin);
 
-  // --- Tiền ---
-  const prepaids = merge(
-    await all((a, b) => client.from('prepaid_receipts').select('*').in('status', ['PENDING_PAYMENT', 'ACTIVE']).range(a, b)),
-    await all((a, b) => client.from('prepaid_receipts').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
-  );
-  const vouchers = merge(
-    await all((a, b) => client.from('vouchers').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
-    await byIds(client, 'vouchers', 'id', [...gateIns.map((g) => g.voucher_id), ...gateOuts.map((o) => o.voucher_id)]),
-  );
-  const txs = merge(
-    await all((a, b) => client.from('payment_transactions').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
-    await all((a, b) => client.from('payment_transactions').select('*').eq('status', 'PENDING').range(a, b)),
-    await byIds(client, 'payment_transactions', 'prepaid_id', prepaids.map((p) => p.id)),
-  );
-  const receipts = merge(
-    await all((a, b) => client.from('payment_receipts').select('*').gte('issued_at', since).lte('issued_at', until).range(a, b)),
-    await byIds(client, 'payment_receipts', 'transaction_id', txs.map((t) => t.id)),
-  );
-  const deductions = merge(
-    await all((a, b) => client.from('prepaid_deductions').select('*').gte('performed_at', since).lte('performed_at', until).range(a, b)),
-    await byIds(client, 'prepaid_deductions', 'prepaid_id', prepaids.map((p) => p.id)),
-  );
-  const prints = await byIds(client, 'receipt_prints', 'receipt_id', receipts.map((r) => r.id));
-  const groups = await byIds(client, 'invoice_groups', 'receipt_id', receipts.map((r) => r.id));
+  // Đợt 2: hồ sơ liên quan tới cont / lệnh / phiếu trả trước / danh sách tàu đã có
+  const [giById, bkById, txByPrepaid, ddByPrepaid, tkByDossier, works, history, items] = await Promise.all([
+    byIds(client, 'gate_in_orders', 'id', containers.map((c) => c.gate_in_id)),
+    byIds(client, 'release_bookings', 'id', gateOuts.map((o) => o.booking_id)),
+    byIds(client, 'payment_transactions', 'prepaid_id', prepaids.map((p) => p.id)),
+    byIds(client, 'prepaid_deductions', 'prepaid_id', prepaids.map((p) => p.id)),
+    byIds(client, 'k80_tickets', 'dossier_code', containers.map((c) => c.dossier_code)),
+    byIds(client, 'work_orders', 'container_id', containers.map((c) => c.id)),
+    byIds(client, 'location_history', 'container_id', containers.map((c) => c.id)),
+    byIds(client, 'vessel_list_items', 'list_id', lists.map((l) => l.id)),
+  ]);
+  const gateIns = merge(giOpen, giWin, giById);
+  const bookings = merge(bkWin, bkById);
+  const txs = merge(txWin, txPending, txByPrepaid);
+  const deductions = merge(ddWin, ddByPrepaid);
+  const tickets = merge(tkWin, tkByDossier);
+
+  // Đợt 3: chứng từ của hồ sơ, phiếu thu của giao dịch, thành viên tổ sửa chữa
+  const [vcById, rcByTx, members] = await Promise.all([
+    byIds(client, 'vouchers', 'id', [...gateIns.map((g) => g.voucher_id), ...gateOuts.map((o) => o.voucher_id)]),
+    byIds(client, 'payment_receipts', 'transaction_id', txs.map((t) => t.id)),
+    byIds(client, 'work_order_members', 'work_order_id', works.map((w) => w.id), 'work_order_id, member_name'),
+  ]);
+  const vouchers = merge(vcWin, vcById);
+  const receipts = merge(rcWin, rcByTx);
+
+  // Đợt 4: dòng chi phí, lần in, yêu cầu hóa đơn
+  const [fees, prints, groups] = await Promise.all([
+    byIds(client, 'fee_lines', 'owner_id', [...vouchers.map((v) => v.id), ...prepaids.map((p) => p.id)]),
+    byIds(client, 'receipt_prints', 'receipt_id', receipts.map((r) => r.id)),
+    byIds(client, 'invoice_groups', 'receipt_id', receipts.map((r) => r.id)),
+  ]);
+
+  // Đợt 5: lượt thuộc từng yêu cầu hóa đơn
   const groupItems = await byIds(client, 'invoice_group_items', 'group_id', groups.map((g) => g.id), 'group_id, deduction_id');
-  const fees = await byIds(client, 'fee_lines', 'owner_id', [...vouchers.map((v) => v.id), ...prepaids.map((p) => p.id)]);
-
-  // --- Hiện trường ---
-  const tickets = merge(
-    await all((a, b) => client.from('k80_tickets').select('*').gte('issued_at', since).lte('issued_at', until).range(a, b)),
-    await byIds(client, 'k80_tickets', 'dossier_code', containers.map((c) => c.dossier_code)),
-  );
-  const works = await byIds(client, 'work_orders', 'container_id', containers.map((c) => c.id));
-  const members = await byIds(client, 'work_order_members', 'work_order_id', works.map((w) => w.id), 'work_order_id, member_name');
-  const history = await byIds(client, 'location_history', 'container_id', containers.map((c) => c.id));
-  const lists = merge(
-    await all((a, b) => client.from('vessel_lists').select('*').eq('status', 'OPEN').range(a, b)),
-    await all((a, b) => client.from('vessel_lists').select('*').gte('created_at', since).lte('created_at', until).range(a, b)),
-  );
-  const items = await byIds(client, 'vessel_list_items', 'list_id', lists.map((l) => l.id));
-  const feedbacks = await all((a, b) => client.from('feedbacks').select('*').gte('created_at', since).lte('created_at', until).range(a, b));
 
   return { containers, gateIns, gateOuts, bookings, prepaids, vouchers, txs, receipts, deductions, prints, groups, groupItems, fees, tickets, works, members, history, lists, items, feedbacks };
 }
@@ -388,7 +391,11 @@ export function createWorkingSync(client: SupabaseClient, me: StaffSession): Wor
     if (error) throw new Error(`Không tải được dữ liệu: ${error.message}`);
     return String(data);
   };
-  const build = async (r: RawData) => buildState(await loadCatalogState(client, me), r, await signPhotos(client, r, photos));
+  // Danh mục và ký link ảnh chạy song song
+  const build = async (r: RawData) => {
+    const [base, photo] = await Promise.all([loadCatalogState(client, me), signPhotos(client, r, photos)]);
+    return buildState(base, r, photo);
+  };
 
   const full = async () => {
     cursor = await serverNow(); // lấy mốc TRƯỚC khi tải → không sót thay đổi xảy ra trong lúc tải
