@@ -6,6 +6,7 @@ import { App } from '../src/app/App';
 import { FeedbackButton, FeedbackPanel } from '../src/components/FeedbackButton';
 import { FeedbackReport } from '../src/features/reports/FeedbackReport';
 import { InvoicePortal } from '../src/features/invoice/InvoicePortal';
+import { demoBackend } from '../src/features/invoice/portalBackend';
 import { InvoicePanel } from '../src/features/receipts/ReceiptsWorkspace';
 import { createDemoState } from '../src/services/demoData';
 import { YardFeature } from '../src/features/yard/YardFeature';
@@ -605,7 +606,7 @@ describe('DEC-097: Hình thức thanh toán — TTTT Trực tiếp đứng đầ
 describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
   const demo = createDemoState();
   it('trang khách hàng: ô dán mã bảo mật, chưa hiện form khi chưa tra cứu', () => {
-    const html = renderToString(<InvoicePortal state={demo} onUpdateState={noop} />);
+    const html = renderToString(<InvoicePortal backend={demoBackend()} />);
     expect(html).toContain('Yêu cầu xuất hóa đơn');
     expect(html).toContain('aria-label="Mã bảo mật"');
     expect(html).not.toContain('Gmail nhận hóa đơn *'); // form chỉ hiện sau khi tra cứu đúng mã
