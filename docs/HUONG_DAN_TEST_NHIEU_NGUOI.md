@@ -54,7 +54,21 @@ Làm theo mục **"Lịch xóa ảnh hết hạn"** trong `supabase/README.md` (
 
 Có thể để sau. Trong thời gian test chưa có ảnh nào quá 2 tháng.
 
-## Bước 5 — Đưa app lên Cloudflare Pages
+## Bước 5A — Đưa app lên Vercel (dùng cho giai đoạn TEST — bạn đã có tài khoản)
+
+1. Vào https://vercel.com → **Add New → Project** → chọn repo `MATRANDEPOT` (đã nối GitHub).
+2. Cấu hình:
+   - Framework Preset: **Vite** (Vercel tự nhận).
+   - Build Command `npm run build`, Output Directory `dist` (để mặc định).
+   - App dùng địa chỉ dạng `#/…` nên **không cần** cấu hình chuyển hướng.
+3. **Environment Variables**: 3 biến `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_ENV=test`, giống bảng ở Bước 5 bên dưới. **Không** dán khóa service_role / secret.
+4. Bấm **Deploy**.
+   - Vercel build nhánh mặc định (`main`). Muốn test nhánh `agent/claude/p4-database`, vào **Settings → Git → Production Branch**, đổi thành `agent/claude/p4-database`, rồi bấm **Redeploy**.
+   - Mỗi lần push nhánh, Vercel tự build lại.
+5. Nhận địa chỉ dạng `https://matrandepot.vercel.app`, có sẵn HTTPS nên điện thoại chụp ảnh được.
+6. **Lưu ý:** gói Hobby (miễn phí) của Vercel chỉ cho dùng **phi thương mại**. Dùng để test thì được. Khi chạy thật cho công ty, chuyển sang Cloudflare Pages (Bước 5) hoặc Vercel Pro.
+
+## Bước 5 — Đưa app lên Cloudflare Pages (dùng khi chạy thật)
 
 1. Vào https://dash.cloudflare.com, tạo tài khoản miễn phí.
 2. Vào **Workers & Pages → Create → Pages → Connect to Git**, chọn repo `MATRANDEPOT`.
