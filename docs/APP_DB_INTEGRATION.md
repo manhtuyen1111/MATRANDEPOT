@@ -33,11 +33,11 @@ Cách làm đã chốt: **giữ màn hình, đổi lớp dữ liệu.**
 | GĐ | Nội dung | Kiểm tra |
 |---|---|---|
 | N1 ✅ (2026-10-27) | **Nền:** chế độ chạy, đăng nhập bằng tên đăng nhập, bắt buộc đổi mật khẩu lần đầu (ghép `::matran` — DEC-153), đăng xuất, tải hồ sơ nhân viên + vai trò; cửa chung `runAction`; tải danh mục | Đăng nhập / đổi mật khẩu / đăng xuất trên local; app Demo không đổi (148 test) |
-| N2 | **Danh mục + User - Role:** đọc / sửa Danh mục, tạo tài khoản / đặt lại mật khẩu qua Edge Function | Admin tạo nhân viên, nhân viên đăng nhập |
-| N3 | **Hạ vỏ:** Giám định (ảnh lên kho `door-photos`, nén ~200 KB), W-SURVEY, Văn phòng Hạ vỏ + thanh toán, K80 / EEIR / phiếu thu in | Đi đủ 1 lượt Hạ vỏ trên local |
-| N4 | **Hiện trường:** Vệ sinh, Xe nâng (hạ vỏ, đảo chuyển), Báo giá, Sửa chữa, giám định trên kệ, Tồn vỏ (khóa, ghi chú, sửa vị trí, hàng loạt) | Đủ luồng DAMAGE → AV |
-| N5 | **Cấp vỏ + xuất bãi; Nhập / Xuất tàu** | Đủ luồng cấp vỏ, 1 tàu nhập, 1 tàu xuất |
-| N6 | **Phiếu thu, phiếu thu trả trước, xác nhận tay chuyển khoản, trang hóa đơn `#/hoa-don`, Kế toán** | Thu TT / TTR / TTS, hóa đơn theo lượt |
+| N2 ✅ code (2026-10-27) | **Danh mục + User - Role:** đọc / sửa Danh mục, tạo tài khoản / đặt lại mật khẩu qua Edge Function | Admin tạo nhân viên, nhân viên đăng nhập |
+| N3 ✅ code (2026-10-27) | **Hạ vỏ:** Giám định (ảnh lên kho `door-photos`, nén ~200 KB), W-SURVEY, Văn phòng Hạ vỏ + thanh toán, K80 / EEIR / phiếu thu in | Đi đủ 1 lượt Hạ vỏ trên local |
+| N4 ✅ code (2026-10-27) | **Hiện trường:** Vệ sinh, Xe nâng (hạ vỏ, đảo chuyển), Báo giá, Sửa chữa, giám định trên kệ, Tồn vỏ (khóa, ghi chú, sửa vị trí, hàng loạt) | Đủ luồng DAMAGE → AV |
+| N5 ✅ code (2026-10-27) | **Cấp vỏ + xuất bãi; Nhập / Xuất tàu** | Đủ luồng cấp vỏ, 1 tàu nhập, 1 tàu xuất |
+| N6 ✅ code (2026-10-27) | **Phiếu thu, phiếu thu trả trước, xác nhận tay chuyển khoản, trang hóa đơn `#/hoa-don`, Kế toán** | Thu TT / TTR / TTS, hóa đơn theo lượt |
 | N7 | **Báo cáo + Excel** theo trang từ database; Góp ý; Trả chứng từ | Lọc 3 tháng, 100 dòng / trang, Excel |
 | N8 | **Hoàn thiện:** làm mới dữ liệu khi người khác thao tác (Realtime hoặc tải lại định kỳ), thông báo mất mạng, đo tốc độ với dữ liệu lớn | 50–70 người dùng giả lập |
 
@@ -55,3 +55,10 @@ Còn thiếu ở database (sẽ bổ sung trong giai đoạn tương ứng, kèm
 - **N1 (2026-10-27):** `src/main.tsx` chọn chế độ; `src/app/RemoteApp.tsx` (đăng nhập → bắt buộc đổi mật khẩu → tải dữ liệu → App); màn `src/features/auth/LoginScreen.tsx` (chia đôi, hiện / ẩn mật khẩu, nhớ tên đăng nhập, quên mật khẩu → Admin, nhãn môi trường); quy tắc `src/services/authPassword.ts`; phiên `src/services/remote/session.ts`; tải danh mục `src/services/remote/loadState.ts`. App chế độ database: header có tên + Đổi mật khẩu + Đăng xuất, ẩn chọn người dùng demo, dòng báo màn tác nghiệp chưa lưu.
   - Kiểm thử: `tests/auth.test.tsx` (7) + `tests/remote.local.test.ts` (chạy thật với Supabase local khi đặt biến MATRAN_LOCAL_*).
   - Cửa chung `runAction` để sang N3 (khi nối thao tác đầu tiên).
+- **N2 → N6 (2026-10-27, code xong — cần thử tay trên trình duyệt):** thay `runAction` bằng cách gọn hơn:
+  - `src/services/api.ts`: ~55 hàm ghi bọc lại — chạy hàm gốc trên máy (báo lỗi ngay) + xếp RPC vào hàng chờ (`src/services/remote/sync.ts`). Giao diện chỉ import hàm ghi từ đây (test DEC-155 trong `ui-smoke` chặn).
+  - `RemoteApp`: màn "Đang lưu vào database…" → chạy lần lượt → tải lại dữ liệu đang làm việc (`loadWorking.ts`: mọi cont trong bãi + 90 ngày); database từ chối → dải đỏ + tải lại; tự làm mới 30 giây; nút Tải lại.
+  - `idMap`: 1 lần bấm có 2 thao tác nối nhau (lập lệnh cấp vỏ + thu tiền) → id tạm đổi sang id thật.
+  - Văn phòng: nút xác nhận tay đã nhận chuyển khoản. User - Role: gợi ý tên đăng nhập, đặt lại mật khẩu (Edge Function). Trang `#/hoa-don` chạy cả Demo và database (`portalBackend.ts`).
+  - Kiểm thử thật: `tests/remote.flow.local.test.ts` — Giám định → Văn phòng (TTS) → Xe nâng → database tự chặn sai → Cấp vỏ + TTS cùng 1 lần bấm → Gate out: **pass**.
+  - **Chưa làm:** ảnh cửa ở Nhập tàu chưa tải lên kho (đang gửi trống); N7 báo cáo theo trang từ database (hiện báo cáo chỉ thấy 90 ngày đã tải); N8.
