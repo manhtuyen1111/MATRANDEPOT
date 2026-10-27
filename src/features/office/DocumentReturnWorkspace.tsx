@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { CameraScanButton } from '../../components/Qr';
 import { confirmDocumentsReturn, recordReceiptPrint } from '../../services/api';
 import { Eye, FileCheck2, Printer, QrCode, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
@@ -55,6 +56,7 @@ export const DocumentReturnWorkspace: React.FC<{
           <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} autoFocus placeholder="Quét mã QR K80 / mã hồ sơ..." className={`${inputCls} py-2.5 font-mono text-sm uppercase`} />
           <button type="button" disabled={!code.trim()} onClick={() => showPreview(code)} className={`${secondaryBtn} shrink-0`}><Eye className="h-3.5 w-3.5" />Xem trước</button>
           <button type="submit" disabled={!code.trim()} className={`${primaryBtn} shrink-0`}>Xác nhận & in</button>
+          <CameraScanButton onResult={(c) => { setCode(c); confirm(c); }} />
         </form>
         <p className="mt-2 text-[11px] text-ink-muted">Quét được cả phiếu Hạ vỏ và Cấp vỏ. Chỉ trả được khi lái xe đã đi đủ các bộ phận trên lộ trình. Hệ thống tự in EEIR và phiếu thu (nếu có); mỗi lần in phiếu thu được ghi nhận.</p>
       </SectionCard>

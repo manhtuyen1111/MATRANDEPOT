@@ -898,3 +898,24 @@ describe('Danh mục Sửa chữa + kính lúp ảnh cửa cont', () => {
     expect(html).toContain('https://example.invalid/door.jpg');
   });
 });
+
+describe('DEC-057: mã QR tác nghiệp THẬT + quét bằng camera', () => {
+  it('Mã QR tạo được, thưa (phiên bản nhỏ → quét nhanh), đúng nội dung', async () => {
+    const QR = await import('qrcode');
+    const code = base.k80Tickets[0].qrCode;
+    const qr = QR.create(code, { errorCorrectionLevel: 'M' });
+    expect(qr.version).toBeLessThanOrEqual(3); // ≤ 29×29 ô — đọc trong tích tắc
+    expect(qr.segments.map((s) => s.data.toString()).join('')).toBe(code);
+    expect(await QR.toDataURL(code, { errorCorrectionLevel: 'M', margin: 1 })).toMatch(/^data:image\/png;base64,/);
+  });
+
+  it('Phiếu K80 dùng mã QR thật (không còn hình minh họa); màn hiện trường + Trả chứng từ có nút camera quét', () => {
+    const ticket = base.k80Tickets[0];
+    const k80 = renderToString(<K80TicketModal ticket={ticket} state={base} onClose={noop} />);
+    expect(k80).toContain(`aria-label="Mã QR ${ticket.qrCode}"`);
+    expect(k80).not.toContain('lucide-qr-code');
+    const field = renderToString(<FieldQueueWorkspaces mode="XN_CHO_HA_VO" state={as(base, 'usr-forklift')} onUpdateState={noop} />);
+    expect(field).toContain('Mở camera quét QR');
+    expect(renderToString(<DocumentReturnWorkspace state={as(base, 'usr-office')} onUpdateState={noop} />)).toContain('Mở camera quét QR');
+  });
+});

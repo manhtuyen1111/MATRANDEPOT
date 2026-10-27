@@ -1,5 +1,6 @@
 import React from 'react';
-import { Check, Copy, Printer, QrCode, X } from 'lucide-react';
+import { Check, Copy, Printer, X } from 'lucide-react';
+import { QrImage } from './Qr';
 import { K80InternalTicket } from '../types/depot';
 import type { DepotState } from '../services/depotStore';
 import { getDriverRoute, isTicketClosed } from '../services/driverRoute';
@@ -100,8 +101,8 @@ export const K80TicketModal: React.FC<Props> = ({ ticket, state, onClose, onSimu
 
           {/* 3. MÃ QR TÁC NGHIỆP */}
           <div className="pt-2 text-center">
-            <div className="mx-auto flex h-28 w-28 flex-col items-center justify-center border-2 border-slate-900 bg-white p-1.5">
-              <QrCode className="h-16 w-16 text-ink" />
+            <div className="mx-auto flex w-32 flex-col items-center justify-center border-2 border-slate-900 bg-white p-1.5">
+              <QrImage value={ticket.qrCode} size={112} />
               <span className="mt-1 text-[9px] font-black tracking-tighter">{ticket.qrCode}</span>
             </div>
             <p className="mt-1 text-[9px] text-ink-muted">
