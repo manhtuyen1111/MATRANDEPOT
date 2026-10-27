@@ -32,7 +32,7 @@ Cách làm đã chốt: **giữ màn hình, đổi lớp dữ liệu.**
 
 | GĐ | Nội dung | Kiểm tra |
 |---|---|---|
-| N1 | **Nền:** chế độ chạy, đăng nhập bằng tên đăng nhập, bắt buộc đổi mật khẩu lần đầu (ghép `::matran` — DEC-153), đăng xuất, tải hồ sơ nhân viên + vai trò; cửa chung `runAction`; tải danh mục | Đăng nhập / đổi mật khẩu / đăng xuất trên local; app Demo không đổi (148 test) |
+| N1 ✅ (2026-10-27) | **Nền:** chế độ chạy, đăng nhập bằng tên đăng nhập, bắt buộc đổi mật khẩu lần đầu (ghép `::matran` — DEC-153), đăng xuất, tải hồ sơ nhân viên + vai trò; cửa chung `runAction`; tải danh mục | Đăng nhập / đổi mật khẩu / đăng xuất trên local; app Demo không đổi (148 test) |
 | N2 | **Danh mục + User - Role:** đọc / sửa Danh mục, tạo tài khoản / đặt lại mật khẩu qua Edge Function | Admin tạo nhân viên, nhân viên đăng nhập |
 | N3 | **Hạ vỏ:** Giám định (ảnh lên kho `door-photos`, nén ~200 KB), W-SURVEY, Văn phòng Hạ vỏ + thanh toán, K80 / EEIR / phiếu thu in | Đi đủ 1 lượt Hạ vỏ trên local |
 | N4 | **Hiện trường:** Vệ sinh, Xe nâng (hạ vỏ, đảo chuyển), Báo giá, Sửa chữa, giám định trên kệ, Tồn vỏ (khóa, ghi chú, sửa vị trí, hàng loạt) | Đủ luồng DAMAGE → AV |
@@ -49,3 +49,9 @@ Còn thiếu ở database (sẽ bổ sung trong giai đoạn tương ứng, kèm
 - Không bao giờ ghi khóa service_role hay khóa project thật vào file.
 - Bật: Docker Desktop → `npx supabase start` → `npm run dev`.
 - Xóa / đổi tên `.env.local` thì app quay về Demo.
+
+## Đã làm
+
+- **N1 (2026-10-27):** `src/main.tsx` chọn chế độ; `src/app/RemoteApp.tsx` (đăng nhập → bắt buộc đổi mật khẩu → tải dữ liệu → App); màn `src/features/auth/LoginScreen.tsx` (chia đôi, hiện / ẩn mật khẩu, nhớ tên đăng nhập, quên mật khẩu → Admin, nhãn môi trường); quy tắc `src/services/authPassword.ts`; phiên `src/services/remote/session.ts`; tải danh mục `src/services/remote/loadState.ts`. App chế độ database: header có tên + Đổi mật khẩu + Đăng xuất, ẩn chọn người dùng demo, dòng báo màn tác nghiệp chưa lưu.
+  - Kiểm thử: `tests/auth.test.tsx` (7) + `tests/remote.local.test.ts` (chạy thật với Supabase local khi đặt biến MATRAN_LOCAL_*).
+  - Cửa chung `runAction` để sang N3 (khi nối thao tác đầu tiên).

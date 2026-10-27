@@ -238,6 +238,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Migration bước 4/5: Cấp vỏ (booking, lệnh, thanh toán, K80, hủy lệnh, xuất bãi 5 điều kiện) + Nhập / Xuất tàu; Xe nâng hạ cont Nhập tàu tự hoàn thành danh sách. Chạy thử local: pgTAP 147/147.
 - Migration bước 5a: pg_cron (tạo partition trước, dọn request_log), kho ảnh door-photos riêng tư + phân quyền, hàm ảnh hết hạn 24 tháng. Chạy thử local: pgTAP 158/158. Chuyển kho > 36 tháng để 2029; callback ngân hàng chờ Q-032.
 - Migration bước 5b: Edge Function `admin-create-staff`, `admin-reset-password`, `purge-expired-photos` (chỉ Admin / chỉ service_role; tạo lỗi thì xóa lại tài khoản Auth). Chạy thử local 16/16. Mã nhân viên NV- tính theo số lớn nhất + 1 (không đếm dòng).
+- Nối app N1 (DEC-155): màn đăng nhập (chia đôi, hiện / ẩn mật khẩu, nhớ tên đăng nhập), bắt buộc đổi mật khẩu lần đầu, đăng xuất, tải danh mục + nhân viên từ database; Demo không đổi. Kiểm thử: 156 + 1 test thật với Supabase local, build PASS.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
