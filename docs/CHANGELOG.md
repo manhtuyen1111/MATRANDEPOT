@@ -8,9 +8,12 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Database Supabase (migration 5 bước + app_support), Edge Function tạo / đặt lại tài khoản, xóa ảnh hết hạn — pgTAP 170/170, Edge 16/16 trên local.
 - Nối app (DEC-155): đăng nhập, đổi mật khẩu; lớp `services/api.ts` + hàng chờ RPC; tải dữ liệu đang làm việc; trang hóa đơn khách qua RPC công khai.
 - Test chạy thật trên Supabase local: đăng nhập (N1), toàn luồng Hạ vỏ → Cấp vỏ (N2–N6).
+- N7 (DEC-157): Báo cáo Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu / Sửa chữa / Tổng hợp, Phiếu thu, Góp ý lọc ngoài 90 ngày → tải riêng theo khoảng lọc (tối đa 3 tháng), nút "Đang tải…".
+- DEC-156: Nhập tàu không chụp ảnh cửa (chốt theo bản Demo).
 
 ### Fixed
 - Database: tổ sửa chữa chỉ Admin quản lý (khớp DEC-042).
+- `devs/PROGRESS.md` bị nhân bản 5 lần do lỗi `String.replace` — đã gỡ, không mất nội dung.
 
 ## [0.4.1] — 2026-10-23 (nhánh `agent/claude/p4-prep-xlsx`)
 

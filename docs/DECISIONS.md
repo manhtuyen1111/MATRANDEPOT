@@ -1425,6 +1425,21 @@ Quy ước trạng thái:
   - Không ghi khóa service_role, không ghi khóa project thật, không commit (Git đã bỏ qua `.env.*`).
   - Agent vẫn không đọc / in `.env` khác.
 
+### DEC-156 — Nhập tàu không chụp ảnh cửa container
+
+- Trạng thái: CONFIRMED (2026-10-27, người dùng).
+- Giám định Nhập tàu **không** chụp ảnh cửa (giống bản Demo). Chỉ Hạ vỏ bắt buộc ảnh.
+- Database giữ nguyên: `p_door_photo_path` của RPC Nhập tàu là tùy chọn, app gửi `null`. Không cần migration.
+
+### DEC-157 — Báo cáo chế độ database: tải riêng theo khoảng lọc (N7)
+
+- Trạng thái: CONFIRMED (2026-10-27, người dùng chọn cách "tải theo khoảng lọc").
+- App vẫn giữ dữ liệu đang làm việc (trong bãi + 90 ngày). Báo cáo / Phiếu thu / Góp ý lọc có ngày bắt đầu **cũ hơn 90 ngày** → app tải riêng dữ liệu trong khoảng lọc rồi chạy **cùng hàm báo cáo + Excel** trong `reports.ts`. Không viết RPC báo cáo riêng, không migration mới.
+- Khi tải riêng: mỗi lần tối đa **3 tháng** (92 ngày). Bản Demo giữ giới hạn cũ (366 ngày).
+- Code: `src/services/remote/reportSource.ts` (quy tắc), `loadWorkingState(client, me, range)`, hook giao diện `src/components/useReportState.ts`.
+- Phiếu thu / Góp ý: dữ liệu tải riêng **chỉ để xem danh sách + Excel**; thao tác ghi (xác nhận tiền, xuất hóa đơn, trả lời) luôn chạy trên dữ liệu đang làm việc.
+- Giới hạn đã biết: phiếu thu cũ hơn 90 ngày xem được nhưng thao tác ghi có thể báo không tìm thấy; Báo cáo Sửa chữa ở khoảng cũ chỉ thấy cont có ngày vào bãi trong khoảng đó. Nếu chạy chính thức thấy chậm → chuyển sang RPC phân trang.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)

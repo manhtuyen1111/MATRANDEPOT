@@ -38,7 +38,7 @@ Cách làm đã chốt: **giữ màn hình, đổi lớp dữ liệu.**
 | N4 ✅ code (2026-10-27) | **Hiện trường:** Vệ sinh, Xe nâng (hạ vỏ, đảo chuyển), Báo giá, Sửa chữa, giám định trên kệ, Tồn vỏ (khóa, ghi chú, sửa vị trí, hàng loạt) | Đủ luồng DAMAGE → AV |
 | N5 ✅ code (2026-10-27) | **Cấp vỏ + xuất bãi; Nhập / Xuất tàu** | Đủ luồng cấp vỏ, 1 tàu nhập, 1 tàu xuất |
 | N6 ✅ code (2026-10-27) | **Phiếu thu, phiếu thu trả trước, xác nhận tay chuyển khoản, trang hóa đơn `#/hoa-don`, Kế toán** | Thu TT / TTR / TTS, hóa đơn theo lượt |
-| N7 | **Báo cáo + Excel** theo trang từ database; Góp ý; Trả chứng từ | Lọc 3 tháng, 100 dòng / trang, Excel |
+| N7 ✅ code (2026-10-27) | **Báo cáo + Excel** lọc ngoài 90 ngày → tải riêng theo khoảng lọc (DEC-157); Góp ý, Trả chứng từ (đã nối ở N2–N6) | Lọc 3 tháng, Excel; test thật local pass |
 | N8 | **Hoàn thiện:** làm mới dữ liệu khi người khác thao tác (Realtime hoặc tải lại định kỳ), thông báo mất mạng, đo tốc độ với dữ liệu lớn | 50–70 người dùng giả lập |
 
 Còn thiếu ở database (sẽ bổ sung trong giai đoạn tương ứng, kèm test): Góp ý (`feedbacks`), Trả chứng từ (`documents_returned_*`), RPC đọc báo cáo theo trang.
@@ -61,4 +61,7 @@ Còn thiếu ở database (sẽ bổ sung trong giai đoạn tương ứng, kèm
   - `idMap`: 1 lần bấm có 2 thao tác nối nhau (lập lệnh cấp vỏ + thu tiền) → id tạm đổi sang id thật.
   - Văn phòng: nút xác nhận tay đã nhận chuyển khoản. User - Role: gợi ý tên đăng nhập, đặt lại mật khẩu (Edge Function). Trang `#/hoa-don` chạy cả Demo và database (`portalBackend.ts`).
   - Kiểm thử thật: `tests/remote.flow.local.test.ts` — Giám định → Văn phòng (TTS) → Xe nâng → database tự chặn sai → Cấp vỏ + TTS cùng 1 lần bấm → Gate out: **pass**.
-  - **Chưa làm:** Nhập tàu chưa chụp ảnh cửa (bản Demo cũng không có — chờ người dùng quyết); N7 báo cáo theo trang từ database (hiện báo cáo chỉ thấy 90 ngày đã tải); N8.
+  - Nhập tàu không chụp ảnh cửa — đã chốt (DEC-156).
+- **N7 (2026-10-27, code xong):** `src/services/remote/reportSource.ts` + `loadWorkingState(client, me, range)` + hook `src/components/useReportState.ts`, gắn vào 6 báo cáo, Phiếu thu, Góp ý. Lọc trong 90 ngày → chạy ngay trên dữ liệu sẵn có; cũ hơn → tải riêng (tối đa 3 tháng). Phiếu thu / Góp ý: dữ liệu tải riêng chỉ để xem + Excel.
+  - Kiểm thử: 3 test `acceptance` (thành công + từ chối), `remote.flow.local` thêm bước tải theo khoảng — pass trên local.
+  - **Chưa làm:** N8; thử tay trên trình duyệt.
