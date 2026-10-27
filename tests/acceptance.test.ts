@@ -1366,3 +1366,42 @@ describe('N7: nguồn dữ liệu báo cáo theo khoảng lọc', () => {
     }
   });
 });
+
+// N8 (DEC-151): mất mạng → báo lỗi ngay, không xếp hàng; lỗi mạng trình duyệt → câu tiếng Việt
+import { enqueue, friendlyError, OFFLINE_MESSAGE, setRemoteSink as setSink } from '../src/services/remote/sync';
+
+describe('N8: mất mạng ở chế độ database', () => {
+  const setOnline = (v: boolean) => Object.defineProperty(globalThis.navigator, 'onLine', { value: v, configurable: true });
+
+  it('Có mạng → thao tác vào hàng chờ', () => {
+    const got: unknown[] = [];
+    setSink((op) => got.push(op));
+    try {
+      setOnline(true);
+      enqueue(async () => {});
+      expect(got).toHaveLength(1);
+    } finally {
+      setSink(null);
+    }
+  });
+
+  it('Từ chối: mất mạng → ném lỗi tiếng Việt, không xếp hàng; Demo (không hàng chờ) không bị ảnh hưởng', () => {
+    const got: unknown[] = [];
+    setSink((op) => got.push(op));
+    try {
+      setOnline(false);
+      expect(() => enqueue(async () => {})).toThrow('CHƯA được lưu');
+      expect(got).toHaveLength(0);
+      setSink(null);
+      expect(() => enqueue(async () => {})).not.toThrow();
+    } finally {
+      setOnline(true);
+      setSink(null);
+    }
+  });
+
+  it('Lỗi mạng của trình duyệt → câu tiếng Việt; lỗi nghiệp vụ giữ nguyên', () => {
+    expect(friendlyError('TypeError: Failed to fetch')).toBe(OFFLINE_MESSAGE);
+    expect(friendlyError('Container đang bị khóa.')).toBe('Container đang bị khóa.');
+  });
+});
