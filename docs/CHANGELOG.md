@@ -10,6 +10,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Test chạy thật trên Supabase local: đăng nhập (N1), toàn luồng Hạ vỏ → Cấp vỏ (N2–N6).
 - N7 (DEC-157): Báo cáo Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu / Sửa chữa / Tổng hợp, Phiếu thu, Góp ý lọc ngoài 90 ngày → tải riêng theo khoảng lọc (tối đa 3 tháng), nút "Đang tải…".
 - DEC-156: Nhập tàu không chụp ảnh cửa (chốt theo bản Demo).
+- N8 (DEC-158): dữ liệu làm việc 7 ngày, mở app tải đủ rồi chỉ tải phần thay đổi (migration `20261102000001_sync_delta.sql`, pgTAP 180/180); báo mất mạng; bài đo tốc độ `tests/perf.local.test.ts` (mở app 6,8 giây, đồng bộ ~2 KB).
+- DEC-159: ảnh cửa Hạ vỏ giữ 2 tháng (thay 24 tháng).
+- Q-044 mở: import tồn vỏ ban đầu.
 
 ### Fixed
 - Database: tổ sửa chữa chỉ Admin quản lý (khớp DEC-042).

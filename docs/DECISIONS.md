@@ -1438,7 +1438,25 @@ Quy ước trạng thái:
 - Khi tải riêng: mỗi lần tối đa **3 tháng** (92 ngày). Bản Demo giữ giới hạn cũ (366 ngày).
 - Code: `src/services/remote/reportSource.ts` (quy tắc), `loadWorkingState(client, me, range)`, hook giao diện `src/components/useReportState.ts`.
 - Phiếu thu / Góp ý: dữ liệu tải riêng **chỉ để xem danh sách + Excel**; thao tác ghi (xác nhận tiền, xuất hóa đơn, trả lời) luôn chạy trên dữ liệu đang làm việc.
-- Giới hạn đã biết: phiếu thu cũ hơn 90 ngày xem được nhưng thao tác ghi có thể báo không tìm thấy; Báo cáo Sửa chữa ở khoảng cũ chỉ thấy cont có ngày vào bãi trong khoảng đó. Nếu chạy chính thức thấy chậm → chuyển sang RPC phân trang.
+- Giới hạn đã biết (cửa sổ nay là 7 ngày — DEC-158): phiếu thu cũ hơn cửa sổ xem được nhưng thao tác ghi có thể báo không tìm thấy; Báo cáo Sửa chữa ở khoảng cũ chỉ thấy cont có ngày vào bãi trong khoảng đó. Nếu chạy chính thức thấy chậm → chuyển sang RPC phân trang.
+
+### DEC-158 — Chế độ database: dữ liệu làm việc 7 ngày, chỉ tải phần thay đổi (N8)
+
+- Trạng thái: CONFIRMED (2026-10-27, người dùng chọn "chỉ tải phần thay đổi").
+- **Lý do (đo thật, 45.000 lượt / 90 ngày, 5.000 cont tồn):** tải lại 90 ngày mất 206 giây / 171 MB mỗi lần; 60 máy × 30 giây ≈ hàng chục TB băng thông / tháng → không dùng được.
+- **Dữ liệu đang làm việc:** cont trong bãi + việc đang mở + **7 ngày** gần nhất (thay 90 ngày). Báo cáo / Phiếu thu / Góp ý lọc xa hơn tự tải riêng (DEC-157).
+- **Làm mới:** mở app / bấm Tải lại → tải đủ; sau mỗi lần lưu và mỗi 30 giây → chỉ tải dòng có `sync_at` mới + dòng bị xóa (`sync_deletions`), mốc thời gian lấy giờ máy chủ (`server_now`), lấy chồng 1 phút.
+- **Chỉ tải dữ liệu dạng bảng** (người dùng yêu cầu): ảnh cửa chỉ ký link xem tạm, trình duyệt tải ảnh khi mở hồ sơ.
+- Kết quả đo sau khi làm: mở app 6,8 giây; đồng bộ 30 giây ~0,08 giây / ~2 KB.
+- Migration kỹ thuật `20261102000001_sync_delta.sql` (không đổi nghiệp vụ); pgTAP `0007_sync`.
+- **Mất mạng (DEC-151):** báo lỗi ngay khi bấm, không xếp hàng, màn hình giữ dữ liệu để bấm lại; dải đỏ "Mất kết nối mạng"; có mạng lại tự tải lại.
+- Giới hạn đã biết: mở Hồ sơ container của cont đã OUT quá 7 ngày từ màn báo cáo có thể không thấy (hồ sơ đọc dữ liệu đang làm việc).
+
+### DEC-159 — Ảnh cửa container Hạ vỏ giữ 2 tháng
+
+- Trạng thái: CONFIRMED (2026-10-27, người dùng). **Sửa DEC-150** (24 tháng → 2 tháng).
+- Ảnh chụp cửa cont khi Gate in (Hạ vỏ) lưu 2 tháng rồi tự xóa (lịch pg_cron + Edge Function `purge-expired-photos` đã có). Hồ sơ vẫn giữ, ghi "ảnh đã hết hạn lưu".
+- Sửa trực tiếp trong migration gốc (chưa apply lên database thật nào): `photo_expires_at = ngày chụp + 2 tháng`.
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 

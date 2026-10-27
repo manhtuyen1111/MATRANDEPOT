@@ -39,7 +39,7 @@ Cách làm đã chốt: **giữ màn hình, đổi lớp dữ liệu.**
 | N5 ✅ code (2026-10-27) | **Cấp vỏ + xuất bãi; Nhập / Xuất tàu** | Đủ luồng cấp vỏ, 1 tàu nhập, 1 tàu xuất |
 | N6 ✅ code (2026-10-27) | **Phiếu thu, phiếu thu trả trước, xác nhận tay chuyển khoản, trang hóa đơn `#/hoa-don`, Kế toán** | Thu TT / TTR / TTS, hóa đơn theo lượt |
 | N7 ✅ code (2026-10-27) | **Báo cáo + Excel** lọc ngoài 90 ngày → tải riêng theo khoảng lọc (DEC-157); Góp ý, Trả chứng từ (đã nối ở N2–N6) | Lọc 3 tháng, Excel; test thật local pass |
-| N8 | **Hoàn thiện:** làm mới dữ liệu khi người khác thao tác (Realtime hoặc tải lại định kỳ), thông báo mất mạng, đo tốc độ với dữ liệu lớn | 50–70 người dùng giả lập |
+| N8 ✅ code (2026-10-27) | **Hoàn thiện (DEC-158):** dữ liệu làm việc 7 ngày; mở app tải đủ, sau đó chỉ tải phần thay đổi mỗi 30 giây / sau mỗi lần lưu; báo mất mạng; đo tốc độ quy mô thật | `tests/perf.local.test.ts`: mở app 6,8 giây, đồng bộ ~2 KB |
 
 Còn thiếu ở database (sẽ bổ sung trong giai đoạn tương ứng, kèm test): Góp ý (`feedbacks`), Trả chứng từ (`documents_returned_*`), RPC đọc báo cáo theo trang.
 
@@ -64,4 +64,6 @@ Còn thiếu ở database (sẽ bổ sung trong giai đoạn tương ứng, kèm
   - Nhập tàu không chụp ảnh cửa — đã chốt (DEC-156).
 - **N7 (2026-10-27, code xong):** `src/services/remote/reportSource.ts` + `loadWorkingState(client, me, range)` + hook `src/components/useReportState.ts`, gắn vào 6 báo cáo, Phiếu thu, Góp ý. Lọc trong 90 ngày → chạy ngay trên dữ liệu sẵn có; cũ hơn → tải riêng (tối đa 3 tháng). Phiếu thu / Góp ý: dữ liệu tải riêng chỉ để xem + Excel.
   - Kiểm thử: 3 test `acceptance` (thành công + từ chối), `remote.flow.local` thêm bước tải theo khoảng — pass trên local.
-  - **Chưa làm:** N8; thử tay trên trình duyệt.
+- **N8 (2026-10-27, code xong):** `createWorkingSync` trong `loadWorking.ts` (full / refresh), `RemoteApp` dùng refresh sau lưu + 30 giây, Tải lại = full; mất mạng chặn ở `enqueue` (sync.ts). Đo: tải 90 ngày 452 → (bỏ) ; mở app 7 ngày 6,8 giây; đồng bộ 0,08 giây / 2 KB.
+  - Kiểm thử: `remote.flow.local` chạy toàn luồng qua đồng bộ phần thay đổi (cả trường hợp xóa hồ sơ); 3 test mất mạng; pgTAP `0007_sync`.
+  - **Chưa làm:** thử tay trên trình duyệt; import tồn vỏ ban đầu (Q-044).
