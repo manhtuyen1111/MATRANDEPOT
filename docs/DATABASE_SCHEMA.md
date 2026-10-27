@@ -150,8 +150,8 @@ Danh sách cont đã cấp / đã ra của booking **không lưu mảng** như D
 | `invoice_request_items` | request_id, deduction_id unique — 1 lượt chỉ thuộc 1 yêu cầu (DEC-130) |
 
 Bảo mật:
-- **Mã bảo mật hóa đơn** (12 ký tự, DEC-111) chỉ lưu **băm** (`invoice_secret_hash`). Mã gốc chỉ in trên phiếu.
-- Trang khách `#/hoa-don` gọi RPC công khai `request_invoice(secret, …)`. RPC này chỉ trả đúng phiếu khớp mã băm.
+- **Mã bảo mật hóa đơn** (12 ký tự, DEC-111): lưu **mã gốc** để in lại phiếu, chỉ người xem phiếu thu đọc được (DEC-154 — thay cho "chỉ lưu băm").
+- Trang khách `#/hoa-don` gọi RPC công khai `invoice_portal_lookup` / `invoice_submit_request` / `invoice_submit_group` / `invoice_cancel_group` — chỉ trả đúng phiếu khớp mã.
 - **Chống ghi nhận tiền hai lần:** `provider_tx_ref` là unique. Callback ngân hàng lặp lại thì bỏ qua (DEC-031).
 
 ### 3.8. Nhập tàu / Xuất tàu

@@ -1396,6 +1396,22 @@ Quy ước trạng thái:
 - Làm ở phần đăng nhập frontend GĐ 4 (chưa làm).
 - **Chạy thử migration bước 1 trên Supabase local (Docker, 2026-10-27):** 5 file apply không lỗi; pgTAP **18/18 PASS**. Thêm `supabase/config.toml` (cấu hình local, không chứa khóa bí mật).
 
+### DEC-154 — Database bước 3: mã bảo mật hóa đơn, xác nhận tay tiền chuyển khoản
+
+- Trạng thái: CONFIRMED (2026-10-27). Người dùng trả lời 3 câu hỏi khi làm migration bước 3.
+- **Mã bảo mật hóa đơn:** lưu **mã gốc** (không băm), để in lại phiếu thu vẫn có mã.
+  - Chỉ người có quyền xem phiếu thu (Văn phòng / Quản lý / Kế toán) đọc được.
+  - Trang khách `#/hoa-don` chỉ tra đúng mã khớp, phân biệt hoa / thường.
+  - Sửa `docs/DATABASE_SCHEMA.md` mục 3.7 (trước ghi "chỉ lưu băm").
+- **Xác nhận tay tiền chuyển khoản** (khi chưa nối ngân hàng — DEC-152):
+  - **Văn phòng + Quản lý** (quyền `PAYMENT_CONFIRM`). Phiếu thu trả trước: chỉ Văn phòng (`PREPAID_CASH_CONFIRM`), như xác nhận tiền mặt.
+  - **Mã giao dịch ngân hàng không bắt buộc.** Bỏ trống thì hệ thống ghi mã nội bộ theo giao dịch.
+  - Có nhập thì 1 mã ngân hàng chỉ xác nhận được 1 lần.
+  - Giao dịch phải đang chờ (không xác nhận 2 lần).
+- **Migration bước 3 đã viết + chạy thử local:** pgTAP 57/57 (tổng 3 bước 107/107).
+  - Gồm: chứng từ, dòng chi phí, giao dịch, phiếu thu, in phiếu, phiếu thu trả trước + lượt trừ, hóa đơn (phiếu thường + theo lượt).
+  - RPC: Văn phòng Hạ vỏ, thanh toán TT / TTS / TTR, chuyển khoản (callback ngân hàng + xác nhận tay), hủy yêu cầu, GATE IN OK (tạo lượt lưu bãi + K80 + việc Vệ sinh / Báo giá), phiếu thu trả trước, in phiếu, trang hóa đơn, Kế toán ĐÃ XHD.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1485,6 +1501,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-153 đã xác nhận (cập nhật 2026-10-26).
+- Quyết định nghiệp vụ: DEC-001 → DEC-154 đã xác nhận (cập nhật 2026-10-26).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

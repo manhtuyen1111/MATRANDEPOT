@@ -234,6 +234,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - DEC-152: duyệt thiết kế; sao lưu PITR 7 ngày + bản sao đêm; ngân hàng làm sau; hoàn tiền giữ chặn. **Migration bước 1** (enum, nhân viên, danh mục, mã, nhật ký, quyền, RLS) + pgTAP + seed + README; xóa bản nháp cũ. Chưa chạy thử (chưa có Docker / Postgres).
 - DEC-153: chạy thử bước 1 trên Supabase local — apply OK, pgTAP 18/18; thêm `supabase/config.toml`. Mật khẩu: giữ "bao nhiêu ký tự cũng được" bằng cách app ghép chuỗi cố định (Supabase tối thiểu 6).
 - Migration bước 2/5: bảng Hạ vỏ / lượt lưu bãi / K80 / lịch sử vị trí / vệ sinh – báo giá – sửa chữa + 12 RPC hiện trường (chép đúng quy tắc `depotOperations.ts`). Chạy thử local: pgTAP 50/50 (bước 1 + 2). Văn phòng Hạ vỏ + GATE IN OK làm cùng bước 3 (thanh toán).
+- Migration bước 3/5 (DEC-154): thanh toán, phiếu thu, phiếu thu trả trước, hóa đơn, Văn phòng Hạ vỏ + GATE IN OK. Mã bảo mật hóa đơn lưu mã gốc (khóa quyền đọc); xác nhận tay chuyển khoản bởi Văn phòng / Quản lý, mã ngân hàng tùy chọn. Chạy thử local: pgTAP 107/107.
 
 ### Pending
 - P4-01 Database: chờ danh mục trạng thái chính thức (OPEN-003).
