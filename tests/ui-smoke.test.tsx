@@ -855,3 +855,12 @@ describe('DEC-147: Giám định – Hạ vỏ có tab Chờ giám định trên
     expect(html).toContain('max-w-lg');
   });
 });
+
+describe('DEC-155: màn đăng nhập (chế độ database)', () => {
+  it('dựng được, không dùng màu cũ', async () => {
+    const { LoginScreen } = await import('../src/features/auth/LoginScreen');
+    const html = renderToString(<LoginScreen onSignIn={async () => {}} />);
+    expect(html).toContain('data-testid="login-screen"');
+    expect(html).toContain('bg-navy-900');
+  });
+});

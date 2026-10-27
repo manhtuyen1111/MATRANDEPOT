@@ -7,6 +7,8 @@ import {
   ChevronDown,
   ClipboardCheck,
   Forklift,
+  KeyRound,
+  LogOut,
   Menu,
   PanelLeft,
   RefreshCw,
@@ -155,8 +157,16 @@ function writePrefs(p: { collapsedGroups: string[]; railMode: boolean }) {
   }
 }
 
-export const App: React.FC = () => {
-  const [state, setState] = useState<DepotState>(() => loadDepotState(createDemoState));
+// DEC-155: chế độ database — RemoteApp truyền dữ liệu đã tải + thông tin phiên; không có thì chạy Demo như cũ
+export interface RemoteSessionProps {
+  fullName: string;
+  username: string;
+  onSignOut: () => void;
+  onChangePassword: () => void;
+}
+
+export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionProps }> = ({ initialState, remote }) => {
+  const [state, setState] = useState<DepotState>(() => initialState || loadDepotState(createDemoState));
   const [activeMenu, setActiveMenu] = useState<WorkspaceMenuId>('GD_HA_VO');
   const [activeK80Ticket, setActiveK80Ticket] = useState<K80InternalTicket | null>(null);
   const [activeDossierCode, setActiveDossierCode] = useState<string | null>(null);
@@ -179,7 +189,8 @@ export const App: React.FC = () => {
 
   const handleUpdateState = (next: DepotState) => {
     setState(next);
-    saveDepotState(next);
+    // Chế độ database: chưa nối thao tác (N3+) — không ghi localStorage để không lẫn với dữ liệu Demo
+    if (!remote) saveDepotState(next);
   };
 
   const visibleMenu = useMemo(
@@ -417,6 +428,23 @@ export const App: React.FC = () => {
             {/* DEC-120: Góp ý — mọi người dùng, góc trên bên phải */}
             <FeedbackButton state={state} onUpdateState={handleUpdateState} menuOptions={feedbackMenuOptions} />
             {!isSupabaseConfigured && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">DEMO</span>}
+            {remote ? (
+              <>
+                <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-canvas px-2 py-1" data-testid="session-user">
+                  <UserCheck className="h-3.5 w-3.5 text-ink-muted" />
+                  <span className="font-medium text-ink">{remote.fullName}</span>
+                  <span className="font-mono text-ink-muted">{remote.username}</span>
+                </span>
+                <button type="button" onClick={remote.onChangePassword} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas">
+                  <KeyRound className="h-3 w-3" />
+                  Đổi mật khẩu
+                </button>
+                <button type="button" onClick={remote.onSignOut} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas" data-testid="sign-out">
+                  <LogOut className="h-3 w-3" />
+                  Đăng xuất
+                </button>
+              </>
+            ) : (<>
             <label className="flex items-center gap-1.5 rounded-md border border-line bg-canvas px-2 py-1">
               <UserCheck className="h-3.5 w-3.5 text-ink-muted" />
               <span className="sr-only">Người dùng (Demo)</span>
@@ -443,8 +471,15 @@ export const App: React.FC = () => {
               <RefreshCw className="h-3 w-3" />
               Nạp dữ liệu test
             </button>
+            </>)}
           </div>
         </header>
+
+        {remote && (
+          <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800" data-testid="remote-notice">
+            Đang nối database (giai đoạn N1): đăng nhập + danh mục đã đọc từ database. Các màn tác nghiệp <strong>chưa lưu vào database</strong> — sẽ nối dần từ giai đoạn N3.
+          </div>
+        )}
 
         <main className="flex-1 p-3 sm:p-4">
           {activeMenu === 'TON_VO' && (
