@@ -5,7 +5,7 @@ import React from 'react';
 //   AppLoading      — mở app / tải dữ liệu lần đầu: logo + vòng xoay chậm + bước đang làm
 //   ScreenLoading   — mở 1 màn chưa tải xong: khung tĩnh mờ + "Đang mở…" (chỉ hiện nếu > 300 ms)
 //   StatusPill      — viên nhỏ dưới màn hình: "Đang lưu…" / "Đang tải lại…" (chỉ hiện nếu > 300 ms)
-//   SavingIndicator — đang lưu vào database: chặn bấm trùng + StatusPill
+//   SavingIndicator — đang lưu ngầm vào database: chỉ StatusPill, không chặn bấm (DEC-160)
 
 const SHOW_AFTER_MS = 300;
 
@@ -75,12 +75,6 @@ export const StatusPill: React.FC<{ active: boolean; label: string }> = ({ activ
   );
 };
 
-export const SavingIndicator: React.FC<{ active: boolean }> = ({ active }) => {
-  if (!active) return null;
-  return (
-    // Lớp trong suốt chặn bấm tiếp trong lúc lưu (tránh gửi trùng) — không làm tối màn hình
-    <div className="fixed inset-0 z-[60]" data-testid="saving-overlay">
-      <StatusPill active label="Đang lưu…" />
-    </div>
-  );
-};
+// Lưu ngầm (DEC-160): màn hình đã đổi ngay theo kết quả trên máy, KHÔNG chặn bấm — chỉ hiện viên nhỏ khi lưu > 300 ms.
+// Bấm trùng đã bị chặn bởi kiểm tra trạng thái trong hàm nghiệp vụ (cont đã chuyển bước thì bấm lại sẽ báo lỗi).
+export const SavingIndicator: React.FC<{ active: boolean }> = ({ active }) => <StatusPill active={active} label="Đang lưu…" />;

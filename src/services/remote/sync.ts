@@ -53,8 +53,17 @@ export function clearIdMap(): void {
   idMap.clear();
 }
 
+// Danh mục / nhân viên vừa bị sửa → lần tải lại sau khi lưu phải tải lại danh mục (bình thường dùng bản đã có — DEC-160)
+let catalogTouched = false;
+export function takeCatalogTouched(): boolean {
+  const v = catalogTouched;
+  catalogTouched = false;
+  return v;
+}
+
 // Lỗi RPC → Error với đúng câu tiếng Việt database trả về
 export async function rpc<T = unknown>(client: SupabaseClient, name: string, params: Record<string, unknown> = {}): Promise<T> {
+  if (/^(catalog_|admin_)/.test(name)) catalogTouched = true;
   const { data, error } = await client.rpc(name, params);
   if (error) throw new Error(friendlyError(error.message));
   return data as T;
