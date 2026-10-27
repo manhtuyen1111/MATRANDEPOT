@@ -263,7 +263,8 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 1. Biểu giá THU GOM RÁC / KHÁC lỗi "Hãng tàu không có" → migration `20261103000001` (đã có trên `matran-test`).
 2. Danh mục chung → Sửa chữa: bảng mỗi tổ 1 dòng, bấm dòng → cửa sổ chi tiết + gán nhân viên.
 3. Ảnh cửa cont (Văn phòng Hạ vỏ, Hồ sơ container): kính lúp khi rê chuột; bấm ảnh → toàn màn hình, phóng 1× → 4×, kéo di chuyển.
-4. Tốc độ + giao diện chờ: tải dữ liệu theo đợt song song; tách file theo màn hình (file đầu 1.013 → 260 KB); màn chờ hiện ngay khi mở trang; khung xương khi mở màn lần đầu; "Đang lưu" chỉ hiện khi > 300 ms; thanh chạy khi Tải lại.
+4. Tốc độ + giao diện chờ: tải dữ liệu theo đợt song song; tách file theo màn hình (file đầu 1.013 → 260 KB); màn chờ hiện ngay khi mở trang.
+5. **Giao diện chờ nhẹ nhàng (người dùng phàn nàn thanh chạy gây khó chịu):** bỏ hẳn thanh chạy trên cùng; mọi chỉ báo chờ chỉ hiện khi > 300 ms, vòng xoay chậm, màu nhạt; "Đang lưu…" / "Đang tải lại…" là viên nhỏ dưới màn hình. App **tải sẵn các màn hình chạy ngầm** khi rảnh → bấm menu mở ngay (đổi menu không tải lại dữ liệu — dữ liệu dùng chung). **Không thêm lại thanh chạy / hiệu ứng nhấp nháy.** (Mục 5 chờ merge vào `main`.)
 
 **BẠN — VIỆC TIẾP THEO:**
 1. **Test tiếp** theo Bước 7 `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`. Thử lại 4 điểm vừa sửa; xem tốc độ mở app (ghi số giây + wifi / 4G + máy tính / điện thoại nếu vẫn chậm).
@@ -471,3 +472,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-28 — Claude Code: sửa 3 điểm từ đợt test 1 (biểu giá rác / khác, danh mục tổ sửa chữa, kính lúp ảnh). 165 test • pgTAP 184/184 • build PASS.
 - 2026-10-28 — Claude Code: tốc độ mở app + giao diện chờ (tải song song, tách file theo màn, màn chờ ngay từ HTML). 165 test • test thật local pass • build PASS.
 - 2026-10-28 — Claude Code: cập nhật bàn giao I.5 (đang test nhiều người trên matran-test + Vercel; quy trình đưa bản sửa; lưu ý).
+- 2026-10-28 — Claude Code: giao diện chờ nhẹ nhàng (bỏ thanh chạy, chỉ hiện khi > 300 ms) + tải sẵn màn hình chạy ngầm. 165 test • build PASS.

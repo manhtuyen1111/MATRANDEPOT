@@ -15,6 +15,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Q-044 mở: import tồn vỏ ban đầu.
 - Danh mục chung → Sửa chữa: bảng mỗi tổ 1 dòng, bấm mở chi tiết + gán nhân viên (DEC-080, DEC-134).
 - Tốc độ + giao diện chờ: tải dữ liệu theo đợt song song; tách file theo màn hình (file đầu 1.013 → 260 KB); màn chờ hiện ngay từ `index.html`, font không chặn hiển thị; `src/components/LoadingScreens.tsx` (màn chờ có bước, khung xương khi mở màn, viên "Đang lưu" > 300 ms, thanh chạy khi Tải lại).
+- Giao diện chờ nhẹ nhàng: bỏ thanh chạy trên cùng; chỉ báo chờ chỉ hiện khi > 300 ms; tải sẵn các màn hình chạy ngầm khi app rảnh.
 - Ảnh cửa container: kính lúp khi rê chuột + xem toàn màn hình có phóng to (`PhotoZoom` trong `shared.tsx`) ở Văn phòng Hạ vỏ và Hồ sơ container.
 
 ### Fixed
