@@ -97,6 +97,7 @@ Cập nhật lần cuối: 2026-10-22.
 ## Q-044 — Import tồn vỏ ban đầu trước khi chạy thật
 
 - Trạng thái: **MỞ** (2026-10-27). Người dùng: test toàn bộ trên database → reset → import tồn vỏ ban đầu rồi mới làm thật.
+- **Bộ câu hỏi đầy đủ (7 nhóm, có đề xuất + cột trả lời): `docs/IMPORT_TON_VO_BAN_DAU.md`** — các ý dưới là tóm tắt.
 - Cần chốt trước khi làm công cụ import:
   1. File nguồn: Excel theo mẫu Tồn vỏ hiện tại (cùng cột, DEC-129) hay file xuất từ phần mềm cũ? Gửi 1 file mẫu.
   2. Cột bắt buộc: số cont, size, type, hãng tàu, ngày vào bãi (Date in), trạng thái AV / DAMAGE, vị trí (Block – Bay – Row – Tier)… Có Đóng hàng / năm sản xuất / khách hàng không?

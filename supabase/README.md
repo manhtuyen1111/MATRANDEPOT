@@ -40,15 +40,12 @@ node supabase/tests/edge-functions.local.cjs .
    - dùng `npx supabase link` rồi `npx supabase db push`;
    - hoặc dán từng file vào SQL Editor.
 4. **Tạo Admin đầu tiên:**
-   - Vào **Authentication → Users → Add user**: email `admin@matrandepot.local`, đặt mật khẩu.
-   - Copy `id` của user vừa tạo, rồi chạy trong SQL Editor (thay `<id>`):
+   - Vào **Authentication → Users → Add user**: email `admin@matrandepot.local`, mật khẩu **`<mật khẩu>::matran`** (bắt buộc thêm `::matran` — DEC-153), tích Auto Confirm.
+   - Chạy `supabase/test-data/02_admin_dau_tien.sql` trong SQL Editor (tự lấy id, chạy lại được).
+5. Từ đó Admin tạo nhân viên khác trên app (Edge Function `admin-create-staff`).
+6. Project TEST: chạy thêm `supabase/test-data/01_danh_muc_test.sql` (danh mục giống bản Demo). Production **không** chạy file này.
 
-     ```sql
-     insert into public.staff (id, staff_code, username, full_name, must_change_password)
-     values ('<id>', 'NV001', 'admin', 'Quản trị hệ thống', false);
-     insert into public.staff_roles (staff_id, role) values ('<id>', 'ADMIN');
-     ```
-5. Từ đó Admin tạo nhân viên khác trên app. Việc tạo nhân viên đi qua Edge Function `admin_create_staff`, sẽ viết ở bước sau.
+Hướng dẫn đầy đủ cho môi trường test nhiều người (kèm đưa app lên Cloudflare Pages): `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`.
 
 ## Lưu ý
 
@@ -63,7 +60,7 @@ Edge Function `purge-expired-photos` cần được gọi mỗi đêm. Khóa `se
 1. **Project Settings → Edge Functions:** deploy 3 hàm. Dùng `npx supabase functions deploy`, hoặc làm trên trang quản trị.
 2. **Database → Vault:** thêm 2 secret:
    - `project_url` = `https://<mã-project>.supabase.co`
-   - `service_role_key` = khóa service_role của project.
+   - `service_role_key` = khóa service_role của project. Dùng khóa dạng **JWT** (Project Settings → API Keys → tab *Legacy API keys* → `service_role`, bắt đầu bằng `eyJ`), **không** dùng khóa `sb_secret_…` — Edge Function mặc định kiểm JWT.
 3. **SQL Editor**, chạy 1 lần:
 
    ```sql
