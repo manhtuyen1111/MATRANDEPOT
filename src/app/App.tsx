@@ -35,9 +35,28 @@ import type { CatalogTab } from '../features/catalog/MasterCatalogWorkspace';
 import type { ReportSection } from '../features/reports/ReportsWorkspace';
 
 // Màn hình tải khi mở lần đầu (tách file) → mở app nhanh hơn; màn đã mở lần sau hiện ngay
+// Sau khi app mở xong và rảnh → tải sẵn các màn còn lại (chạy ngầm, lần lượt) → bấm menu là mở ngay
+const SCREEN_LOADERS: (() => Promise<unknown>)[] = [];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const named = <M extends Record<K, React.ComponentType<any>>, K extends keyof M>(load: () => Promise<M>, name: K) =>
-  lazy(async () => ({ default: (await load())[name] })); // giữ nguyên kiểu props của màn hình
+const named = <M extends Record<K, React.ComponentType<any>>, K extends keyof M>(load: () => Promise<M>, name: K) => {
+  SCREEN_LOADERS.push(load);
+  return lazy(async () => ({ default: (await load())[name] })); // giữ nguyên kiểu props của màn hình
+};
+function preloadScreens(): () => void {
+  let stopped = false;
+  // Trình duyệt không có requestIdleCallback (Safari cũ) → đợi 1,5 giây
+  const idle = (fn: () => void) =>
+    typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 1500);
+  const next = (i: number) => {
+    if (stopped || i >= SCREEN_LOADERS.length) return;
+    SCREEN_LOADERS[i]().catch(() => {}).finally(() => idle(() => next(i + 1)));
+  };
+  const start = window.setTimeout(() => idle(() => next(0)), 1500);
+  return () => {
+    stopped = true;
+    window.clearTimeout(start);
+  };
+}
 const InspectorHaVoMobile = named(() => import('../features/inspector/InspectorHaVoMobile'), 'InspectorHaVoMobile');
 const OfficeHaVoWorkspace = named(() => import('../features/office/OfficeWorkspaces'), 'OfficeHaVoWorkspace');
 const OfficeCapVoWorkspace = named(() => import('../features/office/OfficeWorkspaces'), 'OfficeCapVoWorkspace');
@@ -184,6 +203,7 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
     // Chỉ chạy khi có dữ liệu mới từ database (không chạy lại mỗi lần RemoteApp vẽ lại)
     if (isRemote && initialState) setState(initialState);
   }, [initialState, isRemote]);
+  useEffect(() => preloadScreens(), []);
   const [activeMenu, setActiveMenu] = useState<WorkspaceMenuId>('GD_HA_VO');
   const [activeK80Ticket, setActiveK80Ticket] = useState<K80InternalTicket | null>(null);
   const [activeDossierCode, setActiveDossierCode] = useState<string | null>(null);

@@ -3,7 +3,7 @@
 > Agent cập nhật file này sau mỗi việc (skill `matran-docs-sync`). Bạn chỉ cần đọc mục A, B và F.
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
-Cập nhật lần cuối: 2026-10-27 (tối) — Claude Code
+Cập nhật lần cuối: 2026-10-28 — Claude Code
 Trạng thái chung (cập nhật 2026-10-27): **GĐ 4 Database ĐANG LÀM** trên nhánh **`agent/claude/p4-database`** (DEC-149 → DEC-153, đã push): Supabase Singapore; thiết kế `docs/DATABASE_SCHEMA.md` đã duyệt; **toàn bộ migration (5 bước + app_support + đồng bộ) + Edge Function xong, chạy thử trên Supabase local (Docker) — pgTAP 180/180, Edge Function 16/16**; **nối app với database N1 → N8 xong phần code** (docs/APP_DB_INTEGRATION.md): đăng nhập, ghi qua hàng chờ RPC, báo cáo theo khoảng lọc (DEC-157), dữ liệu làm việc 7 ngày + chỉ tải phần thay đổi + báo mất mạng (DEC-158), ảnh giữ 2 tháng (DEC-159), Nhập tàu không chụp ảnh (DEC-156) — chạy thật toàn luồng trên local pass; **tiếp theo: bạn thử tay toàn bộ trên database → reset → import tồn vỏ ban đầu (Q-044)**. Bản Demo trước database lưu ở tag `demo-truoc-database-2026-10-26` / nhánh `backup/demo-truoc-database`. — Trước đó: nhánh **`agent/claude/ui-design-v2`** (chứa toàn bộ `agent/claude/p4-prep-xlsx` + DEC-142 → **DEC-148**), **đã push đầy đủ lên GitHub 2026-10-26**, chưa merge vào `main`. Ngày 26/10 (tối): **giao diện mới v2** navy + Be Vietnam Pro, chuẩn ở `docs/DESIGN_SYSTEM.md` (145); bảng chi tiết tàu không gộp cột (146); **W-SURVEY (LÊN KỆ)** + giám định bổ sung trên kệ (147); **dữ liệu test** MSK / 10 khách / công ty MATRAN / biểu giá mới + danh sách lớn (148); hoàn tác đăng nhập Demo, quy tắc tài khoản để GĐ 4 (143, 144). Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110); **xuất hóa đơn từ phiếu thu**: mã bảo mật 12 ký tự, trang khách `#/hoa-don`, trạng thái CHƯA / YÊU CẦU / ĐÃ XHD, **thêm lại vai trò Kế toán**, người thu tiền luôn là nhân viên (111 → 114); **Đảo chuyển mobile 2 dòng**, bỏ ghi chú tác nghiệp (115, 116); **ô nhập mobile chữ 16px** (không tự phóng to vỡ khung — 116); **mọi mã có hồ sơ đều là link, cùng kiểu Mã hồ sơ** (117, 118). Ngày 26/10: **bỏ mã CT-** (số chứng từ = mã hồ sơ — 119); **Góp ý** (nút góc phải + Báo cáo → Góp ý chỉ Admin — 120, 123); phiếu thu trả trước **một mã PT-TTR-** (bỏ PTT- — 124), cột Mã hồ sơ chỉ tóm tắt (121, 122), **hóa đơn theo từng lượt, khách tự gộp** (130); **chọn vị trí từng bước** (125); báo cáo Hạ / Cấp vỏ có Thanh toán + Mã phiếu thu, bỏ ký hiệu (126, 127); Tồn vỏ Phân loại / AGE / Tiến độ, **mỗi cont 1 dòng**, Excel khớp màn hình (128, 129, 132); **Xuất tàu tự khóa + ghi chú, duyệt tàu khi chưa đủ** (131). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
 **Điểm dừng 2026-10-27 (tối):** nhánh `agent/claude/p4-database` (HEAD `ca46c39`, đã push). **Đọc mục I.5 trước khi làm việc tiếp theo.** (Quyết định tạm hoãn GĐ 4 ngày 25/10 đã được mở lại bằng DEC-149.)
@@ -249,53 +249,50 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-24 — Claude Code: P7-24 (DEC-095) Đảo chuyển tiến độ + ghi chú.
 - 2026-10-24 — Claude Code: P7-25 (DEC-096) đồng bộ ô trạng thái Đảo chuyển.
 
-### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-27 trưa — đọc trước — mới nhất)
+### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-28 — đọc trước — mới nhất)
 
-**MÔI TRƯỜNG TEST NHIỀU NGƯỜI — ĐÃ DỰNG XONG (2026-10-27 chiều):**
-- Supabase cloud project **`matran-test`** (Singapore, ref `rtbpmnfwkzndujjzxuxf`): `db push` đủ migration, đủ 3 Edge Function, đã chạy danh mục test + Admin đầu tiên (`admin` / `123456`).
-- App: **Vercel**, build nhánh **`main`** (đã merge PR #15 — commit `ed60761`), 3 biến `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` / `VITE_APP_ENV=test`. Đăng nhập Admin OK. Cloudflare Pages để dành khi chạy thật.
-- `main` đã merge PR #16 (`04a303a`).
+**HIỆN TRẠNG (2026-10-28):**
+- **Đang TEST nhiều người trên database thật** (không phải Demo):
+  - Database: Supabase cloud **`matran-test`** (Singapore, ref `rtbpmnfwkzndujjzxuxf`) — đủ migration tới `20261103000001`, 3 Edge Function, danh mục test, Admin `admin` / `123456`.
+  - App: **Vercel** build nhánh **`main`** (mới nhất: PR #19 `5d92639`). 3 biến `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` / `VITE_APP_ENV=test`. Cloudflare Pages để dành khi chạy thật.
+  - `main` thiếu 1 commit tài liệu `736017a` (đổi sang `db push --linked`) — không ảnh hưởng app, theo PR sau.
+- Code: nhánh `agent/claude/p4-database`, đã push đầy đủ. Mốc Demo cũ: tag `demo-truoc-database-2026-10-26`.
+- Kiểm thử: `npm test` 165 pass (3 bỏ qua — test chạy thật cần Supabase local, chạy riêng: pass) • pgTAP **184/184** • build PASS.
 
-**ĐỢT SỬA SAU TEST 1 (2026-10-28):**
-1. Biểu giá THU GOM RÁC / KHÁC lỗi "Hãng tàu không có" → migration `20261103000001` (pgTAP 184/184 local) — **bạn chạy `npx supabase db push`** lên `matran-test` rồi thử lại.
+**ĐÃ SỬA SAU ĐỢT TEST 1 (2026-10-28) — đã lên Vercel:**
+1. Biểu giá THU GOM RÁC / KHÁC lỗi "Hãng tàu không có" → migration `20261103000001` (đã có trên `matran-test`).
 2. Danh mục chung → Sửa chữa: bảng mỗi tổ 1 dòng, bấm dòng → cửa sổ chi tiết + gán nhân viên.
-3. Văn phòng Hạ vỏ + Hồ sơ container: kính lúp khi rê chuột, bấm ảnh → xem toàn màn hình, phóng to 1× → 4×.
-4. **Tốc độ + giao diện chờ:** tải dữ liệu theo đợt song song (thay ~25 lượt nối tiếp); tách file theo màn hình (file đầu 1.013 → 260 KB); màn chờ hiện ngay khi mở trang, có bước "đang kiểm tra đăng nhập / đang tải dữ liệu bãi"; mở màn lần đầu có khung xương; "Đang lưu" chỉ hiện khi lâu > 300 ms; thanh chạy khi bấm Tải lại. Thành phần chờ dùng chung: `src/components/LoadingScreens.tsx` — màn mới thêm vào `App.tsx` theo kiểu `named(() => import(...), 'Ten')` (tải khi cần).
-- Giao diện (2, 3, 4) lên Vercel khi tạo PR merge `agent/claude/p4-database` → `main`.
+3. Ảnh cửa cont (Văn phòng Hạ vỏ, Hồ sơ container): kính lúp khi rê chuột; bấm ảnh → toàn màn hình, phóng 1× → 4×, kéo di chuyển.
+4. Tốc độ + giao diện chờ: tải dữ liệu theo đợt song song; tách file theo màn hình (file đầu 1.013 → 260 KB); màn chờ hiện ngay khi mở trang.
+5. **Giao diện chờ nhẹ nhàng (người dùng phàn nàn thanh chạy gây khó chịu):** bỏ hẳn thanh chạy trên cùng; mọi chỉ báo chờ chỉ hiện khi > 300 ms, vòng xoay chậm, màu nhạt; "Đang lưu…" / "Đang tải lại…" là viên nhỏ dưới màn hình. App **tải sẵn các màn hình chạy ngầm** khi rảnh → bấm menu mở ngay (đổi menu không tải lại dữ liệu — dữ liệu dùng chung). **Không thêm lại thanh chạy / hiệu ứng nhấp nháy.** (Mục 5 chờ merge vào `main`.)
 
-**PHIÊN SAU — BẠN CẦN CHÚ Ý:**
-1. **Đang test:** tạo tài khoản người test (User - Role → Thêm — lần đầu thử hàm `admin-create-staff` trên cloud), cả nhóm thử theo Bước 7 `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`. Ghi lỗi bằng nút **Góp ý** (Admin xem Báo cáo → Góp ý) hoặc chụp màn hình → mở phiên mới gửi Claude.
-2. **Code mới phải đi qua `main`** (Vercel build `main`): agent làm trên nhánh → bạn tạo PR → merge → Vercel tự build lại. Có migration mới → bạn chạy `npx supabase db push` (đúng project `matran-test`) **trước** khi merge.
-3. **Ổ C gần đầy** (từng còn 4 MB → Docker hỏng). Giữ trống ≥ 5 GB. Supabase local đang dừng — cần thì `npx supabase start` (mở Docker Desktop trước).
-4. **Deploy Edge Function:** dùng `npx supabase functions deploy <tên> --use-api` từng hàm (cách thường bị "request timed out").
-5. **Terminal PowerShell:** dán lệnh bằng **chuột phải**, mỗi lần 1 lệnh; thấy `>>` → Ctrl + C. Không gõ `<…>` trong lệnh mẫu — thay bằng giá trị thật.
-6. **Mật khẩu tạo tay trên trang Supabase** luôn thêm `::matran` (DEC-153); trên app thì không.
-7. **Song song:** điền `docs/IMPORT_TON_VO_BAN_DAU.md` (Q-044) + gửi 1 file Excel tồn vỏ mẫu.
-8. Khi test xong: Claude viết script xóa dữ liệu test + công cụ import tồn đầu → import thử trên `matran-test` → tạo project production → chạy thật.
+**BẠN — VIỆC TIẾP THEO:**
+1. **Test tiếp** theo Bước 7 `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`. Thử lại 4 điểm vừa sửa; xem tốc độ mở app (ghi số giây + wifi / 4G + máy tính / điện thoại nếu vẫn chậm).
+2. Lỗi / góp ý: nút **Góp ý** trong app (Admin xem Báo cáo → Góp ý) hoặc chụp màn hình → mở phiên mới, gửi Claude theo dạng: *màn hình — làm gì — thấy gì — mong muốn*.
+3. **Song song:** điền `docs/IMPORT_TON_VO_BAN_DAU.md` (Q-044) + gửi 1 file Excel tồn vỏ mẫu.
+4. Còn chờ quyết: A.1c (tên khách test), Q-032 (ngân hàng — làm sau), OPEN-008 (hoàn tiền — giữ chặn).
+5. Khi test xong: Claude viết script xóa dữ liệu test + công cụ import tồn đầu → import thử trên `matran-test` → tạo project production → chạy thật.
 
-**PHIÊN SAU (agent):** đọc mục này → sửa lỗi người dùng báo từ đợt test (đọc góp ý / ảnh chụp). Không link / push project thật (người dùng tự làm). Đổi database → migration MỚI (đã apply lên `matran-test`, không sửa file cũ). Q-044 chốt → script xóa dữ liệu test + công cụ import.
+**LƯU Ý KHI LÀM (bạn):**
+- **Quy trình đưa bản sửa lên test:** Claude sửa trên nhánh `agent/claude/p4-database` + push → (có migration mới) bạn chạy `npx supabase db push --linked` → bạn tạo PR vào `main` + Merge → Vercel tự build (~2 phút). **Database trước, giao diện sau.**
+- `db push` báo **"Remote database is up to date"** = không có gì mới để đưa lên (bình thường). Muốn xem: `npx supabase migration list --linked`.
+- Luôn gõ **`--linked`** với `db push` (bản CLI sau mặc định sang local).
+- **Deploy Edge Function:** từng hàm, `npx supabase functions deploy <tên> --use-api` (cách thường hay "request timed out").
+- **Biến môi trường Vercel:** đổi xong phải **Redeploy** (bỏ tích Use existing Build Cache). Không bật Secret; **không bao giờ** dán khóa `service_role` / `sb_secret_…`.
+- **Mật khẩu tạo tay trên trang Supabase** luôn thêm `::matran` (DEC-153); trên app thì không.
+- Supabase Free **tự tạm dừng sau 7 ngày không dùng** → vào supabase.com bấm **Restore**, dữ liệu vẫn còn.
+- **Máy tính:** tắt máy không ảnh hưởng app test (chạy trên Vercel + Supabase). Chỉ cần bật khi sửa code.
+- **Ổ C:** giữ trống ≥ 5 GB (từng còn 4 MB → Docker hỏng). Làm Supabase local: mở **Docker Desktop** trước, đợi **Engine running**.
+- **Terminal PowerShell:** dán bằng **chuột phải**, mỗi lần 1 lệnh; thấy `>>` → Ctrl + C. Không gõ `<…>` trong lệnh mẫu — thay bằng giá trị thật.
 
-**Trạng thái thật (đã kiểm lại code + chạy test):**
-- Nhánh `agent/claude/p4-database` — **đã push đầy đủ 2026-10-27 chiều**; `main` đã merge (PR #15). Mốc Demo cũ: tag `demo-truoc-database-2026-10-26`.
-- Database: migration 5 bước + `20261101000001_app_support.sql` + `20261102000001_sync_delta.sql` (đồng bộ — DEC-158) xong. pgTAP 180/180, Edge Function 16/16 (đều trên Supabase local).
-- Nối app (DEC-155, `docs/APP_DB_INTEGRATION.md`): **N1 → N8 xong phần code**. Hàm ghi đi qua `src/services/api.ts` + hàng chờ `remote/sync.ts` (mất mạng → báo lỗi ngay). Dữ liệu: `remote/loadWorking.ts` — `createWorkingSync`: mở app tải đủ (trong bãi + 7 ngày), sau đó chỉ tải phần thay đổi; báo cáo xa hơn tải riêng (`reportSource.ts`).
-- `npm test`: 163 pass, 3 bỏ qua (`tests/remote*.local.test.ts` chạy khi bật Supabase local; `tests/perf.local.test.ts` khi thêm `MATRAN_PERF=1`). `npm run build`: PASS (cảnh báo file JS > 500 kB, chưa ảnh hưởng).
-
-**Cho bạn:**
-- Mỗi lần làm database: mở **Docker Desktop** trước, đợi báo **Engine running**.
-- Supabase trên máy chỉ để chạy thử, không phải database thật.
-- **Chưa** tạo project Supabase thật / test. Bạn tự tạo theo `supabase/README.md`; agent không giữ khóa.
-- Còn chờ bạn:
-  - **Thử tay toàn bộ trên trình duyệt ở chế độ database** (chưa ai thử) — kế hoạch của bạn: thử hết → reset → import tồn vỏ ban đầu → chạy thật.
-  - **Q-044:** gửi file mẫu tồn vỏ ban đầu + trả lời 5 ý trong `docs/OPEN_QUESTIONS.md` để Claude làm công cụ import.
-  - A.1c (tên khách test), Q-032 (ngân hàng — làm sau), OPEN-008 (hoàn tiền — giữ chặn).
-
-**Việc còn lại (theo thứ tự đề xuất):**
-1. ~~N7~~ ✅ (DEC-157) • ~~Ảnh Nhập tàu~~ ✅ không chụp (DEC-156) • ~~N8~~ ✅ (DEC-158) • ảnh giữ 2 tháng (DEC-159).
-2. **Dựng môi trường TEST nhiều người** theo `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md` (bạn làm: Supabase project test + Cloudflare Pages; script danh mục test + Admin đầu tiên ở `supabase/test-data/`). Rồi cả nhóm thử tay toàn bộ; lỗi → Claude sửa. (Supabase local đã có sẵn danh mục test + `admin` / `123456`.)
-3. **Import tồn vỏ ban đầu** — trả lời bộ câu hỏi `docs/IMPORT_TON_VO_BAN_DAU.md` (Q-044) + gửi file mẫu; Claude làm công cụ import + script xóa dữ liệu test khi test xong.
-4. Hướng dẫn bạn tạo project Supabase thật, apply migration, reset sạch → import tồn vỏ → chạy thật.
+**PHIÊN SAU (agent):**
+- Đọc mục này → sửa lỗi người dùng báo (góp ý / ảnh chụp). Mỗi đợt: sửa → test → commit theo nhóm → push → báo người dùng `db push --linked` (nếu có migration) + merge PR.
+- **Database đã apply lên `matran-test`:** mọi thay đổi SQL viết thành **migration MỚI** (không sửa file cũ). Không link / push project thật — người dùng tự làm.
+- Màn hình mới thêm vào `App.tsx` theo kiểu `named(() => import(...), 'TenManHinh')` (tải khi cần); giao diện chờ dùng `src/components/LoadingScreens.tsx`; ảnh dùng `PhotoZoom` (`shared.tsx`).
+- Supabase local: cần Docker đang chạy; lỗi "container name already in use" → `npx supabase stop` rồi `npx supabase start`.
+- Sửa tài liệu: file dùng xuống dòng CRLF — sửa bằng công cụ Edit (script tự viết dễ trượt).
 - Đã biết: mở Hồ sơ cont đã OUT quá 7 ngày từ màn báo cáo có thể không thấy; phiếu thu cũ hơn 7 ngày chỉ xem (DEC-157, DEC-158).
+- Kiến trúc dữ liệu: `src/services/api.ts` + hàng chờ `remote/sync.ts` (mất mạng → báo lỗi ngay); `remote/loadWorking.ts` — `createWorkingSync` (mở app tải đủ trong bãi + 7 ngày, sau đó chỉ tải phần thay đổi); báo cáo xa hơn tải riêng (`reportSource.ts`).
 
 **Cho agent:**
 1. Thiết kế `docs/DATABASE_SCHEMA.md`, trạng thái `docs/STATUS_CATALOG.md`, tiến độ từng bước ở bảng trong `supabase/README.md`, kế hoạch nối app `docs/APP_DB_INTEGRATION.md`.
@@ -474,3 +471,5 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-27 (chiều) — Claude Code + bạn: dựng môi trường TEST trên cloud (Supabase `matran-test` + Vercel từ `main`), đăng nhập Admin OK; sửa script danh mục test thiếu Size / Type; ghi chú phiên sau (I.5).
 - 2026-10-28 — Claude Code: sửa 3 điểm từ đợt test 1 (biểu giá rác / khác, danh mục tổ sửa chữa, kính lúp ảnh). 165 test • pgTAP 184/184 • build PASS.
 - 2026-10-28 — Claude Code: tốc độ mở app + giao diện chờ (tải song song, tách file theo màn, màn chờ ngay từ HTML). 165 test • test thật local pass • build PASS.
+- 2026-10-28 — Claude Code: cập nhật bàn giao I.5 (đang test nhiều người trên matran-test + Vercel; quy trình đưa bản sửa; lưu ý).
+- 2026-10-28 — Claude Code: giao diện chờ nhẹ nhàng (bỏ thanh chạy, chỉ hiện khi > 300 ms) + tải sẵn màn hình chạy ngầm. 165 test • build PASS.

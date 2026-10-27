@@ -7,7 +7,7 @@ import { clearIdMap, friendlyError, isOffline, setRemoteSink, type RemoteOp } fr
 import { setReportLoader } from '../services/remote/reportSource';
 import type { DepotState } from '../services/depotStore';
 import { App } from './App';
-import { AppLoading, SavingIndicator, TopProgress } from '../components/LoadingScreens';
+import { AppLoading, SavingIndicator, StatusPill } from '../components/LoadingScreens';
 
 // ============================================================================
 // CHẾ ĐỘ DATABASE (DEC-155): đăng nhập → (bắt buộc đổi mật khẩu) → tải dữ liệu đang làm việc → App.
@@ -192,7 +192,7 @@ export const RemoteApp: React.FC = () => {
         }}
       />
       <SavingIndicator active={busy} />
-      {reloading && !busy && <TopProgress />}
+      <StatusPill active={reloading && !busy} label="Đang tải lại dữ liệu…" />
       {offline && (
         <div className="fixed inset-x-0 bottom-0 z-[70] bg-danger-bg px-4 py-2 text-center text-sm font-semibold text-danger-fg" role="alert" data-testid="offline-banner">
           Mất kết nối mạng — thao tác sẽ không được lưu. Có mạng lại, dữ liệu tự tải lại.

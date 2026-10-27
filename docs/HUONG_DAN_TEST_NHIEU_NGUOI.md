@@ -30,7 +30,7 @@ Mở terminal trong thư mục dự án (nhánh `agent/claude/p4-database`), r�
 ```bash
 npx supabase login                               # mở trình duyệt để đăng nhập Supabase
 npx supabase link --project-ref <mã-project>     # mã ở Project Settings → General → Reference ID
-npx supabase db push                             # chạy toàn bộ migration lên project TEST
+npx supabase db push --linked                             # chạy toàn bộ migration lên project TEST
 npx supabase functions deploy admin-create-staff --use-api      # 3 Edge Function — từng hàm, --use-api (cách thường hay "request timed out")
 npx supabase functions deploy admin-reset-password --use-api
 npx supabase functions deploy purge-expired-photos --use-api
