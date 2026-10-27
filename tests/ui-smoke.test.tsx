@@ -865,3 +865,19 @@ describe('DEC-155: màn đăng nhập (chế độ database)', () => {
     expect(html).toContain('bg-navy-900');
   });
 });
+
+describe('DEC-155: giao diện ghi dữ liệu chỉ qua services/api.ts', () => {
+  it('màn hình / thành phần không import hàm ghi thẳng từ file nghiệp vụ gốc', async () => {
+    const api = await import('../src/services/api');
+    const writeNames = new Set(Object.keys(api));
+    const files = import.meta.glob(['../src/features/**/*.tsx', '../src/components/**/*.tsx', '../src/app/**/*.tsx'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+    const bad: string[] = [];
+    const re = /import\s*\{([^}]*)\}\s*from\s*['"][./]*services\/(depotOperations|payments|vessel|invoice|feedback|driverRoute)['"]/g;
+    for (const [path, src] of Object.entries(files)) {
+      for (const m of src.matchAll(re)) {
+        m[1].split(',').map((x) => x.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0]).filter((n) => writeNames.has(n)).forEach((n) => bad.push(`${path}: ${n} (${m[2]})`));
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+});
