@@ -8,7 +8,7 @@ Thiết kế: `docs/DATABASE_SCHEMA.md`. **Agent chỉ viết file. Người dù
 |---|---|---|---|
 | 1 | `20261027000001` → `000005` | enum, nhân viên, danh mục, bộ đếm mã, nhật ký, chống bấm lặp, quyền, RPC Danh mục / nhân viên, RLS nền | **Đã chạy thử local 2026-10-27: apply OK, pgTAP 18/18** |
 | 2 | `20261028000001` → `000002` | Bảng Hạ vỏ, lượt lưu bãi, K80, lịch sử vị trí (partition tháng), vệ sinh / báo giá / sửa chữa; RPC Giám định (W-SURVEY), giám định trên kệ, hạ vỏ, đảo chuyển, sửa vị trí, vệ sinh, báo giá 2 bước, sửa chữa, khóa, ghi chú | **Đã chạy thử local 2026-10-27: pgTAP 32/32** (cộng bước 1: 50/50). Văn phòng Hạ vỏ + GATE IN OK chuyển sang bước 3 (cần chứng từ) |
-| 3 | — | Thanh toán, phiếu thu, trả trước, hóa đơn | Chưa làm |
+| 3 | `20261029000001` → `000002` | Văn phòng Hạ vỏ, chứng từ, thanh toán TT / TTS / TTR, chuyển khoản (callback + xác nhận tay), GATE IN OK, phiếu thu, in phiếu, phiếu thu trả trước, hóa đơn | **Đã chạy thử local 2026-10-27: pgTAP 57/57** (tổng 107/107) |
 | 4 | — | Cấp vỏ, booking, Nhập / Xuất tàu | Chưa làm |
 | 5 | — | lịch partition nhật ký, xóa ảnh hết hạn, chuyển kho, chỉ mục báo cáo | Chưa làm |
 
