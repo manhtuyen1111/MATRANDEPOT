@@ -10,7 +10,10 @@ Thiết kế: `docs/DATABASE_SCHEMA.md`. **Agent chỉ viết file. Người dù
 | 2 | `20261028000001` → `000002` | Bảng Hạ vỏ, lượt lưu bãi, K80, lịch sử vị trí (partition tháng), vệ sinh / báo giá / sửa chữa; RPC Giám định (W-SURVEY), giám định trên kệ, hạ vỏ, đảo chuyển, sửa vị trí, vệ sinh, báo giá 2 bước, sửa chữa, khóa, ghi chú | **Đã chạy thử local 2026-10-27: pgTAP 32/32** (cộng bước 1: 50/50). Văn phòng Hạ vỏ + GATE IN OK chuyển sang bước 3 (cần chứng từ) |
 | 3 | `20261029000001` → `000002` | Văn phòng Hạ vỏ, chứng từ, thanh toán TT / TTS / TTR, chuyển khoản (callback + xác nhận tay), GATE IN OK, phiếu thu, in phiếu, phiếu thu trả trước, hóa đơn | **Đã chạy thử local 2026-10-27: pgTAP 57/57** (tổng 107/107) |
 | 4 | `20261030000001` → `000002` | Booking, lệnh cấp vỏ, thanh toán cấp vỏ + K80, hủy lệnh (chưa thu tiền), xuất bãi 5 điều kiện; Nhập / Xuất tàu (lập / sửa / thêm / bỏ / xóa danh sách, Giám định nhập tàu, xuất tàu, duyệt khi chưa đủ, tự khóa DEC-131) | **Đã chạy thử local 2026-10-27: pgTAP 40/40** (tổng 147/147) |
-| 5 | — | lịch partition nhật ký, xóa ảnh hết hạn, chuyển kho, chỉ mục báo cáo | Chưa làm |
+| 5a | `20261031000001` | Lịch tự động (pg_cron): tạo partition trước 2 tháng, dọn request_log; kho ảnh riêng tư door-photos (Giám định tải lên, nhân viên xem); liệt kê / đánh dấu ảnh quá 24 tháng | **Đã chạy thử local 2026-10-27: pgTAP 11/11** (tổng 158/158) |
+| 5b | — | Edge Function: admin tạo tài khoản / đặt lại mật khẩu, xóa file ảnh hết hạn | Chưa làm |
+| — | — | Chuyển kho > 36 tháng | Làm khi có dữ liệu đủ 3 năm (2029) |
+| — | — | Nhận báo có ngân hàng (callback) | Chờ Q-032 chọn ngân hàng; hiện Văn phòng xác nhận tay |
 
 ## Chạy thử trên máy (khuyên làm trước khi đưa lên Supabase thật)
 
