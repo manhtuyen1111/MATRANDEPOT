@@ -269,7 +269,8 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
    Đã bỏ nút "Quét" thừa ở ô quét hiện trường (chỉ còn ô nhập + camera; súng quét / Enter vẫn tự tra). Trả chứng từ trên máy tính: súng quét cầm tay quét được (ô nhập tự đặt con trỏ, súng gõ mã + Enter → xác nhận & in).
 7. **Lưu mượt hơn (DEC-160):** bấm Lưu → màn hình đổi **ngay** theo kết quả kiểm trên máy, database ghi ngầm phía sau; **bỏ lớp chặn cả màn** lúc lưu (chỉ còn viên "Đang lưu…" nhỏ khi > 300 ms); bấm tiếp trong lúc lưu → nối hàng chờ, chạy luôn. Sau khi lưu chỉ tải phần thay đổi, **không tải lại danh mục** (trừ khi vừa sửa Danh mục / nhân viên); bớt 1 lượt chờ mạng. Database từ chối → dải đỏ báo lỗi + tự tải lại dữ liệu đúng.
    **Lưu ý theo dõi khi test:** (a) thao tác lưu xong màn có "nhảy" không; (b) bấm 2 lần liên tiếp có tạo trùng không; (c) lỗi từ database có báo rõ không. Ghi lại màn + thao tác nếu gặp. Hướng làm tiếp nếu vẫn chậm: gộp nhiều RPC trong 1 lần bấm thành 1 lời gọi; dùng Supabase Realtime thay tự làm mới 30 giây.
-- Mục 5, 6, 7 chờ merge vào `main` (không có migration).
+8. **Màn quét QR kiểu ngân hàng:** khung 4 góc + đường quét chạy (tắt khi máy bật "giảm chuyển động"), khung nằm giữa vùng camera (trùng vùng máy đọc mã) lệch lên trên → dễ lia máy; chữ hướng dẫn dưới khung + 3 dòng hướng dẫn tác nghiệp; nút lớn **Đèn** / **Chọn ảnh** (đọc mã QR từ ảnh có sẵn trong máy). Cần thử trên điện thoại thật.
+- Mục 5–8 chờ merge vào `main` (không có migration).
 
 **BẠN — VIỆC TIẾP THEO:**
 1. **Test tiếp** theo Bước 7 `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`. Thử lại 4 điểm vừa sửa; xem tốc độ mở app (ghi số giây + wifi / 4G + máy tính / điện thoại nếu vẫn chậm).

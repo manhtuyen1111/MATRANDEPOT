@@ -88,3 +88,16 @@
     width: 210mm;
   }
 }
+
+/* Màn quét QR (Qr.tsx): đường quét chạy lên xuống trong khung ngắm, kiểu app ngân hàng */
+@keyframes qr-scan {
+  0% { top: 8%; }
+  50% { top: 92%; }
+  100% { top: 8%; }
+}
+.qr-scan-line {
+  animation: qr-scan 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .qr-scan-line { animation: none; top: 50%; }
+}

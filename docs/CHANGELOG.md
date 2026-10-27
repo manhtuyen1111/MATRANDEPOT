@@ -22,6 +22,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ### Fixed
 - Lưu mượt (DEC-160): lưu ngầm không chặn màn, bấm tiếp trong lúc lưu được; sau khi lưu không tải lại danh mục; bớt 1 lượt chờ mạng khi đồng bộ.
 - Ô quét hiện trường: bỏ nút "Quét" thừa (chỉ còn ô nhập + camera).
+- Màn camera quét QR kiểu app ngân hàng: khung 4 góc + đường quét, hướng dẫn tác nghiệp, nút Đèn / Chọn ảnh (đọc QR từ ảnh trong máy).
 - Database: tổ sửa chữa chỉ Admin quản lý (khớp DEC-042).
 - Biểu giá: thêm THU GOM RÁC / KHÁC trên database báo "Hãng tàu không có trong Danh mục chung" — sửa bằng migration `20261103000001_fix_catalog_add_fee.sql`.
 - `devs/PROGRESS.md` bị nhân bản 5 lần do lỗi `String.replace` — đã gỡ, không mất nội dung.
