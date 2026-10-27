@@ -232,7 +232,8 @@ begin
   if lower(trim(p_username)) !~ '^[a-z0-9._-]{3,30}$' then
     raise exception 'Tên đăng nhập 3–30 ký tự: chữ thường không dấu, số, dấu . _ -';
   end if;
-  v_code := 'NV' || lpad(((select count(*) from public.staff) + 1)::text, 3, '0');
+  -- Mã nhân viên = số lớn nhất hiện có + 1 (không dùng đếm số dòng — tránh trùng khi có mã lẻ)
+  v_code := 'NV' || lpad((coalesce((select max(substring(staff_code from '^NV([0-9]+)$')::int) from public.staff), 0) + 1)::text, 3, '0');
   insert into public.staff (id, staff_code, username, full_name, email, must_change_password)
   values (p_auth_id, v_code, lower(trim(p_username)), trim(p_full_name), nullif(trim(coalesce(p_email, '')), ''), true)
   returning * into v_row;
