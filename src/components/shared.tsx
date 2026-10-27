@@ -13,6 +13,8 @@ import {
   ShieldAlert,
   Trash2,
   X,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import {
   DepotFeeCatalogItem,
@@ -802,5 +804,115 @@ export const CustomerInput: React.FC<{
         <span className="mt-1 block text-[11px] font-semibold text-amber-700">Khách ngoài Danh mục — chỉ thanh toán Tiền mặt / Chuyển khoản (không TTS / TTT).</span>
       )}
     </>
+  );
+};
+
+// ẢNH CỬA CONTAINER — KÍNH LÚP (đọc số cont cho chuẩn):
+//   rê chuột lên ảnh nhỏ → kính lúp tròn phóng to đúng chỗ con trỏ (máy tính);
+//   bấm ảnh → xem toàn màn hình, phóng to 1× → 4× (nút / cuộn chuột), kéo để di chuyển (cả điện thoại).
+const LENS_SIZE = 160;
+const LENS_ZOOM = 3;
+const ZOOM_STEPS = [1, 1.5, 2, 3, 4];
+
+export const PhotoZoom: React.FC<{ src: string; alt: string; className: string }> = ({ src, alt, className }) => {
+  const [lens, setLens] = React.useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [open, setOpen] = React.useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation(); // ảnh trong dòng bảng bấm được (DEC-117)
+          setOpen(true);
+        }}
+        onMouseMove={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          setLens({ x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height });
+        }}
+        onMouseLeave={() => setLens(null)}
+        className={`relative block cursor-zoom-in overflow-visible p-0 ${className}`}
+        aria-label={`${alt} — bấm để phóng to`}
+        title="Rê chuột để soi kính lúp, bấm để xem toàn màn hình"
+      >
+        <img src={src} alt={alt} className="h-full w-full rounded-md border border-line object-cover" />
+        <span className="absolute bottom-1 right-1 rounded bg-navy-900/70 p-1 text-white">
+          <ZoomIn className="h-3.5 w-3.5" />
+        </span>
+        {lens && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute z-30 rounded-full border-2 border-white shadow-[0_8px_32px_rgba(11,37,69,0.35)]"
+            style={{
+              width: LENS_SIZE,
+              height: LENS_SIZE,
+              left: lens.x - LENS_SIZE / 2,
+              top: lens.y - LENS_SIZE / 2,
+              backgroundImage: `url("${src}")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: `${lens.w * LENS_ZOOM}px ${lens.h * LENS_ZOOM}px`,
+              backgroundPosition: `${LENS_SIZE / 2 - lens.x * LENS_ZOOM}px ${LENS_SIZE / 2 - lens.y * LENS_ZOOM}px`,
+            }}
+          />
+        )}
+      </button>
+      {open && <PhotoViewer src={src} alt={alt} onClose={() => setOpen(false)} />}
+    </>
+  );
+};
+
+const PhotoViewer: React.FC<{ src: string; alt: string; onClose: () => void }> = ({ src, alt, onClose }) => {
+  const [step, setStep] = React.useState(0);
+  const box = React.useRef<HTMLDivElement>(null);
+  const drag = React.useRef<{ x: number; y: number; left: number; top: number } | null>(null);
+  const zoom = ZOOM_STEPS[step];
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  const change = (d: number) => setStep((s) => Math.min(ZOOM_STEPS.length - 1, Math.max(0, s + d)));
+  return (
+    <div className="fixed inset-0 z-[80] flex flex-col bg-navy-900/95" role="dialog" aria-modal="true" aria-label={alt}>
+      <div className="flex items-center justify-between gap-2 px-4 py-2 text-white">
+        <span className="text-sm font-semibold">{alt} — {Math.round(zoom * 100)}%</span>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => change(-1)} disabled={step === 0} aria-label="Thu nhỏ" className="rounded-md bg-white/15 p-2 disabled:opacity-40">
+            <ZoomOut className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={() => change(1)} disabled={step === ZOOM_STEPS.length - 1} aria-label="Phóng to" className="rounded-md bg-white/15 p-2 disabled:opacity-40">
+            <ZoomIn className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={onClose} aria-label="Đóng ảnh" className="rounded-md bg-white/15 p-2">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      <div
+        ref={box}
+        className={`flex-1 overflow-auto ${zoom > 1 ? 'cursor-grab' : ''}`}
+        onWheel={(e) => change(e.deltaY < 0 ? 1 : -1)}
+        onPointerDown={(e) => {
+          if (!box.current) return;
+          drag.current = { x: e.clientX, y: e.clientY, left: box.current.scrollLeft, top: box.current.scrollTop };
+        }}
+        onPointerMove={(e) => {
+          if (!drag.current || !box.current) return;
+          box.current.scrollLeft = drag.current.left - (e.clientX - drag.current.x);
+          box.current.scrollTop = drag.current.top - (e.clientY - drag.current.y);
+        }}
+        onPointerUp={() => (drag.current = null)}
+        onPointerLeave={() => (drag.current = null)}
+      >
+        <img
+          src={src}
+          alt={alt}
+          draggable={false}
+          onDoubleClick={() => setStep((s) => (s === 0 ? 3 : 0))}
+          className="mx-auto block select-none"
+          style={zoom === 1 ? { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' } : { width: `${zoom * 100}%`, maxWidth: 'none' }}
+        />
+      </div>
+      <p className="px-4 py-2 text-center text-[11px] text-white/70">Cuộn chuột hoặc bấm +/- để phóng to • kéo để di chuyển • bấm đúp để phóng to nhanh • Esc để đóng</p>
+    </div>
   );
 };

@@ -9,7 +9,7 @@ import { recordReceiptPrint } from "../services/api";
 import { formatDateTime } from "../services/datetime";
 import { EeirPrintSheet, PrintPortal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
 import { findVesselItemByCode } from '../services/vessel';
-import { linkCls, formatViTime } from './shared';
+import { linkCls, formatViTime, PhotoZoom } from './shared';
 
 interface Props {
   masterDossierCode: string | null; // Mã hồ sơ HẠ VỎ (HV-...) hoặc CẤP VỎ (CV-...)
@@ -370,7 +370,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
               <h3 className="pt-1 text-xs font-black uppercase tracking-wider text-ink-muted">Tác nghiệp HẠ VỎ — {visitCode}</h3>
               <Step no={next()} title="Giám định — Hạ vỏ" confirm={{ done: true, by: gateIn.fieldStaffName, at: gateIn.fieldRecordedAt }}>
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  <img src={gateIn.doorPhotoUrl} alt="Ảnh cửa container" className="h-24 w-full rounded border border-line object-cover sm:w-36" />
+                  <PhotoZoom src={gateIn.doorPhotoUrl} alt="Ảnh cửa container" className="h-24 w-full sm:w-36" />
                   <dl className="grid flex-1 grid-cols-2 gap-2">
                     <Field label="Trạng thái" value={`${gateIn.conditionClass}${gateIn.damageRemarks.length ? ` — ${gateIn.damageRemarks.join(', ')}` : ''}`} />
                     <Field label="Đóng hàng" value={gateIn.stuffingClass} />
