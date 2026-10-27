@@ -1886,3 +1886,4 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-27 — Claude Code: migration bước 4/5 (Cấp vỏ, booking, xuất bãi, Nhập / Xuất tàu) — pgTAP 147/147 local. Tiếp: bước 5.
 - 2026-10-27 — Claude Code: migration bước 5a (pg_cron, kho ảnh, ảnh hết hạn) — pgTAP 158/158 local; Q-043 giữ booking không số lượng.
 - 2026-10-27 — Claude Code: bước 5b Edge Function (tạo tài khoản, đặt lại mật khẩu, xóa ảnh hết hạn) — 16/16 local; cả database 158/158. Tiếp: nối app với database.
+- 2026-10-27 — Claude Code: DEC-155 cách nối app với database (giữ màn hình, cửa chung runAction, 8 giai đoạn N1 → N8 — docs/APP_DB_INTEGRATION.md). Bắt đầu N1.

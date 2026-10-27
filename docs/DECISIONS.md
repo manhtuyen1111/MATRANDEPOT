@@ -1413,6 +1413,18 @@ Quy ước trạng thái:
   - Gồm: chứng từ, dòng chi phí, giao dịch, phiếu thu, in phiếu, phiếu thu trả trước + lượt trừ, hóa đơn (phiếu thường + theo lượt).
   - RPC: Văn phòng Hạ vỏ, thanh toán TT / TTS / TTR, chuyển khoản (callback ngân hàng + xác nhận tay), hủy yêu cầu, GATE IN OK (tạo lượt lưu bãi + K80 + việc Vệ sinh / Báo giá), phiếu thu trả trước, in phiếu, trang hóa đơn, Kế toán ĐÃ XHD.
 
+### DEC-155 — Nối app với database: giữ màn hình, đổi lớp dữ liệu; .env.local cho Supabase local
+
+- Trạng thái: CONFIRMED (2026-10-27).
+- **Cách nối:** giữ giao diện; mọi thao tác đi qua một cửa chung `runAction`.
+  - Demo: chạy hàm nghiệp vụ hiện có.
+  - Database: gọi RPC cùng quy tắc rồi tải lại dữ liệu đang làm việc.
+  - Báo cáo / lịch sử lấy theo trang từ database (DEC-066).
+- Làm theo 8 giai đoạn N1 → N8 ở `docs/APP_DB_INTEGRATION.md`; mỗi giai đoạn thử trên Supabase local rồi mới sang giai đoạn sau.
+- **Ngoại lệ AGENTS.md (file .env):** người dùng cho phép agent tạo `.env.local` **chỉ** với địa chỉ Supabase local (127.0.0.1) và khóa **anon** local mặc định.
+  - Không ghi khóa service_role, không ghi khóa project thật, không commit (Git đã bỏ qua `.env.*`).
+  - Agent vẫn không đọc / in `.env` khác.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1502,6 +1514,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-154 đã xác nhận (cập nhật 2026-10-26).
+- Quyết định nghiệp vụ: DEC-001 → DEC-155 đã xác nhận (cập nhật 2026-10-26).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
