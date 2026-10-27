@@ -4,7 +4,7 @@ import type { DateRange } from '../services/reports';
 import { needsRangeLoad, stateForRange } from '../services/remote/reportSource';
 
 // Báo cáo / tra cứu (N7): bấm Tra cứu → run(khoảng lọc, apply); chạy query trên `data`.
-// Demo hoặc lọc trong 90 ngày → apply ngay, data = state hiện tại.
+// Demo hoặc lọc trong cửa sổ làm việc (7 ngày) → apply ngay, data = state hiện tại.
 // Database lọc xa hơn → tải riêng theo khoảng lọc (tối đa 3 tháng) rồi mới apply.
 export function useReportState(state: DepotState) {
   const [loaded, setLoaded] = useState<DepotState | null>(null);

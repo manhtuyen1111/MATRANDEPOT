@@ -1,6 +1,6 @@
 // ============================================================================
 // NGUỒN DỮ LIỆU BÁO CÁO (N7 — DEC-157). Demo: báo cáo chạy trên state sẵn có.
-// Database: app chỉ giữ dữ liệu đang làm việc (90 ngày — loadWorking.ts). Lọc có ngày bắt đầu cũ hơn →
+// Database: app chỉ giữ dữ liệu đang làm việc (trong bãi + 7 ngày — loadWorking.ts, DEC-158). Lọc có ngày bắt đầu cũ hơn →
 // tải riêng đúng khoảng lọc (tối đa 3 tháng) rồi chạy cùng hàm báo cáo / Excel trong reports.ts.
 // ============================================================================
 import type { DepotState } from '../depotStore';
@@ -24,7 +24,7 @@ function bounds(range: DateRange): { from: Date; to: Date } | null {
   return from && to ? { from, to } : null;
 }
 
-// Cần tải riêng khi đang chạy database và ngày bắt đầu nằm ngoài cửa sổ 90 ngày đã tải
+// Cần tải riêng khi đang chạy database và ngày bắt đầu nằm ngoài cửa sổ làm việc đã tải
 export function needsRangeLoad(range: DateRange, now = new Date(), active = loader !== null): boolean {
   if (!active) return false;
   const b = bounds(range);
@@ -37,7 +37,7 @@ export function assertRemoteRange(range: DateRange): { from: string; to: string 
   if (!b) throw new Error('Chọn đủ thời gian TỪ và ĐẾN.');
   if (b.from > b.to) throw new Error('Thời gian TỪ phải trước hoặc bằng ĐẾN.');
   if ((b.to.getTime() - b.from.getTime()) / 86_400_000 > REMOTE_MAX_RANGE_DAYS) {
-    throw new Error('Tra cứu dữ liệu cũ hơn 90 ngày: mỗi lần tối đa 3 tháng.');
+    throw new Error('Tra cứu dữ liệu cũ hơn 7 ngày: mỗi lần tối đa 3 tháng.');
   }
   return { from: b.from.toISOString(), to: b.to.toISOString() };
 }

@@ -1321,21 +1321,22 @@ describe('DEC-147: W-SURVEY (LÊN KỆ) + giám định bổ sung trên kệ', (
   });
 });
 
-// N7 (DEC-157): báo cáo chế độ database lọc ngoài 90 ngày → tải riêng theo khoảng lọc, tối đa 3 tháng
+// N7 (DEC-157, DEC-158): báo cáo chế độ database lọc ngoài cửa sổ làm việc (7 ngày) → tải riêng theo khoảng lọc, tối đa 3 tháng
 import { assertRemoteRange, needsRangeLoad, setReportLoader, stateForRange } from '../src/services/remote/reportSource';
 import { formatDateTime as fmtDt } from '../src/services/datetime';
 
 describe('N7: nguồn dữ liệu báo cáo theo khoảng lọc', () => {
   const daysAgo = (n: number) => fmtDt(new Date(Date.now() - n * 86_400_000));
 
-  it('Demo hoặc lọc trong 90 ngày → không tải riêng, dùng state hiện tại', async () => {
+  it('Demo hoặc lọc trong 7 ngày → không tải riêng, dùng state hiện tại', async () => {
     const state = createInitialState();
     expect(needsRangeLoad({ dateFrom: daysAgo(200), dateTo: daysAgo(150) }, new Date(), false)).toBe(false);
-    expect(needsRangeLoad({ dateFrom: daysAgo(30), dateTo: daysAgo(0) }, new Date(), true)).toBe(false);
+    expect(needsRangeLoad({ dateFrom: daysAgo(3), dateTo: daysAgo(0) }, new Date(), true)).toBe(false);
+    expect(needsRangeLoad({ dateFrom: daysAgo(30), dateTo: daysAgo(0) }, new Date(), true)).toBe(true);
     expect(await stateForRange(state, { dateFrom: daysAgo(200), dateTo: daysAgo(150) })).toBe(state);
   });
 
-  it('Database lọc cũ hơn 90 ngày → tải đúng khoảng, giữ người dùng hiện tại', async () => {
+  it('Database lọc cũ hơn 7 ngày → tải đúng khoảng, giữ người dùng hiện tại', async () => {
     const state = createInitialState();
     const loaded = { ...createInitialState(), currentUser: { ...state.currentUser, id: 'khac' } };
     let asked: { from: string; to: string } | null = null;
