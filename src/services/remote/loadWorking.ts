@@ -379,7 +379,8 @@ const SYNC_CHILDREN: { key: keyof RawData; table: string; parent: string; select
 
 export interface WorkingSync {
   full(): Promise<DepotState>;
-  refresh(): Promise<DepotState>;
+  // catalog: false → dùng lại danh mục đã tải (sau khi lưu nghiệp vụ — nhanh hơn); mặc định tải lại cả danh mục
+  refresh(opts?: { catalog?: boolean }): Promise<DepotState>;
 }
 
 export function createWorkingSync(client: SupabaseClient, me: StaffSession): WorkingSync {
@@ -392,8 +393,13 @@ export function createWorkingSync(client: SupabaseClient, me: StaffSession): Wor
     return String(data);
   };
   // Danh mục và ký link ảnh chạy song song
-  const build = async (r: RawData) => {
-    const [base, photo] = await Promise.all([loadCatalogState(client, me), signPhotos(client, r, photos)]);
+  let catalog: DepotState | null = null;
+  const build = async (r: RawData, reloadCatalog = true) => {
+    const [base, photo] = await Promise.all([
+      reloadCatalog || !catalog ? loadCatalogState(client, me) : Promise.resolve(catalog),
+      signPhotos(client, r, photos),
+    ]);
+    catalog = base;
     return buildState(base, r, photo);
   };
 
@@ -403,12 +409,13 @@ export function createWorkingSync(client: SupabaseClient, me: StaffSession): Wor
     return build(raw);
   };
 
-  const refresh = async () => {
+  const refresh = async (opts: { catalog?: boolean } = {}) => {
     if (!raw) return full();
     const r = raw;
-    const next = await serverNow();
+    // Mốc mới lấy song song với truy vấn (bớt 1 lượt chờ mạng) — OVERLAP_MS bù độ lệch vài trăm ms
     const after = new Date(new Date(cursor).getTime() - OVERLAP_MS).toISOString();
-    const [changed, childChanged, deleted] = await Promise.all([
+    const [next, changed, childChanged, deleted] = await Promise.all([
+      serverNow(),
       Promise.all(SYNC_TABLES.map((t) => all((a, b) => client.from(t.table).select('*').gt('sync_at', after).range(a, b)))),
       Promise.all(SYNC_CHILDREN.map((c) => all((a, b) => client.from(c.table).select(c.select).gt('sync_at', after).range(a, b)))),
       all((a, b) => client.from('sync_deletions').select('table_name, row_id').gt('deleted_at', after).range(a, b)),
@@ -425,7 +432,7 @@ export function createWorkingSync(client: SupabaseClient, me: StaffSession): Wor
       r[c.key] = [...r[c.key].filter((x) => !parents.has(x[c.parent])), ...fresh];
     }
     cursor = next;
-    return build(r);
+    return build(r, opts.catalog ?? true);
   };
 
   return { full, refresh };

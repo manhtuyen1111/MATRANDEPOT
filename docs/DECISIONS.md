@@ -1458,6 +1458,14 @@ Quy ước trạng thái:
 - Ảnh chụp cửa cont khi Gate in (Hạ vỏ) lưu 2 tháng rồi tự xóa (lịch pg_cron + Edge Function `purge-expired-photos` đã có). Hồ sơ vẫn giữ, ghi "ảnh đã hết hạn lưu".
 - Sửa trực tiếp trong migration gốc (chưa apply lên database thật nào): `photo_expires_at = ngày chụp + 2 tháng`.
 
+### DEC-160 — Lưu ngầm, không chặn màn hình (chế độ database)
+
+- Trạng thái: CONFIRMED (2026-10-28, người dùng yêu cầu lưu mượt + nhanh hơn).
+- Bấm Lưu → hàm nghiệp vụ kiểm trên máy, màn hình đổi ngay; RPC ghi ngầm theo hàng chờ (`RemoteApp.flush`). Không có lớp chặn bấm; chỉ viên "Đang lưu…" khi > 300 ms. Chống bấm trùng = kiểm trạng thái trong hàm nghiệp vụ + database kiểm lại.
+- Thao tác bấm trong lúc lưu nối vào hàng, chạy cùng vòng; chỉ thay dữ liệu màn hình khi hàng đã trống.
+- Sau khi lưu chỉ tải phần thay đổi, dùng lại danh mục đã tải; RPC `catalog_*` / `admin_*` → tải lại danh mục (`takeCatalogTouched`). Tự làm mới 30 giây vẫn tải cả danh mục.
+- Database từ chối → dải đỏ báo lỗi + tải lại dữ liệu thật (như cũ).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1547,6 +1555,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-155 đã xác nhận (cập nhật 2026-10-26).
+- Quyết định nghiệp vụ: DEC-001 → DEC-160 đã xác nhận (cập nhật 2026-10-28).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

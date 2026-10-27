@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { ChangePasswordScreen, LoginScreen } from '../features/auth/LoginScreen';
 import { changePassword, loadStaffSession, signIn, signOut, type StaffSession } from '../services/remote/session';
 import { createWorkingSync, loadWorkingState, type WorkingSync } from '../services/remote/loadWorking';
-import { clearIdMap, friendlyError, isOffline, setRemoteSink, type RemoteOp } from '../services/remote/sync';
+import { clearIdMap, friendlyError, isOffline, setRemoteSink, takeCatalogTouched, type RemoteOp } from '../services/remote/sync';
 import { setReportLoader } from '../services/remote/reportSource';
 import type { DepotState } from '../services/depotStore';
 import { App } from './App';
@@ -66,26 +66,38 @@ export const RemoteApp: React.FC = () => {
     let failed: string | null = null;
     let reloaded = false;
     try {
-      while (queue.current.length) {
-        const op = queue.current.shift()!;
-        try {
-          await op(client);
-        } catch (err) {
-          failed = friendlyError(err instanceof Error ? err.message : 'Không lưu được vào database.');
-          queue.current = [];
+      // Lưu ngầm (DEC-160): người dùng bấm tiếp trong lúc lưu → thao tác mới nối vào hàng, chạy luôn trong vòng này.
+      // Chỉ thay dữ liệu màn hình khi hàng đã trống (không ghi đè thao tác vừa bấm bằng dữ liệu cũ).
+      for (;;) {
+        while (queue.current.length) {
+          const op = queue.current.shift()!;
+          try {
+            await op(client);
+          } catch (err) {
+            failed = friendlyError(err instanceof Error ? err.message : 'Không lưu được vào database.');
+            queue.current = [];
+          }
         }
+        const sync = syncRef.current;
+        const state = sync ? await sync.refresh({ catalog: takeCatalogTouched() }) : null;
+        if (queue.current.length && !failed) continue;
+        if (state) setPhase((p) => (p.kind === 'ready' ? { ...p, state } : p));
+        break;
       }
-      await reloadData();
       reloaded = true;
     } catch (err) {
       failed = failed || friendlyError(err instanceof Error ? err.message : 'Không tải lại được dữ liệu.');
     } finally {
-      clearIdMap();
       running.current = false;
-      setBusy(false);
+      if (queue.current.length) {
+        setTimeout(() => void flush(), 0); // thao tác bấm đúng lúc vừa xong vòng lưu
+      } else {
+        clearIdMap();
+        setBusy(false);
+      }
       if (failed) setSyncError({ message: failed, reloaded });
     }
-  }, [client, reloadData]);
+  }, [client]);
 
   useEffect(() => {
     setRemoteSink((op) => {

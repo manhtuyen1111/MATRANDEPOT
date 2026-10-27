@@ -4,7 +4,7 @@ import { inputCls, primaryBtn } from './shared';
 
 // MÃ QR TÁC NGHIỆP (DEC-057): mã QR THẬT (không phải hình minh họa) + quét bằng camera / súng quét cầm tay.
 //   QrImage   — vẽ mã QR từ chuỗi (VD QR-HV-261028-001). Mã ngắn → ô QR thưa, to → quét rất nhanh.
-//   ScanField — ô nhập + nút camera. Quét được (camera hoặc súng quét gõ + Enter) → tự tra mã ngay.
+//   ScanField — ô nhập + nút camera (không có nút Quét: súng quét gõ + Enter là tự tra). Quét được (camera hoặc súng quét gõ + Enter) → tự tra mã ngay.
 // Thư viện chỉ tải khi cần (không làm chậm mở app).
 
 export const QrImage: React.FC<{ value: string; size?: number; className?: string }> = ({ value, size = 128, className = '' }) => {
@@ -149,8 +149,7 @@ export const ScanField: React.FC<{
   onSubmit: (code: string) => void;
   placeholder: string;
   autoFocus?: boolean;
-  submitLabel?: string;
-}> = ({ value, onChange, onSubmit, placeholder, autoFocus, submitLabel = 'Quét' }) => {
+}> = ({ value, onChange, onSubmit, placeholder, autoFocus }) => {
   const onResult = React.useCallback(
     (code: string) => {
       onChange(code);
@@ -175,7 +174,6 @@ export const ScanField: React.FC<{
           enterKeyHint="search"
           className={`${inputCls} font-mono uppercase`}
         />
-        <button type="submit" className={`${primaryBtn} shrink-0`}>{submitLabel}</button>
         <CameraScanButton onResult={onResult} />
       </form>
   );
