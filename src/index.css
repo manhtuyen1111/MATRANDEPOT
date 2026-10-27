@@ -88,3 +88,9 @@
     width: 210mm;
   }
 }
+
+/* Thanh chạy khi đang tải / đang lưu (LoadingScreens.tsx) */
+@keyframes loadbar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}

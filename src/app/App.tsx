@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import {
   Boxes,
   Building2,
@@ -24,27 +24,37 @@ import { DepotState, loadDepotState, resetDepotState, saveDepotState } from '../
 import { createDemoState } from '../services/demoData';
 import { canOpenMenu } from '../services/permissions';
 import { isSupabaseConfigured } from '../lib/env';
-import { K80TicketModal } from '../components/K80TicketModal';
-import { MasterDossierModal } from '../components/MasterDossierModal';
-import { InspectorHaVoMobile } from '../features/inspector/InspectorHaVoMobile';
-import { OfficeCapVoWorkspace, OfficeHaVoWorkspace } from '../features/office/OfficeWorkspaces';
-import { OfficeVesselWorkspace } from '../features/vessel/OfficeVesselWorkspace';
-import { VesselFieldMobile, VesselFieldMode } from '../features/vessel/VesselFieldMobile';
 import { openVesselLists, VesselFieldStep, vesselStepSummary } from '../services/vessel';
 import { FieldQueueMode, FieldQueueWorkspaces, getFieldQueue } from '../features/field-queues/FieldQueueWorkspaces';
-import { YardShiftWorkspace } from '../features/forklift/YardShiftWorkspace';
-import { YardFeature } from '../features/yard/YardFeature';
-import { CatalogTab, MasterCatalogWorkspace } from '../features/catalog/MasterCatalogWorkspace';
-import { ReportSection, ReportsWorkspace } from '../features/reports/ReportsWorkspace';
-import { ReceiptsWorkspace } from '../features/receipts/ReceiptsWorkspace';
-import { DocumentReturnWorkspace } from '../features/office/DocumentReturnWorkspace';
 import { ticketsAwaitingReturn } from '../services/driverRoute';
 import { pendingRackInspections } from '../services/depotOperations';
-import { RepairTeamCatalog } from '../features/catalog/RepairTeamCatalog';
-import { UserRoleCatalog } from '../features/catalog/UserRoleCatalog';
-import { CompanyCatalog } from '../features/catalog/CompanyCatalog';
 import { FeedbackButton } from '../components/FeedbackButton';
-import { FeedbackReport } from '../features/reports/FeedbackReport';
+import { ScreenLoading } from '../components/LoadingScreens';
+import type { VesselFieldMode } from '../features/vessel/VesselFieldMobile';
+import type { CatalogTab } from '../features/catalog/MasterCatalogWorkspace';
+import type { ReportSection } from '../features/reports/ReportsWorkspace';
+
+// Màn hình tải khi mở lần đầu (tách file) → mở app nhanh hơn; màn đã mở lần sau hiện ngay
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const named = <M extends Record<K, React.ComponentType<any>>, K extends keyof M>(load: () => Promise<M>, name: K) =>
+  lazy(async () => ({ default: (await load())[name] })); // giữ nguyên kiểu props của màn hình
+const InspectorHaVoMobile = named(() => import('../features/inspector/InspectorHaVoMobile'), 'InspectorHaVoMobile');
+const OfficeHaVoWorkspace = named(() => import('../features/office/OfficeWorkspaces'), 'OfficeHaVoWorkspace');
+const OfficeCapVoWorkspace = named(() => import('../features/office/OfficeWorkspaces'), 'OfficeCapVoWorkspace');
+const OfficeVesselWorkspace = named(() => import('../features/vessel/OfficeVesselWorkspace'), 'OfficeVesselWorkspace');
+const VesselFieldMobile = named(() => import('../features/vessel/VesselFieldMobile'), 'VesselFieldMobile');
+const YardShiftWorkspace = named(() => import('../features/forklift/YardShiftWorkspace'), 'YardShiftWorkspace');
+const YardFeature = named(() => import('../features/yard/YardFeature'), 'YardFeature');
+const MasterCatalogWorkspace = named(() => import('../features/catalog/MasterCatalogWorkspace'), 'MasterCatalogWorkspace');
+const ReportsWorkspace = named(() => import('../features/reports/ReportsWorkspace'), 'ReportsWorkspace');
+const ReceiptsWorkspace = named(() => import('../features/receipts/ReceiptsWorkspace'), 'ReceiptsWorkspace');
+const DocumentReturnWorkspace = named(() => import('../features/office/DocumentReturnWorkspace'), 'DocumentReturnWorkspace');
+const RepairTeamCatalog = named(() => import('../features/catalog/RepairTeamCatalog'), 'RepairTeamCatalog');
+const UserRoleCatalog = named(() => import('../features/catalog/UserRoleCatalog'), 'UserRoleCatalog');
+const CompanyCatalog = named(() => import('../features/catalog/CompanyCatalog'), 'CompanyCatalog');
+const FeedbackReport = named(() => import('../features/reports/FeedbackReport'), 'FeedbackReport');
+const MasterDossierModal = named(() => import('../components/MasterDossierModal'), 'MasterDossierModal');
+const K80TicketModal = named(() => import('../components/K80TicketModal'), 'K80TicketModal');
 
 interface MenuItem {
   id: WorkspaceMenuId;
@@ -489,6 +499,7 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
         </header>
 
         <main className="flex-1 p-3 sm:p-4">
+          <Suspense fallback={<ScreenLoading />}>
           {activeMenu === 'TON_VO' && (
             <YardFeature state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} onOpenK80Ticket={setActiveK80Ticket} onOpenReceipt={openReceipt} />
           )}
@@ -524,19 +535,22 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
           {activeMenu === 'DM_USER' && <UserRoleCatalog state={state} onUpdateState={handleUpdateState} />}
           {activeMenu === 'DM_CONG_TY' && <CompanyCatalog state={state} onUpdateState={handleUpdateState} />}
           {CATALOG_TABS[activeMenu] &&<MasterCatalogWorkspace state={state} onUpdateState={handleUpdateState} tab={CATALOG_TABS[activeMenu]} />}
+          </Suspense>
         </main>
       </div>
 
-      <MasterDossierModal
+      {/* Hồ sơ / phiếu K80 chỉ tải khi mở lần đầu */}
+      <Suspense fallback={null}>
+      {activeDossierCode && <MasterDossierModal
         masterDossierCode={activeDossierCode}
         state={state}
         onClose={() => setActiveDossierCode(null)}
         onOpenK80Ticket={setActiveK80Ticket}
         onUpdateState={handleUpdateState}
         onOpenReceipt={openReceipt}
-      />
+      />}
 
-      <K80TicketModal
+      {activeK80Ticket && <K80TicketModal
         ticket={activeK80Ticket}
         state={state}
         onClose={() => setActiveK80Ticket(null)}
@@ -544,7 +558,8 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
           setSimulatedQr(qr);
           setActiveMenu(activeK80Ticket?.operationMode === 'CAP_VO' ? 'XN_CHO_CAP_VO' : 'XN_CHO_HA_VO');
         }}
-      />
+      />}
+      </Suspense>
     </div>
   );
 };
