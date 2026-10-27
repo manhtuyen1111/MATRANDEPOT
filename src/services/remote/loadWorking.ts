@@ -1,7 +1,8 @@
 // ============================================================================
-// CHẾ ĐỘ DATABASE — tải DỮ LIỆU ĐANG LÀM VIỆC (DEC-155): mọi thứ đang mở / trong bãi + 90 ngày gần nhất,
-// chuyển về đúng kiểu DepotState mà giao diện đang dùng. Báo cáo lọc ngoài 90 ngày → tải riêng theo khoảng lọc
-// (tối đa 3 tháng, reportSource.ts — N7) rồi chạy cùng hàm báo cáo.
+// CHẾ ĐỘ DATABASE — tải DỮ LIỆU ĐANG LÀM VIỆC (DEC-155, DEC-158): mọi thứ đang mở / trong bãi + 7 ngày gần nhất,
+// chuyển về đúng kiểu DepotState mà giao diện đang dùng. Chỉ tải dữ liệu dạng bảng; ảnh chỉ ký link, trình duyệt
+// tải ảnh khi mở hồ sơ. Mở app tải đủ 1 lần, sau đó chỉ lấy phần thay đổi (createWorkingSync).
+// Báo cáo lọc ngoài 7 ngày → tải riêng theo khoảng lọc (tối đa 3 tháng, reportSource.ts — N7).
 // ============================================================================
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -14,7 +15,12 @@ import type { DepotState } from '../depotStore';
 import type { StaffSession } from './session';
 import { loadCatalogState } from './loadState';
 
-export const WORKING_DAYS = 90;
+export const WORKING_DAYS = 7; // DEC-158 (đo N8: 90 ngày = 206 giây / 171 MB — không dùng được)
+const FAR = '9999-12-31T23:59:59Z';
+const OVERLAP_MS = 60_000; // lấy chồng 1 phút khi đồng bộ (giao dịch ghi chậm) — trùng thì ghép theo id
+const PHOTO_LINK_SECONDS = 3600;
+const PHOTO_RESIGN_MS = 50 * 60_000;
+const windowStart = () => new Date(Date.now() - WORKING_DAYS * 86400000).toISOString();
 const PAGE = 1000;
 const CHUNK = 150;
 const PARALLEL = 6;
@@ -71,11 +77,14 @@ const feeLine = (f: Row): FeeLineItem => ({
   id: f.id, catalogCode: f.catalog_code, name: f.name, amountInclVat: num(f.amount), quantity: f.quantity, unitAmountInclVat: num(f.unit_amount),
 });
 
-// range (ISO) có → tải hồ sơ trong khoảng đó thay cho 90 ngày gần nhất — dùng cho báo cáo lọc xa hơn (N7)
-export async function loadWorkingState(client: SupabaseClient, me: StaffSession, range?: { from: string; to: string }): Promise<DepotState> {
-  const base = await loadCatalogState(client, me);
-  const since = range?.from ?? new Date(Date.now() - WORKING_DAYS * 86400000).toISOString();
-  const until = range?.to ?? '9999-12-31T23:59:59Z';
+// Dữ liệu thô theo bảng — giữ trong bộ nhớ để ghép phần thay đổi (N8)
+export interface RawData {
+  containers: Row[]; gateIns: Row[]; gateOuts: Row[]; bookings: Row[]; prepaids: Row[]; vouchers: Row[]; txs: Row[]; receipts: Row[];
+  deductions: Row[]; prints: Row[]; groups: Row[]; groupItems: Row[]; fees: Row[]; tickets: Row[]; works: Row[]; members: Row[];
+  history: Row[]; lists: Row[]; items: Row[]; feedbacks: Row[];
+}
+
+async function fetchRaw(client: SupabaseClient, since: string, until: string): Promise<RawData> {
 
   // --- Hồ sơ / lượt lưu bãi ---
   const containers = merge(
@@ -138,15 +147,35 @@ export async function loadWorkingState(client: SupabaseClient, me: StaffSession,
   const items = await byIds(client, 'vessel_list_items', 'list_id', lists.map((l) => l.id));
   const feedbacks = await all((a, b) => client.from('feedbacks').select('*').gte('created_at', since).lte('created_at', until).range(a, b));
 
-  // --- Ảnh cửa container: kho riêng tư → đường dẫn xem tạm 1 giờ (ảnh dạng link giữ nguyên) ---
-  const photoUrl = new Map<string, string>();
-  const paths = [...gateIns.map((g) => g.door_photo_path), ...items.map((i) => i.door_photo_path)]
-    .filter((p): p is string => Boolean(p) && !/^(https?:|data:)/.test(p));
+  return { containers, gateIns, gateOuts, bookings, prepaids, vouchers, txs, receipts, deductions, prints, groups, groupItems, fees, tickets, works, members, history, lists, items, feedbacks };
+}
+
+// Ảnh cửa container: kho riêng tư → link xem tạm. Chỉ ký link cho đường dẫn mới / sắp hết hạn (không tải ảnh).
+type PhotoCache = Map<string, { url: string; at: number }>;
+async function signPhotos(client: SupabaseClient, raw: RawData, cache: PhotoCache): Promise<(p: string | null) => string> {
+  const now = Date.now();
+  const paths = Array.from(new Set([...raw.gateIns.map((g) => g.door_photo_path), ...raw.items.map((i) => i.door_photo_path)]))
+    .filter((p): p is string => Boolean(p) && !/^(https?:|data:)/.test(p))
+    .filter((p) => {
+      const c = cache.get(p);
+      return !c || now - c.at > PHOTO_RESIGN_MS;
+    });
   for (let i = 0; i < paths.length; i += 100) {
-    const { data } = await client.storage.from('door-photos').createSignedUrls(paths.slice(i, i + 100), 3600);
-    for (const s of data || []) if (s.path && s.signedUrl) photoUrl.set(s.path, s.signedUrl);
+    const { data } = await client.storage.from('door-photos').createSignedUrls(paths.slice(i, i + 100), PHOTO_LINK_SECONDS);
+    for (const x of data || []) if (x.path && x.signedUrl) cache.set(x.path, { url: x.signedUrl, at: now });
   }
-  const photo = (p: string | null) => (p ? photoUrl.get(p) || p : '');
+  return (p) => (p ? cache.get(p)?.url || p : '');
+}
+
+// range (ISO) có → tải hồ sơ trong khoảng đó thay cho cửa sổ làm việc — báo cáo lọc xa hơn (N7)
+export async function loadWorkingState(client: SupabaseClient, me: StaffSession, range?: { from: string; to: string }): Promise<DepotState> {
+  const base = await loadCatalogState(client, me);
+  const raw = await fetchRaw(client, range?.from ?? windowStart(), range?.to ?? FAR);
+  return buildState(base, raw, await signPhotos(client, raw, new Map()));
+}
+
+function buildState(base: DepotState, raw: RawData, photo: (p: string | null) => string): DepotState {
+  const { containers, gateIns, gateOuts, bookings, prepaids, vouchers, txs, receipts, deductions, prints, groups, groupItems, fees, tickets, works, members, history, lists, items, feedbacks } = raw;
 
   // --- Ghép ---
   const feesByOwner = groupBy(fees, 'owner_id');
@@ -325,4 +354,72 @@ export async function loadWorkingState(client: SupabaseClient, me: StaffSession,
     feedbacks: feedbacks.sort(desc('created_at')).map(mapFeedback),
     auditLogs: [],
   };
+}
+
+// ============================================================================
+// ĐỒNG BỘ PHẦN THAY ĐỔI (N8 — DEC-158): full() khi mở app / bấm Tải lại; refresh() sau mỗi lần lưu và mỗi 30 giây
+// chỉ lấy dòng có sync_at mới hơn mốc trước (giờ máy chủ) + dòng bị xóa (sync_deletions), ghép vào dữ liệu thô.
+// ============================================================================
+const SYNC_TABLES: { key: keyof RawData; table: string }[] = [
+  { key: 'containers', table: 'containers' }, { key: 'gateIns', table: 'gate_in_orders' }, { key: 'gateOuts', table: 'gate_out_orders' },
+  { key: 'bookings', table: 'release_bookings' }, { key: 'prepaids', table: 'prepaid_receipts' }, { key: 'vouchers', table: 'vouchers' },
+  { key: 'txs', table: 'payment_transactions' }, { key: 'receipts', table: 'payment_receipts' }, { key: 'deductions', table: 'prepaid_deductions' },
+  { key: 'prints', table: 'receipt_prints' }, { key: 'groups', table: 'invoice_groups' }, { key: 'fees', table: 'fee_lines' },
+  { key: 'tickets', table: 'k80_tickets' }, { key: 'works', table: 'work_orders' }, { key: 'history', table: 'location_history' },
+  { key: 'lists', table: 'vessel_lists' }, { key: 'items', table: 'vessel_list_items' }, { key: 'feedbacks', table: 'feedbacks' },
+];
+// Bảng con không có id riêng: thay đổi → tải lại toàn bộ dòng con của cha đó
+const SYNC_CHILDREN: { key: keyof RawData; table: string; parent: string; select: string }[] = [
+  { key: 'groupItems', table: 'invoice_group_items', parent: 'group_id', select: 'group_id, deduction_id' },
+  { key: 'members', table: 'work_order_members', parent: 'work_order_id', select: 'work_order_id, member_name' },
+];
+
+export interface WorkingSync {
+  full(): Promise<DepotState>;
+  refresh(): Promise<DepotState>;
+}
+
+export function createWorkingSync(client: SupabaseClient, me: StaffSession): WorkingSync {
+  let raw: RawData | null = null;
+  let cursor = '';
+  const photos: PhotoCache = new Map();
+  const serverNow = async (): Promise<string> => {
+    const { data, error } = await client.rpc('server_now');
+    if (error) throw new Error(`Không tải được dữ liệu: ${error.message}`);
+    return String(data);
+  };
+  const build = async (r: RawData) => buildState(await loadCatalogState(client, me), r, await signPhotos(client, r, photos));
+
+  const full = async () => {
+    cursor = await serverNow(); // lấy mốc TRƯỚC khi tải → không sót thay đổi xảy ra trong lúc tải
+    raw = await fetchRaw(client, windowStart(), FAR);
+    return build(raw);
+  };
+
+  const refresh = async () => {
+    if (!raw) return full();
+    const r = raw;
+    const next = await serverNow();
+    const after = new Date(new Date(cursor).getTime() - OVERLAP_MS).toISOString();
+    const [changed, childChanged, deleted] = await Promise.all([
+      Promise.all(SYNC_TABLES.map((t) => all((a, b) => client.from(t.table).select('*').gt('sync_at', after).range(a, b)))),
+      Promise.all(SYNC_CHILDREN.map((c) => all((a, b) => client.from(c.table).select(c.select).gt('sync_at', after).range(a, b)))),
+      all((a, b) => client.from('sync_deletions').select('table_name, row_id').gt('deleted_at', after).range(a, b)),
+    ]);
+    const gone = groupBy(deleted, 'table_name');
+    SYNC_TABLES.forEach((t, i) => {
+      const drop = new Set((gone.get(t.table) || []).map((d) => d.row_id));
+      r[t.key] = merge(drop.size ? r[t.key].filter((x) => !drop.has(x.id)) : r[t.key], changed[i]);
+    });
+    for (const [i, c] of SYNC_CHILDREN.entries()) {
+      const parents = new Set<string>([...childChanged[i].map((x) => x[c.parent]), ...(gone.get(c.table) || []).map((d) => d.row_id)]);
+      if (!parents.size) continue;
+      const fresh = await byIds(client, c.table, c.parent, Array.from(parents), c.select);
+      r[c.key] = [...r[c.key].filter((x) => !parents.has(x[c.parent])), ...fresh];
+    }
+    cursor = next;
+    return build(r);
+  };
+
+  return { full, refresh };
 }

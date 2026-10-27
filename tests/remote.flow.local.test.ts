@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as api from '../src/services/api';
 import { requestId, rpc, setRemoteSink, type RemoteOp } from '../src/services/remote/sync';
 import { loadStaffSession, signIn } from '../src/services/remote/session';
-import { loadWorkingState } from '../src/services/remote/loadWorking';
+import { createWorkingSync, loadWorkingState, type WorkingSync } from '../src/services/remote/loadWorking';
 import { toAuthPassword, usernameToEmail } from '../src/services/authPassword';
 import type { DepotState } from '../src/services/depotStore';
 
@@ -25,13 +25,18 @@ describe.skipIf(!run)('N2–N6 — luồng Hạ vỏ → Bãi → Cấp vỏ ch�
   let client: SupabaseClient;
   let userId = '';
   let queue: RemoteOp[] = [];
+  let sync: WorkingSync | null = null;
 
-  // Giống RemoteApp.flush: chạy lần lượt, rồi tải lại
+  // Giống RemoteApp.flush: chạy lần lượt, rồi tải lại — lần đầu tải đủ, sau đó chỉ tải phần thay đổi (N8)
   const flush = async (): Promise<DepotState> => {
     const ops = queue;
     queue = [];
     for (const op of ops) await op(client);
-    return loadWorkingState(client, (await loadStaffSession(client))!);
+    if (!sync) {
+      sync = createWorkingSync(client, (await loadStaffSession(client))!);
+      return sync.full();
+    }
+    return sync.refresh();
   };
 
   beforeAll(async () => {
@@ -53,6 +58,17 @@ describe.skipIf(!run)('N2–N6 — luồng Hạ vỏ → Bãi → Cấp vỏ ch�
   it('Giám định → Văn phòng (TTS) → Xe nâng hạ bãi → Cấp vỏ (TTS) → Gate out; database từ chối thì báo lỗi tiếng Việt', async () => {
     let s = await flush();
     const fee = s.feeCatalog.find((f) => f.code === 'E2E-40HC')!.id;
+
+    // 0. N8: hồ sơ bị xóa trên database → lần đồng bộ sau biến mất khỏi dữ liệu (sync_deletions)
+    s = api.recordGateInFieldStep(s, {
+      gateInType: 'CUSTOMER_RETURN', doorPhotoUrl: 'https://example.invalid/door.jpg', conditionClass: 'AV', stuffingClass: 'E',
+      cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
+    });
+    s = await flush();
+    const draftOrder = s.gateInOrders.find((o) => !o.containerNo && o.status === 'FIELD_RECORDED')!;
+    s = api.deleteGateInFieldRecord(s, { gateInId: draftOrder.id });
+    s = await flush();
+    expect(s.gateInOrders.some((o) => o.id === draftOrder.id)).toBe(false);
 
     // 1. Giám định: ảnh dạng link (không cần nén), AV, không vệ sinh
     s = api.recordGateInFieldStep(s, {

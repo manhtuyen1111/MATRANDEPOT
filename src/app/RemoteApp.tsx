@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { ChangePasswordScreen, LoginScreen } from '../features/auth/LoginScreen';
 import { changePassword, loadStaffSession, signIn, signOut, type StaffSession } from '../services/remote/session';
-import { loadWorkingState } from '../services/remote/loadWorking';
+import { createWorkingSync, loadWorkingState, type WorkingSync } from '../services/remote/loadWorking';
 import { clearIdMap, friendlyError, isOffline, setRemoteSink, type RemoteOp } from '../services/remote/sync';
 import { setReportLoader } from '../services/remote/reportSource';
 import type { DepotState } from '../services/depotStore';
@@ -32,6 +32,7 @@ export const RemoteApp: React.FC = () => {
   const queue = useRef<RemoteOp[]>([]);
   const running = useRef(false);
   const meRef = useRef<StaffSession | null>(null);
+  const syncRef = useRef<WorkingSync | null>(null); // N8: mở app tải đủ, sau đó chỉ tải phần thay đổi
 
   const refresh = useCallback(async () => {
     try {
@@ -39,19 +40,20 @@ export const RemoteApp: React.FC = () => {
       meRef.current = me;
       if (!me) return setPhase({ kind: 'signedOut' });
       if (me.mustChangePassword) return setPhase({ kind: 'mustChange', me });
-      setPhase({ kind: 'ready', me, state: await loadWorkingState(client, me) });
+      syncRef.current = createWorkingSync(client, me);
+      setPhase({ kind: 'ready', me, state: await syncRef.current.full() });
     } catch (err) {
       setPhase({ kind: 'signedOut', error: err instanceof Error ? err.message : 'Không tải được phiên đăng nhập.' });
     }
   }, [client]);
 
-  // Tải lại dữ liệu thật (giữ phiên) — sau mỗi lần lưu và theo lịch
-  const reloadData = useCallback(async () => {
-    const me = meRef.current;
-    if (!me) return;
-    const state = await loadWorkingState(client, me);
+  // Tải lại dữ liệu thật (giữ phiên): sau mỗi lần lưu và theo lịch chỉ lấy phần thay đổi; bấm Tải lại → tải đủ
+  const reloadData = useCallback(async (mode: 'delta' | 'full' = 'delta') => {
+    const sync = syncRef.current;
+    if (!sync) return;
+    const state = mode === 'full' ? await sync.full() : await sync.refresh();
     setPhase((p) => (p.kind === 'ready' ? { ...p, state } : p));
-  }, [client]);
+  }, []);
 
   // Chạy hàng chờ ghi: lần lượt, dừng ở lỗi đầu tiên (các thao tác sau có thể phụ thuộc thao tác lỗi)
   const flush = useCallback(async () => {
@@ -135,6 +137,7 @@ export const RemoteApp: React.FC = () => {
   const doSignOut = async () => {
     await signOut(client);
     meRef.current = null;
+    syncRef.current = null;
     setPhase({ kind: 'signedOut' });
   };
 
@@ -178,7 +181,7 @@ export const RemoteApp: React.FC = () => {
           username: phase.me.username,
           onSignOut: doSignOut,
           onChangePassword: () => setChanging(true),
-          onReload: () => void reloadData(),
+          onReload: () => void reloadData('full'),
         }}
       />
       {busy && (

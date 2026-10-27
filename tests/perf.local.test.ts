@@ -7,7 +7,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { loadStaffSession, signIn } from '../src/services/remote/session';
-import { loadWorkingState } from '../src/services/remote/loadWorking';
+import { createWorkingSync } from '../src/services/remote/loadWorking';
 import { toAuthPassword, usernameToEmail } from '../src/services/authPassword';
 
 const ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env || {};
@@ -29,6 +29,7 @@ describe.skipIf(!run)('N8 — đo tốc độ tải dữ liệu với quy mô th
   const letters = Array.from({ length: 3 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
   const block = `BLOCK-PF${letters}`;
   let client: SupabaseClient;
+  let bytes = 0;
 
   const insert = async (table: string, rows: Record<string, unknown>[]) => {
     for (let i = 0; i < rows.length; i += 1000) {
@@ -98,22 +99,32 @@ describe.skipIf(!run)('N8 — đo tốc độ tải dữ liệu với quy mô th
       await insert('gate_out_orders', outs);
     }
 
-    client = createClient(URL!, ANON!, { auth: { persistSession: false } });
+    // Đếm số byte tải về (đo băng thông)
+    const counted: typeof fetch = async (input, init) => {
+      const res = await fetch(input, init);
+      bytes += (await res.clone().arrayBuffer()).byteLength;
+      return res;
+    };
+    client = createClient(URL!, ANON!, { auth: { persistSession: false }, global: { fetch: counted } });
     await signIn(client, username, 'perf');
   }, 1_800_000);
 
-  it('Đo thời gian + dung lượng: cửa sổ 90 ngày so với 7 ngày', async () => {
+  it('Đo: mở app (tải đủ 7 ngày) → đồng bộ khi không đổi → đồng bộ sau 1 thao tác', async () => {
     const me = (await loadStaffSession(client))!;
-    const measure = async (label: string, range?: { from: string; to: string }) => {
+    const sync = createWorkingSync(client, me);
+    const measure = async (label: string, run: () => Promise<{ containers: unknown[] }>) => {
+      bytes = 0;
       const t0 = performance.now();
-      const s = await loadWorkingState(client, me, range);
+      const s = await run();
       const ms = Math.round(performance.now() - t0);
-      const mb = (JSON.stringify(s).length / 1_048_576).toFixed(1);
-      console.log(`[N8] ${label}: ${ms} ms, ~${mb} MB, ${s.containers.length} cont, ${s.gateInOrders.length} Hạ vỏ, ${s.paymentReceipts.length} phiếu thu`);
+      console.log(`[N8] ${label}: ${ms} ms, tải về ~${(bytes / 1024).toFixed(0)} KB, ${s.containers.length} cont trong dữ liệu`);
       return s;
     };
-    const full = await measure('90 ngày (hiện tại)');
-    const week = await measure('7 ngày', { from: new Date(Date.now() - 7 * DAY).toISOString(), to: '9999-12-31T23:59:59Z' });
-    expect(full.containers.length).toBeGreaterThan(week.containers.length);
+    const first = await measure('Mở app (tải đủ)', () => sync.full());
+    const idle = await measure('Đồng bộ — không có thay đổi', () => sync.refresh());
+    const target = (await admin.from('containers').select('id').eq('status', 'IN_YARD').limit(1)).data![0].id;
+    await admin.from('containers').update({ office_note: 'ĐO TỐC ĐỘ' }).eq('id', target);
+    await measure('Đồng bộ — sau 1 thao tác', () => sync.refresh());
+    expect(idle.containers.length).toBe(first.containers.length);
   }, 600_000);
 });
