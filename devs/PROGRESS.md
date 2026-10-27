@@ -257,7 +257,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - `main` đã merge PR #16 (`04a303a`).
 
 **ĐỢT SỬA SAU TEST 1 (2026-10-28):**
-1. Biểu giá THU GOM RÁC / KHÁC lỗi "Hãng tàu không có" → migration `20261103000001` (pgTAP 184/184 local) — **bạn chạy `npx supabase db push`** lên `matran-test` rồi thử lại.
+1. Biểu giá THU GOM RÁC / KHÁC lỗi "Hãng tàu không có" → migration `20261103000001` (pgTAP 184/184 local) — **bạn chạy `npx supabase db push --linked`** lên `matran-test` rồi thử lại.
 2. Danh mục chung → Sửa chữa: bảng mỗi tổ 1 dòng, bấm dòng → cửa sổ chi tiết + gán nhân viên.
 3. Văn phòng Hạ vỏ + Hồ sơ container: kính lúp khi rê chuột, bấm ảnh → xem toàn màn hình, phóng to 1× → 4×.
 4. **Tốc độ + giao diện chờ:** tải dữ liệu theo đợt song song (thay ~25 lượt nối tiếp); tách file theo màn hình (file đầu 1.013 → 260 KB); màn chờ hiện ngay khi mở trang, có bước "đang kiểm tra đăng nhập / đang tải dữ liệu bãi"; mở màn lần đầu có khung xương; "Đang lưu" chỉ hiện khi lâu > 300 ms; thanh chạy khi bấm Tải lại. Thành phần chờ dùng chung: `src/components/LoadingScreens.tsx` — màn mới thêm vào `App.tsx` theo kiểu `named(() => import(...), 'Ten')` (tải khi cần).
@@ -265,7 +265,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 
 **PHIÊN SAU — BẠN CẦN CHÚ Ý:**
 1. **Đang test:** tạo tài khoản người test (User - Role → Thêm — lần đầu thử hàm `admin-create-staff` trên cloud), cả nhóm thử theo Bước 7 `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`. Ghi lỗi bằng nút **Góp ý** (Admin xem Báo cáo → Góp ý) hoặc chụp màn hình → mở phiên mới gửi Claude.
-2. **Code mới phải đi qua `main`** (Vercel build `main`): agent làm trên nhánh → bạn tạo PR → merge → Vercel tự build lại. Có migration mới → bạn chạy `npx supabase db push` (đúng project `matran-test`) **trước** khi merge.
+2. **Code mới phải đi qua `main`** (Vercel build `main`): agent làm trên nhánh → bạn tạo PR → merge → Vercel tự build lại. Có migration mới → bạn chạy `npx supabase db push --linked` (đúng project `matran-test`) **trước** khi merge.
 3. **Ổ C gần đầy** (từng còn 4 MB → Docker hỏng). Giữ trống ≥ 5 GB. Supabase local đang dừng — cần thì `npx supabase start` (mở Docker Desktop trước).
 4. **Deploy Edge Function:** dùng `npx supabase functions deploy <tên> --use-api` từng hàm (cách thường bị "request timed out").
 5. **Terminal PowerShell:** dán lệnh bằng **chuột phải**, mỗi lần 1 lệnh; thấy `>>` → Ctrl + C. Không gõ `<…>` trong lệnh mẫu — thay bằng giá trị thật.
