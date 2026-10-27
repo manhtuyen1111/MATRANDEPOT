@@ -61,4 +61,4 @@ Còn thiếu ở database (sẽ bổ sung trong giai đoạn tương ứng, kèm
   - `idMap`: 1 lần bấm có 2 thao tác nối nhau (lập lệnh cấp vỏ + thu tiền) → id tạm đổi sang id thật.
   - Văn phòng: nút xác nhận tay đã nhận chuyển khoản. User - Role: gợi ý tên đăng nhập, đặt lại mật khẩu (Edge Function). Trang `#/hoa-don` chạy cả Demo và database (`portalBackend.ts`).
   - Kiểm thử thật: `tests/remote.flow.local.test.ts` — Giám định → Văn phòng (TTS) → Xe nâng → database tự chặn sai → Cấp vỏ + TTS cùng 1 lần bấm → Gate out: **pass**.
-  - **Chưa làm:** ảnh cửa ở Nhập tàu chưa tải lên kho (đang gửi trống); N7 báo cáo theo trang từ database (hiện báo cáo chỉ thấy 90 ngày đã tải); N8.
+  - **Chưa làm:** Nhập tàu chưa chụp ảnh cửa (bản Demo cũng không có — chờ người dùng quyết); N7 báo cáo theo trang từ database (hiện báo cáo chỉ thấy 90 ngày đã tải); N8.
