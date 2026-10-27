@@ -23,8 +23,22 @@ export function isRemoteMode(): boolean {
   return sink !== null;
 }
 
+export const OFFLINE_MESSAGE = 'Mất kết nối mạng — thao tác CHƯA được lưu. Kiểm tra mạng rồi bấm lại.';
+
+export function isOffline(): boolean {
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
+}
+
+// Mất mạng (DEC-151): báo lỗi ngay, không xếp hàng — hàm bọc ném lỗi trước khi trả kết quả nên màn hình giữ dữ liệu để bấm lại
 export function enqueue(op: RemoteOp): void {
-  sink?.(op);
+  if (!sink) return;
+  if (isOffline()) throw new Error(OFFLINE_MESSAGE);
+  sink(op);
+}
+
+// Lỗi mạng của trình duyệt (tiếng Anh) → câu tiếng Việt
+export function friendlyError(message: string): string {
+  return /failed to fetch|networkerror|load failed|network request failed/i.test(message) ? OFFLINE_MESSAGE : message;
 }
 
 export function mapId(localId: string, realId: string): void {
@@ -42,7 +56,7 @@ export function clearIdMap(): void {
 // Lỗi RPC → Error với đúng câu tiếng Việt database trả về
 export async function rpc<T = unknown>(client: SupabaseClient, name: string, params: Record<string, unknown> = {}): Promise<T> {
   const { data, error } = await client.rpc(name, params);
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(friendlyError(error.message));
   return data as T;
 }
 

@@ -6,6 +6,7 @@ import { collectAllPages, feedbackSheet, FeedbackFilter, queryFeedback } from '.
 import { FEEDBACK_STATUS_LABELS } from '../../services/feedback';
 import { fileStamp, formatDateTime, quickRange } from '../../services/datetime';
 import { DateRangeFilter, DetailDrawer, ExportExcelButton, Feedback, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize, CellText, CELL_MAX} from '../../components/shared';
+import { useReportState } from '../../components/useReportState';
 import { FeedbackMenuOption, FeedbackStatusBadge } from '../../components/FeedbackButton';
 import type { FeedbackItem, FeedbackStatus } from '../../types/depot';
 
@@ -16,22 +17,25 @@ export const FeedbackReport: React.FC<{ state: DepotState; onUpdateState: (next:
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = usePageSize('report-feedback', 50);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // N7: danh sách + Excel có thể chạy trên dữ liệu tải riêng; trả lời góp ý luôn trên state hiện tại
+  const report = useReportState(state);
+  const listState = report.data;
 
   let result: ReturnType<typeof queryFeedback> | null = null;
   let queryError: string | null = null;
   if (applied) {
     try {
-      result = queryFeedback(state, applied, page, pageSize);
+      result = queryFeedback(listState, applied, page, pageSize);
     } catch (err) {
       queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
     }
   }
-  const selected = (state.feedbacks || []).find((f) => f.id === selectedId) || null;
+  const selected = (state.feedbacks || []).find((f) => f.id === selectedId) || (listState.feedbacks || []).find((f) => f.id === selectedId) || null;
 
   return (
     <div className="space-y-4">
       <SectionCard title="Báo cáo Góp ý" icon={<MessageSquare className="h-4 w-4 text-ink-muted" />}>
-        <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+        <form onSubmit={(e) => { e.preventDefault(); report.run(draft, () => { setApplied({ ...draft }); setPage(1); }); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <label>
             <span className={labelCls}>Trạng thái</span>
@@ -53,16 +57,18 @@ export const FeedbackReport: React.FC<{ state: DepotState; onUpdateState: (next:
             <input value={draft.keyword} onChange={(e) => setDraft({ ...draft, keyword: e.target.value })} className={inputCls} />
           </label>
           <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-6">
-            <button type="submit" className={primaryBtn}><Search className="h-4 w-4" />Tra cứu</button>
+            <button type="submit" className={primaryBtn} disabled={report.loading}><Search className="h-4 w-4" />{report.loading ? 'Đang tải…' : 'Tra cứu'}</button>
             {applied && result && result.total > 0 && (
               <ExportExcelButton
                 fileName={`MATRAN_GOP_Y_${fileStamp(applied.dateFrom) || 'tra-cuu'}.xlsx`}
-                getSheets={() => [feedbackSheet(collectAllPages((p) => queryFeedback(state, applied, p)))]}
+                getSheets={() => [feedbackSheet(collectAllPages((p) => queryFeedback(listState, applied, p)))]}
               />
             )}
           </div>
         </form>
       </SectionCard>
+
+      <Feedback error={report.loadError} />
 
       <div className="overflow-x-auto rounded-lg border border-line bg-white">
         {!applied ? (

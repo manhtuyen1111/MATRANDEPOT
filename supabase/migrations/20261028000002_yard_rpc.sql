@@ -166,7 +166,7 @@ begin
     code, door_photo_path, photo_expires_at, initial_container_hint, condition_class, damage_remarks,
     stuffing_class, cleaning_items, manufacture_year, to_inspection_rack, field_by, field_by_name
   ) values (
-    v_code, trim(p_door_photo_path), (current_date + interval '24 months')::date,
+    v_code, trim(p_door_photo_path), (current_date + interval '2 months')::date,
     case when v_hint <> '' and v_hint !~ '^(HS|GD|IN)-' then v_hint end,
     p_condition, v_remarks, case when v_deferred then null else p_stuffing end, v_cleaning,
     case when v_deferred then null else p_manufacture_year end, v_deferred, me.id, me.full_name

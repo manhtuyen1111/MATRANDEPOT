@@ -93,3 +93,14 @@ Cập nhật lần cuối: 2026-10-22.
 ## Q-043 — Booking cấp vỏ có số lượng cont yêu cầu không?
 
 - Trạng thái: **ĐÃ CHỐT 2026-10-27: giữ như hiện tại** — Văn phòng chỉ nhập số booking, không nhập số lượng; booking không tự chuyển Hoàn thành. Database đã có sẵn cột `release_bookings.requested_qty` (để trống) — bật lại sau chỉ cần thêm ô nhập ở giao diện.
+
+## Q-044 — Import tồn vỏ ban đầu trước khi chạy thật
+
+- Trạng thái: **MỞ** (2026-10-27). Người dùng: test toàn bộ trên database → reset → import tồn vỏ ban đầu rồi mới làm thật.
+- **Bộ câu hỏi đầy đủ (7 nhóm, có đề xuất + cột trả lời): `docs/IMPORT_TON_VO_BAN_DAU.md`** — các ý dưới là tóm tắt.
+- Cần chốt trước khi làm công cụ import:
+  1. File nguồn: Excel theo mẫu Tồn vỏ hiện tại (cùng cột, DEC-129) hay file xuất từ phần mềm cũ? Gửi 1 file mẫu.
+  2. Cột bắt buộc: số cont, size, type, hãng tàu, ngày vào bãi (Date in), trạng thái AV / DAMAGE, vị trí (Block – Bay – Row – Tier)… Có Đóng hàng / năm sản xuất / khách hàng không?
+  3. Mã hồ sơ cho cont tồn cũ: cấp mới `HV-` theo ngày import hay giữ mã cũ? Cont tồn cũ có tính là "đã thanh toán" không?
+  4. Cont DAMAGE tồn cũ: có tạo việc Báo giá / Sửa chữa không?
+  5. Ai chạy import (Admin, 1 lần) và có cần xem trước + báo lỗi từng dòng trước khi ghi không?

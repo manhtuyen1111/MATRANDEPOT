@@ -23,7 +23,7 @@ create table public.gate_in_orders (
   status public.gate_in_status not null default 'FIELD_RECORDED',
   -- Giám định
   door_photo_path text,                               -- Storage door-photos/yyyy/mm/<code>.jpg; null khi hết hạn lưu
-  photo_expires_at date,                              -- DEC-150: 24 tháng
+  photo_expires_at date,                              -- DEC-159: 2 tháng
   initial_container_hint text,
   condition_class public.condition_class not null,
   damage_remarks text[] not null default '{}',

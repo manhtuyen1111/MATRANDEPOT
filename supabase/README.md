@@ -10,8 +10,9 @@ Thiết kế: `docs/DATABASE_SCHEMA.md`. **Agent chỉ viết file. Người dù
 | 2 | `20261028000001` → `000002` | Bảng Hạ vỏ, lượt lưu bãi, K80, lịch sử vị trí (partition tháng), vệ sinh / báo giá / sửa chữa; RPC Giám định (W-SURVEY), giám định trên kệ, hạ vỏ, đảo chuyển, sửa vị trí, vệ sinh, báo giá 2 bước, sửa chữa, khóa, ghi chú | **Đã chạy thử local 2026-10-27: pgTAP 32/32** (cộng bước 1: 50/50). Văn phòng Hạ vỏ + GATE IN OK chuyển sang bước 3 (cần chứng từ) |
 | 3 | `20261029000001` → `000002` | Văn phòng Hạ vỏ, chứng từ, thanh toán TT / TTS / TTR, chuyển khoản (callback + xác nhận tay), GATE IN OK, phiếu thu, in phiếu, phiếu thu trả trước, hóa đơn | **Đã chạy thử local 2026-10-27: pgTAP 57/57** (tổng 107/107) |
 | 4 | `20261030000001` → `000002` | Booking, lệnh cấp vỏ, thanh toán cấp vỏ + K80, hủy lệnh (chưa thu tiền), xuất bãi 5 điều kiện; Nhập / Xuất tàu (lập / sửa / thêm / bỏ / xóa danh sách, Giám định nhập tàu, xuất tàu, duyệt khi chưa đủ, tự khóa DEC-131) | **Đã chạy thử local 2026-10-27: pgTAP 40/40** (tổng 147/147) |
-| 5a | `20261031000001` | Lịch tự động (pg_cron): tạo partition trước 2 tháng, dọn request_log; kho ảnh riêng tư door-photos (Giám định tải lên, nhân viên xem); liệt kê / đánh dấu ảnh quá 24 tháng | **Đã chạy thử local 2026-10-27: pgTAP 11/11** (tổng 158/158) |
+| 5a | `20261031000001` | Lịch tự động (pg_cron): tạo partition trước 2 tháng, dọn request_log; kho ảnh riêng tư door-photos (Giám định tải lên, nhân viên xem); liệt kê / đánh dấu ảnh quá hạn (2 tháng — DEC-159) | **Đã chạy thử local 2026-10-27: pgTAP 11/11** (tổng 158/158) |
 | 5b | `supabase/functions/*` | Edge Function `admin-create-staff`, `admin-reset-password`, `purge-expired-photos` (+ `_shared/auth.ts`) | **Đã chạy thử local 2026-10-27: 16/16** (`supabase/tests/edge-functions.local.cjs`) |
+| 6 | `20261102000001` | Đồng bộ phần thay đổi: cột `sync_at` + trigger cho 20 bảng app tải, `sync_deletions`, `server_now()` (DEC-158) | **Đã chạy thử local 2026-10-27: pgTAP 10/10** (tổng 180/180) |
 | — | — | Chuyển kho > 36 tháng | Làm khi có dữ liệu đủ 3 năm (2029) |
 | — | — | Nhận báo có ngân hàng (callback) | Chờ Q-032 chọn ngân hàng; hiện Văn phòng xác nhận tay |
 
@@ -39,15 +40,12 @@ node supabase/tests/edge-functions.local.cjs .
    - dùng `npx supabase link` rồi `npx supabase db push`;
    - hoặc dán từng file vào SQL Editor.
 4. **Tạo Admin đầu tiên:**
-   - Vào **Authentication → Users → Add user**: email `admin@matrandepot.local`, đặt mật khẩu.
-   - Copy `id` của user vừa tạo, rồi chạy trong SQL Editor (thay `<id>`):
+   - Vào **Authentication → Users → Add user**: email `admin@matrandepot.local`, mật khẩu **`<mật khẩu>::matran`** (bắt buộc thêm `::matran` — DEC-153), tích Auto Confirm.
+   - Chạy `supabase/test-data/02_admin_dau_tien.sql` trong SQL Editor (tự lấy id, chạy lại được).
+5. Từ đó Admin tạo nhân viên khác trên app (Edge Function `admin-create-staff`).
+6. Project TEST: chạy thêm `supabase/test-data/01_danh_muc_test.sql` (danh mục giống bản Demo). Production **không** chạy file này.
 
-     ```sql
-     insert into public.staff (id, staff_code, username, full_name, must_change_password)
-     values ('<id>', 'NV001', 'admin', 'Quản trị hệ thống', false);
-     insert into public.staff_roles (staff_id, role) values ('<id>', 'ADMIN');
-     ```
-5. Từ đó Admin tạo nhân viên khác trên app. Việc tạo nhân viên đi qua Edge Function `admin_create_staff`, sẽ viết ở bước sau.
+Hướng dẫn đầy đủ cho môi trường test nhiều người (kèm đưa app lên Cloudflare Pages): `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`.
 
 ## Lưu ý
 
@@ -62,7 +60,7 @@ Edge Function `purge-expired-photos` cần được gọi mỗi đêm. Khóa `se
 1. **Project Settings → Edge Functions:** deploy 3 hàm. Dùng `npx supabase functions deploy`, hoặc làm trên trang quản trị.
 2. **Database → Vault:** thêm 2 secret:
    - `project_url` = `https://<mã-project>.supabase.co`
-   - `service_role_key` = khóa service_role của project.
+   - `service_role_key` = khóa service_role của project. Dùng khóa dạng **JWT** (Project Settings → API Keys → tab *Legacy API keys* → `service_role`, bắt đầu bằng `eyJ`), **không** dùng khóa `sb_secret_…` — Edge Function mặc định kiểm JWT.
 3. **SQL Editor**, chạy 1 lần:
 
    ```sql
