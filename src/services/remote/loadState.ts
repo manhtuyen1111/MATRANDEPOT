@@ -44,7 +44,7 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
     ...base,
     currentUser,
     staffUsers: staff.length
-      ? staff.map((s) => ({ id: s.id, staffCode: s.staff_code, fullName: s.full_name, email: s.email || '', roles: (s.staff_roles || []).map((r) => r.role), isActive: s.is_active }))
+      ? staff.map((s) => ({ id: s.id, staffCode: s.staff_code, fullName: s.full_name, email: s.email || `${s.username}@matrandepot.local`, roles: (s.staff_roles || []).map((r) => r.role), isActive: s.is_active }))
       : [currentUser],
     partners: partners.map((p): Partner => ({ id: p.id, code: p.code, name: p.name, isShippingLine: p.is_shipping_line, isCustomer: p.is_customer, allowTts: p.allow_tts })),
     containerSizes: sizes.map((s) => s.code),

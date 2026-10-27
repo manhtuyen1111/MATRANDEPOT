@@ -1,10 +1,11 @@
 import React from 'react';
+import { recordReceiptPrint } from '../services/api';
 import { createPortal } from 'react-dom';
 import { Printer } from 'lucide-react';
 import { CompanyProfile, K80InternalTicket, PAYMENT_METHOD_LABELS, PaymentReceipt, RECEIPT_OPERATION_LABELS, VesselList, VesselListItem } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
 import { receiptCollectorName, receiptOperationOf } from '../services/payments';
-import { recordReceiptPrint } from '../services/depotOperations';
+
 import { formatDateTime } from '../services/datetime';
 import { ticketContext } from '../services/driverRoute';
 import { secondaryBtn } from './shared';

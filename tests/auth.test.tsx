@@ -80,7 +80,7 @@ describe('Màn đăng nhập / đổi mật khẩu (giao diện)', () => {
     );
     expect(html).toContain('data-testid="session-user"');
     expect(html).toContain('data-testid="sign-out"');
-    expect(html).toContain('data-testid="remote-notice"');
+    expect(html).not.toContain('data-testid="remote-notice"');
     expect(html).not.toContain('Nạp dữ liệu test');
     const demo = renderToString(<App initialState={createInitialState()} />);
     expect(demo).toContain('Nạp dữ liệu test');

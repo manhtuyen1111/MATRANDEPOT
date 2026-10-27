@@ -25,6 +25,23 @@ export function toAuthPassword(plain: string): string {
   return `${plain}${PASSWORD_SUFFIX}`;
 }
 
+// Bỏ dấu tiếng Việt (đ → d)
+export function stripVietnamese(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
+
+// DEC-143: tên đăng nhập gợi ý từ họ tên = tên + "." + chữ cái đầu họ và tên đệm ("Lê Văn Tuấn" → tuan.lv); trùng → thêm số
+export function suggestUsername(fullName: string, taken: string[]): string {
+  const words = stripVietnamese(fullName).toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '';
+  const last = words[words.length - 1];
+  const initials = words.slice(0, -1).map((w) => w[0]).join('');
+  const base = (initials ? `${last}.${initials}` : last).slice(0, 28);
+  const used = new Set(taken.map((t) => t.toLowerCase()));
+  if (!used.has(base)) return base;
+  for (let n = 2; ; n++) if (!used.has(`${base}${n}`)) return `${base}${n}`;
+}
+
 // Kiểm tra ô đăng nhập trước khi gửi (thông báo tiếng Việt)
 export function validateLoginInput(username: string, password: string): string | null {
   if (!normalizeUsername(username)) return 'Vui lòng nhập TÊN ĐĂNG NHẬP.';

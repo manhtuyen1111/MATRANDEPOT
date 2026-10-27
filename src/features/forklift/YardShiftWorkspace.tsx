@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { shiftContainer } from '../../services/api';
 import { ArrowLeftRight, ChevronDown, ChevronUp, History, Search, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
-import { shiftContainer } from '../../services/depotOperations';
+
 import { ContainerProgress, formatLocation, getContainerProgress, PROGRESS_LABELS } from '../../services/core';
 import {
   ContainerNo,

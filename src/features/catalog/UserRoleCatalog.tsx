@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { addStaffUser, resetStaffPassword, updateStaffUser } from '../../services/api';
+import { isSupabaseConfigured } from '../../lib/env';
+import { DEFAULT_PASSWORD, LOGIN_EMAIL_DOMAIN, normalizeUsername, suggestUsername, usernameToEmail, USERNAME_PATTERN } from '../../services/authPassword';
 import { ShieldCheck, UserPlus } from 'lucide-react';
 import { AppRole, ROLE_LABELS, StaffUser, WorkspaceMenuId } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
-import { addStaffUser, updateStaffUser } from '../../services/depotOperations';
+
 import { ASSIGNABLE_ROLES, MENU_ACCESS } from '../../services/permissions';
 import { Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
 
@@ -48,6 +51,11 @@ const RoleChecks: React.FC<{ value: AppRole[]; onChange: (r: AppRole[]) => void 
 // DANH MỤC CHUNG — USER & PHÂN QUYỀN (DEC-045). Chỉ ADMIN mở được màn này.
 export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next: DepotState) => void }> = ({ state, onUpdateState }) => {
   const [form, setForm] = useState<{ fullName: string; email: string; roles: AppRole[] }>({ fullName: '', email: '', roles: [] });
+  // DEC-143 / DEC-155: chế độ database — đăng nhập bằng TÊN ĐĂNG NHẬP (tự gợi ý, sửa được); email không bắt buộc
+  const remote = isSupabaseConfigured;
+  const [username, setUsername] = useState('');
+  const [usernameEdited, setUsernameEdited] = useState(false);
+  const takenUsernames = state.staffUsers.map((u) => (u.email.endsWith(`@${LOGIN_EMAIL_DOMAIN}`) ? u.email.split('@')[0] : '')).filter(Boolean);
   const [editing, setEditing] = useState<{ id: string; roles: AppRole[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -73,25 +81,64 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (run(() => addStaffUser(state, form), `Đã thêm user ${form.fullName}.`)) setForm({ fullName: '', email: '', roles: [] });
+            const input = remote
+              ? { ...form, email: form.email.trim() || usernameToEmail(username), username: normalizeUsername(username) }
+              : form;
+            const msg = remote
+              ? `Đã tạo tài khoản ${normalizeUsername(username)} — mật khẩu ban đầu ${DEFAULT_PASSWORD}, nhân viên phải đổi ở lần đăng nhập đầu.`
+              : `Đã thêm user ${form.fullName}.`;
+            if (remote && !USERNAME_PATTERN.test(normalizeUsername(username))) {
+              setError('Tên đăng nhập 3–30 ký tự: chữ thường không dấu, số, dấu . _ -');
+              return;
+            }
+            if (run(() => addStaffUser(state, input), msg)) {
+              setForm({ fullName: '', email: '', roles: [] });
+              setUsername('');
+              setUsernameEdited(false);
+            }
           }}
           className="space-y-3"
         >
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <label>
               <span className={labelCls}>Họ tên *</span>
-              <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className={inputCls} />
+              <input
+                value={form.fullName}
+                onChange={(e) => {
+                  setForm({ ...form, fullName: e.target.value });
+                  if (remote && !usernameEdited) setUsername(suggestUsername(e.target.value, takenUsernames));
+                }}
+                className={inputCls}
+              />
             </label>
-            <label>
-              <span className={labelCls}>Email đăng nhập *</span>
-              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />
-            </label>
+            {remote ? (
+              <label>
+                <span className={labelCls}>Tên đăng nhập * (tự gợi ý, sửa được)</span>
+                <input
+                  value={username}
+                  onChange={(e) => {
+                    setUsernameEdited(true);
+                    setUsername(e.target.value.replace(/\s/g, '').toLowerCase());
+                  }}
+                  autoCapitalize="none"
+                  placeholder="VD: tuan.lv"
+                  className={`${inputCls} font-mono`}
+                  data-testid="new-username"
+                />
+              </label>
+            ) : (
+              <label>
+                <span className={labelCls}>Email đăng nhập *</span>
+                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />
+              </label>
+            )}
           </div>
+          {remote && <p className="text-xs text-ink-muted">Mật khẩu ban đầu: <strong className="font-mono">{DEFAULT_PASSWORD}</strong> — nhân viên bắt buộc đổi ở lần đăng nhập đầu.</p>}
           <div>
             <span className={labelCls}>Vai trò * (được chọn nhiều)</span>
             <RoleChecks value={form.roles} onChange={(roles) => setForm({ ...form, roles })} />
           </div>
-          <button type="submit" disabled={!form.fullName.trim() || !form.email.trim() || form.roles.length === 0} className={primaryBtn}>
+          <button type="submit" disabled={!form.fullName.trim() || !(remote ? username.trim() : form.email.trim()) || form.roles.length === 0} className={primaryBtn}>
             Thêm user
           </button>
         </form>
@@ -137,6 +184,26 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
                     <button type="button" className={secondaryBtn} onClick={() => run(() => updateStaffUser(state, { userId: u.id, isActive: !u.isActive }), u.isActive ? 'Đã khóa user.' : 'Đã mở khóa user.')}>
                       {u.isActive ? 'Khóa' : 'Mở khóa'}
                     </button>
+                    {/* DEC-143: Admin không xem được mật khẩu — chỉ đặt lại về 123456 */}
+                    {remote && u.id !== state.currentUser.id && (
+                      <button
+                        type="button"
+                        className={secondaryBtn}
+                        data-testid="reset-password"
+                        onClick={async () => {
+                          setError(null);
+                          setSuccess(null);
+                          try {
+                            await resetStaffPassword(u.id);
+                            setSuccess(`Đã đặt lại mật khẩu ${u.fullName} về ${DEFAULT_PASSWORD} — nhân viên phải đổi ở lần đăng nhập tới.`);
+                          } catch (err) {
+                            setError(err instanceof Error ? err.message : 'Không đặt lại được mật khẩu.');
+                          }
+                        }}
+                      >
+                        Đặt lại mật khẩu
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

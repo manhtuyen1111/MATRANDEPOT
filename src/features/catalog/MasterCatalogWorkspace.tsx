@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { addContainerSizeCatalogItem, addContainerTypeCatalogItem, addDepotFeeCatalogItem, addPartnerCatalogItem, addYardBlockCatalogItem, deleteContainerSizeCatalogItem, deleteContainerTypeCatalogItem, deleteDepotFeeCatalogItem, deletePartnerCatalogItem, deleteYardBlockCatalogItem, setYardBlockInspectionRack } from '../../services/api';
 import {
   Box,
   CheckCircle2,
@@ -19,19 +20,7 @@ import {
   INITIAL_CONTAINER_TYPES,
   INITIAL_FEE_CATALOG,
 } from '../../services/depotStore';
-import {
-  addContainerSizeCatalogItem,
-  addContainerTypeCatalogItem,
-  addDepotFeeCatalogItem,
-  addPartnerCatalogItem,
-  addYardBlockCatalogItem,
-  deleteContainerSizeCatalogItem,
-  deleteContainerTypeCatalogItem,
-  deleteDepotFeeCatalogItem,
-  deletePartnerCatalogItem,
-  deleteYardBlockCatalogItem,
-  setYardBlockInspectionRack,
-} from '../../services/depotOperations';
+
 import { FeeTariffCategory } from '../../types/depot';
 import { blockDimensions, SLOT_DIMENSION_LABELS } from '../../services/core';
 

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { updateCompanyProfile } from '../../services/api';
 import { Building2 } from 'lucide-react';
 import { CompanyProfile } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
-import { updateCompanyProfile } from '../../services/depotOperations';
+
 import { hasRolePermission } from '../../services/permissions';
 import { Feedback, inputCls, labelCls, primaryBtn, SectionCard } from '../../components/shared';
 import { CompanyHeader } from '../../components/ReceiptPrint';

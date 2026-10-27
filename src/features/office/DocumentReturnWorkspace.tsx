@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { confirmDocumentsReturn, recordReceiptPrint } from '../../services/api';
 import { Eye, FileCheck2, Printer, QrCode, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
-import { recordReceiptPrint } from '../../services/depotOperations';
-import { confirmDocumentsReturn, DocumentPack, previewDocumentPack, ticketsAwaitingReturn } from '../../services/driverRoute';
+
+import { DocumentPack, previewDocumentPack, ticketsAwaitingReturn } from '../../services/driverRoute';
 import { linkCls, ContainerNo, Feedback, inputCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
 import { EeirPrintSheet, PrintPortal, ReceiptPrintSheet } from '../../components/ReceiptPrint';
 

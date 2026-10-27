@@ -1,4 +1,6 @@
+import { isSupabaseConfigured } from '../../lib/env';
 import React, { useMemo, useState } from 'react';
+import { cancelPendingTransaction, confirmGateInPaymentAndComplete, confirmReleasePayment, createReleaseOrder, releaseAllocatedContainer, simulateDemoBankTransfer, verifyGateInOfficeAndCreatePayment } from '../../services/api';
 import { ClipboardList, Search, Truck } from 'lucide-react';
 import {
   ContainerRecord,
@@ -8,19 +10,8 @@ import {
   K80InternalTicket,
 } from '../../types/depot';
 import { DepotState, formatVnd } from '../../services/depotStore';
-import {
-  confirmGateInPaymentAndComplete,
-  confirmReleasePayment,
-  createReleaseOrder,
-  gateInContainerConflict,
-  getBookingSummary,
-  releaseAllocatedContainer,
-  blockedOnlyByHold,
-  releaseBlocker,
-  simulateDemoBankTransfer,
-  verifyGateInOfficeAndCreatePayment,
-} from '../../services/depotOperations';
-import { cancelPendingTransaction, pendingTransactionOf } from '../../services/payments';
+import { gateInContainerConflict, getBookingSummary, blockedOnlyByHold, releaseBlocker } from '../../services/depotOperations';
+import { pendingTransactionOf } from '../../services/payments';
 import { formatLocation } from '../../services/core';
 import { linkCls,
   ContainerNo,
@@ -153,7 +144,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
     try {
       const next = simulateDemoBankTransfer(state, { transactionId: pendingTx.id });
       onUpdateState(next);
-      setSuccess('Ngân hàng (giả lập) đã xác nhận — GATE IN OK.');
+      setSuccess(isSupabaseConfigured ? 'Đã xác nhận nhận tiền chuyển khoản — GATE IN OK.' : 'Ngân hàng (giả lập) đã xác nhận — GATE IN OK.');
       openTicket(next, order.masterDossierCode);
     } catch (err) {
       setError(errMsg(err, 'Lỗi giả lập ngân hàng'));

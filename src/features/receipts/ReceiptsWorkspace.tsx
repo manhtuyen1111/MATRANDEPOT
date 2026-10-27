@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, markInvoiceIssued, simulateDemoBankTransfer } from '../../services/api';
 import { CreditCard, FilePlus2, Printer, ReceiptText, Search, X } from 'lucide-react';
 import {
   DirectPaymentMethod,
@@ -9,11 +10,11 @@ import {
   ReceiptOperation,
 } from '../../types/depot';
 import { DepotState, formatVnd } from '../../services/depotStore';
-import { simulateDemoBankTransfer } from '../../services/depotOperations';
-import { cancelPendingTransaction, confirmPrepaidCash, createMasterPrepaidReceipt, masterReceiptUsage, receiptOperationOf } from '../../services/payments';
+
+import { masterReceiptUsage, receiptOperationOf } from '../../services/payments';
 import { collectAllPages, queryReceipts, ReceiptQueryFilter, ReceiptRow, receiptsSheet } from '../../services/reports';
 import { can } from '../../services/permissions';
-import { INVOICE_STATUS_LABELS, invoicePortalUrl, markInvoiceIssued, prepaidInvoiceView, PrepaidInvoiceView, receiptInvoiceLabel, receiptInvoiceStatus } from '../../services/invoice';
+import { INVOICE_STATUS_LABELS, invoicePortalUrl, prepaidInvoiceView, PrepaidInvoiceView, receiptInvoiceLabel, receiptInvoiceStatus } from '../../services/invoice';
 import type { InvoiceStatus, PaymentReceipt } from '../../types/depot';
 import { PrintPortal, PrintReceiptButton, ReceiptPrintSheet } from '../../components/ReceiptPrint';
 import { quickRange, fileStamp } from '../../services/datetime';
@@ -33,7 +34,6 @@ import { linkCls,
   secondaryBtn,
   SectionCard,
 } from '../../components/shared';
-
 
 const STATUS_STYLE: Record<PaymentTransactionStatus, string> = {
   PENDING: 'bg-amber-100 text-amber-800',

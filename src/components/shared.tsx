@@ -416,6 +416,8 @@ export const PendingTransferPanel: React.FC<{
 }> = ({ state, transaction, onSimulate, onCancel }) => {
   const [reason, setReason] = React.useState('');
   const showDemo = !isSupabaseConfigured && can(state.currentUser, 'DEMO_BANK_SIMULATOR');
+  // DEC-152 / DEC-154: database chưa nối ngân hàng → Văn phòng / Quản lý xác nhận tay sau khi đối chiếu sao kê
+  const showManual = isSupabaseConfigured && can(state.currentUser, 'PAYMENT_CONFIRM');
   return (
     <div className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-xs text-amber-950">
       <p className="flex items-center gap-1.5 font-bold">
@@ -440,6 +442,11 @@ export const PendingTransferPanel: React.FC<{
         {showDemo && (
           <button type="button" onClick={onSimulate} className={primaryBtn}>
             Giả lập ngân hàng báo có (DEMO)
+          </button>
+        )}
+        {showManual && (
+          <button type="button" onClick={onSimulate} className={primaryBtn} data-testid="manual-transfer-confirm">
+            Đã nhận tiền chuyển khoản (đối chiếu sao kê)
           </button>
         )}
         <input

@@ -1,14 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { bulkToggleContainerHold, bulkUpdateOfficeNote, correctContainerLocation, toggleContainerHold, updateContainerOfficeNote } from '../../services/api';
 import { Check, ListChecks, Lock, LockOpen, MessageSquarePlus, Pencil, Search, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
-import {
-  bulkToggleContainerHold,
-  bulkUpdateOfficeNote,
-  BulkResult,
-  correctContainerLocation,
-  toggleContainerHold,
-  updateContainerOfficeNote,
-} from '../../services/depotOperations';
+import { BulkResult } from '../../services/depotOperations';
 import { getContainerProgress, parseContainerList, PROGRESS_LABELS, storageDays } from '../../services/core';
 import { can } from '../../services/permissions';
 import { yardStockSheet } from '../../services/reports';

@@ -163,10 +163,17 @@ export interface RemoteSessionProps {
   username: string;
   onSignOut: () => void;
   onChangePassword: () => void;
+  onReload?: () => void;
 }
 
 export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionProps }> = ({ initialState, remote }) => {
   const [state, setState] = useState<DepotState>(() => initialState || loadDepotState(createDemoState));
+  // Chế độ database: dữ liệu thật vừa tải lại → thay dữ liệu đang hiển thị (giữ menu / bộ lọc đang mở)
+  const isRemote = Boolean(remote);
+  useEffect(() => {
+    // Chỉ chạy khi có dữ liệu mới từ database (không chạy lại mỗi lần RemoteApp vẽ lại)
+    if (isRemote && initialState) setState(initialState);
+  }, [initialState, isRemote]);
   const [activeMenu, setActiveMenu] = useState<WorkspaceMenuId>('GD_HA_VO');
   const [activeK80Ticket, setActiveK80Ticket] = useState<K80InternalTicket | null>(null);
   const [activeDossierCode, setActiveDossierCode] = useState<string | null>(null);
@@ -189,7 +196,7 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
 
   const handleUpdateState = (next: DepotState) => {
     setState(next);
-    // Chế độ database: chưa nối thao tác (N3+) — không ghi localStorage để không lẫn với dữ liệu Demo
+    // Chế độ database: thao tác đã xếp hàng chờ ghi (services/api.ts); không ghi localStorage để không lẫn với Demo
     if (!remote) saveDepotState(next);
   };
 
@@ -435,6 +442,12 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
                   <span className="font-medium text-ink">{remote.fullName}</span>
                   <span className="font-mono text-ink-muted">{remote.username}</span>
                 </span>
+                {remote.onReload && (
+                  <button type="button" onClick={remote.onReload} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas" data-testid="reload-data">
+                    <RefreshCw className="h-3 w-3" />
+                    Tải lại
+                  </button>
+                )}
                 <button type="button" onClick={remote.onChangePassword} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas">
                   <KeyRound className="h-3 w-3" />
                   Đổi mật khẩu
@@ -474,12 +487,6 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
             </>)}
           </div>
         </header>
-
-        {remote && (
-          <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800" data-testid="remote-notice">
-            Đang nối database (giai đoạn N1): đăng nhập + danh mục đã đọc từ database. Các màn tác nghiệp <strong>chưa lưu vào database</strong> — sẽ nối dần từ giai đoạn N3.
-          </div>
-        )}
 
         <main className="flex-1 p-3 sm:p-4">
           {activeMenu === 'TON_VO' && (

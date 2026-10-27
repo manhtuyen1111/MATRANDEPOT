@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { executeVesselExport, inspectVesselImportItem, updateContainerLocation } from '../../services/api';
 import { CheckCircle2, Circle, Clock, Search, Truck, X } from 'lucide-react';
 import {
   FieldConditionClass,
@@ -7,16 +8,8 @@ import {
   VesselMode,
 } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
-import { updateContainerLocation } from '../../services/depotOperations';
-import {
-  executeVesselExport,
-  inspectVesselImportItem,
-  openVesselLists,
-  sortVesselItems,
-  VesselFieldStep,
-  vesselStepInfo,
-  vesselStepSummary,
-} from '../../services/vessel';
+
+import { openVesselLists, sortVesselItems, VesselFieldStep, vesselStepInfo, vesselStepSummary } from '../../services/vessel';
 import { formatDateTime } from '../../services/datetime';
 import { linkCls, EMPTY_SLOT, Feedback, inputCls, isSlotComplete, labelCls, primaryBtn, SlotPicker, SlotValue } from '../../components/shared';
 import { ChoiceButtons } from './VesselShared';
