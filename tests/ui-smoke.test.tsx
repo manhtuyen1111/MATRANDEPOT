@@ -881,3 +881,20 @@ describe('DEC-155: giao diện ghi dữ liệu chỉ qua services/api.ts', () =>
     expect(bad).toEqual([]);
   });
 });
+
+describe('Danh mục Sửa chữa + kính lúp ảnh cửa cont', () => {
+  it('Tổ sửa chữa: bảng mỗi tổ 1 dòng (DEC-134), bấm mở chi tiết — không còn khung từng tổ', () => {
+    const html = renderToString(<RepairTeamCatalog state={{ ...createInitialState(), currentUser: createInitialState().staffUsers.find((u) => u.roles.includes('ADMIN'))! }} onUpdateState={() => {}} />);
+    expect(html).toContain('whitespace-nowrap');
+    expect(html).toMatch(/<tr[^>]*cursor-pointer[^>]*>.*TO-SC-01/);
+    expect(html).not.toContain('Hoặc nhập họ tên nhân viên'); // phần gán nhân viên nằm trong cửa sổ chi tiết
+  });
+
+  it('PhotoZoom: ảnh nhỏ có kính lúp + bấm để phóng to', async () => {
+    const { PhotoZoom } = await import('../src/components/shared');
+    const html = renderToString(<PhotoZoom src="https://example.invalid/door.jpg" alt="Ảnh cửa container" className="h-28 w-44" />);
+    expect(html).toContain('cursor-zoom-in');
+    expect(html).toContain('bấm để phóng to');
+    expect(html).toContain('https://example.invalid/door.jpg');
+  });
+});

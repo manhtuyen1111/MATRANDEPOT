@@ -2,7 +2,7 @@
 -- Chạy LOCAL (người dùng tự chạy, cần Docker): npx supabase db reset && npx supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(22);
 
 -- Tạo 2 user Auth giả + hồ sơ nhân viên (chạy với quyền postgres trong giao dịch test)
 insert into auth.users (id, email) values
@@ -44,6 +44,11 @@ select lives_ok($$ select public.catalog_upsert_partner('msk', 'MSK', true, fals
 select is((select code from public.partners where code = 'MSK'), 'MSK', 'Mã đối tác viết hoa');
 select lives_ok($$ select public.catalog_add_fee('NANG_HA', 1000000, null, null, null, 'MSK') $$, 'Admin thêm biểu giá');
 select throws_like($$ select public.catalog_add_fee('NANG_HA', -1) $$, '%đơn giá%', 'Chặn đơn giá âm');
+-- Sửa lỗi 20261103000001: không truyền hãng tàu (THU GOM RÁC / KHÁC) → mọi hãng tàu, không báo lỗi
+select lives_ok($$ select public.catalog_add_fee('THU_GOM_RAC', 200000, 'THU GOM RÁC LV1') $$, 'Thêm THU GOM RÁC không cần hãng tàu');
+select lives_ok($$ select public.catalog_add_fee('KHAC', 50000, 'PHÍ CẮT SEAL', '', '', '') $$, 'Thêm biểu phí KHÁC (chuỗi rỗng = không chọn)');
+select is((select shipping_line_code from public.fee_catalog where name = 'PHÍ CẮT SEAL'), null, 'Chuỗi rỗng lưu là mọi hãng tàu');
+select throws_like($$ select public.catalog_add_fee('NANG_HA', 1000, null, '20', 'DC', 'XYZ') $$, '%XYZ không có trong Danh mục%', 'Vẫn chặn hãng tàu không có');
 select is((select count(*)::int from public.audit_logs where action_code = 'ADMIN_UPSERT_PARTNER'), 1, 'Ghi nhật ký');
 select pg_temp.login('00000000-0000-0000-0000-0000000000b1');
 select throws_like($$ select public.catalog_upsert_partner('X', 'X', false, true, false) $$, '%chỉ Admin%', 'Văn phòng không sửa Danh mục');
