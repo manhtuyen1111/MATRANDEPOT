@@ -111,6 +111,13 @@ begin
     format('[Admin Danh mục chung] %s TYPE %s', case when p_active then 'Mở lại' else 'Ngừng dùng' end, upper(trim(p_code))));
 end $$;
 
+-- Trang hóa đơn của khách (#/hoa-don, không đăng nhập): chỉ tên + số điện thoại công ty để hiện đầu trang / hướng dẫn
+create or replace function public.invoice_portal_company() returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce((select jsonb_build_object('name', name, 'phone', phone) from public.company_profile limit 1), '{}'::jsonb);
+$$;
+grant execute on function public.invoice_portal_company() to anon, authenticated;
+
 revoke execute on function public.submit_feedback(text, text, text), public.respond_feedback(uuid, public.feedback_status, text),
   public.mark_documents_returned(text, text), public.catalog_set_size_active(text, boolean), public.catalog_set_type_active(text, boolean)
   from public, anon, authenticated;

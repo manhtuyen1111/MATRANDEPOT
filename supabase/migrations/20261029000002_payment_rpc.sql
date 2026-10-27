@@ -670,6 +670,12 @@ begin
     'prepaid', case when r.purpose = 'PREPAID_TOPUP' and r.prepaid_id is not null then (
       select jsonb_build_object(
         'remaining_amount', (select remaining_amount from public.prepaid_receipts where id = r.prepaid_id),
+        -- Các yêu cầu hóa đơn khách đã gửi (để sửa / hủy — DEC-130)
+        'groups', coalesce((select jsonb_agg(jsonb_build_object('id', g.id, 'amount', g.amount, 'tax_code', g.tax_code, 'email', g.email,
+            'company_name', g.company_name, 'address', g.address, 'note', g.note, 'status', g.status, 'invoice_no', g.invoice_no,
+            'requested_at', g.requested_at, 'updated_at', g.updated_at,
+            'deduction_ids', (select coalesce(jsonb_agg(i.deduction_id), '[]'::jsonb) from public.invoice_group_items i where i.group_id = g.id))
+          order by g.requested_at) from public.invoice_groups g where g.receipt_id = r.id), '[]'::jsonb),
         'lots', coalesce(jsonb_agg(jsonb_build_object('deduction_id', d.id, 'dossier_code', v.dossier_code, 'container_no', d.container_no,
           'amount', d.amount, 'performed_at', d.performed_at, 'group_id', i.group_id, 'status', coalesce(g.status, 'CHUA_XHD'), 'invoice_no', g.invoice_no)
           order by d.performed_at desc), '[]'::jsonb))

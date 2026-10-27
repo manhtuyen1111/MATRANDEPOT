@@ -173,15 +173,13 @@ begin
   return v_row;
 end $$;
 
--- Tổ sửa chữa (DEC-043, DEC-048) — Văn phòng / Quản lý cấu hình (menu DM_SUA_CHUA = khối văn phòng)
+-- Tổ sửa chữa (DEC-042, DEC-043, DEC-048) — CHỈ ADMIN cấu hình (khối văn phòng chỉ xem — như depotOperations.addRepairTeam)
 create or replace function public.catalog_upsert_repair_team(p_code text, p_name text, p_active boolean default true) returns public.repair_teams
 language plpgsql security definer set search_path = public as $$
 declare
   v_row public.repair_teams;
 begin
-  if not public.has_any_role(array['OFFICE', 'MANAGER']::public.app_role[]) then
-    raise exception 'Không đủ quyền: chỉ Văn phòng / Quản lý / Admin cấu hình tổ sửa chữa.' using errcode = '42501';
-  end if;
+  perform public.assert_admin();
   if trim(coalesce(p_code, '')) = '' or trim(coalesce(p_name, '')) = '' then raise exception 'Vui lòng nhập mã và tên tổ.'; end if;
   insert into public.repair_teams as t (code, name, is_active) values (upper(trim(p_code)), trim(p_name), coalesce(p_active, true))
   on conflict (code) do update set name = excluded.name, is_active = excluded.is_active
@@ -197,9 +195,7 @@ language plpgsql security definer set search_path = public as $$
 declare
   v_row public.repair_team_members;
 begin
-  if not public.has_any_role(array['OFFICE', 'MANAGER']::public.app_role[]) then
-    raise exception 'Không đủ quyền: chỉ Văn phòng / Quản lý / Admin cấu hình tổ sửa chữa.' using errcode = '42501';
-  end if;
+  perform public.assert_admin();
   if trim(coalesce(p_full_name, '')) = '' then raise exception 'Vui lòng nhập tên thành viên.'; end if;
   if p_member_id is null then
     insert into public.repair_team_members (team_id, full_name, staff_id, is_active)
