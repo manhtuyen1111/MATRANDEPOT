@@ -9,6 +9,7 @@ import { receiptCollectorName, receiptOperationOf } from '../services/payments';
 import { formatDateTime } from '../services/datetime';
 import { ticketContext } from '../services/driverRoute';
 import { secondaryBtn } from './shared';
+import { QrImage } from './Qr';
 import { invoicePortalUrl } from '../services/invoice';
 
 // ============================================================================
@@ -103,6 +104,8 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
         <div className="mt-2 border-4 border-double border-slate-900 px-3 py-2 text-center">
           <p className="text-[10px] font-bold uppercase tracking-wider">Phiếu thu trả trước — dùng trừ dần cho Hạ vỏ / Cấp vỏ</p>
           <p className="font-mono text-lg font-black">{master.receiptCode}</p>
+          {/* Mã QR thật — Văn phòng quét bằng camera / súng quét khi khách thanh toán TTT */}
+          <QrImage value={master.qrCode} size={88} className="mx-auto my-1" />
           <p className="text-[11px]">Mã QR trừ dần: <span className="font-mono font-bold">{master.qrCode}</span>{master.lotDescription ? ` • ${master.lotDescription}` : ''}</p>
           <p className="mt-1 text-sm font-black">SỐ TIỀN NẠP TRƯỚC: <span className="font-mono text-base">{formatVnd(r.amount)}</span></p>
         </div>

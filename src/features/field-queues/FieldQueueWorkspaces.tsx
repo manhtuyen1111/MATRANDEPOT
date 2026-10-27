@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { ScanField } from '../../components/Qr';
 import { completeCleaningTask, completeRepairTask, executeGateOut, updateContainerLocation } from '../../services/api';
 import { Camera, CheckCircle2, ChevronDown, ChevronUp, MapPin, QrCode, X } from 'lucide-react';
 import { ContainerRecord } from '../../types/depot';
@@ -73,9 +74,6 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
   const [scanned, setScanned] = useState<ContainerRecord | null>(null);
   const [slot, setSlot] = useState<SlotValue>(EMPTY_SLOT);
   const [showList, setShowList] = useState(false);
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const [teamId, setTeamId] = useState('');
   const [memberIds, setMemberIds] = useState<string[]>([]);
   const activeTeams = state.repairTeams.filter((t) => t.isActive);
@@ -98,14 +96,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
   const queue = getFieldQueue(state, mode);
   const title = TITLES[mode];
 
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    setCameraOpen(false);
-  };
-  useEffect(() => () => stopCamera(), []);
   useEffect(() => {
-    stopCamera();
     setScanned(null);
     setShowList(false);
     setError(null);
@@ -141,23 +132,6 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
     if (initialScannedQr) lookup(initialScannedQr);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialScannedQr]);
-
-  const openCamera = async () => {
-    setError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-      streamRef.current = stream;
-      setCameraOpen(true);
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
-      }, 50);
-    } catch {
-      setError('Thiết bị không mở được camera. Vui lòng nhập mã QR thủ công.');
-    }
-  };
 
   const run = (fn: () => DepotState, message: string) => {
     setError(null);
@@ -225,27 +199,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
           <QrCode className="h-4 w-4 text-ink-muted" />
           Quét mã QR trên phiếu K80
         </span>
-        {cameraOpen ? (
-          <div className="space-y-2 rounded-md bg-black p-2">
-            <video ref={videoRef} autoPlay playsInline muted className="h-48 w-full rounded object-cover" />
-            <button type="button" onClick={stopCamera} className="w-full rounded-md bg-slate-700 py-2 text-xs font-semibold text-white">
-              Đóng camera
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={(e) => { e.preventDefault(); lookup(scannedQr); }} className="flex gap-2">
-            <input
-              value={scannedQr}
-              onChange={(e) => setScannedQr(e.target.value.toUpperCase())}
-              placeholder="Mã QR K80 / Mã hồ sơ / Số cont..."
-              className={`${inputCls} font-mono uppercase`}
-            />
-            <button type="submit" className={`${primaryBtn} shrink-0`}>Quét</button>
-            <button type="button" onClick={openCamera} aria-label="Mở camera quét QR" className="shrink-0 rounded-md border border-line-strong px-3 text-ink-muted hover:bg-canvas">
-              <Camera className="h-4 w-4" />
-            </button>
-          </form>
-        )}
+        <ScanField value={scannedQr} onChange={setScannedQr} onSubmit={lookup} placeholder="Mã QR K80 / Mã hồ sơ / Số cont..." />
       </div>
 
       {scanned && (

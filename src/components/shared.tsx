@@ -1,4 +1,5 @@
 import React from 'react';
+import { CameraScanButton } from './Qr';
 import {
   CheckCircle2,
   FileSpreadsheet,
@@ -358,6 +359,7 @@ export const PaymentPanel: React.FC<{
                 placeholder="Quét hoặc nhập mã QR TTT..."
                 className={`${inputCls} font-mono`}
               />
+              <CameraScanButton onResult={(c) => set({ scannedQrCode: c })} />
               <datalist id="ttt-qr-list">
                 {activeMasters.map((r) => (
                   <option key={r.id} value={r.qrCode}>

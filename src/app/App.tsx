@@ -42,6 +42,8 @@ const named = <M extends Record<K, React.ComponentType<any>>, K extends keyof M>
   SCREEN_LOADERS.push(load);
   return lazy(async () => ({ default: (await load())[name] })); // giữ nguyên kiểu props của màn hình
 };
+// Thư viện tạo mã QR (phiếu K80 / phiếu trả trước) — tải sẵn để lúc in mã hiện ngay
+SCREEN_LOADERS.push(() => import('qrcode'));
 function preloadScreens(): () => void {
   let stopped = false;
   // Trình duyệt không có requestIdleCallback (Safari cũ) → đợi 1,5 giây
