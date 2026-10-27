@@ -50,7 +50,7 @@ Hướng dẫn đầy đủ cho môi trường test nhiều người (kèm đưa
 ## Lưu ý
 
 - Migration nào đã apply ở bất kỳ môi trường nào thì **không sửa nữa**; thay đổi viết thành file mới.
-- Các file bước 1 chưa apply ở đâu, nên còn sửa được.
+- **Từ 2026-10-27 toàn bộ migration đã apply lên project `matran-test`** → không sửa file cũ nữa; mọi thay đổi database viết thành file migration MỚI.
 - **Đăng nhập:** tên đăng nhập `tuan.lv` ứng với email `tuan.lv@matrandepot.local` (DEC-151).
 
 ## Lịch xóa ảnh hết hạn (làm sau khi tạo project thật)
