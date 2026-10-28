@@ -1517,6 +1517,16 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Nội dung bước duyệt của cont Xuất tàu trong hồ sơ: "Xác nhận hoàn thành danh sách xuất tàu <tên tàu>" + "Tiến độ thực tế : <đã xuất>/<tổng cont danh sách>" (`vesselListProgress`). Bỏ dòng "Duyệt cả danh sách… Không thu phí, không phiếu EEIR (K80)". Nhập tàu giữ như cũ.
 
+### DEC-170 — Báo cáo SẢN LƯỢNG SỬA CHỮA (giờ công từng nhân viên)
+
+- Trạng thái: CONFIRMED (2026-10-28, người dùng). Báo cáo → Sửa chữa có 2 tab **CHI TIẾT** / **SẢN LƯỢNG SỬA CHỮA**.
+- Chỉ tính cont **đã sửa xong**, theo thời gian hoàn tất. Giờ công cont chia đều cho số nhân viên tác nghiệp: 1 người nhận cả, 2 người chia 2, 3 người chia 3… (làm tròn 2 số lẻ).
+- Bộ lọc: **thời gian** (bắt buộc), **tổ sửa chữa**, **nhân viên sửa chữa**. Bảng mỗi nhân viên 1 dòng (tổ, số cont, giờ công) + dòng tổng; bấm dòng → cửa sổ trượt từng cont (giờ công cont, số người, giờ chia). Excel 2 sheet (tổng hợp + chi tiết). Quy tắc ở `queryRepairOutput` (`src/services/reports.ts`).
+
+### DEC-171 — Nhãn đầu dòng danh sách CHỜ SỬA CHỮA
+
+- Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
+
 ### DEC-166 — Danh mục PHÂN LOẠI ĐÓNG HÀNG theo hãng tàu + hãng tàu ƯU TIÊN
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng — trả lời câu hỏi). **Thay** bộ cố định M / K / E (DEC-016, DEC-128 giữ nguyên chỗ hiển thị).
@@ -1632,6 +1642,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-169 đã xác nhận (cập nhật 2026-10-28).
+- Quyết định nghiệp vụ: DEC-001 → DEC-171 đã xác nhận (cập nhật 2026-10-28).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
