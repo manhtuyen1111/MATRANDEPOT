@@ -313,6 +313,8 @@ describe('DEC-161: Phiếu EEIR (K80) + Phiếu thu (K80); in hồ sơ container
     expect(t).toBeTruthy();
     const eeir = strip(renderToString(<EeirK80Sheet state={s} ticket={t} />));
     expect(eeir).toContain('— PHIẾU EEIR TÁC NGHIỆP');
+    expect(eeir).toContain('Văn phòng xác nhận'); // dưới cùng: xác nhận Văn phòng (QR đã lên góc phải trên)
+    expect(eeir.indexOf('qr-image') < 0 || eeir.indexOf(`Mã QR ${t.qrCode}`) < eeir.indexOf('LỘ TRÌNH')).toBe(true);
     expect(eeir).toContain('k80-sheet');
     expect(eeir).toContain(t.containerNo);
     expect(eeir).toContain('LỘ TRÌNH');

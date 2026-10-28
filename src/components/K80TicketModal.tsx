@@ -41,11 +41,21 @@ export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotSt
     // KHỔ GIẤY IN NHIỆT K80 (80mm)
     <div className={`${printable ? 'print-area ' : ''}k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white p-3 font-mono text-[11px] leading-snug text-ink`}>
       {/* 1. THÔNG TIN CHUNG */}
-      <div className="border-b-2 border-slate-800 pb-2 text-center">
-        <p className="text-xs font-black tracking-wider">{(state?.companyProfile.shortName || "MATRAN DEPOT").toUpperCase()} — PHIẾU EEIR TÁC NGHIỆP</p>
-        {state?.companyProfile.phone && <p className="text-[10px]">ĐT: {state.companyProfile.phone}</p>}
-        <p className="mt-1 inline-block bg-navy-900 px-2 py-0.5 text-sm font-black text-white">{isOut ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
-        <p className="mt-1 text-[10px]">Mã hồ sơ: <strong>{ticket.outDossierCode || ticket.masterDossierCode}</strong></p>
+      <div className="border-b-2 border-slate-800 pb-2">
+        <p className="text-center text-xs font-black tracking-wider">{(state?.companyProfile.shortName || "MATRAN DEPOT").toUpperCase()} — PHIẾU EEIR TÁC NGHIỆP</p>
+        {/* Tác nghiệp bên trái — MÃ QR TÁC NGHIỆP góc phải trên cùng (gọn, vẫn quét nhanh: mã ngắn → ô QR thưa) */}
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="inline-block bg-navy-900 px-2 py-0.5 text-sm font-black text-white">{isOut ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
+            <p className="mt-1 text-[10px]">Mã hồ sơ:</p>
+            <p className="text-xs font-black">{ticket.outDossierCode || ticket.masterDossierCode}</p>
+            {state?.companyProfile.phone && <p className="mt-0.5 text-[10px]">ĐT: {state.companyProfile.phone}</p>}
+          </div>
+          <div className="shrink-0 border-2 border-slate-900 bg-white p-0.5 text-center">
+            <QrImage value={ticket.qrCode} size={84} />
+            <span className="block text-[8px] font-black tracking-tighter">{ticket.qrCode}</span>
+          </div>
+        </div>
       </div>
       <div className="py-2">
         <Row label="SỐ CONT" value={ticket.containerNo} big />
@@ -84,15 +94,12 @@ export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotSt
         </ol>
       </div>
 
-      {/* 3. MÃ QR TÁC NGHIỆP */}
+      {/* 3. XÁC NHẬN VĂN PHÒNG — người lập phiếu (thay chỗ mã QR cũ) */}
       <div className="pt-2 text-center">
-        <div className="mx-auto flex w-32 flex-col items-center justify-center border-2 border-slate-900 bg-white p-1.5">
-          <QrImage value={ticket.qrCode} size={112} />
-          <span className="mt-1 text-[9px] font-black tracking-tighter">{ticket.qrCode}</span>
-        </div>
-        <p className="mt-1 text-[9px] text-ink-muted">
-          In lúc {formatDateTime(ticket.issuedAt)} • {ticket.issuedBy}
-        </p>
+        <p className="text-[10px] font-black uppercase">Văn phòng xác nhận</p>
+        <p className="text-[9px] text-ink-muted">(Ký, ghi rõ họ tên)</p>
+        <p className="mt-6 text-xs font-black">{ticket.issuedBy || '-'}</p>
+        <p className="text-[9px] text-ink-muted">Lập phiếu lúc {formatDateTime(ticket.issuedAt)}</p>
       </div>
     </div>
   );
