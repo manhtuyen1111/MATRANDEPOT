@@ -1532,6 +1532,8 @@ Quy ước trạng thái:
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). **Sửa DEC-173** phần Thành tiền.
 - Hoàn tất sửa chữa → lưu **bậc thợ + đơn giá (đ / giờ)** của từng nhân viên vào cont đó (`ServiceWorkOrder.repairMemberRates`; database: `work_order_members.grade_name / hourly_rate`, trigger `work_order_member_rate` tự điền — không sửa `complete_repair_task`).
 - Báo cáo Sản lượng: Thành tiền = tổng (giờ chia × **đơn giá đã chốt** của từng cont). Đổi đơn giá bậc thợ sau đó **không** đổi kỳ cũ. Cont sửa **trước khi có bậc thợ** (chưa chốt) → lấy đơn giá hiện tại. Nhân viên có nhiều mức trong kỳ → cột đơn giá ghi "Nhiều mức", bậc ghi "Nhiều bậc"; chi tiết từng cont ở cửa sổ trượt + Excel sheet CHI TIẾT.
+- **Tên cột (người dùng chốt, giữ nguyên chữ):** **Bậc thợ** / **Nhân công bậc thợ (đ / giờ)** / **Tổng tiền sản phẩm (VND)** = Nhân công bậc thợ × Giờ công. Excel: BẬC THỢ / NHÂN CÔNG BẬC THỢ (Đ/GIỜ) / TỔNG TIỀN SẢN PHẨM (VND).
+- Đã chạy thử Supabase local 2026-10-28: migration `20261105000001` áp dụng OK, pgTAP **213/213**, test chạy thật N1–N6 pass, trigger chốt giá thử bằng SQL (50.000 → đổi 80.000, dòng cũ giữ 50.000).
 
 ### DEC-173 — Danh mục SỬA CHỮA: nhân viên, tổ theo số lượng, BẬC THỢ
 
