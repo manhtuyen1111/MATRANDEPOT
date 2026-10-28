@@ -7,9 +7,9 @@ import { paymentLabelOf, receiptOperationOf } from '../services/payments';
 import { documentPackOf } from "../services/driverRoute";
 import { recordReceiptPrint } from "../services/api";
 import { formatDateTime } from "../services/datetime";
-import { CompanyHeader, PrintPreviewModal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
+import { CompanyHeader, PrintPreviewModal } from "./ReceiptPrint";
 import { exportPdf, printNow } from "./printNow";
-import { CustomerSlipK80, EeirK80Sheet, slipPrintCount } from './K80TicketModal';
+import { CustomerSlipK80, EeirK80Sheet, slipPrintCount, VesselEeirPrintSheet } from './K80TicketModal';
 import { findVesselItemByCode } from '../services/vessel';
 import { linkCls, formatViTime, PhotoZoom } from './shared';
 

@@ -6,7 +6,9 @@ import {
   createVesselList,
   executeVesselExport,
   inspectVesselImportItem,
+  getVesselRoute,
   removeVesselListItem,
+  vesselQrCode,
 } from '../src/services/vessel';
 import { queryVesselReport, vesselReportSheet } from '../src/services/reports';
 
@@ -290,5 +292,40 @@ describe('DEC-131: duyệt khi chưa đủ — gạch cont không kịp, bắt b
     });
     let n = approveVesselList(nt.state, { listId: nt.listId, mode: 'NHAP_TAU', reason: 'Cont chưa về' });
     expect(n.vesselLists[0].items.every((i) => i.status === 'SKIPPED')).toBe(true);
+  });
+});
+
+describe('DEC-163: phiếu EEIR Nhập tàu / Xuất tàu có mã QR + LỘ TRÌNH như phiếu tác nghiệp', () => {
+  it('Nhập tàu: QR-<NT->; lộ trình Giám định → Vệ sinh → Xe nâng → Văn phòng duyệt, tích dần theo dữ liệu thật', () => {
+    const base = { mode: 'NHAP_TAU' as const, vesselName: 'Route', plannedAt: PLANNED, truckNos: ['15C-1'], shippingLineCode: 'MAERSK' };
+    let { state: s, listId } = createVesselList(as(createInitialState(), 'usr-office'), { ...base, importItems: [{ containerNo: 'TCLU1234567', size: '40', type: 'HC' }] });
+    const item0 = s.vesselLists[0].items[0];
+    expect(vesselQrCode(item0)).toBe(''); // chưa có mã hồ sơ → chưa có QR
+    s = inspectVesselImportItem(as(s, 'usr-inspector'), {
+      listId, itemId: item0.id, actualContainerNo: 'TCLU1234567', truckNo: '15C-1', conditionClass: 'AV', damageRemarks: [], stuffingClass: 'E', cleaningItems: ['WW'], manufactureYear: 2015,
+    });
+    const item = () => s.vesselLists[0].items[0];
+    expect(vesselQrCode(item())).toBe(`QR-${item().dossierCode}`);
+    const done = () => getVesselRoute(s, s.vesselLists[0], item()).map((x) => `${x.key}:${x.done ? 1 : 0}`);
+    expect(done()).toEqual(['INSPECT:1', 'CLEANING:0', 'FORKLIFT_PLACE:0', 'OFFICE_APPROVE:0']);
+    s = completeCleaningTask(as(s, 'usr-cleaning'), { containerNo: 'TCLU1234567' });
+    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: 'TCLU1234567', blockCode: 'BLOCK-B', reason: '' });
+    expect(done()).toEqual(['INSPECT:1', 'CLEANING:1', 'FORKLIFT_PLACE:1', 'OFFICE_APPROVE:0']);
+    s = approveVesselList(as(s, 'usr-office'), { listId, mode: 'NHAP_TAU' });
+    expect(done().every((x) => x.endsWith(':1'))).toBe(true);
+  });
+
+  it('Xuất tàu: QR-<XT->; lộ trình Văn phòng lập → Xe nâng xuất → Văn phòng duyệt', () => {
+    const s0 = createInitialState();
+    const inYard = s0.containers.find((c) => c.status === 'IN_YARD' && !c.isOnHold)!;
+    let { state: s, listId } = createVesselList(as(s0, 'usr-office'), {
+      mode: 'XUAT_TAU', vesselName: 'Route X', plannedAt: PLANNED, truckNos: ['15C-7'], exportContainerIds: [inYard.id],
+    });
+    const item = () => s.vesselLists[0].items[0];
+    expect(vesselQrCode(item())).toBe(`QR-${item().dossierCode}`);
+    const route = () => getVesselRoute(s, s.vesselLists[0], item());
+    expect(route().map((x) => x.done)).toEqual([true, false, false]);
+    s = executeVesselExport(as(s, 'usr-forklift'), { listId, itemId: item().id, truckNo: '15C-7' });
+    expect(route().map((x) => x.done)).toEqual([true, true, false]);
   });
 });
