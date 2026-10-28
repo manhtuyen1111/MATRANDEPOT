@@ -412,7 +412,7 @@ export const QueueListRow: React.FC<{ state: DepotState; container: ContainerRec
           <LocationText loc={c} className="truncate text-right font-mono text-[11px] text-ink-muted" />
         </span>
         <span className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-ink-muted">
-          <span className="min-w-0 truncate font-semibold">{op.vesselName ? `Tàu ${op.vesselName}` : ''}</span>
+          <span className="min-w-0 truncate font-semibold">{[op.vesselName && `Tàu ${op.vesselName}`, op.truckNo && `Xe ${op.truckNo}`].filter(Boolean).join(' • ')}</span>
           {extra && <span className="shrink-0">{extra}</span>}
         </span>
       </span>

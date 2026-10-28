@@ -427,6 +427,12 @@ describe('DEC-081: EEIR cho hồ sơ Nhập tàu / Xuất tàu', () => {
     const ntSheet = strip(renderToString(<VesselEeirPrintSheet state={s} list={nt} item={ntItem} />));
     expect(ntSheet).toContain('EEIR — PHIẾU GIAO NHẬN CONTAINER');
     expect(ntSheet).toContain('k80-sheet'); // DEC-161: EEIR tàu khổ K80
+    // Vệ sinh / Xe nâng: cont Nhập tàu hiện cả SỐ XE (danh sách chờ + khung cont vừa quét)
+    const { OperationBadge } = await import('../src/features/vessel/VesselShared');
+    const ntCont = s.containers.find((c) => c.masterDossierCode === ntItem.dossierCode)!;
+    const row = strip(renderToString(<QueueListRow state={s} container={ntCont} onClick={noop} />));
+    expect(row).toContain('Tàu TÀU EEIR • Xe 15C-9');
+    expect(strip(renderToString(<OperationBadge state={s} container={ntCont} large />))).toContain('Xe 15C-9');
     expect(ntSheet).toContain(`Số: ${ntItem.dossierCode}`);
     expect(ntSheet).toContain('TÁC NGHIỆP: NHẬP TÀU');
     expect(ntSheet).toContain('TÀU EEIR');
