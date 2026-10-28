@@ -312,7 +312,8 @@ describe('DEC-161: Phiếu EEIR (K80) + Phiếu thu (K80); in hồ sơ container
     const t = s.k80Tickets[0];
     expect(t).toBeTruthy();
     const eeir = strip(renderToString(<EeirK80Sheet state={s} ticket={t} />));
-    expect(eeir).toContain('— PHIẾU EEIR TÁC NGHIỆP');
+    expect(eeir).toContain('PHIẾU EEIR TÁC NGHIỆP');
+    expect(eeir).not.toContain('— PHIẾU EEIR TÁC NGHIỆP'); // không lặp tên depot ở tiêu đề
     expect(eeir).toContain(s.companyProfile.name); // đầu phiếu = thông tin depot như Phiếu thu (K80)
     expect(eeir).toMatch(/TÁC NGHIỆP: (HẠ|CẤP) VỎ/);
     expect(eeir).toContain('Văn phòng xác nhận'); // dưới cùng: xác nhận Văn phòng (QR đã lên góc phải trên)

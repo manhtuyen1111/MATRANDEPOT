@@ -52,7 +52,7 @@ export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotSt
             {company.taxCode && <p className="text-[10px]">MST: {company.taxCode}</p>}
           </div>
         )}
-        <p className="mt-1.5 text-center text-xs font-black tracking-wider">{(company?.shortName || "MATRAN DEPOT").toUpperCase()} — PHIẾU EEIR TÁC NGHIỆP</p>
+        <p className="mt-1.5 text-center text-sm font-black tracking-wider">PHIẾU EEIR TÁC NGHIỆP</p>
         {/* Số + tác nghiệp bên trái — MÃ QR TÁC NGHIỆP bên phải (mã QR-<mã hồ sơ> như cũ, DEC-057) */}
         <div className="mt-1.5 flex items-center justify-between gap-2">
           <div className="min-w-0">
