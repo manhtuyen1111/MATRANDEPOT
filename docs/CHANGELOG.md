@@ -19,6 +19,9 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Giao diện chờ nhẹ nhàng: bỏ thanh chạy trên cùng; chỉ báo chờ chỉ hiện khi > 300 ms; tải sẵn các màn hình chạy ngầm khi app rảnh.
 - Ảnh cửa container: kính lúp khi rê chuột + xem toàn màn hình có phóng to (`PhotoZoom` trong `shared.tsx`) ở Văn phòng Hạ vỏ và Hồ sơ container.
 
+### Changed
+- DEC-161: bỏ EEIR A4 Hạ vỏ / Cấp vỏ — phiếu K80 thành **Phiếu EEIR (K80)** ("… — PHIẾU EEIR TÁC NGHIỆP"); **Phiếu thu (K80)**; Trả chứng từ in liền EEIR (K80) + Phiếu thu (K80), máy in tự cắt giữa; hồ sơ có **In hồ sơ container (A4)**. EEIR Nhập / Xuất tàu giữ nửa A4.
+
 ### Fixed
 - Lưu mượt (DEC-160): lưu ngầm không chặn màn, bấm tiếp trong lúc lưu được; sau khi lưu không tải lại danh mục; bớt 1 lượt chờ mạng khi đồng bộ.
 - Ô quét hiện trường: bỏ nút "Quét" thừa (chỉ còn ô nhập + camera).
