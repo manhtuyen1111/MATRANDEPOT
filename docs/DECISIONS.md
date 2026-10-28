@@ -1479,6 +1479,17 @@ Quy ước trạng thái:
 - **Quy trình Xem → In** (bổ sung 2026-10-28): nút trên hồ sơ / Phiếu thu mở **cửa sổ xem phiếu**, nút In nằm trong cửa sổ xem (`PrintPreviewModal`). Trả chứng từ vẫn tự in (mục trên).
 - **Tên nút IN HOA, thống nhất:** EEIR HẠ VỎ / PHIẾU THU • EEIR CẤP VỎ / PHIẾU THU • EEIR NHẬP TÀU • EEIR XUẤT TÀU • HỒ SƠ CONTAINER • PHIẾU THU (đúng chữ người dùng gửi).
 
+### DEC-162 — PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU" (gộp EEIR + phiếu thu)
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng). **Sửa DEC-161** phần Trả chứng từ (trước: in liền EEIR (K80) + Phiếu thu (K80)).
+- Phiếu giao khách khi **Trả chứng từ** là **1 phiếu K80** tên **"MATRAN EEIR - PHIẾU THU"** (`CustomerSlipK80`):
+  - Phần đầu giống **PHIẾU EEIR TÁC NGHIỆP**: thông tin depot → (tên phiếu / Số / TÁC NGHIỆP | mã QR tác nghiệp) → thông tin cont.
+  - **Bỏ LỘ TRÌNH — QUÉT MÃ**, thay bằng **THÔNG TIN THANH TOÁN** + **YÊU CẦU XUẤT HÓA ĐƠN** như Phiếu thu (Số phiếu thu, bên thanh toán, hình thức, thời gian thu, bảng phí, tổng thu, mã bảo mật + QR link xuất hóa đơn) — dùng chung khối `ReceiptPaymentBody`.
+  - Không có phiếu thu (TTS / trừ phiếu trả trước) → ghi hình thức thanh toán, "không phát hành phiếu thu lượt này".
+- **Hồ sơ container**: mỗi tác nghiệp Hạ vỏ / Cấp vỏ có 2 phiếu **PHIẾU EEIR TÁC NGHIỆP** và **PHIẾU TRẢ KHÁCH HÀNG** (Xem → IN).
+- **Số lần in** (người dùng chọn 2026-10-29): **chỉ dùng bộ đếm phiếu thu** (`recordReceiptPrint`, DEC-063) — in phiếu trả khách hàng = ghi 1 lần in cho mỗi phiếu thu kèm theo; từ lần 2 hỏi xác nhận + nhãn BẢN IN LẠI. Không đổi database. Phiếu EEIR tác nghiệp và phiếu trả khách không có phiếu thu **không đếm**.
+- **Phiếu thu lẻ** giữ nguyên ở Văn phòng → Phiếu thu (in / in lại có đếm).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1568,6 +1579,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-161 đã xác nhận (cập nhật 2026-10-28).
+- Quyết định nghiệp vụ: DEC-001 → DEC-162 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

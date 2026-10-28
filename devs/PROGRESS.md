@@ -271,7 +271,8 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - **Cuộn K80 cắt vừa phiếu:** khi in K80 trang web khác bị bỏ hẳn (`display:none`) và phiếu **không** được `position:absolute` (Chrome bỏ qua `@page size` + ngắt trang → in cả tờ dài). Phiếu nào in cũng qua `PrintPortal`. Kiểm nhanh không cần máy in: Edge `--headless --print-to-pdf` rồi đọc `MediaBox` (80mm = 227pt).
 - **Cài máy in K80 (Windows → Printing Preferences):** khổ giấy cuộn (VD 80 × 3276mm / Receipt), **cắt sau mỗi trang**; hộp thoại in Chrome / Edge: Lề = Không (None) hoặc Mặc định, Tỷ lệ = 100% / Mặc định, **bỏ tích "Đầu trang và chân trang"** (nếu không trình duyệt in thêm ngày giờ + tên trang ở trên, địa chỉ web ở dưới → khoảng trắng). App đã đặt lề trang = 0 khi in K80.
 - Mọi lệnh in gọi **`printNow()`** (đo chiều dài phiếu → khổ 80mm × dài, mỗi phiếu 1 trang để máy cắt) — **cấm `window.print()`**. Bản in = bản xem (giữ khung nét đứt).
-- Quy trình **Xem → In**: nút mở `PrintPreviewModal`, nút IN ở trong. Riêng **Trả chứng từ**: có nút Xem trước; bấm Trả chứng từ là **tự in** EEIR (K80) + Phiếu thu (K80).
+- Quy trình **Xem → In**: nút mở `PrintPreviewModal`, nút IN ở trong. Riêng **Trả chứng từ**: có nút Xem trước; bấm Trả chứng từ là **tự in 1 PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU"** (DEC-162 — gộp EEIR + phiếu thu, `CustomerSlipK80`).
+- **Hồ sơ**: mỗi tác nghiệp 2 nút **PHIẾU EEIR TÁC NGHIỆP** (không đếm in) / **PHIẾU TRẢ KHÁCH HÀNG** (đếm in = bộ đếm phiếu thu, từ lần 2 hỏi + BẢN IN LẠI). Phiếu thu lẻ vẫn ở Văn phòng → Phiếu thu. **Không** thêm bảng đếm in riêng (người dùng chốt chỉ dùng bộ đếm phiếu thu).
 - Tên nút IN HOA thống nhất **EEIR** (không viết EIR): EEIR HẠ VỎ / PHIẾU THU • EEIR CẤP VỎ / PHIẾU THU • EEIR NHẬP TÀU • EEIR XUẤT TÀU • HỒ SƠ CONTAINER • PHIẾU THU.
 - Người dùng rất nhạy với giao diện: **không** thêm thanh chạy / nhấp nháy; chỉnh in thì giữ đúng chữ người dùng gửi, đổi gì cũng báo lại rõ.
 
@@ -510,5 +511,6 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-28 — Claude Code: bỏ nút Quét thừa; lưu ngầm không chặn màn + không tải lại danh mục sau mỗi lần lưu (DEC-160). 167 test • build PASS. Chưa đo trên cloud.
 - 2026-10-28 — Claude Code: DEC-161 Phiếu EEIR (K80) + Phiếu thu (K80), in hồ sơ A4. 169 test • build PASS. Chưa thử in thật.
 - 2026-10-28 — Claude Code: DEC-161 bổ sung — EEIR tàu K80, in giống bản xem, Xem → In, nút IN HOA, `printNow`. 169 test • build PASS. Chưa thử in thật.
+- 2026-10-29 — Claude Code: DEC-162 PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU" (gộp EEIR + phiếu thu); hồ sơ 2 phiếu; đếm in theo phiếu thu; in K80 lề 0 (bỏ đầu / chân trang trình duyệt). 171 test • build PASS. Chưa in thật.
 - 2026-10-28/29 — Claude Code: in ấn hoàn thiện theo góp ý — printNow (xem trước dải K80, in = bản xem), EEIR tàu K80, Xem → In, nút IN HOA EEIR, QR 60px có khung (phiếu tác nghiệp + QR link XHD phiếu thu), đầu phiếu tác nghiệp = thông tin depot + "PHIẾU EEIR TÁC NGHIỆP / Số / TÁC NGHIỆP" | QR, ô Văn phòng xác nhận; số xe cho cont tàu ở Vệ sinh / Xe nâng; màn đăng nhập (nhãn UAT, khẩu hiệu, Made by MT). 169 test • build PASS. **Chưa in thật trên máy K80.**
 - 2026-10-28 — Claude Code: màn quét QR kiểu ngân hàng (Đèn / Chọn ảnh); rà soát dự án + tư vấn vận hành `docs/VAN_HANH_VA_PHAT_TRIEN.md`; checklist bắt đầu ca mới ở đầu I.5.
