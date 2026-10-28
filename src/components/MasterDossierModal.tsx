@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock, Printer, QrCode, ReceiptText, X } from 'lucide-react';
+import { CheckCircle2, Clock, FileText, Printer, QrCode, ReceiptText, X } from 'lucide-react';
 import { ContainerStatus, K80InternalTicket, PaymentVoucher, RECEIPT_OPERATION_LABELS, VesselList, VesselListItem } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
 import { formatLocation } from '../services/core';
@@ -7,7 +7,8 @@ import { paymentLabelOf, receiptOperationOf } from '../services/payments';
 import { documentPackOf, isTicketClosed } from "../services/driverRoute";
 import { recordReceiptPrint } from "../services/api";
 import { formatDateTime } from "../services/datetime";
-import { EeirPrintSheet, PrintPortal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
+import { CompanyHeader, PrintPortal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
+import { EeirK80Sheet } from './K80TicketModal';
 import { findVesselItemByCode } from '../services/vessel';
 import { linkCls, formatViTime, PhotoZoom } from './shared';
 
@@ -70,7 +71,7 @@ const Step: React.FC<{ no: number; title: string; tone?: 'default' | 'payment'; 
   children,
 }) => (
   <section
-    className={`grid grid-cols-1 gap-3 rounded-md border p-3 sm:grid-cols-[1fr_200px] ${
+    className={`dossier-step grid grid-cols-1 gap-3 rounded-md border p-3 sm:grid-cols-[1fr_200px] ${
       tone === 'payment' ? 'border-line-strong bg-navy-50/40' : 'border-line'
     }`}
   >
@@ -180,6 +181,13 @@ const PaymentBody: React.FC<{ state: DepotState; voucher?: PaymentVoucher; onOpe
 // HỒ SƠ CONTAINER (DEC-058): thông tin container ở đầu → các bộ phận theo thứ tự tác nghiệp
 // ---------------------------------------------------------------------------
 export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, onClose, onOpenK80Ticket, onOpenReceipt, onUpdateState }) => {
+  // In HỒ SƠ CONTAINER khổ A4 (DEC-161): toàn bộ hồ sơ tới thời điểm in; in xong gỡ lớp in
+  const [printDossier, setPrintDossier] = React.useState(false);
+  React.useEffect(() => {
+    const clear = () => setPrintDossier(false);
+    window.addEventListener('afterprint', clear);
+    return () => window.removeEventListener('afterprint', clear);
+  }, []);
   // Esc để đóng hồ sơ (DEC-080)
   React.useEffect(() => {
     if (!masterDossierCode) return;
@@ -322,10 +330,9 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
     </>
   );
 
-  return (
-    // DEC-080: hồ sơ mở dạng cửa sổ trượt bên phải (giống chi tiết các danh sách); bấm ra ngoài / Esc để đóng
-    <div className="fixed inset-0 z-50 flex justify-end bg-navy-900/30" role="dialog" aria-modal="true" aria-label="Hồ sơ container" onClick={onClose}>
-      <div className="h-full w-full overflow-y-auto bg-white shadow-2xl sm:w-[min(960px,80vw)]" onClick={(e) => e.stopPropagation()}>
+  // Nội dung hồ sơ — dùng chung cho màn hình và bản in A4
+  const content = (
+    <>
         {/* THÔNG TIN CƠ BẢN CONTAINER — focus số cont */}
         <header className="bg-navy-900 px-5 py-4 text-white">
           <div className="flex items-start justify-between gap-3">
@@ -340,7 +347,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                 {container?.isOnHold && <span className="rounded bg-rose-500 px-1.5 py-0.5 font-sans font-bold">ĐANG KHÓA: {container.holdReason}</span>}
               </p>
             </div>
-            <button type="button" onClick={onClose} aria-label="Đóng hồ sơ" className="rounded-md border border-white/30 p-1.5 text-white hover:bg-white/10">
+            <button type="button" onClick={onClose} aria-label="Đóng hồ sơ" className="no-print rounded-md border border-white/30 p-1.5 text-white hover:bg-white/10">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -406,7 +413,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                 title="Văn phòng — Trả chứng từ Hạ vỏ"
                 confirm={{ done: Boolean(gateIn.documentsReturnedAt), by: gateIn.documentsReturnedBy, at: gateIn.documentsReturnedAt, pending: 'Chờ lái xe quay về' }}
               >
-                <p>Lái xe quét mã tại Văn phòng → in EEIR {inVoucher && paymentInfo(state, inVoucher).receipts.length ? '+ phiếu thu' : ''}.</p>
+                <p>Lái xe quét mã tại Văn phòng → in Phiếu EEIR (K80) {inVoucher && paymentInfo(state, inVoucher).receipts.length ? '+ Phiếu thu (K80)' : ''}.</p>
               </Step>
             </>
           )}
@@ -437,7 +444,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                 title="Văn phòng — Duyệt nhập tàu"
                 confirm={{ done: importHit.list.status === 'APPROVED', by: importHit.list.approvedBy, at: importHit.list.approvedAt, pending: 'Chờ nhập hết danh sách' }}
               >
-                <p>Duyệt cả danh sách tàu <strong>{importHit.list.vesselName}</strong> khi đã nhập hết. Không thu phí, không phiếu K80.</p>
+                <p>Duyệt cả danh sách tàu <strong>{importHit.list.vesselName}</strong> khi đã nhập hết. Không thu phí, không phiếu EEIR (K80).</p>
               </Step>
             </>
           )}
@@ -478,7 +485,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                   title="Văn phòng — Trả chứng từ Cấp vỏ"
                   confirm={{ done: Boolean(o.documentsReturnedAt), by: o.documentsReturnedBy, at: o.documentsReturnedAt, pending: 'Chờ lái xe quay về' }}
                 >
-                  <p>Lái xe quét mã tại Văn phòng → in EEIR {v && paymentInfo(state, v).receipts.length ? '+ phiếu thu' : ''}.</p>
+                  <p>Lái xe quét mã tại Văn phòng → in Phiếu EEIR (K80) {v && paymentInfo(state, v).receipts.length ? '+ Phiếu thu (K80)' : ''}.</p>
                 </Step>
               </React.Fragment>
             );
@@ -500,11 +507,19 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                 {item.status === 'DONE' ? <p>Đã OUT khỏi bãi • xe <strong>{item.truckNo}</strong></p> : <p className="text-ink-muted">Chưa xuất.</p>}
               </Step>
               <Step no={next()} title="Văn phòng — Duyệt xuất tàu" confirm={{ done: list.status === 'APPROVED', by: list.approvedBy, at: list.approvedAt, pending: 'Chờ xuất hết danh sách' }}>
-                <p>Duyệt cả danh sách tàu <strong>{list.vesselName}</strong> khi đã xuất hết. Không thu phí, không phiếu K80.</p>
+                <p>Duyệt cả danh sách tàu <strong>{list.vesselName}</strong> khi đã xuất hết. Không thu phí, không phiếu EEIR (K80).</p>
               </Step>
             </React.Fragment>
           ))}
         </div>
+    </>
+  );
+
+  return (
+    // DEC-080: hồ sơ mở dạng cửa sổ trượt bên phải (giống chi tiết các danh sách); bấm ra ngoài / Esc để đóng
+    <div className="fixed inset-0 z-50 flex justify-end bg-navy-900/30" role="dialog" aria-modal="true" aria-label="Hồ sơ container" onClick={onClose}>
+      <div className="h-full w-full overflow-y-auto bg-white shadow-2xl sm:w-[min(960px,80vw)]" onClick={(e) => e.stopPropagation()}>
+        {content}
 
         <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3">
           {latestTicket && onOpenK80Ticket && (
@@ -514,10 +529,29 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
               className="inline-flex items-center gap-1.5 rounded-md border border-line-strong px-3 py-2 text-xs font-semibold text-ink hover:bg-canvas"
             >
               <QrCode className="h-4 w-4" />
-              {ticketClosed ? 'Xem phiếu K80 (đã đóng)' : 'Xem / in phiếu K80'}
+              {ticketClosed ? 'Xem phiếu EEIR (K80) (đã đóng)' : 'Xem / in phiếu EEIR (K80)'}
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => {
+              setPrintDossier(true);
+              setTimeout(() => window.print(), 150);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md bg-navy-900 px-3 py-2 text-xs font-semibold text-white hover:bg-navy-700"
+          >
+            <FileText className="h-4 w-4" />
+            In hồ sơ container (A4)
+          </button>
         </footer>
+        {printDossier && (
+          <PrintPortal>
+            <div className="dossier-a4 space-y-3 bg-white text-ink">
+              <CompanyHeader company={state.companyProfile} title="HỒ SƠ CONTAINER" subtitle={<p className="text-[11px]">Toàn bộ hồ sơ tới thời điểm in • In lúc {formatDateTime(new Date())}</p>} />
+              {content}
+            </div>
+          </PrintPortal>
+        )}
         <DossierPrintBar state={state} tickets={tickets} onUpdateState={onUpdateState} vessel={[...(importHit ? [importHit] : []), ...exportHits]} />
       </div>
     </div>
@@ -525,7 +559,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
 };
 
 // ---------------------------------------------------------------------------
-// IN EEIR từ hồ sơ (DEC-072): mỗi lượt Hạ vỏ / Cấp vỏ 1 EEIR; in kèm phiếu thu thì ghi nhận số lần in (DEC-063)
+// IN từ hồ sơ (DEC-072, DEC-161): Hạ vỏ / Cấp vỏ = Phiếu EEIR (K80) (+ Phiếu thu (K80)); Nhập / Xuất tàu = EEIR nửa A4; in kèm phiếu thu thì ghi nhận số lần in (DEC-063)
 // ---------------------------------------------------------------------------
 const DossierPrintBar: React.FC<{
   state: DepotState;
@@ -598,7 +632,7 @@ const DossierPrintBar: React.FC<{
         const printedBefore = p.receipts.filter((r) => (r.printLog?.length || 0) > 0);
         return (
           <div key={p.ticket.ticketCode} className="flex flex-wrap items-center justify-end gap-2">
-            <span className="mr-auto font-semibold text-ink">EEIR {op} — <span className="font-mono">{p.dossierCode}</span>{p.receipts.length > 0 && <> • {p.receipts.length} phiếu thu</>}</span>
+            <span className="mr-auto font-semibold text-ink">Phiếu EEIR (K80) {op} — <span className="font-mono">{p.dossierCode}</span>{p.receipts.length > 0 && <> • {p.receipts.length} phiếu thu</>}</span>
             {confirmCode === p.ticket.ticketCode ? (
               <span className="inline-flex flex-wrap items-center gap-2 rounded-md border border-rose-300 bg-rose-50 px-2 py-1 text-[11px] text-rose-800">
                 {printedBefore.map((r) => `${r.receiptNo} đã in ${r.printLog!.length} lần (gần nhất ${formatDateTime(r.printLog![r.printLog!.length - 1].at)})`).join('; ')}. In lại?
@@ -609,7 +643,7 @@ const DossierPrintBar: React.FC<{
               <>
                 <button type="button" onClick={() => print(p.ticket.ticketCode, false)} className={`${btn} border border-line-strong text-ink hover:bg-canvas`}>
                   <Printer className="h-4 w-4" />
-                  In EEIR {op}
+                  In EEIR (K80) {op}
                 </button>
                 {p.receipts.length > 0 && (
                   <button
@@ -618,7 +652,7 @@ const DossierPrintBar: React.FC<{
                     className={`${btn} bg-navy-900 text-white hover:bg-navy-700`}
                   >
                     <Printer className="h-4 w-4" />
-                    In EEIR + phiếu thu
+                    In EEIR (K80) + Phiếu thu (K80)
                   </button>
                 )}
               </>
@@ -649,7 +683,7 @@ const DossierPrintBar: React.FC<{
       })}
       {jobPack && (
         <PrintPortal>
-          <EeirPrintSheet state={state} ticket={jobPack.ticket} />
+          <EeirK80Sheet state={state} ticket={jobPack.ticket} />
           {job!.withReceipts && jobPack.receipts.map((r) => <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={r.printLog?.length || 1} />)}
         </PrintPortal>
       )}

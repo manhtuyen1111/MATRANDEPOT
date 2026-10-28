@@ -109,7 +109,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
     setError(null);
     setSuccess(null);
     const code = raw.trim().toUpperCase();
-    if (!code) return setError('Vui lòng quét hoặc nhập mã QR trên phiếu K80.');
+    if (!code) return setError('Vui lòng quét hoặc nhập mã QR trên phiếu EEIR (K80).');
     const found = queue.find(
       (c) =>
         c.activeQrCode.toUpperCase() === code ||
@@ -197,9 +197,9 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
       <div className="space-y-3 rounded-lg border border-line bg-white p-4">
         <span className="flex items-center gap-1.5 text-xs font-bold uppercase text-ink">
           <QrCode className="h-4 w-4 text-ink-muted" />
-          Quét mã QR trên phiếu K80
+          Quét mã QR trên phiếu EEIR (K80)
         </span>
-        <ScanField value={scannedQr} onChange={setScannedQr} onSubmit={lookup} placeholder="Mã QR K80 / Mã hồ sơ / Số cont..." />
+        <ScanField value={scannedQr} onChange={setScannedQr} onSubmit={lookup} placeholder="Mã QR phiếu EEIR (K80) / Mã hồ sơ / Số cont..." />
       </div>
 
       {scanned && (

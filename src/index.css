@@ -89,6 +89,51 @@
   }
 }
 
+/* DEC-161: PHIẾU EEIR (K80) + PHIẾU THU (K80) — in nhiệt cuộn 80mm (vùng in 72mm).
+   Mỗi phiếu = 1 trang → máy in nhiệt cắt giấy sau mỗi trang (driver đặt "Cắt sau mỗi trang / Cut per page").
+   Trả chứng từ in liền EEIR + phiếu thu trong 1 lệnh in → 2 phiếu rời, tự cắt giữa. */
+@page k80 {
+  margin: 0;
+}
+@media print {
+  .k80-sheet {
+    page: k80;
+    box-sizing: border-box;
+    width: 72mm !important;
+    max-width: 72mm !important;
+    margin: 0 !important;
+    padding: 2mm 1mm 6mm !important;
+    border: 0 !important;
+    break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .k80-sheet + .k80-sheet {
+    break-before: page;
+  }
+  .print-area:has(.k80-sheet) {
+    width: 72mm;
+  }
+}
+
+/* Hồ sơ container in A4 (DEC-161): toàn bộ hồ sơ tới thời điểm in */
+@page dossierA4 {
+  size: A4 portrait;
+  margin: 10mm;
+}
+@media print {
+  .dossier-a4 {
+    page: dossierA4;
+    width: 190mm;
+    font-size: 11px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .dossier-a4 .dossier-step {
+    break-inside: avoid;
+  }
+}
+
 /* Màn quét QR (Qr.tsx): đường quét chạy lên xuống trong khung ngắm, kiểu app ngân hàng */
 @keyframes qr-scan {
   0% { top: 8%; }

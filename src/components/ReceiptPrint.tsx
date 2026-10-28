@@ -2,12 +2,11 @@ import React from 'react';
 import { recordReceiptPrint } from '../services/api';
 import { createPortal } from 'react-dom';
 import { Printer } from 'lucide-react';
-import { CompanyProfile, K80InternalTicket, PAYMENT_METHOD_LABELS, PaymentReceipt, RECEIPT_OPERATION_LABELS, VesselList, VesselListItem } from '../types/depot';
+import { CompanyProfile, PAYMENT_METHOD_LABELS, PaymentReceipt, RECEIPT_OPERATION_LABELS, VesselList, VesselListItem } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
 import { receiptCollectorName, receiptOperationOf } from '../services/payments';
 
 import { formatDateTime } from '../services/datetime';
-import { ticketContext } from '../services/driverRoute';
 import { secondaryBtn } from './shared';
 import { QrImage } from './Qr';
 import { invoicePortalUrl } from '../services/invoice';
@@ -15,7 +14,8 @@ import { invoicePortalUrl } from '../services/invoice';
 // ============================================================================
 // GIẤY TỜ IN DÙNG CHUNG (DEC-062, DEC-063, DEC-072)
 //   Mọi giấy tờ cùng 1 khung: đầu CÔNG TY → TIÊU ĐỀ + Số → TÁC NGHIỆP → thông tin → bảng → chữ ký → "In lúc".
-//   EEIR và PHIẾU THU in cùng kích thước, cùng kiểu chữ để gửi khách hàng thành một bộ.
+//   Hạ vỏ / Cấp vỏ (DEC-161): PHIẾU EEIR (K80) (EeirK80Sheet — K80TicketModal.tsx) + PHIẾU THU (K80) in liền 1 cuộn.
+//   EEIR Nhập tàu / Xuất tàu (không có K80) giữ khổ nửa A4 (PrintFrame).
 // ============================================================================
 
 // Khối thông tin CÔNG TY dùng chung cho mọi giấy tờ in (DEC-062)
@@ -63,8 +63,35 @@ const PrintFrame: React.FC<{ state: DepotState; title: string; number: string; o
   </section>
 );
 
-const InfoGrid: React.FC<{ rows: [string, React.ReactNode, boolean?][] }> = ({ rows }) => (
-  <dl className="mt-3 grid grid-cols-[140px_1fr] gap-x-3 gap-y-1">
+// Khung PHIẾU THU (K80) — cùng khổ, cùng kiểu chữ với PHIẾU EEIR (K80) (DEC-161): in nhiệt 80mm, trả chứng từ in liền 2 phiếu
+const K80Frame: React.FC<{ state: DepotState; title: string; number: string; operation: string; reprintNo?: number; children: React.ReactNode }> = ({
+  state,
+  title,
+  number,
+  operation,
+  reprintNo,
+  children,
+}) => {
+  const c = state.companyProfile;
+  return (
+    <section className="k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white p-3 font-mono text-[11px] leading-snug text-ink">
+      <div className="border-b-2 border-slate-800 pb-2 text-center">
+        <p className="text-xs font-black uppercase">{c.name}</p>
+        {c.address && <p className="text-[10px]">{c.address}</p>}
+        {(c.phone || c.email) && <p className="text-[10px]">{[c.phone && `ĐT: ${c.phone}`, c.email].filter(Boolean).join(' • ')}</p>}
+        {c.taxCode && <p className="text-[10px]">MST: {c.taxCode}</p>}
+        <p className="mt-1.5 text-sm font-black tracking-wide">{title}</p>
+        <p className="text-xs font-bold">Số: {number}</p>
+        <p className="mt-1 inline-block bg-navy-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {operation}</p>
+        {reprintNo && reprintNo > 1 && <p className="mt-1 border-2 border-rose-600 py-0.5 text-[11px] font-black text-rose-600">BẢN IN LẠI — LẦN {reprintNo}</p>}
+      </div>
+      {children}
+    </section>
+  );
+};
+
+const InfoGrid: React.FC<{ rows: [string, React.ReactNode, boolean?][]; narrow?: boolean }> = ({ rows, narrow }) => (
+  <dl className={`mt-3 grid ${narrow ? 'grid-cols-[92px_1fr] gap-x-2 gap-y-0.5' : 'grid-cols-[140px_1fr] gap-x-3 gap-y-1'}`}>
     {rows.map(([label, value, mono]) => (
       <React.Fragment key={label}>
         <dt className="text-ink-muted">{label}</dt>
@@ -86,7 +113,7 @@ const PrintFooter: React.FC<{ note?: string }> = ({ note }) => (
 );
 
 // ---------------------------------------------------------------------------
-// PHIẾU THU — mẫu duy nhất (DEC-062, DEC-063): Văn phòng → Phiếu thu, Trả chứng từ, Hồ sơ container
+// PHIẾU THU (K80) — mẫu duy nhất (DEC-062, DEC-063, DEC-161): Văn phòng → Phiếu thu, Trả chứng từ, Hồ sơ container
 // ---------------------------------------------------------------------------
 export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentReceipt; printNo?: number }> = ({ state, receipt: r, printNo }) => {
   const opKey = receiptOperationOf(state, r);
@@ -99,18 +126,19 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
   const lines = master?.feeLines?.length ? master.feeLines : voucher?.feeLines || [];
   const hasQty = lines.some((l) => (l.quantity || 1) > 1);
   return (
-    <PrintFrame state={state} title={isPrepaid ? "PHIẾU THU TRẢ TRƯỚC (TTR)" : "PHIẾU THU"} number={r.receiptNo} operation={op} reprintNo={printNo}>
+    <K80Frame state={state} title={isPrepaid ? "PHIẾU THU TRẢ TRƯỚC (TTR)" : "PHIẾU THU"} number={r.receiptNo} operation={op} reprintNo={printNo}>
       {isPrepaid && master && (
         <div className="mt-2 border-4 border-double border-slate-900 px-3 py-2 text-center">
           <p className="text-[10px] font-bold uppercase tracking-wider">Phiếu thu trả trước — dùng trừ dần cho Hạ vỏ / Cấp vỏ</p>
-          <p className="font-mono text-lg font-black">{master.receiptCode}</p>
+          <p className="text-sm font-black">{master.receiptCode}</p>
           {/* Mã QR thật — Văn phòng quét bằng camera / súng quét khi khách thanh toán TTT */}
           <QrImage value={master.qrCode} size={88} className="mx-auto my-1" />
           <p className="text-[11px]">Mã QR trừ dần: <span className="font-mono font-bold">{master.qrCode}</span>{master.lotDescription ? ` • ${master.lotDescription}` : ''}</p>
-          <p className="mt-1 text-sm font-black">SỐ TIỀN NẠP TRƯỚC: <span className="font-mono text-base">{formatVnd(r.amount)}</span></p>
+          <p className="mt-1 text-xs font-black">SỐ TIỀN NẠP TRƯỚC: <span className="text-sm">{formatVnd(r.amount)}</span></p>
         </div>
       )}
       <InfoGrid
+        narrow
         rows={[
           ["Bên thanh toán", r.payerName],
           ...(isPrepaid ? [] : ([["Mã hồ sơ", r.dossierCode || r.masterReceiptCode, true], ["Số container", r.containerNo, true]] as [string, React.ReactNode, boolean][])),
@@ -146,61 +174,18 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
           <p>Truy cập: <span className="font-mono font-bold break-all">{invoicePortalUrl()}</span></p>
           <p>
             Mã bảo mật: <span className="font-mono text-sm font-black tracking-widest">{r.invoiceSecret}</span>
-            <span className="text-ink-muted"> (phân biệt chữ hoa / thường — không chia sẻ cho người khác)</span>
+            <span className="block text-ink-muted">(phân biệt chữ hoa / thường — không chia sẻ cho người khác)</span>
           </p>
         </div>
       )}
       <Signatures left="Người nộp tiền" right="Người thu tiền" rightName={receiptCollectorName(state, r)} />
       {state.companyProfile.bankAccount && <p className="mt-3 text-center text-[10px] text-ink-muted">TK ngân hàng: {state.companyProfile.bankAccount}</p>}
       <PrintFooter note={printNo ? `lần in thứ ${printNo}` : undefined} />
-    </PrintFrame>
+    </K80Frame>
   );
 };
 
-// ---------------------------------------------------------------------------
-// EEIR — PHIẾU GIAO NHẬN CONTAINER (DEC-072): thông tin Hạ vỏ / Cấp vỏ chi tiết gửi khách hàng kèm phiếu thu
-// ---------------------------------------------------------------------------
-export const EeirPrintSheet: React.FC<{ state: DepotState; ticket: K80InternalTicket }> = ({ state, ticket: t }) => {
-  const { gateIn, gateOut } = ticketContext(state, t);
-  const isOut = t.operationMode === 'CAP_VO';
-  const dossierCode = isOut ? t.outDossierCode || t.masterDossierCode : t.masterDossierCode;
-  const container = state.containers.find((c) => c.masterDossierCode === t.masterDossierCode);
-  const loc = state.locationHistory.filter((l) => l.masterDossierCode === t.masterDossierCode);
-  const location = isOut
-    ? loc.find((l) => l.actionType === 'GATE_OUT_CLEAR')?.fromLocation
-    : [...loc].reverse().find((l) => l.actionType === 'INITIAL_BLOCK')?.toLocation;
-  return (
-    <PrintFrame state={state} title="EEIR — PHIẾU GIAO NHẬN CONTAINER" number={dossierCode} operation={isOut ? 'CẤP VỎ' : 'HẠ VỎ'}>
-      <InfoGrid
-        rows={[
-          ['Số container', <span className="text-sm">{t.containerNo}</span>, true],
-          ['Size / Type', `${t.size} / ${t.type}`],
-          ['Hãng tàu', container?.shippingLineCode || gateIn?.shippingLineCode],
-          ['Khách hàng', isOut ? gateOut?.receiverRep : t.customerRep],
-          ...(isOut ? ([['Booking', gateOut?.bookingNo, true]] as [string, React.ReactNode, boolean][]) : ([['Số lệnh / chứng từ', gateIn?.orderDocNo, true]] as [string, React.ReactNode, boolean][])),
-          ['Số xe • SĐT lái xe', `${t.truckNo || '-'} • ${t.driverPhone || '-'}`],
-          [isOut ? 'Thời gian OUT' : 'Thời gian GATE IN', formatDateTime(isOut ? gateOut?.confirmedAt : gateIn?.gateInOkAt), true],
-          [isOut ? 'Vị trí lấy' : 'Vị trí hạ', location, true],
-          ['Thanh toán', t.paymentLabel],
-        ]}
-      />
-      {/* TÌNH TRẠNG VỎ do Giám định ghi nhận (DEC-076) — không in các bộ phận */}
-      <ConditionBox
-        condition={t.conditionClass}
-        stuffing={t.stuffingClass}
-        damage={t.damageRemarks}
-        cleaning={t.cleaningItems}
-        age={t.manufactureYear}
-        inspectedBy={gateIn?.fieldStaffName}
-        inspectedAt={gateIn?.fieldRecordedAt}
-      />
-      <Signatures left="Lái xe / Khách hàng" right={`Đại diện ${state.companyProfile.shortName || state.companyProfile.name}`} />
-      <PrintFooter />
-    </PrintFrame>
-  );
-};
-
-// Khối TÌNH TRẠNG VỎ do Giám định ghi nhận (DEC-076) — dùng chung mọi EEIR
+// Khối TÌNH TRẠNG VỎ do Giám định ghi nhận (DEC-076) — EEIR Nhập tàu / Xuất tàu
 const ConditionBox: React.FC<{
   condition?: string;
   stuffing?: string;

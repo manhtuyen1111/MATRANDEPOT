@@ -24,9 +24,9 @@ import { InspectorHaVoMobile } from '../src/features/inspector/InspectorHaVoMobi
 import { RepairTeamCatalog } from '../src/features/catalog/RepairTeamCatalog';
 import { UserRoleCatalog } from '../src/features/catalog/UserRoleCatalog';
 import { DocumentReturnWorkspace } from '../src/features/office/DocumentReturnWorkspace';
-import { K80TicketModal } from '../src/components/K80TicketModal';
+import { EeirK80Sheet, K80TicketModal } from '../src/components/K80TicketModal';
 import { CompanyCatalog } from '../src/features/catalog/CompanyCatalog';
-import { EeirPrintSheet, ReceiptPrintSheet, VesselEeirPrintSheet } from '../src/components/ReceiptPrint';
+import { ReceiptPrintSheet, VesselEeirPrintSheet } from '../src/components/ReceiptPrint';
 import { DetailDrawer, FeeLinesEditor, Pager } from '../src/components/shared';
 import { confirmGateInPaymentAndComplete, recordGateInFieldStep, toggleContainerHold, verifyGateInOfficeAndCreatePayment } from '../src/services/depotOperations';
 
@@ -305,26 +305,41 @@ describe('DEC-070: menu Vệ sinh không còn Nhập tàu; cont nhập tàu có 
   });
 });
 
-describe('DEC-072: in EEIR đồng bộ với phiếu thu', () => {
-  it('Hồ sơ có nút In EEIR (không còn "In hồ sơ" in trang trắng); EEIR cùng khung với phiếu thu: công ty, Số, TÁC NGHIỆP, chữ ký', () => {
+describe('DEC-161: Phiếu EEIR (K80) + Phiếu thu (K80); in hồ sơ container A4', () => {
+  const strip = (h: string) => h.replace(/<!-- -->/g, '');
+  it('Phiếu K80 = PHIẾU EEIR TÁC NGHIỆP (khổ k80-sheet); không còn EEIR A4 cho Hạ vỏ / Cấp vỏ', () => {
     const s = createInitialState();
     const t = s.k80Tickets[0];
     expect(t).toBeTruthy();
-    const strip = (h: string) => h.replace(/<!-- -->/g, '');
-    const dossier = strip(renderToString(<MasterDossierModal masterDossierCode={t.masterDossierCode} state={s} onClose={noop} onUpdateState={noop} />));
-    expect(dossier).toContain('In EEIR');
-    expect(dossier).not.toContain('In hồ sơ');
-    const eeir = strip(renderToString(<EeirPrintSheet state={s} ticket={t} />));
-    expect(eeir).toContain(s.companyProfile.name);
-    expect(eeir).toContain('EEIR — PHIẾU GIAO NHẬN CONTAINER');
-    expect(eeir).toContain(`Số: ${t.operationMode === 'CAP_VO' ? t.outDossierCode : t.masterDossierCode}`);
-    expect(eeir).toMatch(/TÁC NGHIỆP: (HẠ|CẤP) VỎ/);
+    const eeir = strip(renderToString(<EeirK80Sheet state={s} ticket={t} />));
+    expect(eeir).toContain('— PHIẾU EEIR TÁC NGHIỆP');
+    expect(eeir).toContain('k80-sheet');
     expect(eeir).toContain(t.containerNo);
-    expect(eeir).toContain('In lúc');
-    // DEC-076: EEIR ghi tình trạng vỏ của Giám định, không in các bộ phận; khổ A5 (print-sheet)
-    expect(eeir).toContain('Tình trạng vỏ (Giám định)');
-    expect(eeir).not.toContain('Bộ phận');
-    expect(eeir).toContain('print-sheet');
+    expect(eeir).toContain('LỘ TRÌNH');
+    expect(eeir).not.toContain('print-sheet');
+    const modal = strip(renderToString(<K80TicketModal ticket={t} state={s} onClose={noop} />));
+    expect(modal).toContain('In phiếu EEIR (K80)');
+  });
+  it('Phiếu thu in khổ K80 (cùng khung EEIR K80), giữ đủ thông tin: công ty, Số, tác nghiệp, chữ ký', () => {
+    const s = createDemoState();
+    const r = s.paymentReceipts[0];
+    expect(r).toBeTruthy();
+    const html = strip(renderToString(<ReceiptPrintSheet state={s} receipt={r} printNo={1} />));
+    expect(html).toContain('k80-sheet');
+    expect(html).not.toContain('print-sheet');
+    expect(html).toContain(s.companyProfile.name);
+    expect(html).toContain(`Số: ${r.receiptNo}`);
+    expect(html).toContain('Người thu tiền');
+    expect(html).toContain('In lúc');
+  });
+  it('Hồ sơ: nút In EEIR (K80) / + Phiếu thu (K80), Xem phiếu EEIR (K80), In hồ sơ container (A4)', () => {
+    const s = createInitialState();
+    const t = s.k80Tickets[0];
+    const dossier = strip(renderToString(<MasterDossierModal masterDossierCode={t.masterDossierCode} state={s} onClose={noop} onUpdateState={noop} onOpenK80Ticket={noop} />));
+    expect(dossier).toContain('In EEIR (K80)');
+    expect(dossier).toContain('Xem / in phiếu EEIR (K80)');
+    expect(dossier).toContain('In hồ sơ container (A4)');
+    expect(dossier).not.toContain('EEIR — PHIẾU GIAO NHẬN CONTAINER');
   });
 });
 

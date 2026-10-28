@@ -130,7 +130,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
       onUpdateState(next);
       const done = next.gateInOrders.find((o) => o.id === order.id);
       if (done?.status === 'GATE_IN_OK') {
-        setSuccess(`GATE IN OK — ${done.containerNo} (hồ sơ ${done.masterDossierCode}). Đã mở phiếu K80.`);
+        setSuccess(`GATE IN OK — ${done.containerNo} (hồ sơ ${done.masterDossierCode}). Đã mở phiếu EEIR (K80).`);
         openTicket(next, done.masterDossierCode);
       } else {
         setSuccess('Đã tạo yêu cầu chuyển khoản QR. Hồ sơ hoàn tất khi ngân hàng xác nhận đã nhận tiền.');
@@ -377,7 +377,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
     onUpdateState(next);
     const updated = next.gateOutOrders.find((o) => o.id === order.id)!;
     if (updated.status === 'PENDING_FORKLIFT') {
-      setSuccess(`Đã lập lệnh CẤP VỎ ${updated.gateOutCode} cho ${updated.containerNo} — phiếu K80 đã mở, chuyển Xe nâng.`);
+      setSuccess(`Đã lập lệnh CẤP VỎ ${updated.gateOutCode} cho ${updated.containerNo} — phiếu EEIR (K80) đã mở, chuyển Xe nâng.`);
       openTicket(next, updated.gateOutCode);
       setResumeOrderId('');
     } else {
