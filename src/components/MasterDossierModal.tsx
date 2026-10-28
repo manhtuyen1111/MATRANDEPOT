@@ -10,7 +10,7 @@ import { formatDateTime } from "../services/datetime";
 import { CompanyHeader, PrintPreviewModal } from "./ReceiptPrint";
 import { exportPdf, printNow } from "./printNow";
 import { CustomerSlipK80, EeirK80Sheet, slipPrintCount, VesselEeirPrintSheet } from './K80TicketModal';
-import { findVesselItemByCode } from '../services/vessel';
+import { findVesselItemByCode, vesselListProgress } from '../services/vessel';
 import { linkCls, formatViTime, PhotoZoom } from './shared';
 
 interface Props {
@@ -502,7 +502,9 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                 {item.status === 'DONE' ? <p>Đã OUT khỏi bãi • xe <strong>{item.truckNo}</strong></p> : <p className="text-ink-muted">Chưa xuất.</p>}
               </Step>
               <Step no={next()} title="Văn phòng — Duyệt xuất tàu" confirm={{ done: list.status === 'APPROVED', by: list.approvedBy, at: list.approvedAt, pending: 'Chờ xuất hết danh sách' }}>
-                <p>Duyệt cả danh sách tàu <strong>{list.vesselName}</strong> khi đã xuất hết. Không thu phí, không phiếu EEIR (K80).</p>
+                {/* DEC-169: nội dung duyệt xuất tàu + tiến độ thực tế (cont đã xuất / tổng danh sách) */}
+                <p>Xác nhận hoàn thành danh sách xuất tàu <strong>{list.vesselName}</strong></p>
+                <p>Tiến độ thực tế : <strong className="font-mono">{vesselListProgress(list).done}/{vesselListProgress(list).total}</strong></p>
               </Step>
             </React.Fragment>
           ))}
@@ -648,15 +650,20 @@ const DossierPrintBar: React.FC<{
       {vessel.map((v) => {
         const op = v.list.mode === 'NHAP_TAU' ? 'NHẬP TÀU' : 'XUẤT TÀU';
         const ready = vesselReady(v);
+        // DEC-168: cont xuất tàu nhưng không xuất được (Không kịp) → mộc đỏ KHÔNG XUẤT TÀU, không mở phiếu
+        const notExported = v.list.mode === 'XUAT_TAU' && v.item.status === 'SKIPPED';
         return (
           <div key={v.item.id} className="flex flex-wrap items-center justify-end gap-2">
             <span className="mr-auto font-semibold text-ink">
-              EEIR (K80) {op} — <span className="font-mono">{v.item.dossierCode}</span> • tàu {v.list.vesselName}
+              {op} — <span className="font-mono">{v.item.dossierCode}</span> • tàu {v.list.vesselName}
             </span>
+            {notExported && (
+              <span className="-rotate-6 rounded border-2 border-rose-600 px-2 py-0.5 text-xs font-extrabold tracking-wider text-rose-600">KHÔNG XUẤT TÀU</span>
+            )}
             <button
               type="button"
               disabled={!ready}
-              title={ready ? '' : v.list.mode === 'NHAP_TAU' ? 'Chờ Giám định xác nhận cont' : 'Chờ cont xuất tàu'}
+              title={ready ? '' : v.list.mode === 'NHAP_TAU' ? 'Chờ Giám định xác nhận cont' : 'Cont không xuất tàu'}
               onClick={() => setView({ kind: 'vessel', id: v.item.id })}
               className={`${btn} border border-line-strong text-ink hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-40`}
             >
@@ -711,7 +718,7 @@ const DossierPrintBar: React.FC<{
       )}
       {vesselHit && (
         <PrintPreviewModal
-          title={`EEIR (K80) ${vesselHit.list.mode === 'NHAP_TAU' ? 'NHẬP TÀU' : 'XUẤT TÀU'} — ${vesselHit.item.dossierCode}`}
+          title={`${docName(vesselHit.list.mode)} — ${vesselHit.item.dossierCode}`}
           onClose={close}
           actions={
             <button type="button" onClick={() => setTimeout(printNow, 50)} className={`${btn} bg-navy-900 text-white hover:bg-navy-700`}>
