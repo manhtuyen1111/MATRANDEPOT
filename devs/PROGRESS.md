@@ -16,8 +16,8 @@ Kiểm thử mới nhất (2026-10-27): `npm test` **163 pass, 3 bỏ qua** (tes
 | 1a | ~~Sửa tên hạng mục vệ sinh trong dữ liệu test~~ — đã sửa 2026-10-27 (người dùng đồng ý) | — |
 | 1b | ~~Q-042~~ — đã chốt: W-SURVEY không cấp vỏ (DEC-150) | — |
 | 1c | ~~Tên khách test / phí rác cont 40~~ — đóng 2026-10-28: danh mục do người dùng tự tạo, **agent không hỏi lại nội dung danh mục** | — |
-| 2 | **OPEN-003: gửi danh mục TRẠNG THÁI chính thức** (container, Hạ vỏ, Cấp vỏ, vệ sinh, sửa chữa, booking, thanh toán). Block: Admin tự cấu hình (đã chốt DEC-050) | **Chặn P4-01 Database** |
-| 3 | OPEN-008: quy trình hoàn tiền / hủy lệnh cấp đã thu phí | Hiện đang chặn hủy |
+| 2 | ~~OPEN-003~~ — chốt 2026-10-28: **giữ bộ trạng thái hiện tại** (`docs/STATUS_CATALOG.md`), cần thì bổ sung sau | — |
+| 3 | ~~OPEN-008~~ — chốt 2026-10-28: **giữ chặn hủy** lệnh đã thu phí, cần thì bổ sung sau | — |
 | 4 | OPEN-004 còn lại: ai được hủy Hạ vỏ / Cấp vỏ đã hoàn tất; Quản lý có làm thay Báo giá / Sửa chữa không | Quyền hủy, ngoại lệ |
 | 5 | Điểm A.5 đã xác nhận 2026-10-24 (a, b, d, e đúng; f đã làm — DEC-081). **Còn (c)**: sắp xếp danh sách tàu theo size trước (20 → 40) rồi số cont A→Z — đúng chưa? | Đổi được nhanh nếu bạn muốn khác |
 | 6 | **Nền tảng database (Q-040)**: đề xuất **Supabase vùng Singapore, gói Pro + PITR, 3 môi trường dev / staging / production**; hỏi pháp chế có bắt buộc lưu dữ liệu tại Việt Nam không (nếu có → Postgres trên cloud VN, lược đồ dùng lại được). **Sao lưu (Q-039)**: PITR 7 ngày + dump mã hóa hằng đêm ra kho ngoài + diễn tập khôi phục mỗi quý. Còn Q-037 (ảnh), Q-038 (số người dùng cùng lúc) | ⏸ **Tạm hoãn theo quyết định 2026-10-25** — trả lời khi muốn mở GĐ 4. Chi tiết `docs/DATABASE_PLATFORM_ADVICE.md` |
@@ -323,7 +323,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 1. **Test tiếp** theo Bước 7 `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`. Thử lại 4 điểm vừa sửa; xem tốc độ mở app (ghi số giây + wifi / 4G + máy tính / điện thoại nếu vẫn chậm).
 2. Lỗi / góp ý: nút **Góp ý** trong app (Admin xem Báo cáo → Góp ý) hoặc chụp màn hình → mở phiên mới, gửi Claude theo dạng: *màn hình — làm gì — thấy gì — mong muốn*.
 3. **Song song:** điền `docs/IMPORT_TON_VO_BAN_DAU.md` (Q-044) + gửi 1 file Excel tồn vỏ mẫu.
-4. Còn chờ quyết: Q-032 (ngân hàng — dự định SePay, quyết sau test), OPEN-008 (hoàn tiền — giữ chặn).
+4. Còn chờ quyết: Q-032 (ngân hàng — dự định SePay, quyết sau test). OPEN-003 / OPEN-008 đã chốt giữ hiện trạng (2026-10-28).
 5. Khi test xong: Claude viết script xóa dữ liệu test + công cụ import tồn đầu → import thử trên `matran-test` → tạo project production → chạy thật.
 
 **LƯU Ý KHI LÀM (bạn):**
