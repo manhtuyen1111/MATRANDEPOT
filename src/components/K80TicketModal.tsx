@@ -40,7 +40,7 @@ export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotSt
   const company = state?.companyProfile;
   return (
     // KHỔ GIẤY IN NHIỆT K80 (80mm)
-    <div className={`${printable ? 'print-area ' : ''}k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white p-3 font-mono text-[11px] leading-snug text-ink`}>
+    <div className={`${printable ? 'print-area ' : ''}k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white px-2 py-2 font-mono text-[11px] leading-snug text-ink`}>
       {/* 1. THÔNG TIN CHUNG */}
       <div className="border-b-2 border-slate-800 pb-2">
         {/* Thông tin depot — cùng mẫu đầu Phiếu thu (K80) */}

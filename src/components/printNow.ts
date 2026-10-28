@@ -9,16 +9,17 @@ function sizeK80Pages(): void {
   document.getElementById(STYLE_ID)?.remove();
   // Lệnh in đang chạy: lớp in riêng (PrintPortal) nếu có, không thì vùng in đang hiện
   const root = document.querySelector('.print-job') || document.querySelector('.print-area');
-  const sheets = root ? Array.from(root.querySelectorAll<HTMLElement>('.k80-sheet')) : [];
+  // Vùng in có thể CHÍNH LÀ phiếu (cửa sổ phiếu tác nghiệp) hoặc chứa nhiều phiếu (Trả chứng từ, hồ sơ)
+  const sheets = !root ? [] : root.matches('.k80-sheet') ? [root as HTMLElement] : Array.from(root.querySelectorAll<HTMLElement>('.k80-sheet'));
   if (!sheets.length) return;
   const probe = document.createElement('div');
-  probe.style.cssText = 'position:fixed;left:-10000px;top:0;visibility:hidden;width:72mm';
+  probe.style.cssText = 'position:fixed;left:-10000px;top:0;visibility:hidden;width:80mm';
   document.body.appendChild(probe);
   const rules = sheets.map((sheet, i) => {
     const clone = sheet.cloneNode(true) as HTMLElement;
-    clone.style.cssText = 'width:72mm;max-width:none;margin:0'; // giữ khung nét đứt + lề như bản xem
+    clone.style.cssText = 'max-width:none;margin:0'; // bề rộng theo --k80-width; giữ khung nét đứt + lề như bản xem
     probe.appendChild(clone);
-    const mm = Math.ceil(clone.scrollHeight * PX_TO_MM) + 4;
+    const mm = Math.ceil(clone.offsetHeight * PX_TO_MM) + 1; // vừa đủ phiếu (+1mm an toàn) → không thừa giấy
     probe.removeChild(clone);
     sheet.style.setProperty('page', `k80p${i}`);
     return `@page k80p${i} { size: 80mm ${mm}mm; margin: 0; }`;

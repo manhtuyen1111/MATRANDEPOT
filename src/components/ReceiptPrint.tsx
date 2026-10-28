@@ -48,7 +48,7 @@ const K80Frame: React.FC<{ state: DepotState; title: string; number: string; ope
 }) => {
   const c = state.companyProfile;
   return (
-    <section className="k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white p-3 font-mono text-[11px] leading-snug text-ink">
+    <section className="k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white px-2 py-2 font-mono text-[11px] leading-snug text-ink">
       <div className="border-b-2 border-slate-800 pb-2 text-center">
         <p className="text-xs font-black uppercase">{c.name}</p>
         {c.address && <p className="text-[10px]">{c.address}</p>}

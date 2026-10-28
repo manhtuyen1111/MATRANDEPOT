@@ -265,7 +265,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 8. Việc lớn tiếp theo: trả lời **Q-044** import tồn vỏ (`docs/IMPORT_TON_VO_BAN_DAU.md`) + chốt gói Supabase Pro / project `matran-prod` (`docs/VAN_HANH_VA_PHAT_TRIEN.md`).
 
 **LƯU Ý IN ẤN (DEC-161 — đã chốt 2026-10-28, agent đọc trước khi sửa giấy tờ):**
-- Giấy tờ Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu / Phiếu thu đều **khổ K80** (`k80-sheet`, 72mm). **Không còn giấy tờ nửa A4.** Chỉ HỒ SƠ CONTAINER in A4 (`dossier-a4`).
+- Giấy tờ Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu / Phiếu thu đều **khổ K80** (`k80-sheet`, khung **76mm = 95% giấy**, biến CSS `--k80-width` — máy in cắt chữ mép phải thì hạ về 72mm). Giấy cắt **vừa đủ phiếu** (+1mm); 2 phiếu in liền, không khoảng trống. **Không còn giấy tờ nửa A4.** Chỉ HỒ SƠ CONTAINER in A4 (`dossier-a4`).
 - Phiếu tác nghiệp = **Phiếu EEIR (K80)** (`EeirK80Sheet`): đầu = thông tin depot (như Phiếu thu) → hàng: trái "PHIẾU EEIR TÁC NGHIỆP / Số / TÁC NGHIỆP", phải **QR tác nghiệp 60px có khung** → thông tin cont → LỘ TRÌNH → **VĂN PHÒNG XÁC NHẬN** (người lập + giờ). QR = `QR-<mã hồ sơ>` (DEC-057, không đổi).
 - Phiếu thu (K80): ô Yêu cầu xuất hóa đơn có **QR link trang xuất hóa đơn 60px có khung** góc phải (chỉ link, **không** chứa mã bảo mật).
 - Mọi lệnh in gọi **`printNow()`** (đo chiều dài phiếu → khổ 80mm × dài, mỗi phiếu 1 trang để máy cắt) — **cấm `window.print()`**. Bản in = bản xem (giữ khung nét đứt).

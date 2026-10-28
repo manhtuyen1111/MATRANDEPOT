@@ -61,11 +61,15 @@
 }
 
 /* DEC-161: PHIẾU EEIR (K80) / PHIẾU THU (K80) / EEIR NHẬP TÀU – XUẤT TÀU (K80) — in nhiệt cuộn 80mm.
-   Bản in GIỐNG HỆT bản xem trên màn hình: cùng bề rộng 72mm (vùng in của máy K80), giữ khung nét đứt.
-   printNow() đặt khổ giấy riêng 80mm × chiều dài từng phiếu → xem trước đúng dải K80; mỗi phiếu 1 trang → máy in cắt giữa. */
+   Bản in GIỐNG HỆT bản xem trên màn hình, giữ khung nét đứt. Khung = 95% bề rộng giấy (76mm / 80mm — người dùng 2026-10-29).
+   printNow() đặt khổ giấy riêng 80mm × chiều dài VỪA ĐỦ từng phiếu (không thừa giấy); mỗi phiếu 1 trang → máy in cắt giữa,
+   2 phiếu in liền nhau không khoảng trống. Máy in cắt chữ mép phải → giảm --k80-width về 72mm. */
+:root {
+  --k80-width: 76mm;
+}
 .k80-sheet {
   box-sizing: border-box;
-  width: 72mm;
+  width: var(--k80-width);
   max-width: 100%;
   overflow-wrap: anywhere;
 }
@@ -83,10 +87,10 @@
   }
   .k80-sheet + .k80-sheet {
     break-before: page;
+    margin-top: 0 !important; /* in liền: không khoảng trống giữa 2 phiếu */
   }
   .print-area:has(.k80-sheet) {
     width: 80mm;
-    padding-top: 1mm;
   }
 }
 
