@@ -1,7 +1,7 @@
 import React from 'react';
 import { recordReceiptPrint } from '../services/api';
 import { createPortal } from 'react-dom';
-import { Printer } from 'lucide-react';
+import { Eye, Printer, X } from 'lucide-react';
 import { CompanyProfile, PAYMENT_METHOD_LABELS, PaymentReceipt, RECEIPT_OPERATION_LABELS, VesselList, VesselListItem } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
 import { receiptCollectorName, receiptOperationOf } from '../services/payments';
@@ -10,12 +10,13 @@ import { formatDateTime } from '../services/datetime';
 import { secondaryBtn } from './shared';
 import { QrImage } from './Qr';
 import { invoicePortalUrl } from '../services/invoice';
+import { printNow } from './printNow';
 
 // ============================================================================
 // GIẤY TỜ IN DÙNG CHUNG (DEC-062, DEC-063, DEC-072)
 //   Mọi giấy tờ cùng 1 khung: đầu CÔNG TY → TIÊU ĐỀ + Số → TÁC NGHIỆP → thông tin → bảng → chữ ký → "In lúc".
 //   Hạ vỏ / Cấp vỏ (DEC-161): PHIẾU EEIR (K80) (EeirK80Sheet — K80TicketModal.tsx) + PHIẾU THU (K80) in liền 1 cuộn.
-//   EEIR Nhập tàu / Xuất tàu (không có K80) giữ khổ nửa A4 (PrintFrame).
+//   EEIR Nhập tàu / Xuất tàu cũng khổ K80 (K80Frame). Quy trình: Xem phiếu → trong cửa sổ xem có nút In (PrintPreviewModal).
 // ============================================================================
 
 // Khối thông tin CÔNG TY dùng chung cho mọi giấy tờ in (DEC-062)
@@ -36,34 +37,7 @@ export const CompanyHeader: React.FC<{ company: CompanyProfile; title: string; s
   </div>
 );
 
-// Khung giấy tờ: tiêu đề, số, tác nghiệp, nhãn in lại
-const PrintFrame: React.FC<{ state: DepotState; title: string; number: string; operation: string; reprintNo?: number; children: React.ReactNode }> = ({
-  state,
-  title,
-  number,
-  operation,
-  reprintNo,
-  children,
-}) => (
-  <section className="print-sheet relative break-inside-avoid border-2 border-slate-800 bg-white p-4 text-xs text-ink">
-    {reprintNo && reprintNo > 1 && (
-      <span className="absolute right-3 top-3 rounded border-2 border-rose-600 px-2 py-0.5 text-[11px] font-black text-rose-600">BẢN IN LẠI — LẦN {reprintNo}</span>
-    )}
-    <CompanyHeader
-      company={state.companyProfile}
-      title={title}
-      subtitle={
-        <>
-          <p className="font-mono text-sm font-bold">Số: {number}</p>
-          <p className="mt-1 inline-block bg-navy-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {operation}</p>
-        </>
-      }
-    />
-    {children}
-  </section>
-);
-
-// Khung PHIẾU THU (K80) — cùng khổ, cùng kiểu chữ với PHIẾU EEIR (K80) (DEC-161): in nhiệt 80mm, trả chứng từ in liền 2 phiếu
+// Khung giấy tờ K80 (DEC-161) — PHIẾU THU (K80) và EEIR Nhập / Xuất tàu (K80); cùng khổ, cùng kiểu chữ với PHIẾU EEIR (K80)
 const K80Frame: React.FC<{ state: DepotState; title: string; number: string; operation: string; reprintNo?: number; children: React.ReactNode }> = ({
   state,
   title,
@@ -195,21 +169,21 @@ const ConditionBox: React.FC<{
   inspectedBy?: string;
   inspectedAt?: string;
 }> = ({ condition, stuffing, damage, cleaning, age, inspectedBy, inspectedAt }) => (
-  <div className="mt-2 border border-line-strong p-2">
+  <div className="mt-2 border border-slate-800 p-1.5">
     <p className="mb-1 font-black uppercase">Tình trạng vỏ (Giám định)</p>
-    <dl className="grid grid-cols-[110px_1fr_70px_1fr] gap-x-2 gap-y-0.5">
+    <dl className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-0.5">
       <dt className="text-ink-muted">Trạng thái</dt><dd className="font-black">{condition || '-'}</dd>
       <dt className="text-ink-muted">Đóng hàng</dt><dd className="font-semibold">{stuffing || '-'}</dd>
-      <dt className="text-ink-muted">Hư hỏng</dt><dd className="col-span-3 font-semibold">{damage?.length ? damage.join(', ') : 'Không'}</dd>
+      <dt className="text-ink-muted">Hư hỏng</dt><dd className="font-semibold">{damage?.length ? damage.join(', ') : 'Không'}</dd>
       <dt className="text-ink-muted">Vệ sinh</dt><dd className="font-semibold">{(cleaning || []).join(' + ') || '-'}</dd>
       <dt className="text-ink-muted">AGE</dt><dd className="font-semibold">{age || '-'}</dd>
-      <dt className="text-ink-muted">Giám định</dt><dd className="col-span-3 font-semibold">{inspectedBy || '-'} • {formatDateTime(inspectedAt)}</dd>
+      <dt className="text-ink-muted">Giám định</dt><dd className="font-semibold">{inspectedBy || '-'} • {formatDateTime(inspectedAt)}</dd>
     </dl>
   </div>
 );
 
 // ---------------------------------------------------------------------------
-// EEIR NHẬP TÀU / XUẤT TÀU (DEC-081): cùng khung EEIR Hạ vỏ / Cấp vỏ; dữ liệu từ danh sách tàu + lượt lưu bãi
+// EEIR NHẬP TÀU / XUẤT TÀU (DEC-081, DEC-161): khổ K80; dữ liệu từ danh sách tàu + lượt lưu bãi
 // ---------------------------------------------------------------------------
 export const VesselEeirPrintSheet: React.FC<{ state: DepotState; list: VesselList; item: VesselListItem }> = ({ state, list, item }) => {
   const isImport = list.mode === 'NHAP_TAU';
@@ -236,8 +210,9 @@ export const VesselEeirPrintSheet: React.FC<{ state: DepotState; list: VesselLis
         inspectedAt: origin?.fieldRecordedAt || originVessel?.inspectedAt,
       };
   return (
-    <PrintFrame state={state} title="EEIR — PHIẾU GIAO NHẬN CONTAINER" number={item.dossierCode || '-'} operation={isImport ? 'NHẬP TÀU' : 'XUẤT TÀU'}>
+    <K80Frame state={state} title="EEIR — PHIẾU GIAO NHẬN CONTAINER" number={item.dossierCode || '-'} operation={isImport ? 'NHẬP TÀU' : 'XUẤT TÀU'}>
       <InfoGrid
+        narrow
         rows={[
           ['Số container', <span className="text-sm">{item.containerNo}</span>, true],
           ['Size / Type', `${item.size} / ${item.type}`],
@@ -254,7 +229,7 @@ export const VesselEeirPrintSheet: React.FC<{ state: DepotState; list: VesselLis
       <ConditionBox {...cond} />
       <Signatures left="Lái xe" right={`Đại diện ${state.companyProfile.shortName || state.companyProfile.name}`} />
       <PrintFooter />
-    </PrintFrame>
+    </K80Frame>
   );
 };
 
@@ -277,7 +252,7 @@ export const PrintReceiptButton: React.FC<{
     try {
       onUpdateState(recordReceiptPrint(state, { receiptNo: receipt.receiptNo }));
       setConfirmReprint(false);
-      setTimeout(() => window.print(), 100);
+      setTimeout(printNow, 100);
     } catch (e) {
       onError?.(e instanceof Error ? e.message : 'Không in được phiếu thu');
     }
@@ -300,5 +275,66 @@ export const PrintReceiptButton: React.FC<{
       </button>
       <span className={`text-[11px] font-semibold ${printed > 0 ? 'text-rose-700' : 'text-ink-muted'}`}>Đã in: {printed} lần</span>
     </span>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// XEM PHIẾU (DEC-161): bấm "Xem phiếu" → cửa sổ hiện phiếu đúng khổ K80 → nút In ở trong cửa sổ.
+// Bản in đi qua PrintPortal (children in) — phiếu trên màn hình chỉ để xem.
+// ---------------------------------------------------------------------------
+export const PrintPreviewModal: React.FC<{ title: string; onClose: () => void; actions: React.ReactNode; children: React.ReactNode; print?: React.ReactNode }> = ({
+  title,
+  onClose,
+  actions,
+  children,
+  print,
+}) => {
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-navy-900/60 p-4" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
+      <div className="my-4 w-full max-w-[760px] rounded-2xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="no-print mb-3 flex flex-wrap items-center gap-2">
+          <h2 className="mr-auto text-sm font-bold text-ink">{title}</h2>
+          {actions}
+          <button type="button" onClick={onClose} aria-label="Đóng" className={secondaryBtn}><X className="h-3.5 w-3.5" /></button>
+        </div>
+        <div className="flex flex-wrap items-start justify-center gap-4 rounded-xl bg-canvas p-4">{children}</div>
+        {print && <PrintPortal>{print}</PrintPortal>}
+      </div>
+    </div>
+  );
+};
+
+// Nút XEM PHIẾU THU (K80) → cửa sổ xem, trong đó có nút In / In lại (DEC-063 đếm số lần in)
+export const ReceiptViewButton: React.FC<{
+  state: DepotState;
+  receipt: PaymentReceipt;
+  onUpdateState: (next: DepotState) => void;
+  onError?: (msg: string) => void;
+}> = ({ state, receipt, onUpdateState, onError }) => {
+  const [open, setOpen] = React.useState(false);
+  const close = React.useCallback(() => setOpen(false), []);
+  const printed = receipt.printLog?.length || 0;
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className={secondaryBtn}>
+        <Eye className="h-3.5 w-3.5" />
+        PHIẾU THU
+      </button>
+      {open && (
+        <PrintPreviewModal
+          title={`Phiếu thu (K80) — ${receipt.receiptNo}`}
+          onClose={close}
+          actions={<PrintReceiptButton state={state} receipt={receipt} onUpdateState={onUpdateState} onError={onError} />}
+          print={<ReceiptPrintSheet state={state} receipt={receipt} printNo={printed || 1} />}
+        >
+          <ReceiptPrintSheet state={state} receipt={receipt} printNo={printed + 1} />
+        </PrintPreviewModal>
+      )}
+    </>
   );
 };

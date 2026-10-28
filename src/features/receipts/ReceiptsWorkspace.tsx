@@ -17,7 +17,7 @@ import { useReportState } from '../../components/useReportState';
 import { can } from '../../services/permissions';
 import { INVOICE_STATUS_LABELS, invoicePortalUrl, prepaidInvoiceView, PrepaidInvoiceView, receiptInvoiceLabel, receiptInvoiceStatus } from '../../services/invoice';
 import type { InvoiceStatus, PaymentReceipt } from '../../types/depot';
-import { PrintPortal, PrintReceiptButton, ReceiptPrintSheet } from '../../components/ReceiptPrint';
+import { ReceiptViewButton } from '../../components/ReceiptPrint';
 import { quickRange, fileStamp } from '../../services/datetime';
 import { linkCls,
   DateRangeFilter,
@@ -341,16 +341,10 @@ export const ReceiptsWorkspace: React.FC<{
               title={selected.receipt ? `Phiếu thu ${selected.receipt.receiptNo}` : 'Yêu cầu thanh toán (chưa phát hành phiếu thu)'}
               actions={
                 selected.receipt && (
-                  <PrintReceiptButton state={state} receipt={selected.receipt} onUpdateState={onUpdateState} onError={setError} />
+                  <ReceiptViewButton state={state} receipt={selected.receipt} onUpdateState={onUpdateState} onError={setError} />
                 )
               }
             >
-              {/* Mẫu in thống nhất (DEC-062) — chỉ hiện khi in */}
-              {selected.receipt && (
-                <PrintPortal>
-                  <ReceiptPrintSheet state={state} receipt={selected.receipt} printNo={selected.receipt.printLog?.length || 1} />
-                </PrintPortal>
-              )}
               {selected.receipt && (selected.receipt.printLog?.length || 0) > 0 && (
                 <div className="mb-3 rounded-md border border-line px-3 py-2 text-[11px]">
                   <span className="font-bold text-ink">Lịch sử in ({selected.receipt.printLog!.length} lần)</span>

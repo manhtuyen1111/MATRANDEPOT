@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock, FileText, Printer, QrCode, ReceiptText, X } from 'lucide-react';
+import { CheckCircle2, Clock, Eye, FileText, Printer, QrCode, ReceiptText, X } from 'lucide-react';
 import { ContainerStatus, K80InternalTicket, PaymentVoucher, RECEIPT_OPERATION_LABELS, VesselList, VesselListItem } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
 import { formatLocation } from '../services/core';
@@ -7,7 +7,8 @@ import { paymentLabelOf, receiptOperationOf } from '../services/payments';
 import { documentPackOf, isTicketClosed } from "../services/driverRoute";
 import { recordReceiptPrint } from "../services/api";
 import { formatDateTime } from "../services/datetime";
-import { CompanyHeader, PrintPortal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
+import { CompanyHeader, PrintPortal, PrintPreviewModal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
+import { printNow } from "./printNow";
 import { EeirK80Sheet } from './K80TicketModal';
 import { findVesselItemByCode } from '../services/vessel';
 import { linkCls, formatViTime, PhotoZoom } from './shared';
@@ -536,12 +537,12 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
             type="button"
             onClick={() => {
               setPrintDossier(true);
-              setTimeout(() => window.print(), 150);
+              setTimeout(printNow, 150);
             }}
             className="inline-flex items-center gap-1.5 rounded-md bg-navy-900 px-3 py-2 text-xs font-semibold text-white hover:bg-navy-700"
           >
             <FileText className="h-4 w-4" />
-            In hồ sơ container (A4)
+            HỒ SƠ CONTAINER
           </button>
         </footer>
         {printDossier && (
@@ -559,27 +560,24 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
 };
 
 // ---------------------------------------------------------------------------
-// IN từ hồ sơ (DEC-072, DEC-161): Hạ vỏ / Cấp vỏ = Phiếu EEIR (K80) (+ Phiếu thu (K80)); Nhập / Xuất tàu = EEIR nửa A4; in kèm phiếu thu thì ghi nhận số lần in (DEC-063)
+// PHIẾU từ hồ sơ (DEC-072, DEC-161): bấm "Xem phiếu" → cửa sổ xem đúng khổ K80 → nút In trong cửa sổ.
+//   Hạ vỏ / Cấp vỏ = Phiếu EEIR (K80) (+ Phiếu thu (K80) — in kèm thì ghi nhận số lần in, DEC-063); Nhập / Xuất tàu = EEIR (K80)
 // ---------------------------------------------------------------------------
 const DossierPrintBar: React.FC<{
   state: DepotState;
   tickets: K80InternalTicket[];
   onUpdateState?: (next: DepotState) => void;
-  // DEC-081: EEIR Nhập tàu / Xuất tàu (không có K80)
+  // DEC-081: EEIR Nhập tàu / Xuất tàu (không có phiếu tác nghiệp K80)
   vessel?: { list: VesselList; item: VesselListItem }[];
 }> = ({ state, tickets, onUpdateState, vessel = [] }) => {
-  const [job, setJob] = React.useState<{ ticketCode: string; withReceipts: boolean } | null>(null);
-  const [vesselJob, setVesselJob] = React.useState<string | null>(null);
-  const [confirmCode, setConfirmCode] = React.useState<string | null>(null);
+  const [view, setView] = React.useState<{ kind: 'ticket' | 'vessel'; id: string } | null>(null);
+  const [withReceipts, setWithReceipts] = React.useState(false);
+  const [confirmReprint, setConfirmReprint] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  // In xong thì gỡ lớp in để không chặn giấy tờ khác (VD phiếu K80)
-  React.useEffect(() => {
-    const clear = () => {
-      setJob(null);
-      setVesselJob(null);
-    };
-    window.addEventListener("afterprint", clear);
-    return () => window.removeEventListener("afterprint", clear);
+  const close = React.useCallback(() => {
+    setView(null);
+    setConfirmReprint(false);
+    setError(null);
   }, []);
   // Mỗi tác nghiệp lấy phiếu K80 mới nhất (EEIR theo lượt Hạ vỏ / từng lệnh Cấp vỏ)
   const seen = new Set<string>();
@@ -593,21 +591,15 @@ const DossierPrintBar: React.FC<{
     .map((t) => documentPackOf(state, t));
   if (packs.length === 0 && vessel.length === 0) return null;
 
-  // EEIR tàu: Nhập tàu in được từ khi Giám định xác nhận; Xuất tàu khi cont đã OUT
+  // EEIR tàu: Nhập tàu xem được từ khi Giám định xác nhận; Xuất tàu khi cont đã OUT
   const vesselReady = (v: { list: VesselList; item: VesselListItem }) => (v.list.mode === 'NHAP_TAU' ? v.item.status !== 'PENDING' : v.item.status === 'DONE');
-  const printVessel = (itemId: string) => {
-    setError(null);
-    setJob(null);
-    setVesselJob(itemId);
-    setTimeout(() => window.print(), 150);
-  };
-  const vesselJobHit = vesselJob ? vessel.find((v) => v.item.id === vesselJob) : undefined;
+  const pack = view?.kind === 'ticket' ? packs.find((p) => p.ticket.ticketCode === view.id) : undefined;
+  const vesselHit = view?.kind === 'vessel' ? vessel.find((v) => v.item.id === view.id) : undefined;
 
-  const print = (ticketCode: string, withReceipts: boolean) => {
+  const print = (receipts: boolean) => {
     setError(null);
-    setConfirmCode(null);
-    if (withReceipts) {
-      const pack = packs.find((p) => p.ticket.ticketCode === ticketCode)!;
+    setConfirmReprint(false);
+    if (receipts && pack) {
       if (!onUpdateState) return setError('Màn này không ghi nhận được số lần in — in phiếu thu tại Văn phòng → Phiếu thu.');
       try {
         let next = state;
@@ -617,46 +609,25 @@ const DossierPrintBar: React.FC<{
         return setError(err instanceof Error ? err.message : 'Không in được phiếu thu');
       }
     }
-    setVesselJob(null);
-    setJob({ ticketCode, withReceipts });
-    setTimeout(() => window.print(), 150);
+    setWithReceipts(receipts);
+    setTimeout(printNow, 150);
   };
 
-  const jobPack = job ? packs.find((p) => p.ticket.ticketCode === job.ticketCode) : undefined;
   const btn = 'inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold';
+  // Tên phiếu trên nút (IN HOA, thống nhất — người dùng 2026-10-28)
+  const docName = (mode: string) => ({ HA_VO: 'EEIR HẠ VỎ', CAP_VO: 'EEIR CẤP VỎ', NHAP_TAU: 'EEIR NHẬP TÀU', XUAT_TAU: 'EEIR XUẤT TÀU' } as Record<string, string>)[mode] || mode;
+  const printedBefore = pack ? pack.receipts.filter((r) => (r.printLog?.length || 0) > 0) : [];
   return (
     <div className="space-y-2 border-t border-line px-5 py-3 text-xs">
-      {error && <p className="rounded-md bg-rose-50 px-3 py-2 text-rose-800">{error}</p>}
       {packs.map((p) => {
         const op = p.ticket.operationMode === 'CAP_VO' ? 'CẤP VỎ' : 'HẠ VỎ';
-        const printedBefore = p.receipts.filter((r) => (r.printLog?.length || 0) > 0);
         return (
           <div key={p.ticket.ticketCode} className="flex flex-wrap items-center justify-end gap-2">
-            <span className="mr-auto font-semibold text-ink">Phiếu EEIR (K80) {op} — <span className="font-mono">{p.dossierCode}</span>{p.receipts.length > 0 && <> • {p.receipts.length} phiếu thu</>}</span>
-            {confirmCode === p.ticket.ticketCode ? (
-              <span className="inline-flex flex-wrap items-center gap-2 rounded-md border border-rose-300 bg-rose-50 px-2 py-1 text-[11px] text-rose-800">
-                {printedBefore.map((r) => `${r.receiptNo} đã in ${r.printLog!.length} lần (gần nhất ${formatDateTime(r.printLog![r.printLog!.length - 1].at)})`).join('; ')}. In lại?
-                <button type="button" onClick={() => print(p.ticket.ticketCode, true)} className="rounded bg-rose-600 px-2 py-1 font-bold text-white">In lại</button>
-                <button type="button" onClick={() => setConfirmCode(null)} className="rounded border border-line-strong bg-white px-2 py-1">Hủy</button>
-              </span>
-            ) : (
-              <>
-                <button type="button" onClick={() => print(p.ticket.ticketCode, false)} className={`${btn} border border-line-strong text-ink hover:bg-canvas`}>
-                  <Printer className="h-4 w-4" />
-                  In EEIR (K80) {op}
-                </button>
-                {p.receipts.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => (printedBefore.length ? setConfirmCode(p.ticket.ticketCode) : print(p.ticket.ticketCode, true))}
-                    className={`${btn} bg-navy-900 text-white hover:bg-navy-700`}
-                  >
-                    <Printer className="h-4 w-4" />
-                    In EEIR (K80) + Phiếu thu (K80)
-                  </button>
-                )}
-              </>
-            )}
+            <span className="mr-auto font-semibold text-ink">Phiếu EEIR (K80) {op} — <span className="font-mono">{p.dossierCode}</span>{p.receipts.length > 0 && <> • {p.receipts.length} Phiếu thu (K80)</>}</span>
+            <button type="button" onClick={() => setView({ kind: 'ticket', id: p.ticket.ticketCode })} className={`${btn} border border-line-strong text-ink hover:bg-canvas`}>
+              <Eye className="h-4 w-4" />
+              {docName(p.ticket.operationMode)}{p.receipts.length > 0 ? ' / PHIẾU THU' : ''}
+            </button>
           </div>
         );
       })}
@@ -666,31 +637,74 @@ const DossierPrintBar: React.FC<{
         return (
           <div key={v.item.id} className="flex flex-wrap items-center justify-end gap-2">
             <span className="mr-auto font-semibold text-ink">
-              EEIR {op} — <span className="font-mono">{v.item.dossierCode}</span> • tàu {v.list.vesselName}
+              EEIR (K80) {op} — <span className="font-mono">{v.item.dossierCode}</span> • tàu {v.list.vesselName}
             </span>
             <button
               type="button"
               disabled={!ready}
               title={ready ? '' : v.list.mode === 'NHAP_TAU' ? 'Chờ Giám định xác nhận cont' : 'Chờ cont xuất tàu'}
-              onClick={() => printVessel(v.item.id)}
+              onClick={() => setView({ kind: 'vessel', id: v.item.id })}
               className={`${btn} border border-line-strong text-ink hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-40`}
             >
-              <Printer className="h-4 w-4" />
-              In EEIR {op}
+              <Eye className="h-4 w-4" />
+              {docName(v.list.mode)}
             </button>
           </div>
         );
       })}
-      {jobPack && (
-        <PrintPortal>
-          <EeirK80Sheet state={state} ticket={jobPack.ticket} />
-          {job!.withReceipts && jobPack.receipts.map((r) => <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={r.printLog?.length || 1} />)}
-        </PrintPortal>
+
+      {pack && (
+        <PrintPreviewModal
+          title={`Phiếu EEIR (K80) ${pack.ticket.operationMode === 'CAP_VO' ? 'CẤP VỎ' : 'HẠ VỎ'} — ${pack.dossierCode}`}
+          onClose={close}
+          actions={
+            confirmReprint ? (
+              <span className="inline-flex flex-wrap items-center gap-2 rounded-md border border-rose-300 bg-rose-50 px-2 py-1 text-[11px] text-rose-800">
+                {printedBefore.map((r) => `${r.receiptNo} đã in ${r.printLog!.length} lần (gần nhất ${formatDateTime(r.printLog![r.printLog!.length - 1].at)})`).join('; ')}. In lại?
+                <button type="button" onClick={() => print(true)} className="rounded bg-rose-600 px-2 py-1 font-bold text-white">In lại</button>
+                <button type="button" onClick={() => setConfirmReprint(false)} className="rounded border border-line-strong bg-white px-2 py-1">Hủy</button>
+              </span>
+            ) : (
+              <>
+                <button type="button" onClick={() => print(false)} className={`${btn} border border-line-strong text-ink hover:bg-canvas`}>
+                  <Printer className="h-4 w-4" />
+                  IN {docName(pack.ticket.operationMode)}
+                </button>
+                {pack.receipts.length > 0 && (
+                  <button type="button" onClick={() => (printedBefore.length ? setConfirmReprint(true) : print(true))} className={`${btn} bg-navy-900 text-white hover:bg-navy-700`}>
+                    <Printer className="h-4 w-4" />
+                    IN {docName(pack.ticket.operationMode)} + PHIẾU THU
+                  </button>
+                )}
+              </>
+            )
+          }
+          print={
+            <>
+              <EeirK80Sheet state={state} ticket={pack.ticket} />
+              {withReceipts && pack.receipts.map((r) => <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={r.printLog?.length || 1} />)}
+            </>
+          }
+        >
+          {error && <p className="w-full rounded-md bg-rose-50 px-3 py-2 text-rose-800">{error}</p>}
+          <EeirK80Sheet state={state} ticket={pack.ticket} />
+          {pack.receipts.map((r) => <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={(r.printLog?.length || 0) + 1} />)}
+        </PrintPreviewModal>
       )}
-      {vesselJobHit && (
-        <PrintPortal>
-          <VesselEeirPrintSheet state={state} list={vesselJobHit.list} item={vesselJobHit.item} />
-        </PrintPortal>
+      {vesselHit && (
+        <PrintPreviewModal
+          title={`EEIR (K80) ${vesselHit.list.mode === 'NHAP_TAU' ? 'NHẬP TÀU' : 'XUẤT TÀU'} — ${vesselHit.item.dossierCode}`}
+          onClose={close}
+          actions={
+            <button type="button" onClick={() => setTimeout(printNow, 50)} className={`${btn} bg-navy-900 text-white hover:bg-navy-700`}>
+              <Printer className="h-4 w-4" />
+              IN {docName(vesselHit.list.mode)}
+            </button>
+          }
+          print={<VesselEeirPrintSheet state={state} list={vesselHit.list} item={vesselHit.item} />}
+        >
+          <VesselEeirPrintSheet state={state} list={vesselHit.list} item={vesselHit.item} />
+        </PrintPreviewModal>
       )}
     </div>
   );
