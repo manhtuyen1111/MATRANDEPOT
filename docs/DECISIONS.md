@@ -1527,6 +1527,24 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-174 — Đơn giá bậc thợ CHỐT lúc sửa xong (đơn giá cũ tính theo giá cũ)
+
+- Trạng thái: CONFIRMED (2026-10-28, người dùng). **Sửa DEC-173** phần Thành tiền.
+- Hoàn tất sửa chữa → lưu **bậc thợ + đơn giá (đ / giờ)** của từng nhân viên vào cont đó (`ServiceWorkOrder.repairMemberRates`; database: `work_order_members.grade_name / hourly_rate`, trigger `work_order_member_rate` tự điền — không sửa `complete_repair_task`).
+- Báo cáo Sản lượng: Thành tiền = tổng (giờ chia × **đơn giá đã chốt** của từng cont). Đổi đơn giá bậc thợ sau đó **không** đổi kỳ cũ. Cont sửa **trước khi có bậc thợ** (chưa chốt) → lấy đơn giá hiện tại. Nhân viên có nhiều mức trong kỳ → cột đơn giá ghi "Nhiều mức", bậc ghi "Nhiều bậc"; chi tiết từng cont ở cửa sổ trượt + Excel sheet CHI TIẾT.
+- **Tên cột (người dùng chốt, giữ nguyên chữ):** **Bậc thợ** / **Nhân công bậc thợ (đ / giờ)** / **Tổng tiền sản phẩm (VND)** = Nhân công bậc thợ × Giờ công. Excel: BẬC THỢ / NHÂN CÔNG BẬC THỢ (Đ/GIỜ) / TỔNG TIỀN SẢN PHẨM (VND).
+- Đã chạy thử Supabase local 2026-10-28: migration `20261105000001` áp dụng OK, pgTAP **213/213**, test chạy thật N1–N6 pass, trigger chốt giá thử bằng SQL (50.000 → đổi 80.000, dòng cũ giữ 50.000).
+
+### DEC-173 — Danh mục SỬA CHỮA: nhân viên, tổ theo số lượng, BẬC THỢ
+
+- Trạng thái: CONFIRMED (2026-10-28, người dùng). **Sửa DEC-048** (bỏ thêm nhân viên gõ tên tay).
+- Danh mục chung → Sửa chữa có 3 tab: **NHÂN VIÊN SỬA CHỮA** / **TỔ SỬA CHỮA** / **BẬC THỢ**.
+- **Danh sách nhân viên sửa chữa** = user có vai trò Sửa chữa. Admin bắt buộc cấu hình 3 mục: (1) **Tổ sửa chữa**, (2) **Bậc thợ**, (3) **Giờ công bậc thợ** — **tự lấy theo bậc**, không sửa riêng. Thiếu → dòng ghi "Thiếu cấu hình". Mỗi nhân viên thuộc đúng 1 tổ; đổi tổ → ngưng ở tổ cũ (giữ lịch sử).
+- **Tạo tổ theo số lượng**: nhập N → tạo TỔ SỬA CHỮA n (mã TO-SC-0n), đánh số tiếp, bỏ mã đã có.
+- **Bậc thợ**: tên + **giờ công bậc thợ = đơn giá tiền / 1 giờ** (> 0). Sửa đơn giá = đổi cho mọi nhân viên cùng bậc. Ngưng thay vì xóa.
+- Báo cáo SẢN LƯỢNG SỬA CHỮA (DEC-170) thêm cột **Bậc thợ**, **Giờ công bậc thợ (đ / giờ)**, **Thành tiền = giờ công chia × đơn giá** (theo bậc **hiện tại** của nhân viên — đổi đơn giá thì báo cáo kỳ cũ tính lại theo giá mới).
+- Database: migration `20261105000001_repair_grades.sql` (bảng `repair_grades`, cột `repair_team_members.grade_id`, RPC `catalog_upsert_repair_grade`, `catalog_assign_repair_staff`); pgTAP `0009_repair_grades.test.sql`.
+
 ### DEC-166 — Danh mục PHÂN LOẠI ĐÓNG HÀNG theo hãng tàu + hãng tàu ƯU TIÊN
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng — trả lời câu hỏi). **Thay** bộ cố định M / K / E (DEC-016, DEC-128 giữ nguyên chỗ hiển thị).
@@ -1642,6 +1660,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-171 đã xác nhận (cập nhật 2026-10-28).
+- Quyết định nghiệp vụ: DEC-001 → DEC-174 đã xác nhận (cập nhật 2026-10-28).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

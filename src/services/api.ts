@@ -293,6 +293,25 @@ export const addRepairTeamMember = wrap(ops.addRepairTeamMember, ([s, i], next) 
     await rpc(c, 'catalog_upsert_repair_member', { p_team_id: i.teamId, p_full_name: added?.fullName || i.fullName || '', p_staff_id: nul(i.staffUserId), p_active: true });
   };
 });
+// DEC-173: tạo tổ theo số lượng (mỗi tổ 1 lời gọi), bậc thợ, gán tổ + bậc thợ cho nhân viên Sửa chữa
+export const addRepairTeamsByCount = wrap(ops.addRepairTeamsByCount, ([s, i]) => {
+  const teams = ops.repairTeamsToCreate(s, i.count);
+  return async (c) => {
+    for (const t of teams) await rpc(c, 'catalog_upsert_repair_team', { p_code: t.code, p_name: t.name, p_active: true });
+  };
+});
+export const upsertRepairGrade = wrap(ops.upsertRepairGrade, ([, i]) => async (c) => {
+  await rpc(c, 'catalog_upsert_repair_grade', { p_name: i.name, p_hourly_rate: i.hourlyRate, p_active: true, p_id: nul(i.id) });
+});
+export const setRepairGradeActive = wrap(ops.setRepairGradeActive, ([s, i]) => {
+  const g = s.repairGrades.find((x) => x.id === i.id);
+  return async (c) => {
+    await rpc(c, 'catalog_upsert_repair_grade', { p_name: g?.name || '', p_hourly_rate: g?.hourlyRate || 0, p_active: i.isActive, p_id: i.id });
+  };
+});
+export const assignRepairStaff = wrap(ops.assignRepairStaff, ([, i]) => async (c) => {
+  await rpc(c, 'catalog_assign_repair_staff', { p_staff_id: i.staffUserId, p_team_id: i.teamId, p_grade_id: i.gradeId });
+});
 export const setRepairTeamMemberActive = wrap(ops.setRepairTeamMemberActive, ([s, i]) => {
   const m = s.repairTeams.find((t) => t.id === i.teamId)?.members.find((x) => x.id === i.memberId);
   return async (c) => {

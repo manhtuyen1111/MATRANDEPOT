@@ -14,7 +14,7 @@ async function rows<T>(query: PromiseLike<{ data: T[] | null; error: { message: 
 }
 
 export async function loadCatalogState(client: SupabaseClient, me: StaffSession): Promise<DepotState> {
-  const [partners, sizes, types, blocks, fees, teams, company, staff, stuffing] = await Promise.all([
+  const [partners, sizes, types, blocks, fees, teams, company, staff, stuffing, grades] = await Promise.all([
     rows<{ id: string; code: string; name: string; is_shipping_line: boolean; is_customer: boolean; allow_tts: boolean; is_priority: boolean }>(
       client.from('partners').select('id, code, name, is_shipping_line, is_customer, allow_tts, is_priority').eq('is_active', true).order('code')
     ),
@@ -26,8 +26,8 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
     rows<{ id: string; code: string; name: string; category: DepotFeeCatalogItem['category']; size: string | null; type: string | null; shipping_line_code: string | null; amount: number }>(
       client.from('fee_catalog').select('id, code, name, category, size, type, shipping_line_code, amount').eq('is_active', true).order('code')
     ),
-    rows<{ id: string; code: string; name: string; is_active: boolean; repair_team_members: { id: string; full_name: string; is_active: boolean; staff_id: string | null }[] }>(
-      client.from('repair_teams').select('id, code, name, is_active, repair_team_members(id, full_name, is_active, staff_id)').order('code')
+    rows<{ id: string; code: string; name: string; is_active: boolean; repair_team_members: { id: string; full_name: string; is_active: boolean; staff_id: string | null; grade_id: string | null }[] }>(
+      client.from('repair_teams').select('id, code, name, is_active, repair_team_members(id, full_name, is_active, staff_id, grade_id)').order('code')
     ),
     rows<{ name: string; short_name: string; address: string; phone: string; email: string; tax_code: string; bank_account: string }>(
       client.from('company_profile').select('name, short_name, address, phone, email, tax_code, bank_account')
@@ -39,6 +39,10 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
     // DEC-166: Phân loại đóng hàng theo hãng tàu (cả mã ngừng dùng — màn Danh mục hiện để mở lại)
     rows<{ id: string; shipping_line_code: string; code: string; description: string | null; is_active: boolean }>(
       client.from('stuffing_classes').select('id, shipping_line_code, code, description, is_active').order('shipping_line_code').order('sort_order')
+    ),
+    // DEC-173: bậc thợ sửa chữa (cả bậc ngưng — Danh mục hiện để mở lại)
+    rows<{ id: string; code: string; name: string; hourly_rate: number; is_active: boolean }>(
+      client.from('repair_grades').select('id, code, name, hourly_rate, is_active').order('code')
     ),
   ]);
 
@@ -64,8 +68,9 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
     })),
     repairTeams: teams.map((t): RepairTeam => ({
       id: t.id, code: t.code, name: t.name, isActive: t.is_active,
-      members: (t.repair_team_members || []).map((m) => ({ id: m.id, fullName: m.full_name, isActive: m.is_active, staffUserId: m.staff_id || undefined })),
+      members: (t.repair_team_members || []).map((m) => ({ id: m.id, fullName: m.full_name, isActive: m.is_active, staffUserId: m.staff_id || undefined, gradeId: m.grade_id || undefined })),
     })),
+    repairGrades: grades.map((g) => ({ id: g.id, code: g.code, name: g.name, hourlyRate: Number(g.hourly_rate), isActive: g.is_active })),
     companyProfile: company[0]
       ? { name: company[0].name, shortName: company[0].short_name, address: company[0].address, phone: company[0].phone, email: company[0].email, taxCode: company[0].tax_code, bankAccount: company[0].bank_account }
       : base.companyProfile,

@@ -1507,3 +1507,66 @@ describe('DEC-170 sản lượng sửa chữa', () => {
     expect(() => queryRepairOutput(s, {})).toThrow(/thời gian/);
   });
 });
+
+// DEC-173: tổ theo số lượng, bậc thợ, gán tổ + bậc thợ cho nhân viên Sửa chữa; báo cáo sản lượng có thành tiền
+import { addRepairTeamsByCount, assignRepairStaff, repairStaffAssignment, upsertRepairGrade } from '../src/services/depotOperations';
+describe('DEC-173 bậc thợ sửa chữa', () => {
+  const admin = as(createInitialState(), 'usr-admin');
+  it('tạo tổ theo số lượng, đánh số tiếp, bỏ mã đã có', () => {
+    const s = addRepairTeamsByCount(admin, { count: 3 });
+    const added = s.repairTeams.slice(admin.repairTeams.length);
+    expect(added).toHaveLength(3);
+    expect(added.every((t) => /^TỔ SỬA CHỮA \d+$/.test(t.name))).toBe(true);
+    expect(new Set(s.repairTeams.map((t) => t.code)).size).toBe(s.repairTeams.length);
+    expect(() => addRepairTeamsByCount(admin, { count: 0 })).toThrow(/1 đến 50/);
+  });
+  it('bậc thợ bắt buộc tên + đơn giá > 0, không trùng tên', () => {
+    expect(() => upsertRepairGrade(admin, { name: 'Bậc 1', hourlyRate: 0 })).toThrow(/lớn hơn 0/);
+    const s = upsertRepairGrade(admin, { name: 'Bậc 1', hourlyRate: 30000 });
+    expect(() => upsertRepairGrade(s, { name: 'bậc 1', hourlyRate: 40000 })).toThrow(/đã tồn tại/);
+    expect(() => upsertRepairGrade(as(s, 'usr-office'), { name: 'Bậc 2', hourlyRate: 1 })).toThrow(/ADMIN/);
+  });
+  it('gán tổ + bậc thợ: chỉ user Sửa chữa, đổi tổ thì rời tổ cũ, báo cáo tính thành tiền', () => {
+    let s = upsertRepairGrade(addRepairTeamsByCount(admin, { count: 2 }), { name: 'Bậc 3', hourlyRate: 50000 });
+    const [t1, t2] = s.repairTeams.slice(-2);
+    const g = s.repairGrades[0];
+    expect(() => assignRepairStaff(s, { staffUserId: 'usr-office', teamId: t1.id, gradeId: g.id })).toThrow(/SỬA CHỮA/);
+    expect(() => assignRepairStaff(s, { staffUserId: 'usr-repair', teamId: t1.id, gradeId: '' })).toThrow(/BẬC THỢ/);
+    s = assignRepairStaff(s, { staffUserId: 'usr-repair', teamId: t1.id, gradeId: g.id });
+    s = assignRepairStaff(s, { staffUserId: 'usr-repair', teamId: t2.id, gradeId: g.id });
+    const a = repairStaffAssignment(s, 'usr-repair');
+    expect(a.team?.id).toBe(t2.id);
+    expect(a.grade?.hourlyRate).toBe(50000);
+    expect(s.repairTeams.flatMap((t) => t.members).filter((m) => m.isActive && m.staffUserId === 'usr-repair')).toHaveLength(1);
+    const name = a.member!.fullName;
+    const wo = { id: 'w9', workOrderCode: 'SC-9', masterDossierCode: 'HV-9', containerNo: 'TEST9', category: 'REPAIR' as const, items: [], estimateCost: 0, approvalStatus: 'APPROVED' as const,
+      workStatus: 'COMPLETED' as const, assignedTo: '', createdAt: '2026-10-28T01:00:00.000Z', completedAt: '2026-10-28T02:00:00.000Z', laborHours: 3, repairMembers: [name, 'Người khác'] };
+    const rows = queryRepairOutput({ ...s, workOrders: [wo] }, { dateFrom: '28/10/2026 00:00:00', dateTo: '28/10/2026 23:59:59' });
+    const r = rows.find((x) => x.memberName === name)!;
+    expect(r.hours).toBe(1.5);
+    expect(r.amount).toBe(75000);
+    expect(rows.find((x) => x.memberName === 'Người khác')!.amount).toBeUndefined();
+  });
+});
+
+// DEC-174: đơn giá bậc thợ CHỐT lúc sửa xong — đổi đơn giá sau, kỳ cũ giữ giá cũ
+describe('DEC-174 đơn giá cũ tính theo giá cũ', () => {
+  it('cont đã chốt giá giữ giá cũ; cont chưa có giá chốt lấy giá hiện tại; nhiều mức thì cộng đúng', () => {
+    const admin = as(createInitialState(), 'usr-admin');
+    let s = upsertRepairGrade(addRepairTeamsByCount(admin, { count: 1 }), { name: 'Bậc 2', hourlyRate: 80000 });
+    const team = s.repairTeams[s.repairTeams.length - 1];
+    s = assignRepairStaff(s, { staffUserId: 'usr-repair', teamId: team.id, gradeId: s.repairGrades[0].id });
+    const name = repairStaffAssignment(s, 'usr-repair').member!.fullName;
+    const base = { workOrderCode: 'SC', containerNo: 'TEST', category: 'REPAIR' as const, items: [], estimateCost: 0, approvalStatus: 'APPROVED' as const,
+      workStatus: 'COMPLETED' as const, assignedTo: '', createdAt: '2026-10-28T01:00:00.000Z', completedAt: '2026-10-28T02:00:00.000Z', laborHours: 2, repairMembers: [name] };
+    const old = { ...base, id: 'w1', masterDossierCode: 'HV-1', repairMemberRates: [{ name, gradeName: 'Bậc 1', hourlyRate: 50000 }] };
+    const legacy = { ...base, id: 'w2', masterDossierCode: 'HV-2' };
+    const rows = queryRepairOutput({ ...s, workOrders: [old, legacy] }, { dateFrom: '28/10/2026 00:00:00', dateTo: '28/10/2026 23:59:59' });
+    const r = rows.find((x) => x.memberName === name)!;
+    expect(r.jobs.find((j) => j.workOrder.id === 'w1')!.amount).toBe(100000); // 2 giờ × 50.000 (giá cũ)
+    expect(r.jobs.find((j) => j.workOrder.id === 'w2')!.amount).toBe(160000); // 2 giờ × 80.000 (chưa chốt → giá hiện tại)
+    expect(r.amount).toBe(260000);
+    expect(r.hourlyRate).toBeUndefined(); // nhiều mức
+    expect(r.gradeName).toBe('Nhiều bậc');
+  });
+});

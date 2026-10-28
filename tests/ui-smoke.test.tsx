@@ -993,11 +993,13 @@ describe('DEC-164: bảng danh sách đồng bộ chiều cao dòng (mốc Tồn
 });
 
 describe('Danh mục Sửa chữa + kính lúp ảnh cửa cont', () => {
-  it('Tổ sửa chữa: bảng mỗi tổ 1 dòng (DEC-134), bấm mở chi tiết — không còn khung từng tổ', () => {
+  it('Danh mục Sửa chữa (DEC-173): 3 tab, mặc định DANH SÁCH NHÂN VIÊN SỬA CHỮA (user vai trò Sửa chữa), thiếu cấu hình được báo', () => {
     const html = renderToString(<RepairTeamCatalog state={{ ...createInitialState(), currentUser: createInitialState().staffUsers.find((u) => u.roles.includes('ADMIN'))! }} onUpdateState={() => {}} />);
+    for (const t of ['NHÂN VIÊN SỬA CHỮA', 'TỔ SỬA CHỮA', 'BẬC THỢ']) expect(html).toContain(t);
     expect(html).toContain('whitespace-nowrap');
-    expect(html).toMatch(/<tr[^>]*cursor-pointer[^>]*>.*TO-SC-01/);
-    expect(html).not.toContain('Hoặc nhập họ tên nhân viên'); // phần gán nhân viên nằm trong cửa sổ chi tiết
+    expect(html).toMatch(/<tr[^>]*cursor-pointer[^>]*>.*NV-006/); // usr-repair
+    expect(html).toContain('Thiếu cấu hình');
+    expect(html).not.toContain('Hoặc nhập họ tên nhân viên'); // bỏ gõ tên tay (DEC-173)
   });
 
   it('PhotoZoom: ảnh nhỏ có kính lúp + bấm để phóng to', async () => {
