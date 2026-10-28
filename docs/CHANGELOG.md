@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-173: Danh mục Sửa chữa 3 tab — NHÂN VIÊN SỬA CHỮA (user role Sửa chữa, bắt buộc Tổ + Bậc thợ), TỔ SỬA CHỮA tạo theo số lượng, BẬC THỢ (đơn giá / giờ); báo cáo Sản lượng thêm Bậc thợ / Đơn giá / Thành tiền. **Migration mới `20261105000001_repair_grades.sql`**.
 - DEC-172: Lên bản mới trên Vercel → tab đang mở bản cũ lỗi "Failed to fetch dynamically imported module" (VD Xuất Excel) → báo 1 dòng + tự tải lại trang (`vite:preloadError` trong `src/main.tsx`, chặn lặp 30 giây).
 - DEC-170: Báo cáo → Sửa chữa tab SẢN LƯỢNG SỬA CHỮA (giờ công từng nhân viên, chia đều theo số người tác nghiệp; lọc thời gian / tổ / nhân viên; Excel).
 - DEC-171: Chờ sửa chữa — nhãn đầu dòng CHỜ SỬA CHỮA.
