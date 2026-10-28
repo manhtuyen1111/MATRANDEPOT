@@ -58,6 +58,25 @@
   body:has(.print-job) .print-area:not(.print-job) {
     display: none !important;
   }
+  /* PHIẾU K80 (cuộn giấy): bỏ hẳn phần còn lại của trang (display:none, không chiếm chỗ) và để phiếu nằm
+     trong luồng bình thường — vùng in "position:absolute" làm Chrome BỎ QUA khổ giấy riêng + ngắt trang
+     → in ra cả tờ dài. Có dòng này thì mỗi phiếu = 1 trang dài vừa đủ nội dung (printNow) → máy cắt đúng chỗ. */
+  html:has(body > .print-job .k80-sheet),
+  body:has(> .print-job .k80-sheet) {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  body:has(> .print-job .k80-sheet) > *:not(.print-job) {
+    display: none !important;
+  }
+  body > .print-job:has(.k80-sheet) {
+    position: static !important;
+    width: 80mm !important;
+  }
+  body > .print-job:has(.k80-sheet) > * + * {
+    margin-top: 0 !important;
+  }
 }
 
 /* DEC-161: PHIẾU EEIR (K80) / PHIẾU THU (K80) / EEIR NHẬP TÀU – XUẤT TÀU (K80) — in nhiệt cuộn 80mm.

@@ -2,6 +2,7 @@ import React from 'react';
 import { Check, Copy, Printer, X } from 'lucide-react';
 import { QrImage } from './Qr';
 import { printNow } from './printNow';
+import { PrintPortal } from './ReceiptPrint';
 import { K80InternalTicket } from '../types/depot';
 import type { DepotState } from '../services/depotStore';
 import { getDriverRoute, isTicketClosed } from '../services/driverRoute';
@@ -23,7 +24,7 @@ const Row: React.FC<{ label: string; value?: React.ReactNode; big?: boolean }> =
 
 // PHIẾU EEIR (K80) — MẪU DUY NHẤT (DEC-023, DEC-052, DEC-161): thông tin chung → LỘ TRÌNH → mã QR.
 // Vừa là phiếu tác nghiệp lái xe cầm đi các bộ phận, vừa là EEIR giao khách khi Trả chứng từ (thay EEIR A4 cũ).
-export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotState; printable?: boolean }> = ({ ticket, state, printable }) => {
+export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotState }> = ({ ticket, state }) => {
   const isOut = ticket.operationMode === 'CAP_VO';
   type Step = { key: string; dept: string; action: string; done: boolean; doneAt?: string };
   const steps: Step[] = state
@@ -40,7 +41,7 @@ export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotSt
   const company = state?.companyProfile;
   return (
     // KHỔ GIẤY IN NHIỆT K80 (80mm)
-    <div className={`${printable ? 'print-area ' : ''}k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white px-2 py-2 font-mono text-[11px] leading-snug text-ink`}>
+    <div className={`k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white px-2 py-2 font-mono text-[11px] leading-snug text-ink`}>
       {/* 1. THÔNG TIN CHUNG */}
       <div className="border-b-2 border-slate-800 pb-2">
         {/* Thông tin depot — cùng mẫu đầu Phiếu thu (K80) */}
@@ -134,7 +135,11 @@ export const K80TicketModal: React.FC<Props> = ({ ticket, state, onClose, onSimu
           <X className="h-5 w-5" />
         </button>
 
-        <EeirK80Sheet ticket={ticket} state={state} printable />
+        <EeirK80Sheet ticket={ticket} state={state} />
+        {/* Bản in qua lớp in riêng (giống Trả chứng từ / hồ sơ) → khổ K80 vừa đủ phiếu */}
+        <PrintPortal>
+          <EeirK80Sheet ticket={ticket} state={state} />
+        </PrintPortal>
 
         {closed && (
           <p className="mt-3 rounded-md bg-navy-50 px-3 py-1.5 text-center text-xs font-semibold text-ink">
