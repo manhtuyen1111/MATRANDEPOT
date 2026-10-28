@@ -48,7 +48,7 @@ Cập nhật lần cuối: 2026-10-22.
 - [ ] Q-023: Công nợ TTS quản lý theo khách hàng, hãng tàu hay bên chịu phí? Quy trình thu nợ TTS phát hành phiếu thu như thế nào?
 - [ ] Q-024: Quy trình xử lý giao dịch thất bại / hoàn tiền (OPEN-008).
 - [ ] Q-025: Ai được điều chỉnh giao dịch đã ghi nhận?
-- [ ] Q-032: **(DEC-152: làm sau — tạm xác nhận tay)** Ngân hàng / cổng thanh toán nào dùng cho chuyển khoản API QR, và định dạng nội dung chuyển khoản?
+- [ ] Q-032: **(DEC-152: làm sau — tạm xác nhận tay; 2026-10-28 người dùng: dự định nối SePay, quyết sau khi test xong — agent không làm trước)** Ngân hàng / cổng thanh toán nào dùng cho chuyển khoản API QR, và định dạng nội dung chuyển khoản?
 
 ## 7. Người dùng và phân quyền
 

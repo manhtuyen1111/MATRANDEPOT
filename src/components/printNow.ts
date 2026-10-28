@@ -41,15 +41,46 @@ export function printNow(): void {
   window.print();
 }
 
-// XUẤT PDF: mở hộp thoại in với tên file đặt sẵn (tên tab = tên file gợi ý khi chọn "Lưu dưới dạng PDF").
-// Không cần thư viện thêm; in xong trả lại tên tab cũ.
-export function exportPdf(fileName: string): void {
-  const prev = document.title;
-  document.title = fileName.replace(/[\/:*?"<>|]+/g, '-');
-  const restore = () => {
-    document.title = prev;
-    window.removeEventListener('afterprint', restore);
-  };
-  window.addEventListener('afterprint', restore);
-  setTimeout(printNow, 50);
+// XUẤT PDF: tải thẳng file .pdf (jspdf + html2canvas-pro, chỉ tải thư viện khi bấm).
+// Chụp bản xem trong cửa sổ đang mở (vùng in .print-job bị ẩn trên màn hình nên không chụp được):
+//   - phiếu K80 (.k80-sheet): mỗi phiếu 1 trang 80mm × chiều dài phiếu
+//   - hồ sơ A4 (.dossier-a4): khổ A4 dọc, lề 10mm, dài thì tự sang trang
+export async function exportPdf(fileName: string): Promise<void> {
+  const dialogs = document.querySelectorAll<HTMLElement>('[role="dialog"]');
+  const scope: ParentNode = dialogs[dialogs.length - 1] || document;
+  const k80 = Array.from(scope.querySelectorAll<HTMLElement>('.k80-sheet'));
+  const a4 = scope.querySelector<HTMLElement>('.dossier-a4');
+  if (!k80.length && !a4) throw new Error('Không tìm thấy giấy tờ để xuất PDF');
+  const [{ jsPDF }, { default: html2canvas }] = await Promise.all([import('jspdf'), import('html2canvas-pro')]);
+  const shot = (el: HTMLElement) => html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+  let pdf: InstanceType<typeof jsPDF> | undefined;
+  if (a4) {
+    const canvas = await shot(a4);
+    pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const margin = 10;
+    const w = 210 - margin * 2;
+    const pageH = 297 - margin * 2;
+    const pxPerMm = canvas.width / w;
+    const slicePx = Math.floor(pageH * pxPerMm);
+    for (let y = 0, page = 0; y < canvas.height; y += slicePx, page++) {
+      const h = Math.min(slicePx, canvas.height - y);
+      const part = document.createElement('canvas');
+      part.width = canvas.width;
+      part.height = h;
+      part.getContext('2d')!.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+      if (page > 0) pdf.addPage('a4', 'portrait');
+      pdf.addImage(part.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, w, h / pxPerMm);
+    }
+  } else {
+    for (const sheet of k80) {
+      const canvas = await shot(sheet);
+      const w = 76; // khung phiếu 76mm giữa giấy 80mm như bản in
+      const h = (canvas.height / canvas.width) * w;
+      const size: [number, number] = [80, Math.ceil(h) + 4];
+      if (!pdf) pdf = new jsPDF({ unit: 'mm', format: size, orientation: 'portrait' });
+      else pdf.addPage(size, 'portrait');
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 2, 2, w, h);
+    }
+  }
+  pdf!.save(`${fileName.replace(/[\/:*?"<>|]+/g, '-')}.pdf`);
 }

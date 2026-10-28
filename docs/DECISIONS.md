@@ -1497,7 +1497,15 @@ Quy ước trạng thái:
 - PHIẾU EEIR NHẬP TÀU / XUẤT TÀU (`VesselEeirPrintSheet`, khổ K80) **cùng mẫu PHIẾU EEIR TÁC NGHIỆP Hạ vỏ / Cấp vỏ**: thông tin depot → "PHIẾU EEIR TÁC NGHIỆP / Số / TÁC NGHIỆP" + **mã QR** → thông tin cont + tàu + tình trạng vỏ → **LỘ TRÌNH — QUÉT MÃ TẠI TỪNG BỘ PHẬN** → Văn phòng xác nhận (người lập danh sách).
 - Mã QR = `QR-<mã hồ sơ NT- / XT->` (`vesselQrCode`, theo DEC-057). Quét được ở Vệ sinh / Xe nâng (cont NT- đã mang mã này) và màn Nhập / Xuất tàu (bỏ tiền tố QR- rồi tra như mã hồ sơ).
 - Lộ trình (`getVesselRoute`, chỉ đọc dữ liệu): **Nhập tàu** = Giám định → Vệ sinh (nếu có) → Xe nâng hạ vỏ → Văn phòng duyệt nhập tàu; **Xuất tàu** = Văn phòng lập danh sách → Xe nâng xuất cont → Văn phòng duyệt xuất tàu. Bước đã xong có ✓ + giờ.
-- Thời điểm xem / in giữ như cũ: Nhập tàu từ khi Giám định xác nhận; Xuất tàu khi cont đã OUT.
+- Thời điểm xem / in giữ như cũ: Nhập tàu từ khi Giám định xác nhận; Xuất tàu khi cont đã OUT. *(Xuất tàu đổi theo DEC-167.)*
+
+### DEC-167 — EEIR XUẤT TÀU in ngay khi lập danh sách + in cả danh sách; XUẤT PDF tải thẳng file
+
+- Trạng thái: CONFIRMED (2026-10-28, người dùng). **Sửa DEC-163** (thời điểm in Xuất tàu).
+- PHIẾU EEIR XUẤT TÀU in được **ngay khi cont có mã XT-** (lập danh sách), không chờ OUT; cont **Không kịp** (SKIPPED) không in. Nhập tàu giữ như cũ.
+- Văn phòng → Xuất tàu → chi tiết danh sách: nút **PHIẾU EEIR XUẤT TÀU — CẢ DANH SÁCH (n)** (mỗi cont 1 phiếu K80, máy cắt sau mỗi phiếu) + nút in từng dòng. Cửa sổ xem có **IN** và **XUẤT PDF**.
+- **XUẤT PDF tải thẳng file** (`exportPdf` trong `src/components/printNow.ts`, thư viện `jspdf` + `html2canvas-pro`, chỉ tải khi bấm): chụp bản xem trong cửa sổ đang mở — K80 mỗi phiếu 1 trang 80mm × chiều dài; Hồ sơ container khổ A4, dài tự sang trang.
+- Độ dài mật khẩu tối thiểu: **giữ logic cũ** (người dùng chốt, không đổi).
 
 ### DEC-166 — Danh mục PHÂN LOẠI ĐÓNG HÀNG theo hãng tàu + hãng tàu ƯU TIÊN
 
@@ -1614,6 +1622,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-166 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-167 đã xác nhận (cập nhật 2026-10-28).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

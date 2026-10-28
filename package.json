@@ -12,6 +12,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
     "exceljs": "^4.4.0",
+    "html2canvas-pro": "^1.6.7",
+    "jspdf": "^3.0.4",
     "lucide-react": "^0.475.0",
     "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4",
