@@ -10,7 +10,7 @@ import { formatDateTime } from "../services/datetime";
 import { CompanyHeader, PrintPreviewModal } from "./ReceiptPrint";
 import { exportPdf, printNow } from "./printNow";
 import { CustomerSlipK80, EeirK80Sheet, slipPrintCount, VesselEeirPrintSheet } from './K80TicketModal';
-import { findVesselItemByCode } from '../services/vessel';
+import { findVesselItemByCode, vesselListProgress } from '../services/vessel';
 import { linkCls, formatViTime, PhotoZoom } from './shared';
 
 interface Props {
@@ -502,7 +502,9 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                 {item.status === 'DONE' ? <p>Đã OUT khỏi bãi • xe <strong>{item.truckNo}</strong></p> : <p className="text-ink-muted">Chưa xuất.</p>}
               </Step>
               <Step no={next()} title="Văn phòng — Duyệt xuất tàu" confirm={{ done: list.status === 'APPROVED', by: list.approvedBy, at: list.approvedAt, pending: 'Chờ xuất hết danh sách' }}>
-                <p>Duyệt cả danh sách tàu <strong>{list.vesselName}</strong> khi đã xuất hết. Không thu phí, không phiếu EEIR (K80).</p>
+                {/* DEC-169: nội dung duyệt xuất tàu + tiến độ thực tế (cont đã xuất / tổng danh sách) */}
+                <p>Xác nhận hoàn thành danh sách xuất tàu <strong>{list.vesselName}</strong></p>
+                <p>Tiến độ thực tế : <strong className="font-mono">{vesselListProgress(list).done}/{vesselListProgress(list).total}</strong></p>
               </Step>
             </React.Fragment>
           ))}
