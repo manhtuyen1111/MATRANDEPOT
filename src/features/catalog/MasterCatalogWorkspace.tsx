@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { addContainerSizeCatalogItem, addContainerTypeCatalogItem, addDepotFeeCatalogItem, addPartnerCatalogItem, addYardBlockCatalogItem, deleteContainerSizeCatalogItem, deleteContainerTypeCatalogItem, deleteDepotFeeCatalogItem, deletePartnerCatalogItem, deleteYardBlockCatalogItem, setYardBlockInspectionRack } from '../../services/api';
+import { setShippingLinePriority, addContainerSizeCatalogItem, addContainerTypeCatalogItem, addDepotFeeCatalogItem, addPartnerCatalogItem, addYardBlockCatalogItem, deleteContainerSizeCatalogItem, deleteContainerTypeCatalogItem, deleteDepotFeeCatalogItem, deletePartnerCatalogItem, deleteYardBlockCatalogItem, setYardBlockInspectionRack } from '../../services/api';
 import {
   Box,
   CheckCircle2,
@@ -690,6 +690,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                   <th className="px-4 py-2.5">Mã Hãng Tàu</th>
                   <th className="px-4 py-2.5">Tên Hãng Tàu</th>
                   <th className="px-4 py-2.5">Chính sách TTS</th>
+                  <th className="px-4 py-2.5 text-center">Ưu tiên</th>
                   <th className="px-4 py-2.5 text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -712,6 +713,20 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
                       >
                         {s.allowTts ? 'Được phép TTS' : 'Không TTS'}
                       </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      {/* DEC-166: hãng ưu tiên — Giám định Hạ vỏ chọn sẵn; chỉ 1 hãng */}
+                      <input
+                        type="checkbox"
+                        aria-label={`Ưu tiên ${s.code}`}
+                        checked={Boolean(s.isPriority)}
+                        disabled={!isAdmin}
+                        onChange={(e) => {
+                          clearFeedback();
+                          onUpdateState(setShippingLinePriority(state, { code: s.code, isPriority: e.target.checked }));
+                        }}
+                        className="h-4 w-4 accent-navy-900"
+                      />
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       <button

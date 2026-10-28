@@ -212,6 +212,7 @@ export interface Partner {
   isShippingLine: boolean;
   isCustomer: boolean;
   allowTts: boolean;
+  isPriority?: boolean; // DEC-166: hãng tàu ƯU TIÊN — Giám định Hạ vỏ chọn sẵn (chỉ 1 hãng)
 }
 
 export interface YardBlock {

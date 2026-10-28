@@ -285,6 +285,9 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 
 **LƯU Ý GIAO DIỆN (DEC-164):** bảng danh sách mới → `<table className="data-table …">`; dòng tự cao 40px như Tồn vỏ (kể cả có nút). Đo chiều cao thật không cần mở app: render màn bằng vitest → HTML + CSS build → Edge `--headless --dump-dom` với script đo `getBoundingClientRect`.
 
+**DEC-165 / DEC-166 (2026-10-28):** Văn phòng danh sách tàu dạng bảng + báo cáo tàu CHI TIẾT / TÊN TÀU; Danh mục **Phân loại đóng hàng** theo hãng + hãng **Ưu tiên**. **Có migration mới `20261104000001`** → người dùng phải `db push` (pgTAP 201/201 local). Supabase local: nếu image hỏng ("exec format error") chạy `npx supabase start -x edge-runtime,postgres-meta,studio`.
+- **Không tự push GitHub — hỏi người dùng trước** (người dùng dặn 2026-10-28).
+
 **LƯU Ý CHO AGENT (cách làm việc với người dùng):**
 - Người dùng gửi yêu cầu ngắn, thường **thêm / đổi ý giữa chừng** (VD "1 dải" → "cắt mỗi phiếu"; đếm in riêng → chỉ dùng bộ đếm phiếu thu) → làm từng bước nhỏ, commit sau mỗi bước để hoàn tác dễ (`git checkout -- <file>` khi chưa commit).
 - **Giữ đúng chữ người dùng gửi** cho tên phiếu / nút; chỗ nào hiểu 2 cách thì làm theo chữ + báo lại 1 dòng.

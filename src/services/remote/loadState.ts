@@ -15,8 +15,8 @@ async function rows<T>(query: PromiseLike<{ data: T[] | null; error: { message: 
 
 export async function loadCatalogState(client: SupabaseClient, me: StaffSession): Promise<DepotState> {
   const [partners, sizes, types, blocks, fees, teams, company, staff, stuffing] = await Promise.all([
-    rows<{ id: string; code: string; name: string; is_shipping_line: boolean; is_customer: boolean; allow_tts: boolean }>(
-      client.from('partners').select('id, code, name, is_shipping_line, is_customer, allow_tts').eq('is_active', true).order('code')
+    rows<{ id: string; code: string; name: string; is_shipping_line: boolean; is_customer: boolean; allow_tts: boolean; is_priority: boolean }>(
+      client.from('partners').select('id, code, name, is_shipping_line, is_customer, allow_tts, is_priority').eq('is_active', true).order('code')
     ),
     rows<{ code: string }>(client.from('container_sizes').select('code').eq('is_active', true).order('sort_order')),
     rows<{ code: string }>(client.from('container_types').select('code').eq('is_active', true).order('sort_order')),
@@ -50,7 +50,7 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
     staffUsers: staff.length
       ? staff.map((s) => ({ id: s.id, staffCode: s.staff_code, fullName: s.full_name, email: s.email || `${s.username}@matrandepot.local`, roles: (s.staff_roles || []).map((r) => r.role), isActive: s.is_active }))
       : [currentUser],
-    partners: partners.map((p): Partner => ({ id: p.id, code: p.code, name: p.name, isShippingLine: p.is_shipping_line, isCustomer: p.is_customer, allowTts: p.allow_tts })),
+    partners: partners.map((p): Partner => ({ id: p.id, code: p.code, name: p.name, isShippingLine: p.is_shipping_line, isCustomer: p.is_customer, allowTts: p.allow_tts, isPriority: p.is_priority })),
     containerSizes: sizes.map((s) => s.code),
     containerTypes: types.map((t) => t.code),
     stuffingClasses: stuffing.map((s): StuffingClassItem => ({ id: s.id, shippingLineCode: s.shipping_line_code, code: s.code, description: s.description || undefined, isActive: s.is_active })),

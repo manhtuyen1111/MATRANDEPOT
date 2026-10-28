@@ -1464,3 +1464,21 @@ describe('DEC-166: Danh mục PHÂN LOẠI ĐÓNG HÀNG theo hãng tàu', () => 
     expect(office('ONE').gateInOrders[0].stuffingClass).toBeUndefined();
   });
 });
+
+describe('DEC-166: hãng tàu ƯU TIÊN (Giám định Hạ vỏ chọn sẵn)', () => {
+  it('Chỉ Admin; chỉ 1 hãng ưu tiên — tích hãng khác thì hãng cũ tự bỏ; bỏ tích → không còn hãng ưu tiên', async () => {
+    const { setShippingLinePriority } = await import('../src/services/depotOperations');
+    const { priorityShippingLine } = await import('../src/services/stuffing');
+    const s0 = createInitialState();
+    expect(priorityShippingLine(s0)).toBe('');
+    expect(() => setShippingLinePriority(as(s0, 'usr-office'), { code: 'MAERSK', isPriority: true })).toThrow(/ADMIN/);
+    expect(() => setShippingLinePriority(as(s0, 'usr-admin'), { code: 'KHONGCO', isPriority: true })).toThrow(/HÃNG TÀU/);
+    let s = setShippingLinePriority(as(s0, 'usr-admin'), { code: 'MAERSK', isPriority: true });
+    expect(priorityShippingLine(s)).toBe('MAERSK');
+    s = setShippingLinePriority(s, { code: 'ONE', isPriority: true });
+    expect(priorityShippingLine(s)).toBe('ONE');
+    expect(s.partners.filter((p) => p.isPriority).map((p) => p.code)).toEqual(['ONE']);
+    s = setShippingLinePriority(s, { code: 'ONE', isPriority: false });
+    expect(priorityShippingLine(s)).toBe('');
+  });
+});

@@ -1677,6 +1677,18 @@ export function addContainerTypeCatalogItem(
   );
 }
 
+// DEC-166: tích / bỏ hãng tàu ƯU TIÊN — chỉ 1 hãng; tích hãng khác thì hãng cũ tự bỏ
+export function setShippingLinePriority(state: DepotState, input: { code: string; isPriority: boolean }): DepotState {
+  assertAdmin(state);
+  const line = state.partners.find((p) => p.isShippingLine && p.code === input.code);
+  if (!line) throw new Error('Không tìm thấy HÃNG TÀU trong Danh mục chung.');
+  const partners = state.partners.map((p) =>
+    p.isShippingLine ? { ...p, isPriority: p.code === input.code ? input.isPriority : input.isPriority ? false : p.isPriority } : p
+  );
+  return appendAudit({ ...state, partners }, 'ADMIN_SET_LINE_PRIORITY', 'CATALOG', line.code,
+    `[Admin Danh mục chung] ${input.isPriority ? 'Đặt' : 'Bỏ'} ƯU TIÊN hãng tàu ${line.code}`);
+}
+
 // DEC-166: DANH MỤC PHÂN LOẠI ĐÓNG HÀNG theo hãng tàu — thêm (hoặc mở lại) / ngừng dùng; không xóa cứng (hồ sơ cũ còn dùng mã)
 export function addStuffingClassCatalogItem(state: DepotState, input: { shippingLineCode: string; code: string; description?: string }): DepotState {
   assertAdmin(state);

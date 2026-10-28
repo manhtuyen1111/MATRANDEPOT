@@ -1499,6 +1499,24 @@ Quy ước trạng thái:
 - Lộ trình (`getVesselRoute`, chỉ đọc dữ liệu): **Nhập tàu** = Giám định → Vệ sinh (nếu có) → Xe nâng hạ vỏ → Văn phòng duyệt nhập tàu; **Xuất tàu** = Văn phòng lập danh sách → Xe nâng xuất cont → Văn phòng duyệt xuất tàu. Bước đã xong có ✓ + giờ.
 - Thời điểm xem / in giữ như cũ: Nhập tàu từ khi Giám định xác nhận; Xuất tàu khi cont đã OUT.
 
+### DEC-166 — Danh mục PHÂN LOẠI ĐÓNG HÀNG theo hãng tàu + hãng tàu ƯU TIÊN
+
+- Trạng thái: CONFIRMED (2026-10-28, người dùng — trả lời câu hỏi). **Thay** bộ cố định M / K / E (DEC-016, DEC-128 giữ nguyên chỗ hiển thị).
+- Danh mục chung → **Phân loại đóng hàng** (menu `DM_PHAN_LOAI`): **mỗi hãng tàu 1 bộ mã riêng** (mã 1–5 chữ / số + mô tả). Chỉ Admin thêm / ngừng dùng / mở lại — **không xóa cứng** (hồ sơ cũ còn dùng mã). Văn phòng / Quản lý xem.
+- Hãng **không có mã nào đang dùng** → Giám định **ẩn hẳn** mục Đóng hàng, lưu trống; Tồn vỏ / báo cáo / phiếu hiện "-".
+- **Giám định Hạ vỏ chọn HÃNG TÀU trước** (ô sổ xuống chọn 1, **mặc định hãng ƯU TIÊN**) → hiện đúng bộ mã của hãng. Văn phòng chốt hãng khác thì phân loại được kiểm lại; hãng mới không có mã cũ → Văn phòng chọn lại; hãng mới không dùng → xóa phân loại. W-SURVEY: bổ sung trên kệ theo hãng của cont.
+- Nhập tàu: theo hãng của danh sách tàu.
+- **Hãng tàu ƯU TIÊN**: Danh mục → Hãng tàu có ô tích "Ưu tiên", **tối đa 1 hãng** (tích hãng khác → hãng cũ tự bỏ).
+- Dữ liệu cũ / database hiện có: tạo sẵn M / K / E cho **mọi hãng tàu đang có** (giữ hành vi cũ). Hãng thêm mới **không** tự có mã — Admin thêm nếu hãng dùng.
+- Nghiệp vụ: `src/services/stuffing.ts` (`stuffingOptions`, `resolveStuffing`, `priorityShippingLine`), `addStuffingClassCatalogItem` / `setStuffingClassActive` / `setShippingLinePriority`. Database: migration `20261104000001_stuffing_catalog.sql` (bảng `stuffing_classes`, `resolve_stuffing`, cột `partners.is_priority`, bỏ enum `stuffing_class`).
+
+### DEC-165 — Văn phòng DANH SÁCH NHẬP / XUẤT TÀU dạng bảng + Báo cáo tàu 2 chế độ xem
+
+- Trạng thái: CONFIRMED (2026-10-28, người dùng).
+- Văn phòng → Nhập tàu / Xuất tàu: khối "Đã duyệt gần đây" đổi thành **DANH SÁCH NHẬP TÀU / XUẤT TÀU** dạng bảng (DEC-164): TÊN TÀU / HÃNG TÀU / SỐ LƯỢNG / THỜI GIAN BẮT ĐẦU / TIẾN ĐỘ / TRẠNG THÁI / NGƯỜI TẠO / NGƯỜI DUYỆT; gồm **mọi danh sách** (mới nhất trước, phân trang); bấm dòng mở chi tiết.
+- Trạng thái (`vesselListStatusLabel`): ĐANG THỰC HIỆN / ĐÃ DUYỆT / DUYỆT THIẾU (duyệt khi còn cont không kịp — DEC-131). Tiến độ trong bảng 1 dòng (`VesselProgressInline`).
+- Báo cáo Nhập tàu / Xuất tàu: 2 chế độ **CHI TIẾT** (từng cont, như cũ) / **TÊN TÀU** (mỗi tàu 1 dòng: số lượng, 20' / 40'+, đã xong, chờ, không kịp, trạng thái, người tạo / duyệt — `queryVesselSummaryReport`); cùng bộ lọc; Excel theo chế độ đang xem (`vesselSummarySheet`).
+
 ### DEC-164 — Chiều cao dòng bảng danh sách đồng bộ, mốc = Tồn vỏ
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng — màn Chờ báo giá dòng cao hơn các màn khác).
@@ -1596,6 +1614,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-164 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-166 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

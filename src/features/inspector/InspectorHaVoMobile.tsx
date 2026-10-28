@@ -26,7 +26,7 @@ import { DepotState } from '../../services/depotStore';
 import { pendingRackInspections } from '../../services/depotOperations';
 import { peekNextCode } from '../../services/codes';
 import { formatDateTime } from '../../services/datetime';
-import { stuffingOptions } from '../../services/stuffing';
+import { priorityShippingLine, stuffingOptions } from '../../services/stuffing';
 
 interface Props {
   state: DepotState;
@@ -76,7 +76,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
   const [stuffingClass, setStuffingClass] =
     useState<FieldStuffingClass | null>(null);
   // DEC-166: Giám định chọn HÃNG TÀU trước → bộ Phân loại đóng hàng của hãng (hãng không dùng → ẩn mục Đóng hàng)
-  const [lineCode, setLineCode] = useState('');
+  const [lineCode, setLineCode] = useState(() => priorityShippingLine(state)); // mặc định hãng ƯU TIÊN
   const shippingLines = state.partners.filter((p) => p.isShippingLine);
   const lineStuffing = stuffingOptions(state, lineCode);
   const [cleaningItems, setCleaningItems] = useState<FieldCleaningItem[]>([]);
@@ -150,6 +150,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     setSelectedDamageRemarks([]);
     setCustomDamageNote('');
     setStuffingClass(null);
+    setLineCode(priorityShippingLine(state)); // DEC-166: hồ sơ mới chọn sẵn hãng ƯU TIÊN
     setCleaningItems([]);
     setManufactureYear('');
     setIsReadyToConfirmStep(false);
@@ -779,19 +780,15 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                 {/* DEC-166: chọn HÃNG TÀU trước — quyết định bộ Phân loại đóng hàng */}
                 <div className="space-y-1.5 rounded-lg border border-line bg-white p-3">
                   <span className="block text-xs font-bold text-ink">HÃNG TÀU *</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    {shippingLines.map((p) => (
-                      <button
-                        key={p.code}
-                        type="button"
-                        data-testid={`line-${p.code}`}
-                        onClick={() => { setLineCode(p.code); setStuffingClass(null); }}
-                        className={`rounded-lg border py-2.5 text-sm font-bold transition ${lineCode === p.code ? 'border-navy-900 bg-navy-900 text-white' : 'border-line-strong bg-white text-ink hover:bg-canvas'}`}
-                      >
-                        {p.code}
-                      </button>
-                    ))}
-                  </div>
+                  <select
+                    data-testid="inspector-line"
+                    value={lineCode}
+                    onChange={(e) => { setLineCode(e.target.value); setStuffingClass(null); }}
+                    className="w-full rounded-lg border border-line-strong bg-white px-3 py-2.5 text-sm font-bold text-ink"
+                  >
+                    <option value="">-- Chọn hãng tàu --</option>
+                    {shippingLines.map((p) => <option key={p.code} value={p.code}>{p.code} — {p.name}{p.isPriority ? ' (ưu tiên)' : ''}</option>)}
+                  </select>
                 </div>
 
                 {/* UI-02: form Giám định dùng chung (hiện lần lượt từng mục) */}

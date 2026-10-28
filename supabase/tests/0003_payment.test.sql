@@ -20,6 +20,7 @@ insert into public.staff_roles values
 insert into public.container_sizes (code) values ('20'), ('40') on conflict do nothing;
 insert into public.container_types (code) values ('DC'), ('HC') on conflict do nothing;
 insert into public.partners (code, name, is_shipping_line) values ('MSK', 'MSK', true);
+insert into public.stuffing_classes (shipping_line_code, code, sort_order) values ('MSK', 'M', 1), ('MSK', 'K', 2), ('MSK', 'E', 3) on conflict do nothing; -- DEC-166
 insert into public.partners (code, name, is_customer, allow_tts) values ('KH01', 'Khách hàng 01', true, true);
 insert into public.fee_catalog (id, code, name, category, size, type, amount) values
   ('00000000-0000-0000-0000-0000000000f1', 'LOLO_20', 'Nâng hạ 20DC', 'NANG_HA', '20', 'DC', 1000000),
@@ -35,7 +36,7 @@ declare v_id uuid;
 begin
   perform pg_temp.login('00000000-0000-0000-0000-0000000000a1');
   v_id := (public.record_gate_in_field_step(gen_random_uuid(), 'door.jpg', cond, cleaning,
-    case when cond = 'DAMAGE' then array['Móp vách'] else '{}' end, 'E', 2019)->>'id')::uuid;
+    case when cond = 'DAMAGE' then array['Móp vách'] else '{}' end, 'E', 2019, p_shipping_line_code => 'MSK')->>'id')::uuid;
   perform pg_temp.login('00000000-0000-0000-0000-0000000000a2');
   perform public.verify_gate_in_office(v_id, no, '20', 'DC', '15c-123.45', '0912 345 678', customer, 'MSK', 'BK1',
     array['00000000-0000-0000-0000-0000000000f1'::uuid, '00000000-0000-0000-0000-0000000000f2'::uuid]);
@@ -44,7 +45,7 @@ end $$;
 
 -- ==== 1. Văn phòng lập chứng từ ====
 select pg_temp.login('00000000-0000-0000-0000-0000000000a1');
-select (public.record_gate_in_field_step(gen_random_uuid(), 'door.jpg', 'AV', array['KHÔNG VỆ SINH'], '{}', 'E', 2019)->>'id') as g1 \gset
+select (public.record_gate_in_field_step(gen_random_uuid(), 'door.jpg', 'AV', array['KHÔNG VỆ SINH'], '{}', 'E', 2019, p_shipping_line_code => 'MSK')->>'id') as g1 \gset
 select throws_like(format($$ select public.verify_gate_in_office(%L, 'MSKU1000001', '20', 'DC', '15C', '0912345678', 'X', 'MSK', '', array['00000000-0000-0000-0000-0000000000f1'::uuid]) $$, :'g1'),
   '%Không đủ quyền%', 'Giám định không lập chứng từ');
 select pg_temp.login('00000000-0000-0000-0000-0000000000a2');
@@ -61,7 +62,7 @@ select is((select payer_name || '|' || voucher_no from public.vouchers v join pu
 select is((select driver_phone from public.gate_in_orders where id = :'g1'), '0912345678', 'SĐT chuẩn hóa +84');
 -- Trùng số cont đang có hồ sơ khác
 select pg_temp.login('00000000-0000-0000-0000-0000000000a1');
-select (public.record_gate_in_field_step(gen_random_uuid(), 'door.jpg', 'AV', array['KHÔNG VỆ SINH'], '{}', 'E', 2019)->>'id') as g2 \gset
+select (public.record_gate_in_field_step(gen_random_uuid(), 'door.jpg', 'AV', array['KHÔNG VỆ SINH'], '{}', 'E', 2019, p_shipping_line_code => 'MSK')->>'id') as g2 \gset
 select pg_temp.login('00000000-0000-0000-0000-0000000000a2');
 select throws_like(format($$ select public.verify_gate_in_office(%L, 'MSKU1000001', '20', 'DC', '15C', '0912345678', 'X', 'MSK', '', array['00000000-0000-0000-0000-0000000000f1'::uuid]) $$, :'g2'),
   '%hồ sơ Hạ vỏ khác chưa hoàn tất%', 'Chặn trùng số cont (GIN-006)');

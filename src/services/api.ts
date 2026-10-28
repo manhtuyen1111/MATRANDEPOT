@@ -270,7 +270,10 @@ export const updateCompanyProfile = wrap(ops.updateCompanyProfile, ([, p]) => as
 export const addRepairTeam = wrap(ops.addRepairTeam, ([, i]) => async (c) => {
   await rpc(c, 'catalog_upsert_repair_team', { p_code: i.code, p_name: i.name, p_active: true });
 });
-// DEC-166: Danh mục PHÂN LOẠI ĐÓNG HÀNG theo hãng tàu
+// DEC-166: Danh mục PHÂN LOẠI ĐÓNG HÀNG theo hãng tàu + hãng ƯU TIÊN
+export const setShippingLinePriority = wrap(ops.setShippingLinePriority, ([, i]) => async (c) => {
+  await rpc(c, 'catalog_set_partner_priority', { p_code: i.code, p_priority: i.isPriority });
+});
 export const addStuffingClassCatalogItem = wrap(ops.addStuffingClassCatalogItem, ([, i]) => async (c) => {
   await rpc(c, 'catalog_upsert_stuffing_class', { p_shipping_line_code: i.shippingLineCode, p_code: i.code.trim().toUpperCase(), p_description: nul(i.description?.trim()) });
 });

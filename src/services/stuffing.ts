@@ -16,6 +16,11 @@ export function defaultStuffingClasses(partners: Partner[]): StuffingClassItem[]
     .flatMap((p) => DEFAULT_STUFFING_CODES.map((code) => ({ id: `stf-${p.code}-${code}`, shippingLineCode: p.code, code, isActive: true })));
 }
 
+// DEC-166: hãng tàu ƯU TIÊN (Danh mục → Hãng tàu) — Giám định Hạ vỏ chọn sẵn
+export function priorityShippingLine(state: DepotState): string {
+  return state.partners.find((p) => p.isShippingLine && p.isPriority)?.code || '';
+}
+
 // Mã đang dùng của 1 hãng tàu (theo thứ tự trong Danh mục)
 export function stuffingOptions(state: DepotState, shippingLineCode?: string): string[] {
   if (!shippingLineCode) return [];

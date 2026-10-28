@@ -14,6 +14,7 @@ Thiết kế: `docs/DATABASE_SCHEMA.md`. **Agent chỉ viết file. Người dù
 | 5b | `supabase/functions/*` | Edge Function `admin-create-staff`, `admin-reset-password`, `purge-expired-photos` (+ `_shared/auth.ts`) | **Đã chạy thử local 2026-10-27: 16/16** (`supabase/tests/edge-functions.local.cjs`) |
 | 6 | `20261102000001` | Đồng bộ phần thay đổi: cột `sync_at` + trigger cho 20 bảng app tải, `sync_deletions`, `server_now()` (DEC-158) | **Đã chạy thử local 2026-10-27: pgTAP 10/10** (tổng 180/180) |
 | 7 | `20261103000001` | Sửa `catalog_add_fee`: không chọn hãng tàu (THU GOM RÁC / KHÁC) bị báo sai "Hãng tàu không có" | **pgTAP 184/184 local 2026-10-28** — chờ bạn `db push` lên `matran-test` |
+| 8 | `20261104000001` | DEC-166: bảng `stuffing_classes` (phân loại đóng hàng theo hãng, tạo sẵn M / K / E cho hãng đang có), `resolve_stuffing`, `partners.is_priority`; bỏ enum `stuffing_class` → text; Giám định Hạ vỏ nhận hãng tàu; Văn phòng nhận phân loại khi đổi hãng | **pgTAP 201/201 local 2026-10-28** — chờ bạn `db push` lên `matran-test` |
 | — | — | Chuyển kho > 36 tháng | Làm khi có dữ liệu đủ 3 năm (2029) |
 | — | — | Nhận báo có ngân hàng (callback) | Chờ Q-032 chọn ngân hàng; hiện Văn phòng xác nhận tay |
 
