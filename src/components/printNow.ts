@@ -27,7 +27,8 @@ function sizeK80Pages(): void {
   probe.remove();
   const style = document.createElement('style');
   style.id = STYLE_ID;
-  style.textContent = rules.join('\n');
+  // Lề trang mặc định = 0 → trình duyệt không còn chỗ in "đầu trang / chân trang" (ngày giờ, tên trang, địa chỉ web)
+  style.textContent = ['@page { margin: 0; }', ...rules].join('\n');
   document.head.appendChild(style);
 }
 
