@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, KeyRound, LogIn, LogOut } from 'lucide-react';
 import { Feedback, inputCls, labelCls, primaryBtn, secondaryBtn } from '../../components/shared';
-import { DEFAULT_PASSWORD, environmentLabel, readRememberedUsername, writeRememberedUsername } from '../../services/authPassword';
+import { DEFAULT_PASSWORD, environmentLabel, isProductionEnv, readRememberedUsername, writeRememberedUsername } from '../../services/authPassword';
 
 // ============================================================================
 // MÀN ĐĂNG NHẬP + ĐỔI MẬT KHẨU (DEC-143, DEC-151, DEC-153) — chỉ dùng ở chế độ database.
@@ -23,7 +23,8 @@ const BrandPanel: React.FC = () => (
     </svg>
     <div className="relative max-w-md">
       <p className="text-6xl font-bold leading-[0.95] tracking-tight">MATRAN<br />DEPOT</p>
-      <p className="mt-4 text-sm text-white/70">Quản lý bãi container rỗng — gọn gàng từ văn phòng tới hiện trường.</p>
+      <p className="mt-4 text-sm font-semibold tracking-wide text-white/85">Nền tảng quản lý vận hành depot container rỗng</p>
+      <p className="mt-1 text-xs text-white/60">Giám định · Văn phòng · Xe nâng · Thanh toán — đồng bộ theo thời gian thực</p>
     </div>
   </div>
 );
@@ -59,7 +60,18 @@ const Shell: React.FC<{ children: React.ReactNode; env?: string }> = ({ children
       <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-8">
         <div className="w-full max-w-sm">{children}</div>
       </div>
-      <p className="px-4 pb-4 text-center text-xs text-ink-muted" data-testid="login-env">{environmentLabel(env)}</p>
+      <div className="space-y-1.5 px-4 pb-4 text-center">
+        {/* Bản test: nhãn vàng nổi bật để không nhầm với bản chính thức */}
+        <p
+          className={`text-xs ${isProductionEnv(env) ? 'text-ink-muted' : 'mx-auto inline-block rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-semibold text-amber-900'}`}
+          data-testid="login-env"
+        >
+          {environmentLabel(env)}
+        </p>
+        <p className="text-[11px] tracking-wide text-ink-muted">
+          Made by <span className="font-bold text-ink">MT</span>
+        </p>
+      </div>
     </div>
   </div>
 );
