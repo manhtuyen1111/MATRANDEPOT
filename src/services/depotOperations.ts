@@ -14,6 +14,9 @@ import {
   GateOutOrder,
   K80InternalTicket,
   ReleaseBooking,
+  RepairGrade,
+  RepairTeam,
+  RepairTeamMember,
   ServiceWorkOrder,
   CONDITION_DEFERRED,
 } from '../types/depot';
@@ -1943,6 +1946,92 @@ export function setRepairTeamMemberActive(
     'CATALOG',
     team.code,
     `[Admin Danh mục chung] ${input.isActive ? 'Kích hoạt' : 'Ngưng'} nhân viên ${member.fullName} (${team.name})`
+  );
+}
+
+// DEC-173: tạo tổ theo SỐ LƯỢNG — đánh số tiếp theo tổ đã có: TỔ SỬA CHỮA n (mã TO-SC-0n)
+export function repairTeamsToCreate(state: DepotState, count: number): { code: string; name: string }[] {
+  if (!Number.isInteger(count) || count < 1 || count > 50) throw new Error('Số lượng tổ phải từ 1 đến 50.');
+  const used = new Set(state.repairTeams.map((t) => t.code));
+  const out: { code: string; name: string }[] = [];
+  for (let n = 1; out.length < count; n++) {
+    const code = `TO-SC-${String(n).padStart(2, '0')}`;
+    if (!used.has(code)) out.push({ code, name: `TỔ SỬA CHỮA ${n}` });
+  }
+  return out;
+}
+
+export function addRepairTeamsByCount(state: DepotState, input: { count: number }): DepotState {
+  return repairTeamsToCreate(state, input.count).reduce((s, t) => addRepairTeam(s, t), state);
+}
+
+// DEC-173: BẬC THỢ — tên + đơn giá tiền / 1 giờ công. Sửa đơn giá = đổi cho mọi nhân viên cùng bậc.
+export function upsertRepairGrade(state: DepotState, input: { id?: string; name: string; hourlyRate: number }): DepotState {
+  assertAdmin(state);
+  const name = input.name.trim();
+  if (!name) throw new Error('Vui lòng nhập tên BẬC THỢ.');
+  if (!Number.isFinite(input.hourlyRate) || input.hourlyRate <= 0) throw new Error('GIỜ CÔNG BẬC THỢ (đơn giá / giờ) phải lớn hơn 0.');
+  const grades = state.repairGrades || [];
+  if (grades.some((g) => g.id !== input.id && g.name.toLowerCase() === name.toLowerCase())) throw new Error(`Bậc thợ "${name}" đã tồn tại.`);
+  const old = input.id ? grades.find((g) => g.id === input.id) : undefined;
+  if (input.id && !old) throw new Error('Không tìm thấy bậc thợ.');
+  const code = old?.code || `BT-${String(grades.length + 1).padStart(2, '0')}`;
+  const row = { id: old?.id || newId('bt'), code, name, hourlyRate: Math.round(input.hourlyRate), isActive: old?.isActive ?? true };
+  return appendAudit(
+    { ...state, repairGrades: old ? grades.map((g) => (g.id === old.id ? row : g)) : [...grades, row] },
+    'ADMIN_UPSERT_REPAIR_GRADE',
+    'CATALOG',
+    code,
+    `[Admin Danh mục chung] ${old ? 'Sửa' : 'Thêm'} BẬC THỢ ${name} — ${row.hourlyRate.toLocaleString('vi-VN')}đ / giờ`
+  );
+}
+
+export function setRepairGradeActive(state: DepotState, input: { id: string; isActive: boolean }): DepotState {
+  assertAdmin(state);
+  const g = (state.repairGrades || []).find((x) => x.id === input.id);
+  if (!g) throw new Error('Không tìm thấy bậc thợ.');
+  return appendAudit(
+    { ...state, repairGrades: state.repairGrades.map((x) => (x.id === g.id ? { ...x, isActive: input.isActive } : x)) },
+    'ADMIN_UPSERT_REPAIR_GRADE',
+    'CATALOG',
+    g.code,
+    `[Admin Danh mục chung] ${input.isActive ? 'Kích hoạt' : 'Ngưng'} BẬC THỢ ${g.name}`
+  );
+}
+
+// DEC-173: DANH SÁCH NHÂN VIÊN SỬA CHỮA = user có vai trò Sửa chữa; mỗi người thuộc đúng 1 tổ + 1 bậc thợ (bắt buộc cả 2).
+export function repairStaffAssignment(state: DepotState, staffUserId: string): { team?: RepairTeam; member?: RepairTeamMember; grade?: RepairGrade } {
+  for (const team of state.repairTeams) {
+    const member = team.members.find((m) => m.isActive && m.staffUserId === staffUserId);
+    if (member) return { team, member, grade: (state.repairGrades || []).find((g) => g.id === member.gradeId) };
+  }
+  return {};
+}
+
+export function assignRepairStaff(state: DepotState, input: { staffUserId: string; teamId: string; gradeId: string }): DepotState {
+  assertAdmin(state);
+  const user = state.staffUsers.find((u) => u.id === input.staffUserId);
+  if (!user || !user.isActive || !user.roles.includes('REPAIR_STAFF')) throw new Error('Chỉ gán được user đang hoạt động có vai trò SỬA CHỮA.');
+  const team = state.repairTeams.find((t) => t.id === input.teamId && t.isActive);
+  if (!team) throw new Error('Vui lòng chọn TỔ SỬA CHỮA.');
+  const grade = (state.repairGrades || []).find((g) => g.id === input.gradeId && g.isActive);
+  if (!grade) throw new Error('Vui lòng chọn BẬC THỢ.');
+  const repairTeams = state.repairTeams.map((t) => {
+    // Rời tổ cũ (ngưng, giữ lịch sử); ở lại tổ này thì cập nhật bậc thợ
+    const members = t.members.map((m) =>
+      m.isActive && m.staffUserId === user.id ? (t.id === team.id ? { ...m, gradeId: grade.id, fullName: user.fullName } : { ...m, isActive: false }) : m
+    );
+    if (t.id === team.id && !members.some((m) => m.isActive && m.staffUserId === user.id)) {
+      members.push({ id: newId('rtm'), fullName: user.fullName, isActive: true, staffUserId: user.id, gradeId: grade.id });
+    }
+    return { ...t, members };
+  });
+  return appendAudit(
+    { ...state, repairTeams },
+    'ADMIN_ADD_REPAIR_MEMBER',
+    'CATALOG',
+    team.code,
+    `[Admin Danh mục chung] Gán ${user.fullName} → ${team.name}, bậc thợ ${grade.name} (${grade.hourlyRate.toLocaleString('vi-VN')}đ / giờ)`
   );
 }
 

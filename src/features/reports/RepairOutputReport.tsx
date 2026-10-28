@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-import { DepotState } from '../../services/depotStore';
+import { DepotState, formatVnd } from '../../services/depotStore';
 import { queryRepairOutput, RepairOutputFilter, RepairOutputRow, repairOutputSheets } from '../../services/reports';
 import { quickRange, fileStamp } from '../../services/datetime';
 import { useReportState } from '../../components/useReportState';
@@ -80,8 +80,11 @@ export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (c
                 <th className="px-3 py-2">#</th>
                 <th className="px-3 py-2">Tổ sửa chữa</th>
                 <th className="px-3 py-2">Nhân viên</th>
+                <th className="px-3 py-2">Bậc thợ</th>
                 <th className="px-3 py-2 text-right">Số cont</th>
                 <th className="px-3 py-2 text-right">Giờ công</th>
+                <th className="px-3 py-2 text-right">Giờ công bậc thợ (đ / giờ)</th>
+                <th className="px-3 py-2 text-right">Thành tiền</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -90,16 +93,21 @@ export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (c
                   <td className="px-3 py-2 text-ink-muted">{idx + 1}</td>
                   <td className="px-3 py-2">{r.teamName || '-'}</td>
                   <td className="px-3 py-2 font-semibold">{r.memberName}</td>
+                  <td className="px-3 py-2">{r.gradeName || <span className="text-amber-700">Chưa có bậc</span>}</td>
                   <td className="px-3 py-2 text-right font-mono">{r.containers}</td>
                   <td className="px-3 py-2 text-right font-mono font-bold">{r.hours}</td>
+                  <td className="px-3 py-2 text-right font-mono">{r.hourlyRate !== undefined ? formatVnd(r.hourlyRate) : '-'}</td>
+                  <td className="px-3 py-2 text-right font-mono font-bold">{r.amount !== undefined ? formatVnd(r.amount) : '-'}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr className="border-t border-line bg-canvas font-semibold">
-                <td colSpan={3} className="px-3 py-2 text-right">Tổng</td>
+                <td colSpan={4} className="px-3 py-2 text-right">Tổng</td>
                 <td className="px-3 py-2 text-right font-mono">{rows.reduce((s, r) => s + r.containers, 0)}</td>
                 <td className="px-3 py-2 text-right font-mono">{totalHours}</td>
+                <td />
+                <td className="px-3 py-2 text-right font-mono">{formatVnd(rows.reduce((s, r) => s + (r.amount || 0), 0))}</td>
               </tr>
             </tfoot>
           </table>

@@ -19,6 +19,7 @@ import {
   PaymentTransaction,
   PaymentVoucher,
   RepairTeam,
+  RepairGrade,
   CompanyProfile,
   ReleaseBooking,
   ServiceWorkOrder,
@@ -56,6 +57,7 @@ export interface DepotState {
   k80Tickets: K80InternalTicket[];
   auditLogs: AuditLogEntry[];
   repairTeams: RepairTeam[];
+  repairGrades: RepairGrade[]; // DEC-173
   companyProfile: CompanyProfile;
   vesselLists: VesselList[]; // NHẬP TÀU / XUẤT TÀU (DEC-069)
   // Bộ đếm cấp mã hồ sơ / phiếu (HV-YYMMDD, CV-YYMMDD, PT-YYYY...). Ở chế độ Supabase do database cấp.
@@ -766,6 +768,7 @@ export function createInitialState(): DepotState {
         createdAt: '2026-10-19T08:28:00+07:00',
       },
     ],
+    repairGrades: [],
     repairTeams: [
       {
         id: 'rt-1',
@@ -838,6 +841,7 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
     paymentTransactions: raw.paymentTransactions || [],
     paymentReceipts: ensureInvoiceFields(raw.paymentReceipts || []), // DEC-111
     repairTeams: raw.repairTeams || base.repairTeams,
+    repairGrades: raw.repairGrades || base.repairGrades,
     companyProfile: { ...base.companyProfile, ...(raw.companyProfile || {}) },
     vesselLists: raw.vesselLists || [],
     codeCounters: raw.codeCounters || {},

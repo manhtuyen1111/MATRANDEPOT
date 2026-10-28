@@ -381,6 +381,17 @@ export interface RepairOutputRow {
   containers: number;
   hours: number;
   jobs: RepairOutputJob[];
+  // DEC-173: bậc thợ hiện tại của nhân viên → thành tiền = giờ công × giờ công bậc thợ (đ / giờ)
+  gradeName?: string;
+  hourlyRate?: number;
+  amount?: number;
+}
+
+// Bậc thợ hiện tại theo tên nhân viên (phiếu sửa chữa lưu tên) — ưu tiên dòng đang hoạt động, có bậc thợ
+function gradeOfMember(state: DepotState, name: string) {
+  const members = state.repairTeams.flatMap((t) => t.members).filter((m) => m.fullName === name && m.gradeId);
+  const m = members.find((x) => x.isActive) || members[members.length - 1];
+  return m ? (state.repairGrades || []).find((g) => g.id === m.gradeId) : undefined;
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -409,7 +420,12 @@ export function queryRepairOutput(state: DepotState, filter: RepairOutputFilter)
         });
     });
   return Array.from(byMember.values())
-    .map((r) => ({ ...r, hours: round2(r.hours), jobs: r.jobs.sort((a, b) => (b.workOrder.completedAt || '').localeCompare(a.workOrder.completedAt || '')) }))
+    .map((r) => {
+      const grade = gradeOfMember(state, r.memberName);
+      const hours = round2(r.hours);
+      return { ...r, hours, gradeName: grade?.name, hourlyRate: grade?.hourlyRate, amount: grade ? Math.round(hours * grade.hourlyRate) : undefined };
+    })
+    .map((r) => ({ ...r, jobs: r.jobs.sort((a, b) => (b.workOrder.completedAt || '').localeCompare(a.workOrder.completedAt || '')) }))
     .sort((a, b) => a.teamName.localeCompare(b.teamName) || b.hours - a.hours || a.memberName.localeCompare(b.memberName));
 }
 
@@ -417,10 +433,10 @@ export function repairOutputSheets(rows: RepairOutputRow[]): SheetData[] {
   return [
     {
       name: 'SẢN LƯỢNG SỬA CHỮA',
-      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'SỐ CONT', 'GIỜ CÔNG'],
+      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'BẬC THỢ', 'SỐ CONT', 'GIỜ CÔNG', 'GIỜ CÔNG BẬC THỢ (Đ/GIỜ)', 'THÀNH TIỀN'],
       rows: [
-        ...rows.map((r) => [r.teamName, r.memberName, r.containers, r.hours]),
-        ['', 'TỔNG', rows.reduce((s, r) => s + r.containers, 0), round2(rows.reduce((s, r) => s + r.hours, 0))],
+        ...rows.map((r) => [r.teamName, r.memberName, r.gradeName || '', r.containers, r.hours, r.hourlyRate ?? '', r.amount ?? '']),
+        ['', 'TỔNG', '', rows.reduce((s, r) => s + r.containers, 0), round2(rows.reduce((s, r) => s + r.hours, 0)), '', rows.reduce((s, r) => s + (r.amount || 0), 0)],
       ],
     },
     {
