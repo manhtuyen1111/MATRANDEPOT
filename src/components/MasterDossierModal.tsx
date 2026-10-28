@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock, Eye, FileText, Printer, ReceiptText, X } from 'lucide-react';
+import { CheckCircle2, Clock, Eye, FileDown, FileText, Printer, ReceiptText, X } from 'lucide-react';
 import { ContainerStatus, K80InternalTicket, PaymentVoucher, RECEIPT_OPERATION_LABELS, VesselList, VesselListItem } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
 import { formatLocation } from '../services/core';
@@ -7,8 +7,8 @@ import { paymentLabelOf, receiptOperationOf } from '../services/payments';
 import { documentPackOf } from "../services/driverRoute";
 import { recordReceiptPrint } from "../services/api";
 import { formatDateTime } from "../services/datetime";
-import { CompanyHeader, PrintPortal, PrintPreviewModal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
-import { printNow } from "./printNow";
+import { CompanyHeader, PrintPreviewModal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
+import { exportPdf, printNow } from "./printNow";
 import { CustomerSlipK80, EeirK80Sheet, slipPrintCount } from './K80TicketModal';
 import { findVesselItemByCode } from '../services/vessel';
 import { linkCls, formatViTime, PhotoZoom } from './shared';
@@ -182,13 +182,9 @@ const PaymentBody: React.FC<{ state: DepotState; voucher?: PaymentVoucher; onOpe
 // HỒ SƠ CONTAINER (DEC-058): thông tin container ở đầu → các bộ phận theo thứ tự tác nghiệp
 // ---------------------------------------------------------------------------
 export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, onClose, onOpenK80Ticket, onOpenReceipt, onUpdateState }) => {
-  // In HỒ SƠ CONTAINER khổ A4 (DEC-161): toàn bộ hồ sơ tới thời điểm in; in xong gỡ lớp in
-  const [printDossier, setPrintDossier] = React.useState(false);
-  React.useEffect(() => {
-    const clear = () => setPrintDossier(false);
-    window.addEventListener('afterprint', clear);
-    return () => window.removeEventListener('afterprint', clear);
-  }, []);
+  // HỒ SƠ CONTAINER khổ A4 (DEC-161): toàn bộ hồ sơ tới thời điểm in — mở cửa sổ xem, trong đó IN / XUẤT PDF
+  const [viewDossier, setViewDossier] = React.useState(false);
+  const closeDossierView = React.useCallback(() => setViewDossier(false), []);
   // Esc để đóng hồ sơ (DEC-080)
   React.useEffect(() => {
     if (!masterDossierCode) return;
@@ -514,6 +510,14 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
     </>
   );
 
+  // Bản HỒ SƠ CONTAINER khổ A4 (xem trước + in / xuất PDF)
+  const dossierA4 = (
+    <div className="dossier-a4 space-y-3 bg-white text-ink">
+      <CompanyHeader company={state.companyProfile} title="HỒ SƠ CONTAINER" subtitle={<p className="text-[11px]">Toàn bộ hồ sơ tới thời điểm in • In lúc {formatDateTime(new Date())}</p>} />
+      {content}
+    </div>
+  );
+
   return (
     // DEC-080: hồ sơ mở dạng cửa sổ trượt bên phải (giống chi tiết các danh sách); bấm ra ngoài / Esc để đóng
     <div className="fixed inset-0 z-50 flex justify-end bg-navy-900/30" role="dialog" aria-modal="true" aria-label="Hồ sơ container" onClick={onClose}>
@@ -523,23 +527,37 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
         <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3">
           <button
             type="button"
-            onClick={() => {
-              setPrintDossier(true);
-              setTimeout(printNow, 150);
-            }}
+            onClick={() => setViewDossier(true)}
             className="inline-flex items-center gap-1.5 rounded-md bg-navy-900 px-3 py-2 text-xs font-semibold text-white hover:bg-navy-700"
           >
             <FileText className="h-4 w-4" />
             HỒ SƠ CONTAINER
           </button>
         </footer>
-        {printDossier && (
-          <PrintPortal>
-            <div className="dossier-a4 space-y-3 bg-white text-ink">
-              <CompanyHeader company={state.companyProfile} title="HỒ SƠ CONTAINER" subtitle={<p className="text-[11px]">Toàn bộ hồ sơ tới thời điểm in • In lúc {formatDateTime(new Date())}</p>} />
-              {content}
+        {/* HỒ SƠ CONTAINER A4: mở ra xem → trong cửa sổ chọn IN hoặc XUẤT PDF */}
+        {viewDossier && (
+          <PrintPreviewModal
+            title={`HỒ SƠ CONTAINER — ${containerNo || visitCode}`}
+            onClose={closeDossierView}
+            actions={
+              <>
+                <button type="button" onClick={() => setTimeout(printNow, 50)} className="inline-flex items-center gap-1.5 rounded-md border border-line-strong px-3 py-2 text-xs font-semibold text-ink hover:bg-canvas">
+                  <Printer className="h-4 w-4" />
+                  IN
+                </button>
+                <button type="button" onClick={() => exportPdf(`HO-SO-${containerNo || visitCode}`)} className="inline-flex items-center gap-1.5 rounded-md bg-navy-900 px-3 py-2 text-xs font-semibold text-white hover:bg-navy-700">
+                  <FileDown className="h-4 w-4" />
+                  XUẤT PDF
+                </button>
+              </>
+            }
+            print={dossierA4}
+          >
+            <div className="w-full overflow-x-auto">
+              <div className="mx-auto w-[190mm] max-w-none bg-white p-4 shadow">{dossierA4}</div>
             </div>
-          </PrintPortal>
+            <p className="w-full text-center text-[11px] text-ink-muted">XUẤT PDF: trong hộp thoại in chọn Máy in = <strong>Lưu dưới dạng PDF</strong> (Save as PDF) → Lưu. Tên file đã đặt sẵn theo số container.</p>
+          </PrintPreviewModal>
         )}
         <DossierPrintBar state={state} tickets={tickets} onUpdateState={onUpdateState} vessel={[...(importHit ? [importHit] : []), ...exportHits]} />
       </div>
