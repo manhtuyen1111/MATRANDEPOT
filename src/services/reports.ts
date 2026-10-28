@@ -361,6 +361,81 @@ export function repairReportSheet(rows: RepairReportRow[]): SheetData {
   };
 }
 
+// SẢN LƯỢNG SỬA CHỮA (DEC-170): giờ công từng nhân viên theo bộ lọc.
+// Chỉ tính cont ĐÃ SỬA XONG, theo thời gian hoàn tất. Giờ công cont chia đều cho số nhân viên tác nghiệp (1 người = cả, 2 = chia 2, 3 = chia 3…).
+export interface RepairOutputFilter extends DateRange {
+  teamCode?: string;
+  memberName?: string;
+}
+
+export interface RepairOutputJob {
+  workOrder: ServiceWorkOrder;
+  container?: ContainerRecord;
+  memberCount: number;
+  share: number;
+}
+
+export interface RepairOutputRow {
+  memberName: string;
+  teamName: string;
+  containers: number;
+  hours: number;
+  jobs: RepairOutputJob[];
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+export function queryRepairOutput(state: DepotState, filter: RepairOutputFilter): RepairOutputRow[] {
+  const range = toRange(filter);
+  if (!range) throw new Error('Chọn khoảng thời gian trước khi tra cứu.');
+  const byMember = new Map<string, RepairOutputRow>();
+  state.workOrders
+    .filter((w) => w.category === 'REPAIR' && w.workStatus === 'COMPLETED' && inRange(w.completedAt, range))
+    .filter((w) => !filter.teamCode || w.repairTeamCode === filter.teamCode)
+    .forEach((w) => {
+      const members = Array.from(new Set((w.repairMembers || []).map((m) => m.trim()).filter(Boolean)));
+      if (!members.length) return;
+      const share = (w.laborHours || 0) / members.length;
+      const container = state.containers.find((c) => c.masterDossierCode === w.masterDossierCode);
+      members
+        .filter((m) => !filter.memberName || m === filter.memberName)
+        .forEach((m) => {
+          const key = `${w.repairTeamName || ''}|${m}`;
+          const row = byMember.get(key) || { memberName: m, teamName: w.repairTeamName || '', containers: 0, hours: 0, jobs: [] };
+          row.containers += 1;
+          row.hours += share;
+          row.jobs.push({ workOrder: w, container, memberCount: members.length, share: round2(share) });
+          byMember.set(key, row);
+        });
+    });
+  return Array.from(byMember.values())
+    .map((r) => ({ ...r, hours: round2(r.hours), jobs: r.jobs.sort((a, b) => (b.workOrder.completedAt || '').localeCompare(a.workOrder.completedAt || '')) }))
+    .sort((a, b) => a.teamName.localeCompare(b.teamName) || b.hours - a.hours || a.memberName.localeCompare(b.memberName));
+}
+
+export function repairOutputSheets(rows: RepairOutputRow[]): SheetData[] {
+  return [
+    {
+      name: 'SẢN LƯỢNG SỬA CHỮA',
+      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'SỐ CONT', 'GIỜ CÔNG'],
+      rows: [
+        ...rows.map((r) => [r.teamName, r.memberName, r.containers, r.hours]),
+        ['', 'TỔNG', rows.reduce((s, r) => s + r.containers, 0), round2(rows.reduce((s, r) => s + r.hours, 0))],
+      ],
+    },
+    {
+      name: 'CHI TIẾT',
+      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'GIỜ CÔNG CONT', 'SỐ NGƯỜI', 'GIỜ CÔNG CHIA', 'NGÀY HOÀN TẤT'],
+      rows: rows.flatMap((r) =>
+        r.jobs.map((j) => [
+          r.teamName, r.memberName, j.workOrder.masterDossierCode, j.workOrder.containerNo, j.container?.size || '', j.container?.type || '',
+          j.container?.shippingLineCode || '', j.workOrder.laborHours || 0, j.memberCount, j.share, fmt(j.workOrder.completedAt),
+        ])
+      ),
+    },
+  ];
+}
+
 // Xuất Excel .xlsx chuẩn (Q-034). exceljs chỉ được tải khi người dùng bấm "Tải Excel" (dynamic import).
 export async function toXlsxBuffer(sheets: SheetData[]): Promise<ArrayBuffer> {
   const { default: ExcelJS } = await import('exceljs');

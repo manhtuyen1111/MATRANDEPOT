@@ -95,14 +95,14 @@ const OP_TONE: Record<ContainerOperationCode, string> = {
   XUAT_TAU: 'bg-op-xuat-tau text-ink',
 };
 
-export const OperationBadge: React.FC<{ state: DepotState; container: ContainerRecord; large?: boolean; hideVessel?: boolean; block?: boolean }> = ({ state, container, large, hideVessel, block }) => {
+export const OperationBadge: React.FC<{ state: DepotState; container: ContainerRecord; large?: boolean; hideVessel?: boolean; block?: boolean; label?: string }> = ({ state, container, large, hideVessel, block, label }) => {
   const op = containerOperation(state, container);
   return (
     <span
       data-testid="operation-badge"
       className={`${block ? "flex w-full justify-center text-center" : "inline-flex"} flex-wrap items-center gap-x-1.5 rounded font-black uppercase ${OP_TONE[op.code]} ${large ? "px-2.5 py-1 text-sm" : "px-1.5 py-1 text-[10px]"}`}
     >
-      {op.label}
+      {label || op.label}
       {!hideVessel && op.vesselName && <span className={`font-semibold normal-case ${large ? 'text-xs' : ''}`}>• Tàu {op.vesselName}</span>}
       {!hideVessel && op.truckNo && <span className={`font-semibold normal-case ${large ? 'text-xs' : ''}`}>• Xe {op.truckNo}</span>}
     </span>

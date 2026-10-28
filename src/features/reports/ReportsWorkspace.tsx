@@ -19,6 +19,7 @@ import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportShe
 import { can } from '../../services/permissions';
 import { quickRange, fileStamp } from '../../services/datetime';
 import { VesselReport } from './VesselReport';
+import { RepairOutputReport } from './RepairOutputReport';
 import { useReportState } from '../../components/useReportState';
 import { linkCls, DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize, CellText, CELL_MAX } from '../../components/shared';
 import { PaymentInfoCells } from '../../components/PaymentInfoCells';
@@ -79,7 +80,7 @@ const GATE_OUT_STATUS: Record<GateOutOrder['status'], string> = {
 
 export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossier, onOpenReceipt }) => {
   // key theo section để reset bộ lọc khi đổi báo cáo
-  if (section === 'BC_SUA_CHUA') return <RepairReport key={section} state={state} onOpenDossier={onOpenDossier} />;
+  if (section === 'BC_SUA_CHUA') return <RepairReportTabs key={section} state={state} onOpenDossier={onOpenDossier} />;
   if (section === 'BC_NHAP_TAU' || section === 'BC_XUAT_TAU') {
     return <VesselReport key={section} state={state} mode={section === 'BC_NHAP_TAU' ? 'NHAP_TAU' : 'XUAT_TAU'} onOpenDossier={onOpenDossier} />;
   }
@@ -323,6 +324,23 @@ const REPAIR_STATUS: Record<string, string> = {
   CANCELLED: 'Đã đóng (cấp DAMAGE)',
   IN_PROGRESS: 'Đang sửa',
   REWORK_REQUIRED: 'Làm lại',
+};
+
+// Báo cáo Sửa chữa: 2 tab CHI TIẾT (DEC-044) / SẢN LƯỢNG SỬA CHỮA (DEC-170)
+const RepairReportTabs: React.FC<{ state: DepotState; onOpenDossier: (code: string) => void }> = ({ state, onOpenDossier }) => {
+  const [view, setView] = useState<'DETAIL' | 'OUTPUT'>('DETAIL');
+  return (
+    <div className="space-y-4">
+      <div className="inline-flex overflow-hidden rounded-lg border border-line bg-white text-xs font-bold">
+        {([['DETAIL', 'CHI TIẾT'], ['OUTPUT', 'SẢN LƯỢNG SỬA CHỮA']] as const).map(([k, t]) => (
+          <button key={k} type="button" onClick={() => setView(k)} className={`px-4 py-2 ${view === k ? 'bg-navy-900 text-white' : 'text-ink-muted hover:bg-canvas'}`}>
+            {t}
+          </button>
+        ))}
+      </div>
+      {view === 'DETAIL' ? <RepairReport state={state} onOpenDossier={onOpenDossier} /> : <RepairOutputReport state={state} onOpenDossier={onOpenDossier} />}
+    </div>
+  );
 };
 
 // BÁO CÁO SỬA CHỮA CHI TIẾT (DEC-044): bắt buộc lọc, phân trang, xuất Excel kết quả lọc

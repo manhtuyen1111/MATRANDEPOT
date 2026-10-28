@@ -209,7 +209,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
               <OperationBadge state={state} container={scanned} large />
             ) : (
               <span className="flex flex-wrap items-center gap-2">
-                <OperationBadge state={state} container={scanned} large />
+                <OperationBadge state={state} container={scanned} large label={isRepair ? 'CHỜ SỬA CHỮA' : undefined} />
                 <ContainerNo no={scanned.containerNo} locked={scanned.isOnHold} lockReason={scanned.holdReason} className="text-base" />
               </span>
             )}
@@ -367,6 +367,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                   <QueueListRow
                     state={state}
                     container={c}
+                    label={isRepair ? 'CHỜ SỬA CHỮA' : undefined} // nhãn đầu dòng Chờ sửa chữa (không hiện HẠ VỎ)
                     extra={
                       mode === 'XN_CHO_CAP_VO'
                         ? `${c.allocatedTruckNo || '-'} • ${c.allocatedDriverPhone || '-'}`
@@ -400,11 +401,11 @@ const QueueHeader: React.FC<{ dept: string; name: string; count: number }> = ({ 
 
 // DEC-089: 1 dòng danh sách chờ Vệ sinh / Xe nâng — ô TÁC NGHIỆP riêng bên trái;
 //   bên phải: tầng 1 số cont (cột cố định, thẳng hàng) | size/type | vị trí; tầng 2 tên tàu | thông tin phụ
-export const QueueListRow: React.FC<{ state: DepotState; container: ContainerRecord; extra?: string; onClick: () => void }> = ({ state, container: c, extra, onClick }) => {
+export const QueueListRow: React.FC<{ state: DepotState; container: ContainerRecord; extra?: string; label?: string; onClick: () => void }> = ({ state, container: c, extra, label, onClick }) => {
   const op = containerOperation(state, c);
   return (
     <button type="button" onClick={onClick} className="grid w-full grid-cols-[5rem_1fr] items-center gap-2.5 px-3 py-2.5 text-left text-xs hover:bg-canvas" data-testid="queue-row">
-      <OperationBadge state={state} container={c} hideVessel block />
+      <OperationBadge state={state} container={c} hideVessel block label={label} />
       <span className="min-w-0">
         <span className="grid grid-cols-[8.5rem_3rem_1fr] items-center gap-2">
           <ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" />

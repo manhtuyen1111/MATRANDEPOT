@@ -1482,3 +1482,28 @@ describe('DEC-166: hãng tàu ƯU TIÊN (Giám định Hạ vỏ chọn sẵn)',
     expect(priorityShippingLine(s)).toBe('');
   });
 });
+
+// DEC-170: SẢN LƯỢNG SỬA CHỮA — giờ công cont chia đều cho số nhân viên tác nghiệp
+import { queryRepairOutput } from '../src/services/reports';
+describe('DEC-170 sản lượng sửa chữa', () => {
+  const wo = (id: string, hours: number, members: string[], status: 'COMPLETED' | 'OPEN' = 'COMPLETED') => ({
+    id, masterDossierCode: `HV-${id}`, containerNo: `TEST${id}`, category: 'REPAIR' as const, items: [], estimateCost: 0,
+    approvalStatus: 'APPROVED' as const, workStatus: status, assignedTo: '', createdAt: '2026-10-28T01:00:00.000Z',
+    completedAt: '2026-10-28T02:00:00.000Z', laborHours: hours, repairTeamCode: 'TO-1', repairTeamName: 'Tổ 1', repairMembers: members,
+  });
+  const s = { ...createInitialState(), workOrders: [wo('1', 6, ['An']), wo('2', 6, ['An', 'Bình']), wo('3', 9, ['An', 'Bình', 'Cường']), wo('4', 5, ['An'], 'OPEN')] } as unknown as DepotState;
+  const range = { dateFrom: '28/10/2026 00:00:00', dateTo: '28/10/2026 23:59:59' };
+  it('1 người nhận cả, 2 người chia 2, 3 người chia 3; chưa sửa xong không tính', () => {
+    const rows = queryRepairOutput(s, range);
+    const by = Object.fromEntries(rows.map((r) => [r.memberName, r]));
+    expect(by['An'].hours).toBe(6 + 3 + 3);
+    expect(by['An'].containers).toBe(3);
+    expect(by['Bình'].hours).toBe(3 + 3);
+    expect(by['Cường'].hours).toBe(3);
+  });
+  it('lọc nhân viên / tổ; bắt buộc thời gian', () => {
+    expect(queryRepairOutput(s, { ...range, memberName: 'Bình' }).map((r) => r.memberName)).toEqual(['Bình']);
+    expect(queryRepairOutput(s, { ...range, teamCode: 'TO-KHAC' })).toEqual([]);
+    expect(() => queryRepairOutput(s, {})).toThrow(/thời gian/);
+  });
+});
