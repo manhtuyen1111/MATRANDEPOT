@@ -20,6 +20,7 @@ import {
 import { DepotState, hasRolePermission } from './depotStore';
 import { allocateCode } from './codes';
 import { markVesselImportPlaced } from './vessel';
+import { resolveStuffing } from './stuffing';
 import { ASSIGNABLE_ROLES } from './permissions';
 import {
   appendAudit,
@@ -124,6 +125,8 @@ export function recordGateInFieldStep(
     gateInType: GateInType;
     doorPhotoUrl: string;
     initialContainerHint?: string;
+    // DEC-166: Giám định chọn HÃNG TÀU trước → biết bộ Phân loại đóng hàng của hãng (hãng không dùng → không hỏi)
+    shippingLineCode: string;
     conditionClass: FieldConditionClass;
     damageRemarks?: string[];
     // DEC-147: W-SURVEY → bỏ trống Đóng hàng / AGE (bổ sung trên kệ bằng completeRackInspection)
@@ -142,9 +145,12 @@ export function recordGateInFieldStep(
   }
   // DEC-147: W-SURVEY (LÊN KỆ) thay ô tích HẠ KỆ GIÁM ĐỊNH (DEC-109) — chỉ cần ảnh + Vệ sinh
   const deferred = input.conditionClass === CONDITION_DEFERRED;
+  const lineCode = input.shippingLineCode?.trim();
+  if (!state.partners.some((p) => p.isShippingLine && p.code === lineCode)) throw new Error('Vui lòng chọn HÃNG TÀU theo Danh mục chung.');
   let year: number | undefined;
+  let stuffing: string | undefined;
   if (!deferred) {
-    if (!input.stuffingClass) throw new Error('Vui lòng chọn PHÂN LOẠI ĐÓNG HÀNG (M / K / E).');
+    stuffing = resolveStuffing(state, lineCode, input.stuffingClass);
     year = assertManufactureYear(input.manufactureYear);
   }
 
@@ -164,7 +170,8 @@ export function recordGateInFieldStep(
     initialContainerHint: hint && !/^(HS|GD|IN)-/.test(hint) ? hint : undefined,
     conditionClass: input.conditionClass,
     damageRemarks: remarks,
-    stuffingClass: deferred ? undefined : input.stuffingClass,
+    shippingLineCode: lineCode,
+    stuffingClass: stuffing,
     cleaningItems: normalizedCleaning,
     manufactureYear: year,
     toInspectionRack: deferred,
@@ -184,7 +191,7 @@ export function recordGateInFieldStep(
       ? `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: W-SURVEY (LÊN KỆ), Vệ sinh [${normalizedCleaning.join(', ')}] — HẠ KỆ GIÁM ĐỊNH`
       : `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: Trạng thái ${input.conditionClass}${
           remarks.length ? ` (${remarks.join(', ')})` : ''
-        }, Đóng hàng ${input.stuffingClass}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}`,
+        }, Hãng ${lineCode}, Đóng hàng ${stuffing || '-'}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}`,
     code
   );
 }
@@ -213,7 +220,7 @@ export function completeRackInspection(
     containerId: string;
     conditionClass: FieldConditionClass;
     damageRemarks?: string[];
-    stuffingClass: FieldStuffingClass;
+    stuffingClass?: FieldStuffingClass;
     manufactureYear: number;
   }
 ): DepotState {
@@ -223,13 +230,13 @@ export function completeRackInspection(
   if (c.conditionClass !== CONDITION_DEFERRED) throw new Error(`Container ${c.containerNo} không ở trạng thái W-SURVEY (đã giám định).`);
   if (c.status !== 'IN_YARD') throw new Error(`Container ${c.containerNo} chưa được Xe nâng hạ lên kệ — chưa giám định bổ sung được.`);
   if (input.conditionClass !== 'AV' && input.conditionClass !== 'DAMAGE') throw new Error('Vui lòng chọn TRẠNG THÁI AV hoặc DAMAGE.');
-  if (!input.stuffingClass) throw new Error('Vui lòng chọn PHÂN LOẠI ĐÓNG HÀNG (M / K / E).');
+  const stuffing = resolveStuffing(state, c.shippingLineCode, input.stuffingClass); // DEC-166
   const year = assertManufactureYear(input.manufactureYear);
   const isDamage = input.conditionClass === 'DAMAGE';
   const remarks = isDamage ? (input.damageRemarks || []).map((r) => r.trim()).filter(Boolean) : [];
   if (isDamage && remarks.length === 0) throw new Error('Container DAMAGE: chọn ít nhất 1 lỗi hư hỏng hoặc nhập ghi chú.');
 
-  const patch = { conditionClass: input.conditionClass, damageRemarks: remarks, stuffingClass: input.stuffingClass, manufactureYear: year };
+  const patch = { conditionClass: input.conditionClass, damageRemarks: remarks, stuffingClass: stuffing, manufactureYear: year };
   const actor = state.currentUser.fullName;
   const now = nowIso();
   let next = updateContainerById(state, c.id, { ...patch, needsQuotation: isDamage });
@@ -267,7 +274,7 @@ export function completeRackInspection(
     c.masterDossierCode,
     `[Hồ sơ ${c.masterDossierCode}] Giám định bổ sung trên kệ ${c.containerNo}: Trạng thái ${input.conditionClass}${
       remarks.length ? ` (${remarks.join(', ')})` : ''
-    }, Đóng hàng ${input.stuffingClass}, AGE ${year}${isDamage ? ' → BÁO GIÁ - CHỜ BÁO GIÁ' : ''}`,
+    }, Đóng hàng ${stuffing || '-'}, AGE ${year}${isDamage ? ' → BÁO GIÁ - CHỜ BÁO GIÁ' : ''}`,
     c.masterDossierCode
   );
 }
@@ -288,6 +295,8 @@ export function verifyGateInOfficeAndCreatePayment(
     shippingLineCode: string;
     orderDocNo: string;
     feeCatalogIds: string[];
+    // DEC-166: chỉ cần khi Văn phòng đổi sang hãng có bộ phân loại khác với lúc Giám định chọn
+    stuffingClass?: FieldStuffingClass;
   }
 ): DepotState {
   assertPermission(state, 'GATE_IN_OFFICE', 'chỉ Bộ phận Văn phòng / Quản lý mới được kiểm tra chứng từ và lập chi phí.');
@@ -311,6 +320,8 @@ export function verifyGateInOfficeAndCreatePayment(
   if (!state.partners.some((p) => p.isShippingLine && p.code === input.shippingLineCode)) {
     throw new Error('Vui lòng chọn HÃNG TÀU theo Danh mục chung.');
   }
+  // DEC-166: kiểm lại Phân loại đóng hàng theo hãng Văn phòng chốt (W-SURVEY bổ sung trên kệ)
+  const stuffing = order.conditionClass === CONDITION_DEFERRED ? undefined : resolveStuffing(state, input.shippingLineCode, input.stuffingClass || order.stuffingClass);
   const customerName = normalizeCustomer(state, input.customerName);
   const truckNo = input.truckNo.trim().toUpperCase();
   if (!truckNo) throw new Error('Văn phòng bắt buộc nhập SỐ XE.');
@@ -356,6 +367,7 @@ export function verifyGateInOfficeAndCreatePayment(
             driverPhone,
             customerRep: customerName,
             shippingLineCode: input.shippingLineCode,
+            stuffingClass: stuffing,
             orderDocNo: input.orderDocNo.trim(),
             officeStaffName: state.currentUser.fullName,
             officeVerifiedAt: nowIso(),
@@ -1663,6 +1675,34 @@ export function addContainerTypeCatalogItem(
     clean,
     `[Admin Danh mục chung] Thêm cấu hình Container TYPE: ${clean}`
   );
+}
+
+// DEC-166: DANH MỤC PHÂN LOẠI ĐÓNG HÀNG theo hãng tàu — thêm (hoặc mở lại) / ngừng dùng; không xóa cứng (hồ sơ cũ còn dùng mã)
+export function addStuffingClassCatalogItem(state: DepotState, input: { shippingLineCode: string; code: string; description?: string }): DepotState {
+  assertAdmin(state);
+  const line = input.shippingLineCode?.trim();
+  if (!state.partners.some((p) => p.isShippingLine && p.code === line)) throw new Error('Vui lòng chọn HÃNG TÀU theo Danh mục chung.');
+  const code = input.code.trim().toUpperCase();
+  if (!/^[A-Z0-9]{1,5}$/.test(code)) throw new Error('Mã PHÂN LOẠI ĐÓNG HÀNG gồm 1–5 chữ / số (VD: M, K, E).');
+  const items = state.stuffingClasses || [];
+  const existing = items.find((s) => s.shippingLineCode === line && s.code === code);
+  if (existing?.isActive) throw new Error(`Hãng tàu ${line} đã có phân loại đóng hàng ${code}.`);
+  const description = input.description?.trim() || undefined;
+  const next = existing
+    ? items.map((s) => (s.id === existing.id ? { ...s, isActive: true, description: description ?? s.description } : s))
+    : [...items, { id: newId('stf'), shippingLineCode: line, code, description, isActive: true }];
+  return appendAudit({ ...state, stuffingClasses: next }, 'ADMIN_ADD_STUFFING', 'CATALOG', `${line}-${code}`,
+    `[Admin Danh mục chung] ${existing ? 'Mở lại' : 'Thêm'} PHÂN LOẠI ĐÓNG HÀNG ${code} cho hãng tàu ${line}`);
+}
+
+export function setStuffingClassActive(state: DepotState, input: { shippingLineCode: string; code: string; isActive: boolean }): DepotState {
+  assertAdmin(state);
+  const items = state.stuffingClasses || [];
+  const item = items.find((s) => s.shippingLineCode === input.shippingLineCode && s.code === input.code);
+  if (!item) throw new Error(`Không tìm thấy phân loại ${input.code} của hãng tàu ${input.shippingLineCode}.`);
+  return appendAudit({ ...state, stuffingClasses: items.map((s) => (s.id === item.id ? { ...s, isActive: input.isActive } : s)) },
+    'ADMIN_SET_STUFFING_ACTIVE', 'CATALOG', `${item.shippingLineCode}-${item.code}`,
+    `[Admin Danh mục chung] ${input.isActive ? 'Mở lại' : 'Ngừng dùng'} PHÂN LOẠI ĐÓNG HÀNG ${item.code} của hãng tàu ${item.shippingLineCode}`);
 }
 
 export function deleteContainerTypeCatalogItem(

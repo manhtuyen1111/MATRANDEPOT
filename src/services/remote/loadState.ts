@@ -3,7 +3,7 @@
 // N1: danh mục + nhân viên + công ty. Dữ liệu tác nghiệp (container, hồ sơ, phiếu thu…) nối dần từ N3.
 // ============================================================================
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AppRole, DepotFeeCatalogItem, Partner, RepairTeam, StaffUser, YardBlock } from '../../types/depot';
+import type { AppRole, DepotFeeCatalogItem, Partner, RepairTeam, StaffUser, StuffingClassItem, YardBlock } from '../../types/depot';
 import { createCleanState, type DepotState } from '../depotStore';
 import type { StaffSession } from './session';
 
@@ -14,7 +14,7 @@ async function rows<T>(query: PromiseLike<{ data: T[] | null; error: { message: 
 }
 
 export async function loadCatalogState(client: SupabaseClient, me: StaffSession): Promise<DepotState> {
-  const [partners, sizes, types, blocks, fees, teams, company, staff] = await Promise.all([
+  const [partners, sizes, types, blocks, fees, teams, company, staff, stuffing] = await Promise.all([
     rows<{ id: string; code: string; name: string; is_shipping_line: boolean; is_customer: boolean; allow_tts: boolean }>(
       client.from('partners').select('id, code, name, is_shipping_line, is_customer, allow_tts').eq('is_active', true).order('code')
     ),
@@ -36,6 +36,10 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
     rows<{ id: string; staff_code: string; username: string; full_name: string; email: string | null; is_active: boolean; staff_roles: { role: AppRole }[] }>(
       client.from('staff').select('id, staff_code, username, full_name, email, is_active, staff_roles(role)').order('staff_code')
     ),
+    // DEC-166: Phân loại đóng hàng theo hãng tàu (cả mã ngừng dùng — màn Danh mục hiện để mở lại)
+    rows<{ id: string; shipping_line_code: string; code: string; description: string | null; is_active: boolean }>(
+      client.from('stuffing_classes').select('id, shipping_line_code, code, description, is_active').order('shipping_line_code').order('sort_order')
+    ),
   ]);
 
   const currentUser: StaffUser = { id: me.id, staffCode: me.staffCode, fullName: me.fullName, email: me.email, roles: me.roles, isActive: me.isActive };
@@ -49,6 +53,7 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
     partners: partners.map((p): Partner => ({ id: p.id, code: p.code, name: p.name, isShippingLine: p.is_shipping_line, isCustomer: p.is_customer, allowTts: p.allow_tts })),
     containerSizes: sizes.map((s) => s.code),
     containerTypes: types.map((t) => t.code),
+    stuffingClasses: stuffing.map((s): StuffingClassItem => ({ id: s.id, shippingLineCode: s.shipping_line_code, code: s.code, description: s.description || undefined, isActive: s.is_active })),
     yardBlocks: blocks.map((b): YardBlock => ({
       blockCode: b.code, blockName: b.name, maxBay: b.max_bay, maxRow: b.max_row, maxTier: b.max_tier, capacity: b.capacity,
       description: b.description, isInspectionRack: b.is_inspection_rack,

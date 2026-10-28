@@ -25,7 +25,9 @@ import {
   StaffUser,
   YardBlock,
   VesselList,
+  StuffingClassItem,
 } from '../types/depot';
+import { defaultStuffingClasses } from './stuffing';
 
 // DEC-106, DEC-108, DEC-111: đổi khóa để mọi máy nạp lại dữ liệu test mới; khóa cũ bị xóa khi nạp
 const STORAGE_KEY = 'matran_depot_erp_state_v15'; // v15: tên chuẩn hạng mục vệ sinh trong dữ liệu test
@@ -38,6 +40,7 @@ export interface DepotState {
   yardBlocks: YardBlock[];
   containerSizes: ContainerSize[];
   containerTypes: ContainerType[];
+  stuffingClasses: StuffingClassItem[]; // DEC-166: Phân loại đóng hàng theo hãng tàu
   feeCatalog: DepotFeeCatalogItem[];
   containers: ContainerRecord[];
   locationHistory: LocationHistoryItem[];
@@ -363,6 +366,7 @@ export function createInitialState(): DepotState {
     yardBlocks: INITIAL_YARD_BLOCKS,
     containerSizes: INITIAL_CONTAINER_SIZES,
     containerTypes: INITIAL_CONTAINER_TYPES,
+    stuffingClasses: defaultStuffingClasses(INITIAL_PARTNERS),
     feeCatalog: INITIAL_FEE_CATALOG,
     containers: [
       {
@@ -838,6 +842,8 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
     vesselLists: raw.vesselLists || [],
     codeCounters: raw.codeCounters || {},
     feedbacks: raw.feedbacks || [],
+    // DEC-166: dữ liệu cũ chưa có danh mục → M / K / E cho mọi hãng tàu (giữ hành vi cũ)
+    stuffingClasses: raw.stuffingClasses || defaultStuffingClasses(raw.partners || base.partners),
   } as DepotState;
 }
 

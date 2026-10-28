@@ -38,7 +38,7 @@ const containerNoOf = (s: DepotState, id: string) => s.containers.find((c) => c.
 export const recordGateInFieldStep = wrap(ops.recordGateInFieldStep, ([, i], next) => async (c) => {
   const path = await uploadDoorPhoto(c, i.doorPhotoUrl, next.gateInOrders[0]?.masterDossierCode || 'HV');
   await rpc(c, 'record_gate_in_field_step', {
-    p_request_id: requestId(), p_door_photo_path: path, p_condition: i.conditionClass, p_cleaning_items: i.cleaningItems,
+    p_request_id: requestId(), p_door_photo_path: path, p_shipping_line_code: i.shippingLineCode, p_condition: i.conditionClass, p_cleaning_items: i.cleaningItems,
     p_damage_remarks: i.damageRemarks || [], p_stuffing: nul(i.stuffingClass), p_manufacture_year: nul(i.manufactureYear), p_container_hint: nul(i.initialContainerHint),
   });
 });
@@ -47,7 +47,7 @@ export const deleteGateInFieldRecord = wrap(ops.deleteGateInFieldRecord, ([, i])
 });
 export const completeRackInspection = wrap(ops.completeRackInspection, ([, i]) => async (c) => {
   await rpc(c, 'complete_rack_inspection', {
-    p_request_id: requestId(), p_container_id: i.containerId, p_condition: i.conditionClass, p_stuffing: i.stuffingClass,
+    p_request_id: requestId(), p_container_id: i.containerId, p_condition: i.conditionClass, p_stuffing: nul(i.stuffingClass),
     p_manufacture_year: i.manufactureYear, p_damage_remarks: i.damageRemarks || [],
   });
 });
@@ -55,6 +55,7 @@ export const verifyGateInOfficeAndCreatePayment = wrap(ops.verifyGateInOfficeAnd
   await rpc(c, 'verify_gate_in_office', {
     p_gate_in_id: i.gateInId, p_container_no: i.containerNo, p_size: i.size, p_type: i.type, p_truck_no: i.truckNo, p_driver_phone: i.driverPhone,
     p_customer_name: i.customerName, p_shipping_line_code: i.shippingLineCode, p_order_doc_no: i.orderDocNo, p_fee_ids: i.feeCatalogIds,
+    p_stuffing: nul(i.stuffingClass), // DEC-166
   });
 });
 export const confirmGateInPaymentAndComplete = wrap(ops.confirmGateInPaymentAndComplete, ([, i]) => async (c) => {
@@ -187,7 +188,7 @@ export const removeVesselListItem = wrap(ves.removeVesselListItem, ([, i]) => as
 export const inspectVesselImportItem = wrap(ves.inspectVesselImportItem, ([, i]) => async (c) => {
   await rpc(c, 'inspect_vessel_import_item', {
     p_request_id: requestId(), p_list_id: i.listId, p_item_id: i.itemId, p_actual_container_no: i.actualContainerNo, p_truck_no: i.truckNo,
-    p_condition: i.conditionClass, p_stuffing: i.stuffingClass, p_cleaning_items: i.cleaningItems, p_manufacture_year: i.manufactureYear,
+    p_condition: i.conditionClass, p_stuffing: nul(i.stuffingClass), p_cleaning_items: i.cleaningItems, p_manufacture_year: i.manufactureYear,
     p_damage_remarks: i.damageRemarks || [], p_door_photo_path: null,
   });
 });
@@ -268,6 +269,13 @@ export const updateCompanyProfile = wrap(ops.updateCompanyProfile, ([, p]) => as
 });
 export const addRepairTeam = wrap(ops.addRepairTeam, ([, i]) => async (c) => {
   await rpc(c, 'catalog_upsert_repair_team', { p_code: i.code, p_name: i.name, p_active: true });
+});
+// DEC-166: Danh mục PHÂN LOẠI ĐÓNG HÀNG theo hãng tàu
+export const addStuffingClassCatalogItem = wrap(ops.addStuffingClassCatalogItem, ([, i]) => async (c) => {
+  await rpc(c, 'catalog_upsert_stuffing_class', { p_shipping_line_code: i.shippingLineCode, p_code: i.code.trim().toUpperCase(), p_description: nul(i.description?.trim()) });
+});
+export const setStuffingClassActive = wrap(ops.setStuffingClassActive, ([, i]) => async (c) => {
+  await rpc(c, 'catalog_set_stuffing_class_active', { p_shipping_line_code: i.shippingLineCode, p_code: i.code, p_active: i.isActive });
 });
 export const setRepairTeamActive = wrap(ops.setRepairTeamActive, ([s, i]) => {
   const t = s.repairTeams.find((x) => x.id === i.teamId);

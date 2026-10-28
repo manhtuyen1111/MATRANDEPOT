@@ -4,12 +4,11 @@ import {
   DAMAGE_QUICK_SUGGESTIONS,
   FieldCleaningItem,
   FieldConditionClass,
-  FieldStuffingClass,
 } from '../types/depot';
 import { normalizeCleaningItems } from '../services/depotOperations';
 
 // ============================================================================
-// FORM GIÁM ĐỊNH DÙNG CHUNG (UI-02): Trạng thái DAMAGE / AV → Đóng hàng M / K / E → Vệ sinh → AGE
+// FORM GIÁM ĐỊNH DÙNG CHUNG (UI-02): Trạng thái DAMAGE / AV → Đóng hàng (theo Danh mục hãng tàu — DEC-166) → Vệ sinh → AGE
 // Dùng ở Giám định → Hạ vỏ và Giám định → Nhập tàu. Chỉ là giao diện nhập liệu —
 // quy tắc bắt buộc vẫn do service kiểm tra (recordGateInFieldStep, inspectVesselImportItem).
 // ============================================================================
@@ -17,7 +16,7 @@ export interface InspectionValue {
   condition: FieldConditionClass | '';
   damage: string[];      // lỗi chọn nhanh
   damageNote: string;    // ghi chú thêm (phân cách dấu phẩy)
-  stuffing: FieldStuffingClass | '';
+  stuffing: string; // DEC-166: mã theo Danh mục hãng tàu, '' = chưa chọn / hãng không dùng
   cleaning: FieldCleaningItem[];
   year: string;          // AGE — 4 chữ số
 }
@@ -41,10 +40,11 @@ export function isInspectionDamageValid(v: InspectionValue): boolean {
 }
 
 // Đã nhập đủ 4 mục bắt buộc (để bật nút tiếp tục) — service vẫn kiểm tra lại khi xác nhận
-// DEC-147: W-SURVEY chỉ cần mục 3 Vệ sinh
-export function isInspectionComplete(v: InspectionValue): boolean {
+// DEC-147: W-SURVEY chỉ cần mục 3 Vệ sinh. DEC-166: hãng không dùng phân loại (stuffingOptions rỗng) → không cần mục 2
+export function isInspectionComplete(v: InspectionValue, stuffingOptions: string[] = []): boolean {
   if (v.condition === 'W-SURVEY') return v.cleaning.length > 0;
-  return Boolean(v.condition && isInspectionDamageValid(v) && v.stuffing && v.cleaning.length > 0 && isInspectionYearValid(v.year));
+  const stuffingOk = stuffingOptions.length === 0 || stuffingOptions.includes(v.stuffing);
+  return Boolean(v.condition && isInspectionDamageValid(v) && stuffingOk && v.cleaning.length > 0 && isInspectionYearValid(v.year));
 }
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -66,7 +66,9 @@ export const InspectionFields: React.FC<{
   allowDeferred?: boolean;
   // DEC-147: Giám định bổ sung trên kệ — Vệ sinh đã khai lúc hạ vỏ, không hỏi lại
   hideCleaning?: boolean;
-}> = ({ value: v, onChange, progressive, allowDeferred, hideCleaning }) => {
+  // DEC-166: mã Đóng hàng của hãng tàu (stuffingOptions trong services/stuffing.ts); rỗng → ẩn mục 2
+  stuffingOptions: string[];
+}> = ({ value: v, onChange, progressive, allowDeferred, hideCleaning, stuffingOptions }) => {
   const set = (patch: Partial<InspectionValue>) => onChange({ ...v, ...patch });
   const toggleCleaning = (item: FieldCleaningItem) => {
     if (item === 'KHÔNG VỆ SINH') return set({ cleaning: ['KHÔNG VỆ SINH'] });
@@ -75,9 +77,11 @@ export const InspectionFields: React.FC<{
   };
   const deferred = v.condition === 'W-SURVEY';
   const step1 = Boolean(v.condition && isInspectionDamageValid(v));
-  const show2 = !deferred && (!progressive || step1);
-  const show3 = !hideCleaning && (deferred || !progressive || (step1 && Boolean(v.stuffing)));
-  const show4 = !deferred && (!progressive || (step1 && Boolean(v.stuffing) && (hideCleaning || v.cleaning.length > 0)));
+  const usesStuffing = stuffingOptions.length > 0;
+  const stuffingDone = !usesStuffing || stuffingOptions.includes(v.stuffing);
+  const show2 = usesStuffing && !deferred && (!progressive || step1);
+  const show3 = !hideCleaning && (deferred || !progressive || (step1 && stuffingDone));
+  const show4 = !deferred && (!progressive || (step1 && stuffingDone && (hideCleaning || v.cleaning.length > 0)));
   const choices: FieldConditionClass[] = allowDeferred ? ['AV', 'DAMAGE', 'W-SURVEY'] : ['AV', 'DAMAGE'];
 
   return (
@@ -132,9 +136,9 @@ export const InspectionFields: React.FC<{
       </Section>
 
       {show2 && (
-        <Section title="2. PHÂN LOẠI ĐÓNG HÀNG : M / K / E *">
+        <Section title={`2. PHÂN LOẠI ĐÓNG HÀNG : ${stuffingOptions.join(' / ')} *`}>
           <div className="grid grid-cols-3 gap-2">
-            {(['M', 'K', 'E'] as FieldStuffingClass[]).map((s) => (
+            {stuffingOptions.map((s) => (
               <button key={s} type="button" onClick={() => set({ stuffing: s })} className={choiceCls(v.stuffing === s)}>
                 {s}
               </button>

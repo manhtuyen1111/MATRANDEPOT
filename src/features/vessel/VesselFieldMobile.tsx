@@ -11,6 +11,7 @@ import { DepotState } from '../../services/depotStore';
 
 import { openVesselLists, sortVesselItems, VesselFieldStep, vesselStepInfo, vesselStepSummary } from '../../services/vessel';
 import { formatDateTime } from '../../services/datetime';
+import { stuffingOptions } from '../../services/stuffing';
 import { linkCls, EMPTY_SLOT, Feedback, inputCls, isSlotComplete, labelCls, primaryBtn, SlotPicker, SlotValue } from '../../components/shared';
 import { ChoiceButtons } from './VesselShared';
 import { EMPTY_INSPECTION, InspectionFields, InspectionValue, inspectionRemarks, isInspectionComplete } from '../../components/InspectionFields';
@@ -108,7 +109,7 @@ export const VesselFieldMobile: React.FC<{
     item &&
       (isPlace
         ? isSlotComplete(slot, state)
-        : truckNo && (!isInspect || isInspectionComplete(insp)))
+        : truckNo && (!isInspect || isInspectionComplete(insp, stuffingOptions(state, list?.shippingLineCode))))
   );
 
   const confirm = () => {
@@ -119,7 +120,7 @@ export const VesselFieldMobile: React.FC<{
       if (isInspect) {
         next = inspectVesselImportItem(state, {
           listId: list.id, itemId: item.id, actualContainerNo: code, truckNo,
-          conditionClass: insp.condition as FieldConditionClass, damageRemarks: remarks, stuffingClass: insp.stuffing as FieldStuffingClass,
+          conditionClass: insp.condition as FieldConditionClass, damageRemarks: remarks, stuffingClass: insp.stuffing || undefined,
           cleaningItems: insp.cleaning, manufactureYear: Number(insp.year),
         });
       } else if (isPlace) {
@@ -245,7 +246,7 @@ export const VesselFieldMobile: React.FC<{
                 </div>
               )}
 
-              {isInspect && <InspectionFields value={insp} onChange={setInsp} />}
+              {isInspect && <InspectionFields value={insp} onChange={setInsp} stuffingOptions={stuffingOptions(state, list?.shippingLineCode)} />}
 
               <button type="button" onClick={confirm} disabled={!ready} className={`${primaryBtn} w-full py-3 text-sm`}>
                 <CheckCircle2 className="h-4 w-4" />

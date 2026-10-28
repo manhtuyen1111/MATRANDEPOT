@@ -76,6 +76,7 @@ export type WorkspaceMenuId =
   | 'DM_CONTAINER'
   | 'DM_BIEU_GIA'
   | 'DM_SUA_CHUA'
+  | 'DM_PHAN_LOAI' // DEC-166: Phân loại đóng hàng
   | 'DM_CONG_TY'
   | 'DM_USER'
   | 'BC_HA_VO'
@@ -101,7 +102,15 @@ export const GATE_OUT_TYPE_LABELS: Record<GateOutType, string> = {
 // DEC-147: 'W-SURVEY' = chưa giám định được → hạ lên kệ; Giám định bổ sung AV / DAMAGE + Đóng hàng + AGE sau (completeRackInspection)
 export type FieldConditionClass = 'DAMAGE' | 'AV' | 'W-SURVEY';
 export const CONDITION_DEFERRED = 'W-SURVEY' as const;
-export type FieldStuffingClass = 'M' | 'K' | 'E';
+// DEC-166: mã PHÂN LOẠI ĐÓNG HÀNG lấy từ Danh mục theo hãng tàu (mặc định M / K / E) — trống khi hãng không dùng
+export type FieldStuffingClass = string;
+export interface StuffingClassItem {
+  id: string;
+  shippingLineCode: string;
+  code: string;          // VD: M, K, E
+  description?: string;
+  isActive: boolean;
+}
 
 export type FieldCleaningItem =
   | 'KHÔNG VỆ SINH'

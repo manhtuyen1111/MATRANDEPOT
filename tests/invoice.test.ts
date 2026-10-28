@@ -18,7 +18,7 @@ const as = (state: DepotState, userId: string): DepotState => ({ ...state, curre
 
 function paidReceiptState() {
   let s = recordGateInFieldStep(as(createInitialState(), 'usr-inspector'), {
-    gateInType: 'CUSTOMER_RETURN', doorPhotoUrl: 'data:image/jpeg;base64,AAA', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
+    gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MAERSK', doorPhotoUrl: 'data:image/jpeg;base64,AAA', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
   });
   const gi = s.gateInOrders[0];
   s = verifyGateInOfficeAndCreatePayment(as(s, 'usr-office'), {
@@ -123,7 +123,7 @@ describe('DEC-111: khách gửi yêu cầu → Kế toán cập nhật ĐÃ XHD'
 describe('DEC-113: người thu tiền trên phiếu là nhân viên, không phải hệ thống ngân hàng', () => {
   it('chuyển khoản báo có → phiếu thu ghi nhân viên Văn phòng đã lập yêu cầu thu; dữ liệu cũ ghi HỆ THỐNG vẫn in tên nhân viên', () => {
     let s = recordGateInFieldStep(as(createInitialState(), 'usr-inspector'), {
-      gateInType: 'CUSTOMER_RETURN', doorPhotoUrl: 'data:image/jpeg;base64,AAA', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
+      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MAERSK', doorPhotoUrl: 'data:image/jpeg;base64,AAA', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
     });
     const gi = s.gateInOrders[0];
     s = verifyGateInOfficeAndCreatePayment(as(s, 'usr-office'), {
