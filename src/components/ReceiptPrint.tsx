@@ -143,9 +143,18 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
       <p className="mt-2 text-right text-sm font-black">{isPrepaid ? "TỔNG THU TRƯỚC: " : "TỔNG THU: "}<span className="font-mono">{formatVnd(r.amount)}</span></p>
       {/* DEC-111: mã bảo mật để khách yêu cầu xuất hóa đơn */}
       {r.invoiceSecret && (
-        <div className="mt-3 border border-dashed border-slate-500 px-3 py-2 text-[11px]" data-testid="invoice-secret">
-          <p className="font-bold uppercase">Yêu cầu xuất hóa đơn</p>
-          <p>Truy cập: <span className="font-mono font-bold break-all">{invoicePortalUrl()}</span></p>
+        <div className="mt-3 border border-dashed border-slate-500 px-2 py-2 text-[11px]" data-testid="invoice-secret">
+          {/* QR nhỏ góc phải = link trang yêu cầu xuất hóa đơn → khách quét mở nhanh, không phải gõ địa chỉ */}
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="font-bold uppercase">Yêu cầu xuất hóa đơn</p>
+              <p>Truy cập: <span className="font-mono font-bold break-all">{invoicePortalUrl()}</span></p>
+            </div>
+            <div className="shrink-0 text-center">
+              <QrImage value={invoicePortalUrl()} size={60} />
+              <p className="text-[8px] leading-tight">Quét để mở</p>
+            </div>
+          </div>
           <p>
             Mã bảo mật: <span className="font-mono text-sm font-black tracking-widest">{r.invoiceSecret}</span>
             <span className="block text-ink-muted">(phân biệt chữ hoa / thường — không chia sẻ cho người khác)</span>
