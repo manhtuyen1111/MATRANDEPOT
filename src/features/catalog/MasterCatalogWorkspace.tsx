@@ -420,7 +420,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
             <div className="border-b border-line bg-canvas px-4 py-2.5 text-xs font-bold text-ink">
               Danh sách KHÁCH HÀNG đã cấu hình ({customers.length})
             </div>
-            <table className="w-full text-left text-xs">
+            <table className="data-table w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-line bg-navy-50 font-bold text-ink-muted">
                   <th className="px-4 py-2.5">Mã KH</th>
@@ -556,7 +556,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
             <div className="border-b border-line bg-canvas px-4 py-2.5 text-xs font-bold text-ink">
               Danh sách VỊ TRÍ BÃI đã cấu hình ({state.yardBlocks.length}) — Bộ phận Xe nâng chỉ được chọn trong danh sách này
             </div>
-            <table className="w-full text-left text-xs">
+            <table className="data-table w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-line bg-navy-50 font-bold text-ink-muted">
                   <th className="px-4 py-2.5">Mã Vị Trí</th>
@@ -684,7 +684,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
             <div className="border-b border-line bg-canvas px-4 py-2.5 text-xs font-bold text-ink">
               Danh sách HÃNG TÀU đã cấu hình ({shippingLines.length})
             </div>
-            <table className="w-full text-left text-xs">
+            <table className="data-table w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-line bg-navy-50 font-bold text-ink-muted">
                   <th className="px-4 py-2.5">Mã Hãng Tàu</th>
@@ -1050,7 +1050,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
               </div>
             </div>
 
-            <table className="w-full text-left text-xs">
+            <table className="data-table w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-line bg-navy-50 font-bold text-ink-muted">
                   <th className="px-3.5 py-2.5">Nhóm</th>

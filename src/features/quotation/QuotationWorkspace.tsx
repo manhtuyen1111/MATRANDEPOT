@@ -186,7 +186,7 @@ export const QuotationWorkspace: React.FC<{
       )}
 
       <div className="overflow-x-auto rounded-lg border border-line bg-white">
-        <table className="w-full min-w-[1320px] whitespace-nowrap text-left text-xs">{/* DEC-142: mỗi cont 1 dòng như Tồn vỏ */}
+        <table className="data-table w-full min-w-[1320px] whitespace-nowrap text-left text-xs">{/* DEC-142: mỗi cont 1 dòng như Tồn vỏ */}
           <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
             <tr>
               <th className="w-8 px-2 py-2.5">

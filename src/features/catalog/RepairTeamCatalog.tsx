@@ -71,7 +71,7 @@ export const RepairTeamCatalog: React.FC<{ state: DepotState; onUpdateState: (ne
         {state.repairTeams.length === 0 ? (
           <p className="p-8 text-center text-xs text-ink-muted">Chưa có tổ sửa chữa.</p>
         ) : (
-          <table className="w-full whitespace-nowrap text-left text-xs">
+          <table className="data-table w-full whitespace-nowrap text-left text-xs">
             <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
               <tr>
                 <th className="px-3 py-2">Mã tổ</th>
