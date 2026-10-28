@@ -2,8 +2,9 @@ import React from 'react';
 import { Check, Copy, Printer, X } from 'lucide-react';
 import { QrImage } from './Qr';
 import { printNow } from './printNow';
-import { PrintPortal } from './ReceiptPrint';
-import { K80InternalTicket } from '../types/depot';
+import { PrintFooter, PrintPortal, ReceiptPaymentBody, Signatures } from './ReceiptPrint';
+import { receiptCollectorName } from '../services/payments';
+import { K80InternalTicket, PaymentReceipt } from '../types/depot';
 import type { DepotState } from '../services/depotStore';
 import { getDriverRoute, isTicketClosed } from '../services/driverRoute';
 import { formatDateTime } from '../services/datetime';
@@ -22,8 +23,85 @@ const Row: React.FC<{ label: string; value?: React.ReactNode; big?: boolean }> =
   </div>
 );
 
-// PHIẾU EEIR (K80) — MẪU DUY NHẤT (DEC-023, DEC-052, DEC-161): thông tin chung → LỘ TRÌNH → mã QR.
-// Vừa là phiếu tác nghiệp lái xe cầm đi các bộ phận, vừa là EEIR giao khách khi Trả chứng từ (thay EEIR A4 cũ).
+// ĐẦU PHIẾU dùng chung PHIẾU EEIR TÁC NGHIỆP và PHIẾU TRẢ KHÁCH HÀNG: thông tin depot → (tên phiếu / Số / TÁC NGHIỆP | mã QR tác nghiệp)
+const TicketHeader: React.FC<{ ticket: K80InternalTicket; state?: DepotState; title: string; reprintNo?: number }> = ({ ticket, state, title, reprintNo }) => {
+  const company = state?.companyProfile;
+  return (
+    <div className="border-b-2 border-slate-800 pb-2">
+      {/* Thông tin depot — cùng mẫu đầu Phiếu thu (K80) */}
+      {company && (
+        <div className="text-center">
+          <p className="text-xs font-black uppercase">{company.name}</p>
+          {company.address && <p className="text-[10px]">{company.address}</p>}
+          {(company.phone || company.email) && <p className="text-[10px]">{[company.phone && `ĐT: ${company.phone}`, company.email].filter(Boolean).join(' • ')}</p>}
+          {company.taxCode && <p className="text-[10px]">MST: {company.taxCode}</p>}
+        </div>
+      )}
+      {/* Bên trái: tên phiếu → Số → TÁC NGHIỆP; bên phải: MÃ QR TÁC NGHIỆP vừa khít 3 dòng (QR-<mã hồ sơ> như cũ, DEC-057) */}
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="min-w-0 space-y-1">
+          <p className="text-sm font-black tracking-wide">{title}</p>
+          <p className="text-xs font-bold">Số: {ticket.outDossierCode || ticket.masterDossierCode}</p>
+          <p className="inline-block bg-navy-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {ticket.operationMode === 'CAP_VO' ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
+        </div>
+        <div className="shrink-0 border-2 border-slate-900 bg-white p-0.5 text-center">
+          <QrImage value={ticket.qrCode} size={60} />
+          <span className="block text-[8px] font-black tracking-tighter">{ticket.qrCode}</span>
+        </div>
+      </div>
+      {reprintNo && reprintNo > 1 && <p className="mt-1 border-2 border-rose-600 py-0.5 text-center text-[11px] font-black text-rose-600">BẢN IN LẠI — LẦN {reprintNo}</p>}
+    </div>
+  );
+};
+
+// THÔNG TIN CONTAINER dùng chung 2 phiếu
+const TicketInfoRows: React.FC<{ ticket: K80InternalTicket }> = ({ ticket }) => (
+  <div className="py-2">
+    <Row label="SỐ CONT" value={ticket.containerNo} big />
+    <Row label="SIZE / TYPE" value={`${ticket.size} / ${ticket.type}${ticket.manufactureYear ? ` • AGE ${ticket.manufactureYear}` : ''}`} />
+    <Row label="SỐ XE" value={ticket.truckNo} big />
+    <Row label="SĐT LÁI XE" value={ticket.driverPhone} />
+    <Row label="TRẠNG THÁI" value={ticket.stuffingClass ? `${ticket.conditionClass} • Đóng hàng ${ticket.stuffingClass}` : ticket.conditionClass} />
+    {ticket.damageRemarks && ticket.damageRemarks.length > 0 && <Row label="HƯ HỎNG" value={ticket.damageRemarks.join(', ')} />}
+    <Row label="VỆ SINH" value={ticket.cleaningItems.join(' + ')} />
+    <Row label="THANH TOÁN" value={`${ticket.isPaid ? '✓' : '✗'} ${ticket.paymentLabel}`} />
+  </div>
+);
+
+// PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU" (DEC-162): gộp EEIR + phiếu thu thành 1 phiếu K80 giao khách khi Trả chứng từ.
+// Đầu phiếu + thông tin cont như PHIẾU EEIR TÁC NGHIỆP; thay LỘ TRÌNH bằng THÔNG TIN THANH TOÁN + YÊU CẦU XUẤT HÓA ĐƠN (như Phiếu thu).
+// Số lần in = bộ đếm của phiếu thu kèm theo (recordReceiptPrint); không có phiếu thu (TTS / trừ trả trước) → không đếm.
+export const CustomerSlipK80: React.FC<{ ticket: K80InternalTicket; state: DepotState; receipts: PaymentReceipt[]; printNo?: number }> = ({ ticket, state, receipts, printNo }) => (
+  <div className="k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white px-2 py-2 font-mono text-[11px] leading-snug text-ink">
+    <TicketHeader ticket={ticket} state={state} title="MATRAN EEIR - PHIẾU THU" reprintNo={printNo} />
+    <TicketInfoRows ticket={ticket} />
+    <div className="border-t-2 border-slate-800 pt-2">
+      <p className="text-center text-xs font-black tracking-wider">THÔNG TIN THANH TOÁN</p>
+      {receipts.length === 0 ? (
+        <p className="mt-1 text-center text-[10px]">{ticket.paymentLabel} — không phát hành phiếu thu lượt này.</p>
+      ) : (
+        receipts.map((r) => (
+          <div key={r.id} className="[&+&]:mt-2 [&+&]:border-t [&+&]:border-dotted [&+&]:border-line-strong">
+            <ReceiptPaymentBody state={state} receipt={r} inSlip />
+          </div>
+        ))
+      )}
+    </div>
+    <Signatures
+      left="Lái xe / Khách hàng"
+      right="Văn phòng xác nhận"
+      rightName={receipts[0] ? receiptCollectorName(state, receipts[0]) : state.currentUser.fullName}
+    />
+    {state.companyProfile.bankAccount && receipts.length > 0 && <p className="mt-2 text-center text-[10px] text-ink-muted">TK ngân hàng: {state.companyProfile.bankAccount}</p>}
+    <PrintFooter note={printNo ? `lần in thứ ${printNo}` : undefined} />
+  </div>
+);
+
+// Lần in hiện tại của phiếu trả khách hàng = lần in của phiếu thu kèm theo (lớn nhất)
+export const slipPrintCount = (receipts: PaymentReceipt[]): number => Math.max(0, ...receipts.map((r) => r.printLog?.length || 0));
+
+// PHIẾU EEIR TÁC NGHIỆP (K80) (DEC-023, DEC-052, DEC-161): đầu phiếu → thông tin cont → LỘ TRÌNH → Văn phòng xác nhận.
+// Lái xe cầm đi các bộ phận quét mã. Giao khách khi Trả chứng từ là PHIẾU TRẢ KHÁCH HÀNG (CustomerSlipK80).
 export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotState }> = ({ ticket, state }) => {
   const isOut = ticket.operationMode === 'CAP_VO';
   type Step = { key: string; dept: string; action: string; done: boolean; doneAt?: string };
@@ -38,44 +116,11 @@ export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotSt
         { key: 'OFFICE_RETURN', dept: 'VĂN PHÒNG', action: 'Quét mã • nhận EEIR / phiếu thu', done: false },
       ];
   const nextStep = steps.find((s) => !s.done);
-  const company = state?.companyProfile;
   return (
     // KHỔ GIẤY IN NHIỆT K80 (80mm)
     <div className={`k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white px-2 py-2 font-mono text-[11px] leading-snug text-ink`}>
-      {/* 1. THÔNG TIN CHUNG */}
-      <div className="border-b-2 border-slate-800 pb-2">
-        {/* Thông tin depot — cùng mẫu đầu Phiếu thu (K80) */}
-        {company && (
-          <div className="text-center">
-            <p className="text-xs font-black uppercase">{company.name}</p>
-            {company.address && <p className="text-[10px]">{company.address}</p>}
-            {(company.phone || company.email) && <p className="text-[10px]">{[company.phone && `ĐT: ${company.phone}`, company.email].filter(Boolean).join(' • ')}</p>}
-            {company.taxCode && <p className="text-[10px]">MST: {company.taxCode}</p>}
-          </div>
-        )}
-        {/* Bên trái: tên phiếu → Số → TÁC NGHIỆP; bên phải: MÃ QR TÁC NGHIỆP vừa khít 3 dòng (QR-<mã hồ sơ> như cũ, DEC-057) */}
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <div className="min-w-0 space-y-1">
-            <p className="text-sm font-black tracking-wide">PHIẾU EEIR TÁC NGHIỆP</p>
-            <p className="text-xs font-bold">Số: {ticket.outDossierCode || ticket.masterDossierCode}</p>
-            <p className="inline-block bg-navy-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {isOut ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
-          </div>
-          <div className="shrink-0 border-2 border-slate-900 bg-white p-0.5 text-center">
-            <QrImage value={ticket.qrCode} size={60} />
-            <span className="block text-[8px] font-black tracking-tighter">{ticket.qrCode}</span>
-          </div>
-        </div>
-      </div>
-      <div className="py-2">
-        <Row label="SỐ CONT" value={ticket.containerNo} big />
-        <Row label="SIZE / TYPE" value={`${ticket.size} / ${ticket.type}${ticket.manufactureYear ? ` • AGE ${ticket.manufactureYear}` : ''}`} />
-        <Row label="SỐ XE" value={ticket.truckNo} big />
-        <Row label="SĐT LÁI XE" value={ticket.driverPhone} />
-        <Row label="TRẠNG THÁI" value={ticket.stuffingClass ? `${ticket.conditionClass} • Đóng hàng ${ticket.stuffingClass}` : ticket.conditionClass} />
-        {ticket.damageRemarks && ticket.damageRemarks.length > 0 && <Row label="HƯ HỎNG" value={ticket.damageRemarks.join(', ')} />}
-        <Row label="VỆ SINH" value={ticket.cleaningItems.join(' + ')} />
-        <Row label="THANH TOÁN" value={`${ticket.isPaid ? '✓' : '✗'} ${ticket.paymentLabel}`} />
-      </div>
+      <TicketHeader ticket={ticket} state={state} title="PHIẾU EEIR TÁC NGHIỆP" />
+      <TicketInfoRows ticket={ticket} />
 
       {/* 2. LỘ TRÌNH — đến bộ phận nào thì quét mã, tích ☐ bằng bút */}
       <div className="border-y-2 border-slate-800 py-2">

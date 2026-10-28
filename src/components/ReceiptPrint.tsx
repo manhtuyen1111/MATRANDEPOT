@@ -75,14 +75,14 @@ const InfoGrid: React.FC<{ rows: [string, React.ReactNode, boolean?][]; narrow?:
   </dl>
 );
 
-const Signatures: React.FC<{ left: string; right: string; rightName?: string }> = ({ left, right, rightName }) => (
+export const Signatures: React.FC<{ left: string; right: string; rightName?: string }> = ({ left, right, rightName }) => (
   <div className="mt-5 grid grid-cols-2 text-center">
     <span>{left}<br /><br /><br />(Ký, ghi rõ họ tên)</span>
     <span>{right}<br /><br /><br />{rightName || '(Ký, ghi rõ họ tên)'}</span>
   </div>
 );
 
-const PrintFooter: React.FC<{ note?: string }> = ({ note }) => (
+export const PrintFooter: React.FC<{ note?: string }> = ({ note }) => (
   <p className="mt-2 text-center text-[10px] text-ink-muted">In lúc {formatDateTime(new Date())}{note ? ` • ${note}` : ''}</p>
 );
 
@@ -92,13 +92,9 @@ const PrintFooter: React.FC<{ note?: string }> = ({ note }) => (
 export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentReceipt; printNo?: number }> = ({ state, receipt: r, printNo }) => {
   const opKey = receiptOperationOf(state, r);
   const op = RECEIPT_OPERATION_LABELS[opKey];
-  const tx = state.paymentTransactions.find((t) => t.id === r.transactionId);
-  const voucher = r.voucherId ? state.vouchers.find((v) => v.id === r.voucherId) : undefined;
   // DEC-077: PHIẾU THU TRƯỚC — cùng khung, khác tên, có khung nổi bật mã QR trừ dần (DEC-124: mã = số phiếu PT-TTR-)
   const master = r.purpose === "PREPAID_TOPUP" ? state.masterReceipts.find((m) => m.id === r.masterReceiptId || m.receiptCode === r.masterReceiptCode) : undefined;
   const isPrepaid = opKey === "THU_TRUOC" || Boolean(master);
-  const lines = master?.feeLines?.length ? master.feeLines : voucher?.feeLines || [];
-  const hasQty = lines.some((l) => (l.quantity || 1) > 1);
   return (
     <K80Frame state={state} title={isPrepaid ? "PHIẾU THU TRẢ TRƯỚC (TTR)" : "PHIẾU THU"} number={r.receiptNo} operation={op} reprintNo={printNo}>
       {isPrepaid && master && (
@@ -111,11 +107,32 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
           <p className="mt-1 text-xs font-black">SỐ TIỀN NẠP TRƯỚC: <span className="text-sm">{formatVnd(r.amount)}</span></p>
         </div>
       )}
+      <ReceiptPaymentBody state={state} receipt={r} />
+      <Signatures left="Người nộp tiền" right="Người thu tiền" rightName={receiptCollectorName(state, r)} />
+      {state.companyProfile.bankAccount && <p className="mt-3 text-center text-[10px] text-ink-muted">TK ngân hàng: {state.companyProfile.bankAccount}</p>}
+      <PrintFooter note={printNo ? `lần in thứ ${printNo}` : undefined} />
+    </K80Frame>
+  );
+};
+
+// THÔNG TIN THANH TOÁN + YÊU CẦU XUẤT HÓA ĐƠN của 1 phiếu thu — dùng chung PHIẾU THU (K80) lẻ và
+// PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU" (CustomerSlipK80). inSlip: ghi thêm Số phiếu thu, bỏ dòng trùng với phần EEIR.
+export const ReceiptPaymentBody: React.FC<{ state: DepotState; receipt: PaymentReceipt; inSlip?: boolean }> = ({ state, receipt: r, inSlip }) => {
+  const opKey = receiptOperationOf(state, r);
+  const tx = state.paymentTransactions.find((t) => t.id === r.transactionId);
+  const voucher = r.voucherId ? state.vouchers.find((v) => v.id === r.voucherId) : undefined;
+  const master = r.purpose === "PREPAID_TOPUP" ? state.masterReceipts.find((m) => m.id === r.masterReceiptId || m.receiptCode === r.masterReceiptCode) : undefined;
+  const isPrepaid = opKey === "THU_TRUOC" || Boolean(master);
+  const lines = master?.feeLines?.length ? master.feeLines : voucher?.feeLines || [];
+  const hasQty = lines.some((l) => (l.quantity || 1) > 1);
+  return (
+    <>
       <InfoGrid
         narrow
         rows={[
+          ...(inSlip ? ([["Số phiếu thu", <span className="font-black">{r.receiptNo}</span>, true]] as [string, React.ReactNode, boolean][]) : []),
           ["Bên thanh toán", r.payerName],
-          ...(isPrepaid ? [] : ([["Mã hồ sơ", r.dossierCode || r.masterReceiptCode, true], ["Số container", r.containerNo, true]] as [string, React.ReactNode, boolean][])),
+          ...(isPrepaid || inSlip ? [] : ([["Mã hồ sơ", r.dossierCode || r.masterReceiptCode, true], ["Số container", r.containerNo, true]] as [string, React.ReactNode, boolean][])),
           ['Hình thức', `${PAYMENT_METHOD_LABELS[r.method]}${r.providerTxRef ? ` • Mã GD ${r.providerTxRef}` : ''}`],
           ['Thời gian thu', formatDateTime(tx?.confirmedAt || r.issuedAt), true],
         ]}
@@ -161,10 +178,7 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
           </p>
         </div>
       )}
-      <Signatures left="Người nộp tiền" right="Người thu tiền" rightName={receiptCollectorName(state, r)} />
-      {state.companyProfile.bankAccount && <p className="mt-3 text-center text-[10px] text-ink-muted">TK ngân hàng: {state.companyProfile.bankAccount}</p>}
-      <PrintFooter note={printNo ? `lần in thứ ${printNo}` : undefined} />
-    </K80Frame>
+    </>
   );
 };
 

@@ -6,8 +6,8 @@ import { DepotState } from '../../services/depotStore';
 
 import { DocumentPack, previewDocumentPack, ticketsAwaitingReturn } from '../../services/driverRoute';
 import { linkCls, ContainerNo, Feedback, inputCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
-import { PrintPortal, ReceiptPrintSheet } from '../../components/ReceiptPrint';
-import { EeirK80Sheet } from '../../components/K80TicketModal';
+import { PrintPortal } from '../../components/ReceiptPrint';
+import { CustomerSlipK80, slipPrintCount } from '../../components/K80TicketModal';
 import { printNow } from '../../components/printNow';
 
 type Mode = 'HA_VO' | 'CAP_VO';
@@ -60,7 +60,7 @@ export const DocumentReturnWorkspace: React.FC<{
           <button type="submit" disabled={!code.trim()} className={`${primaryBtn} shrink-0`}>Xác nhận & in</button>
           <CameraScanButton onResult={(c) => { setCode(c); confirm(c); }} />
         </form>
-        <p className="mt-2 text-[11px] text-ink-muted">Quét được cả phiếu Hạ vỏ và Cấp vỏ. Chỉ trả được khi lái xe đã đi đủ các bộ phận trên lộ trình. Hệ thống tự in liền 1 cuộn K80: Phiếu EEIR (K80) + Phiếu thu (K80) (nếu có), máy in tự cắt giữa các phiếu; mỗi lần in phiếu thu được ghi nhận.</p>
+        <p className="mt-2 text-[11px] text-ink-muted">Quét được cả phiếu Hạ vỏ và Cấp vỏ. Chỉ trả được khi lái xe đã đi đủ các bộ phận trên lộ trình. Hệ thống tự in PHIẾU TRẢ KHÁCH HÀNG (MATRAN EEIR - PHIẾU THU, khổ K80) gộp EEIR + thông tin thanh toán; lần in được ghi nhận theo phiếu thu.</p>
       </SectionCard>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -103,48 +103,36 @@ export const DocumentReturnWorkspace: React.FC<{
   );
 };
 
-// Bộ chứng từ trả lái xe (DEC-161): Phiếu EEIR (K80) + Phiếu thu (K80) — in liền 1 cuộn, cắt giữa các phiếu
+// PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU" (DEC-162): 1 phiếu K80 gộp EEIR + phiếu thu
 // preview (DEC-110): chỉ xem trên màn hình — không tự in, không có vùng in, không nút in
+// Lần in = bộ đếm phiếu thu (đã ghi nhận khi Trả chứng từ); in lại có đếm → Hồ sơ container → PHIẾU TRẢ KHÁCH HÀNG
 const DocumentPackPrint: React.FC<{ state: DepotState; pack: DocumentPack; preview?: boolean; onClose: () => void }> = ({ state, pack, preview, onClose }) => {
-  // Lần in tự động = EEIR (K80) + phiếu thu (K80) (đã ghi nhận 1 lần in); "In lại EEIR (K80)" chỉ in EEIR (phiếu thu in lại ở Văn phòng → Phiếu thu)
-  const [eeirOnly, setEeirOnly] = useState(false);
   useEffect(() => {
     if (preview) return;
     const id = setTimeout(printNow, 300);
     return () => clearTimeout(id);
   }, [pack]);
-  const printEeir = () => {
-    setEeirOnly(true);
-    setTimeout(printNow, 100);
-  };
+  const printed = slipPrintCount(pack.receipts);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Bộ chứng từ">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Phiếu trả khách hàng">
       <div className="my-4 w-full max-w-2xl space-y-4 rounded-lg bg-white p-5 text-xs shadow-xl">
         <div className="no-print flex items-center justify-between">
-          <h2 className="text-sm font-bold">{preview ? 'XEM TRƯỚC chứng từ (chưa trả, chưa in)' : 'Bộ chứng từ trả lái xe'} — {pack.dossierCode}</h2>
-          <div className="flex gap-2">
-            {!preview && <button type="button" onClick={printEeir} className={secondaryBtn}><Printer className="h-3.5 w-3.5" />In lại EEIR (K80)</button>}
-            <button type="button" onClick={onClose} aria-label="Đóng" className={secondaryBtn}><X className="h-3.5 w-3.5" /></button>
-          </div>
+          <h2 className="text-sm font-bold">{preview ? 'XEM TRƯỚC phiếu trả khách hàng (chưa trả, chưa in)' : 'Phiếu trả khách hàng'} — {pack.dossierCode}</h2>
+          <button type="button" onClick={onClose} aria-label="Đóng" className={secondaryBtn}><X className="h-3.5 w-3.5" /></button>
         </div>
-        <div className="flex flex-wrap items-start justify-center gap-4">
-          <EeirK80Sheet state={state} ticket={pack.ticket} />
-          {pack.receipts.map((r) => (
-            <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={preview ? (r.printLog?.length || 0) + 1 : r.printLog?.length || 1} />
-          ))}
-          {pack.receipts.length === 0 && <p className="w-full text-center text-ink-muted">Không có phiếu thu (TTT trừ Phiếu thu trả trước / TTS công nợ).</p>}
+        <div className="flex justify-center rounded-xl bg-canvas p-4">
+          <CustomerSlipK80 state={state} ticket={pack.ticket} receipts={pack.receipts} printNo={preview ? (pack.receipts.length ? printed + 1 : undefined) : printed || undefined} />
         </div>
         {!preview && (
           <PrintPortal>
-            <EeirK80Sheet state={state} ticket={pack.ticket} />
-            {!eeirOnly && pack.receipts.map((r) => <ReceiptPrintSheet key={r.id} state={state} receipt={r} printNo={r.printLog?.length || 1} />)}
+            <CustomerSlipK80 state={state} ticket={pack.ticket} receipts={pack.receipts} printNo={printed || undefined} />
           </PrintPortal>
         )}
         <p className="no-print text-[11px] text-ink-muted">
           {preview
             ? 'Chỉ xem — chưa ghi nhận trả chứng từ, không in, không tính lần in. Bấm Trả chứng từ để trả và in.'
-            : 'In lại phiếu thu sau này tại Văn phòng → Phiếu thu (hệ thống hỏi xác nhận và đánh dấu BẢN IN LẠI).'}
+            : 'In lại sau này tại Hồ sơ container → PHIẾU TRẢ KHÁCH HÀNG, hoặc phiếu thu lẻ tại Văn phòng → Phiếu thu (hệ thống hỏi xác nhận, đánh dấu BẢN IN LẠI).'}
         </p>
       </div>
     </div>
