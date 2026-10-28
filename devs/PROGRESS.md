@@ -263,10 +263,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 9. Agent đầu phiên: `git status` sạch → `git pull` → `npm test` (**180 pass**, 3 bỏ qua) + `npm run build` → đọc mục này + **LƯU Ý IN ẤN** + **LƯU Ý CHO AGENT**. **Không bật Docker** trừ khi sửa database.
 10. Việc lớn tiếp theo: **Q-044** import tồn vỏ (`docs/IMPORT_TON_VO_BAN_DAU.md`) + chốt **Supabase Pro** / `matran-prod` (`docs/VAN_HANH_VA_PHAT_TRIEN.md`).
 
-**CHỜ BẠN QUYẾT (chưa làm):**
-- Phiếu **EEIR XUẤT TÀU** hiện chỉ in được **sau khi** cont đã OUT → lộ trình chỉ để ghi nhận. Muốn in ngay khi lập danh sách để lái xe cầm đi quét? (báo agent đổi thời điểm in).
-- **XUẤT PDF** đang qua hộp thoại in ("Lưu dưới dạng PDF"). Muốn bấm 1 nút **tải thẳng file PDF** → cần cài thêm thư viện tạo PDF (~300–400 KB, chỉ tải khi bấm) — cần bạn đồng ý.
-- Độ dài mật khẩu tối thiểu cho Admin / Văn phòng / Kế toán (đề xuất trong `docs/VAN_HANH_VA_PHAT_TRIEN.md`).
+**ĐÃ CHỐT 2026-10-28 (DEC-167, nhánh `agent/claude/xt-eeir-pdf`, chưa push):** EEIR XUẤT TÀU in ngay khi lập danh sách + nút in cả danh sách / từng cont; XUẤT PDF tải thẳng file (jspdf + html2canvas-pro); mật khẩu giữ logic cũ. **Chưa thử trên trình duyệt / in thật / mở file PDF.** OPEN-003, OPEN-008, A.1c, Q-032: agent hỏi trực tiếp người dùng khi cần.
 
 **LƯU Ý IN ẤN (DEC-161 → DEC-163 — agent đọc trước khi sửa giấy tờ):**
 - Mọi giấy tờ là **khổ K80** (`k80-sheet`, khung **76mm = 95% giấy**, biến `--k80-width` trong `src/index.css`). **Không còn giấy tờ nửa A4.** Chỉ **HỒ SƠ CONTAINER** khổ A4 (`dossier-a4`, `@page dossierA4`).
