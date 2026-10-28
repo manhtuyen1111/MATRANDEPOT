@@ -55,7 +55,8 @@ export const VesselFieldMobile: React.FC<{
   const active = rows.find((r) => r.item.id === itemId && r.info.status === 'TODO');
   const item = active?.item;
   // Tìm như Tồn vỏ: lọc ngay khi gõ (số cont chứa chuỗi)
-  const q = code.trim().toUpperCase();
+  // Quét mã QR phiếu EEIR tàu (QR-NT-… / QR-XT-…, DEC-163) → bỏ tiền tố QR-, tra như mã hồ sơ
+  const q = code.trim().toUpperCase().replace(/^QR-(?=(NT|XT)-)/, '');
   const tabRows = rows.filter((r) => tab === 'ALL' || (tab === 'DONE' ? r.info.status === 'DONE' : r.info.status !== 'DONE'));
   const shownRows = q && !item ? tabRows.filter((r) => r.item.containerNo.includes(q)) : tabRows;
 

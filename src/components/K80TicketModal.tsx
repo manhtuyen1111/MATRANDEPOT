@@ -4,7 +4,8 @@ import { QrImage } from './Qr';
 import { printNow } from './printNow';
 import { PrintFooter, PrintPortal, ReceiptPaymentBody, Signatures } from './ReceiptPrint';
 import { receiptCollectorName } from '../services/payments';
-import { K80InternalTicket, PaymentReceipt } from '../types/depot';
+import { K80InternalTicket, PaymentReceipt, VesselList, VesselListItem } from '../types/depot';
+import { getVesselRoute, vesselQrCode } from '../services/vessel';
 import type { DepotState } from '../services/depotStore';
 import { getDriverRoute, isTicketClosed } from '../services/driverRoute';
 import { formatDateTime } from '../services/datetime';
@@ -23,8 +24,9 @@ const Row: React.FC<{ label: string; value?: React.ReactNode; big?: boolean }> =
   </div>
 );
 
-// ĐẦU PHIẾU dùng chung PHIẾU EEIR TÁC NGHIỆP và PHIẾU TRẢ KHÁCH HÀNG: thông tin depot → (tên phiếu / Số / TÁC NGHIỆP | mã QR tác nghiệp)
-const TicketHeader: React.FC<{ ticket: K80InternalTicket; state?: DepotState; title?: string }> = ({ ticket, state, title }) => {
+// ĐẦU PHIẾU dùng chung PHIẾU EEIR (Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu) và PHIẾU TRẢ KHÁCH HÀNG:
+// thông tin depot → (tên phiếu / Số / TÁC NGHIỆP | mã QR tác nghiệp)
+const SheetHeader: React.FC<{ state?: DepotState; title?: string; number: string; operation: string; qrCode: string }> = ({ state, title, number, operation, qrCode }) => {
   const company = state?.companyProfile;
   return (
     <div className="border-b-2 border-slate-800 pb-2">
@@ -41,17 +43,62 @@ const TicketHeader: React.FC<{ ticket: K80InternalTicket; state?: DepotState; ti
       <div className="mt-2 flex items-center justify-between gap-2">
         <div className="min-w-0 space-y-1">
           {title && <p className="text-sm font-black tracking-wide">{title}</p>}
-          <p className="text-xs font-bold">Số: {ticket.outDossierCode || ticket.masterDossierCode}</p>
-          <p className="inline-block bg-navy-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {ticket.operationMode === 'CAP_VO' ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
+          <p className="text-xs font-bold">Số: {number}</p>
+          <p className="inline-block bg-navy-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {operation}</p>
         </div>
-        <div className="shrink-0 border-2 border-slate-900 bg-white p-0.5 text-center">
-          <QrImage value={ticket.qrCode} size={60} />
-          <span className="block text-[8px] font-black tracking-tighter">{ticket.qrCode}</span>
-        </div>
+        {qrCode && (
+          <div className="shrink-0 border-2 border-slate-900 bg-white p-0.5 text-center">
+            <QrImage value={qrCode} size={60} />
+            <span className="block text-[8px] font-black tracking-tighter">{qrCode}</span>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+const TicketHeader: React.FC<{ ticket: K80InternalTicket; state?: DepotState; title?: string }> = ({ ticket, state, title }) => (
+  <SheetHeader
+    state={state}
+    title={title}
+    number={ticket.outDossierCode || ticket.masterDossierCode}
+    operation={ticket.operationMode === 'CAP_VO' ? 'CẤP VỎ' : 'HẠ VỎ'}
+    qrCode={ticket.qrCode}
+  />
+);
+
+// LỘ TRÌNH — đến bộ phận nào thì quét mã, tích ☐ bằng bút (live: tô bước kế tiếp + ✓ bước đã xong)
+type RouteItem = { key: string; dept: string; action: string; done: boolean; doneAt?: string };
+const RouteBox: React.FC<{ steps: RouteItem[]; live: boolean }> = ({ steps, live }) => {
+  const nextStep = steps.find((s) => !s.done);
+  return (
+    <div className="border-y-2 border-slate-800 py-2">
+      <p className="mb-1.5 text-center text-xs font-black tracking-wider">LỘ TRÌNH — QUÉT MÃ TẠI TỪNG BỘ PHẬN</p>
+      <ol className="space-y-1.5">
+        {steps.map((s, i) => (
+          <li key={s.key} className={`flex items-start gap-2 ${live && nextStep?.key === s.key ? 'rounded bg-amber-100 px-1' : ''}`}>
+            <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center border-2 border-slate-900 text-xs font-black">{live && s.done ? '✓' : ''}</span>
+            <span className="flex-1">
+              <span className="font-black">{i + 1}. {s.dept}</span>
+              <span className="block text-[10px]">{s.action}</span>
+            </span>
+            {live && s.done && s.doneAt && <span className="shrink-0 text-[9px] text-ink-muted">{formatDateTime(s.doneAt).slice(11)}</span>}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+};
+
+// VĂN PHÒNG XÁC NHẬN — người lập phiếu / danh sách
+const OfficeConfirm: React.FC<{ by?: string; at?: string }> = ({ by, at }) => (
+  <div className="pt-2 text-center">
+    <p className="text-[10px] font-black uppercase">Văn phòng xác nhận</p>
+    <p className="text-[9px] text-ink-muted">(Ký, ghi rõ họ tên)</p>
+    <p className="mt-6 text-xs font-black">{by || '-'}</p>
+    <p className="text-[9px] text-ink-muted">Lập phiếu lúc {formatDateTime(at)}</p>
+  </div>
+);
 
 // THÔNG TIN CONTAINER dùng chung 2 phiếu
 const TicketInfoRows: React.FC<{ ticket: K80InternalTicket }> = ({ ticket }) => (
@@ -116,46 +163,62 @@ export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotSt
         { key: 'FORKLIFT', dept: 'XE NÂNG', action: isOut ? 'Quét mã • nhận vỏ' : 'Quét mã • hạ vỏ', done: false },
         { key: 'OFFICE_RETURN', dept: 'VĂN PHÒNG', action: 'Quét mã • nhận EEIR / phiếu thu', done: false },
       ];
-  const nextStep = steps.find((s) => !s.done);
   return (
     // KHỔ GIẤY IN NHIỆT K80 (80mm)
-    <div className={`k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white px-2 py-2 font-mono text-[11px] leading-snug text-ink`}>
+    <div className="k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white px-2 py-2 font-mono text-[11px] leading-snug text-ink">
       <TicketHeader ticket={ticket} state={state} title="PHIẾU EEIR TÁC NGHIỆP" />
       <TicketInfoRows ticket={ticket} />
+      <RouteBox steps={steps} live={Boolean(state)} />
+      <OfficeConfirm by={ticket.issuedBy} at={ticket.issuedAt} />
+    </div>
+  );
+};
 
-      {/* 2. LỘ TRÌNH — đến bộ phận nào thì quét mã, tích ☐ bằng bút */}
-      <div className="border-y-2 border-slate-800 py-2">
-        <p className="mb-1.5 text-center text-xs font-black tracking-wider">LỘ TRÌNH — QUÉT MÃ TẠI TỪNG BỘ PHẬN</p>
-        <ol className="space-y-1.5">
-          {steps.map((s, i) => (
-            <li
-              key={s.key}
-              className={`flex items-start gap-2 ${state && nextStep?.key === s.key ? 'rounded bg-amber-100 px-1' : ''}`}
-            >
-              <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center border-2 border-slate-900 text-xs font-black">
-                {state && s.done ? '✓' : ''}
-              </span>
-              <span className="flex-1">
-                <span className="font-black">{i + 1}. {s.dept}</span>
-                <span className="block text-[10px]">{s.action}</span>
-              </span>
-              {state && s.done && s.doneAt && (
-                <span className="shrink-0 text-[9px] text-ink-muted">
-                  {formatDateTime(s.doneAt).slice(11)}
-                </span>
-              )}
-            </li>
-          ))}
-        </ol>
+// PHIẾU EEIR NHẬP TÀU / XUẤT TÀU (K80) (DEC-081, DEC-161, DEC-163): cùng mẫu phiếu tác nghiệp Hạ vỏ / Cấp vỏ —
+// đầu phiếu + mã QR (QR-<NT- / XT->) → thông tin cont + tàu + tình trạng vỏ → LỘ TRÌNH (getVesselRoute) → Văn phòng xác nhận.
+export const VesselEeirPrintSheet: React.FC<{ state: DepotState; list: VesselList; item: VesselListItem }> = ({ state, list, item }) => {
+  const isImport = list.mode === 'NHAP_TAU';
+  const container = state.containers.find((c) => c.id === item.containerId);
+  const visit = container?.masterDossierCode;
+  const loc = state.locationHistory.filter((l) => l.masterDossierCode === visit);
+  const location = isImport
+    ? [...loc].reverse().find((l) => l.actionType === 'INITIAL_BLOCK')?.toLocation
+    : item.locationAtList || loc.find((l) => l.actionType === 'GATE_OUT_CLEAR')?.fromLocation;
+  // Tình trạng vỏ: Nhập tàu = kết quả Giám định của lượt này; Xuất tàu = tình trạng hiện tại + Giám định lúc cont vào bãi
+  const origin = visit ? state.gateInOrders.find((o) => o.masterDossierCode === visit) : undefined;
+  const originVessel = visit?.startsWith('NT-') ? (state.vesselLists || []).flatMap((l) => l.items).find((i) => i.dossierCode === visit) : undefined;
+  const cond = isImport
+    ? { condition: item.conditionClass, stuffing: item.stuffingClass, damage: item.damageRemarks, cleaning: item.cleaningItems, age: item.manufactureYear, by: item.inspectedBy, at: item.inspectedAt }
+    : {
+        condition: container?.conditionClass,
+        stuffing: container?.stuffingClass,
+        damage: container?.damageRemarks,
+        cleaning: container?.cleaningItems,
+        age: container?.manufactureYear,
+        by: origin?.fieldStaffName || originVessel?.inspectedBy,
+        at: origin?.fieldRecordedAt || originVessel?.inspectedAt,
+      };
+  return (
+    <div className="k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white px-2 py-2 font-mono text-[11px] leading-snug text-ink">
+      <SheetHeader state={state} title="PHIẾU EEIR TÁC NGHIỆP" number={item.dossierCode || '-'} operation={isImport ? 'NHẬP TÀU' : 'XUẤT TÀU'} qrCode={vesselQrCode(item)} />
+      <div className="py-2">
+        <Row label="SỐ CONT" value={item.containerNo} big />
+        <Row label="SIZE / TYPE" value={`${item.size} / ${item.type}${cond.age ? ` • AGE ${cond.age}` : ''}`} />
+        <Row label="SỐ XE" value={item.truckNo} big />
+        <Row label="TÊN TÀU" value={list.vesselName} />
+        <Row label="HÃNG TÀU" value={list.shippingLineCode || container?.shippingLineCode} />
+        <Row label={isImport ? 'NHẬP TÀU' : 'XUẤT TÀU'} value={formatDateTime(list.plannedAt)} />
+        <Row label={isImport ? 'VÀO BÃI' : 'OUT'} value={formatDateTime(isImport ? container?.gateInAt : item.doneAt)} />
+        {!isImport && <Row label="DATE IN" value={formatDateTime(container?.gateInAt)} />}
+        <Row label={isImport ? 'VỊ TRÍ HẠ' : 'VỊ TRÍ LẤY'} value={location} />
+        <Row label="TRẠNG THÁI" value={cond.stuffing ? `${cond.condition || '-'} • Đóng hàng ${cond.stuffing}` : cond.condition} />
+        {cond.damage && cond.damage.length > 0 && <Row label="HƯ HỎNG" value={cond.damage.join(', ')} />}
+        <Row label="VỆ SINH" value={(cond.cleaning || []).join(' + ')} />
+        <Row label="GIÁM ĐỊNH" value={cond.by ? `${cond.by} • ${formatDateTime(cond.at)}` : '-'} />
+        <Row label="THANH TOÁN" value="Không thu phí (tác nghiệp tàu)" />
       </div>
-
-      {/* 3. XÁC NHẬN VĂN PHÒNG — người lập phiếu (thay chỗ mã QR cũ) */}
-      <div className="pt-2 text-center">
-        <p className="text-[10px] font-black uppercase">Văn phòng xác nhận</p>
-        <p className="text-[9px] text-ink-muted">(Ký, ghi rõ họ tên)</p>
-        <p className="mt-6 text-xs font-black">{ticket.issuedBy || '-'}</p>
-        <p className="text-[9px] text-ink-muted">Lập phiếu lúc {formatDateTime(ticket.issuedAt)}</p>
-      </div>
+      <RouteBox steps={getVesselRoute(state, list, item)} live />
+      <OfficeConfirm by={list.createdBy} at={list.createdAt} />
     </div>
   );
 };

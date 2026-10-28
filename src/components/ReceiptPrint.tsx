@@ -2,7 +2,7 @@ import React from 'react';
 import { recordReceiptPrint } from '../services/api';
 import { createPortal } from 'react-dom';
 import { Eye, Printer, X } from 'lucide-react';
-import { CompanyProfile, PAYMENT_METHOD_LABELS, PaymentReceipt, RECEIPT_OPERATION_LABELS, VesselList, VesselListItem } from '../types/depot';
+import { CompanyProfile, PAYMENT_METHOD_LABELS, PaymentReceipt, RECEIPT_OPERATION_LABELS } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
 import { receiptCollectorName, receiptOperationOf } from '../services/payments';
 
@@ -16,7 +16,7 @@ import { printNow } from './printNow';
 // GIẤY TỜ IN DÙNG CHUNG (DEC-062, DEC-063, DEC-072)
 //   Mọi giấy tờ cùng 1 khung: đầu CÔNG TY → TIÊU ĐỀ + Số → TÁC NGHIỆP → thông tin → bảng → chữ ký → "In lúc".
 //   Hạ vỏ / Cấp vỏ (DEC-161): PHIẾU EEIR (K80) (EeirK80Sheet — K80TicketModal.tsx) + PHIẾU THU (K80) in liền 1 cuộn.
-//   EEIR Nhập tàu / Xuất tàu cũng khổ K80 (K80Frame). Quy trình: Xem phiếu → trong cửa sổ xem có nút In (PrintPreviewModal).
+//   EEIR Nhập tàu / Xuất tàu (K80): VesselEeirPrintSheet ở K80TicketModal.tsx (cùng mẫu phiếu tác nghiệp — DEC-163). Quy trình: Xem phiếu → trong cửa sổ xem có nút In (PrintPreviewModal).
 // ============================================================================
 
 // Khối thông tin CÔNG TY dùng chung cho mọi giấy tờ in (DEC-062)
@@ -179,80 +179,6 @@ export const ReceiptPaymentBody: React.FC<{ state: DepotState; receipt: PaymentR
         </div>
       )}
     </>
-  );
-};
-
-// Khối TÌNH TRẠNG VỎ do Giám định ghi nhận (DEC-076) — EEIR Nhập tàu / Xuất tàu
-const ConditionBox: React.FC<{
-  condition?: string;
-  stuffing?: string;
-  damage?: string[];
-  cleaning?: string[];
-  age?: number | string;
-  inspectedBy?: string;
-  inspectedAt?: string;
-}> = ({ condition, stuffing, damage, cleaning, age, inspectedBy, inspectedAt }) => (
-  <div className="mt-2 border border-slate-800 p-1.5">
-    <p className="mb-1 font-black uppercase">Tình trạng vỏ (Giám định)</p>
-    <dl className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-0.5">
-      <dt className="text-ink-muted">Trạng thái</dt><dd className="font-black">{condition || '-'}</dd>
-      <dt className="text-ink-muted">Đóng hàng</dt><dd className="font-semibold">{stuffing || '-'}</dd>
-      <dt className="text-ink-muted">Hư hỏng</dt><dd className="font-semibold">{damage?.length ? damage.join(', ') : 'Không'}</dd>
-      <dt className="text-ink-muted">Vệ sinh</dt><dd className="font-semibold">{(cleaning || []).join(' + ') || '-'}</dd>
-      <dt className="text-ink-muted">AGE</dt><dd className="font-semibold">{age || '-'}</dd>
-      <dt className="text-ink-muted">Giám định</dt><dd className="font-semibold">{inspectedBy || '-'} • {formatDateTime(inspectedAt)}</dd>
-    </dl>
-  </div>
-);
-
-// ---------------------------------------------------------------------------
-// EEIR NHẬP TÀU / XUẤT TÀU (DEC-081, DEC-161): khổ K80; dữ liệu từ danh sách tàu + lượt lưu bãi
-// ---------------------------------------------------------------------------
-export const VesselEeirPrintSheet: React.FC<{ state: DepotState; list: VesselList; item: VesselListItem }> = ({ state, list, item }) => {
-  const isImport = list.mode === 'NHAP_TAU';
-  const container = state.containers.find((c) => c.id === item.containerId);
-  const visit = container?.masterDossierCode;
-  const loc = state.locationHistory.filter((l) => l.masterDossierCode === visit);
-  const location = isImport
-    ? [...loc].reverse().find((l) => l.actionType === 'INITIAL_BLOCK')?.toLocation
-    : item.locationAtList || loc.find((l) => l.actionType === 'GATE_OUT_CLEAR')?.fromLocation;
-  // Tình trạng vỏ: Nhập tàu = kết quả Giám định của lượt này; Xuất tàu = tình trạng hiện tại + Giám định lúc cont vào bãi
-  const origin = visit ? state.gateInOrders.find((o) => o.masterDossierCode === visit) : undefined;
-  const originVessel = visit?.startsWith('NT-')
-    ? (state.vesselLists || []).flatMap((l) => l.items).find((i) => i.dossierCode === visit)
-    : undefined;
-  const cond = isImport
-    ? { condition: item.conditionClass, stuffing: item.stuffingClass, damage: item.damageRemarks, cleaning: item.cleaningItems, age: item.manufactureYear, inspectedBy: item.inspectedBy, inspectedAt: item.inspectedAt }
-    : {
-        condition: container?.conditionClass,
-        stuffing: container?.stuffingClass,
-        damage: container?.damageRemarks,
-        cleaning: container?.cleaningItems,
-        age: container?.manufactureYear,
-        inspectedBy: origin?.fieldStaffName || originVessel?.inspectedBy,
-        inspectedAt: origin?.fieldRecordedAt || originVessel?.inspectedAt,
-      };
-  return (
-    <K80Frame state={state} title="EEIR — PHIẾU GIAO NHẬN CONTAINER" number={item.dossierCode || '-'} operation={isImport ? 'NHẬP TÀU' : 'XUẤT TÀU'}>
-      <InfoGrid
-        narrow
-        rows={[
-          ['Số container', <span className="text-sm">{item.containerNo}</span>, true],
-          ['Size / Type', `${item.size} / ${item.type}`],
-          ['Hãng tàu', list.shippingLineCode || container?.shippingLineCode],
-          ['Tên tàu', list.vesselName],
-          [isImport ? 'Thời gian nhập tàu' : 'Thời gian xuất tàu', formatDateTime(list.plannedAt), true],
-          ['Số xe', item.truckNo],
-          [isImport ? 'Thời gian vào bãi' : 'Thời gian OUT', formatDateTime(isImport ? container?.gateInAt : item.doneAt), true],
-          ...(isImport ? [] : ([['Date in (vào bãi)', formatDateTime(container?.gateInAt), true]] as [string, React.ReactNode, boolean][])),
-          [isImport ? 'Vị trí hạ' : 'Vị trí lấy', location, true],
-          ['Thanh toán', 'Không thu phí (tác nghiệp tàu)'],
-        ]}
-      />
-      <ConditionBox {...cond} />
-      <Signatures left="Lái xe" right={`Đại diện ${state.companyProfile.shortName || state.companyProfile.name}`} />
-      <PrintFooter />
-    </K80Frame>
   );
 };
 

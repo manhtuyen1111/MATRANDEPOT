@@ -665,3 +665,45 @@ export function containerOperation(state: DepotState, c: ContainerRecord): Conta
   }
   return { code: 'HA_VO', label: CONTAINER_OPERATION_LABELS.HA_VO, dossierCode: c.masterDossierCode };
 }
+
+// ============================================================================
+// PHIẾU EEIR NHẬP TÀU / XUẤT TÀU (K80) — mã QR + LỘ TRÌNH như phiếu tác nghiệp Hạ vỏ / Cấp vỏ (DEC-163)
+// QR = QR-<mã hồ sơ NT- / XT-> (DEC-057). Trạng thái từng bước lấy từ dữ liệu thật — không ghi gì thêm.
+// ============================================================================
+export interface VesselRouteStep {
+  key: string;
+  dept: string;
+  action: string;
+  done: boolean;
+  doneAt?: string;
+  doneBy?: string;
+}
+
+export function vesselQrCode(item: VesselListItem): string {
+  return item.dossierCode ? `QR-${item.dossierCode}` : '';
+}
+
+export function getVesselRoute(state: DepotState, list: VesselList, item: VesselListItem): VesselRouteStep[] {
+  const approved = list.status === 'APPROVED';
+  if (list.mode === 'XUAT_TAU') {
+    return [
+      { key: 'OFFICE_LIST', dept: 'VĂN PHÒNG', action: 'Lập danh sách xuất tàu', done: true, doneAt: list.createdAt, doneBy: list.createdBy },
+      { key: 'FORKLIFT_EXPORT', dept: 'XE NÂNG', action: 'Quét mã • xuất cont lên xe', done: item.status === 'DONE', doneAt: item.doneAt, doneBy: item.doneBy },
+      { key: 'OFFICE_APPROVE', dept: 'VĂN PHÒNG', action: 'Duyệt xuất tàu', done: approved, doneAt: list.approvedAt, doneBy: list.approvedBy },
+    ];
+  }
+  const code = item.dossierCode;
+  const cleaningWo = code ? state.workOrders.find((w) => w.masterDossierCode === code && w.category === 'CLEANING') : undefined;
+  const placement = code ? state.locationHistory.find((h) => h.masterDossierCode === code && h.actionType === 'INITIAL_BLOCK') : undefined;
+  const steps: VesselRouteStep[] = [
+    { key: 'INSPECT', dept: 'GIÁM ĐỊNH', action: 'Giám định cont nhập tàu', done: Boolean(item.inspectedAt), doneAt: item.inspectedAt, doneBy: item.inspectedBy },
+  ];
+  if (cleaningWo) {
+    steps.push({ key: 'CLEANING', dept: 'VỆ SINH', action: `Quét mã • ${(item.cleaningItems || []).join(' + ')}`, done: cleaningWo.workStatus === 'COMPLETED', doneAt: cleaningWo.completedAt, doneBy: cleaningWo.completedBy });
+  }
+  steps.push(
+    { key: 'FORKLIFT_PLACE', dept: 'XE NÂNG', action: 'Quét mã • hạ vỏ', done: Boolean(placement), doneAt: placement?.performedAt, doneBy: placement?.performedBy },
+    { key: 'OFFICE_APPROVE', dept: 'VĂN PHÒNG', action: 'Duyệt nhập tàu', done: approved, doneAt: list.approvedAt, doneBy: list.approvedBy }
+  );
+  return steps;
+}

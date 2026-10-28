@@ -1491,6 +1491,14 @@ Quy ước trạng thái:
 - **Số lần in** (người dùng chọn 2026-10-29): **chỉ dùng bộ đếm phiếu thu** (`recordReceiptPrint`, DEC-063) — in phiếu trả khách hàng = ghi 1 lần in cho mỗi phiếu thu kèm theo; từ lần 2 hỏi xác nhận + nhãn BẢN IN LẠI. Không đổi database. Phiếu EEIR tác nghiệp và phiếu trả khách không có phiếu thu **không đếm**.
 - **Phiếu thu lẻ** giữ nguyên ở Văn phòng → Phiếu thu (in / in lại có đếm).
 
+### DEC-163 — PHIẾU EEIR NHẬP TÀU / XUẤT TÀU có mã QR + LỘ TRÌNH như phiếu tác nghiệp
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng). **Bổ sung DEC-069 / DEC-081**: tác nghiệp tàu vẫn không thu phí, không tạo phiếu K80 riêng, không Trả chứng từ — chỉ **phiếu EEIR tàu** đổi mẫu.
+- PHIẾU EEIR NHẬP TÀU / XUẤT TÀU (`VesselEeirPrintSheet`, khổ K80) **cùng mẫu PHIẾU EEIR TÁC NGHIỆP Hạ vỏ / Cấp vỏ**: thông tin depot → "PHIẾU EEIR TÁC NGHIỆP / Số / TÁC NGHIỆP" + **mã QR** → thông tin cont + tàu + tình trạng vỏ → **LỘ TRÌNH — QUÉT MÃ TẠI TỪNG BỘ PHẬN** → Văn phòng xác nhận (người lập danh sách).
+- Mã QR = `QR-<mã hồ sơ NT- / XT->` (`vesselQrCode`, theo DEC-057). Quét được ở Vệ sinh / Xe nâng (cont NT- đã mang mã này) và màn Nhập / Xuất tàu (bỏ tiền tố QR- rồi tra như mã hồ sơ).
+- Lộ trình (`getVesselRoute`, chỉ đọc dữ liệu): **Nhập tàu** = Giám định → Vệ sinh (nếu có) → Xe nâng hạ vỏ → Văn phòng duyệt nhập tàu; **Xuất tàu** = Văn phòng lập danh sách → Xe nâng xuất cont → Văn phòng duyệt xuất tàu. Bước đã xong có ✓ + giờ.
+- Thời điểm xem / in giữ như cũ: Nhập tàu từ khi Giám định xác nhận; Xuất tàu khi cont đã OUT.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1580,6 +1588,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-162 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-163 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

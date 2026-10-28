@@ -24,10 +24,10 @@ import { InspectorHaVoMobile } from '../src/features/inspector/InspectorHaVoMobi
 import { RepairTeamCatalog } from '../src/features/catalog/RepairTeamCatalog';
 import { UserRoleCatalog } from '../src/features/catalog/UserRoleCatalog';
 import { DocumentReturnWorkspace } from '../src/features/office/DocumentReturnWorkspace';
-import { CustomerSlipK80, EeirK80Sheet, K80TicketModal, slipPrintCount } from '../src/components/K80TicketModal';
+import { CustomerSlipK80, EeirK80Sheet, K80TicketModal, slipPrintCount, VesselEeirPrintSheet } from '../src/components/K80TicketModal';
 import { documentPackOf } from '../src/services/driverRoute';
 import { CompanyCatalog } from '../src/features/catalog/CompanyCatalog';
-import { ReceiptPrintSheet, VesselEeirPrintSheet } from '../src/components/ReceiptPrint';
+import { ReceiptPrintSheet } from '../src/components/ReceiptPrint';
 import { DetailDrawer, FeeLinesEditor, Pager } from '../src/components/shared';
 import { confirmGateInPaymentAndComplete, recordGateInFieldStep, toggleContainerHold, verifyGateInOfficeAndCreatePayment } from '../src/services/depotOperations';
 
@@ -472,7 +472,13 @@ describe('DEC-081: EEIR cho hồ sơ Nhập tàu / Xuất tàu', () => {
     const ntItem = nt.items[0];
     expect(strip(renderToString(<MasterDossierModal masterDossierCode={ntItem.dossierCode!} state={s} onClose={noop} />))).toContain('EEIR NHẬP TÀU');
     const ntSheet = strip(renderToString(<VesselEeirPrintSheet state={s} list={nt} item={ntItem} />));
-    expect(ntSheet).toContain('EEIR — PHIẾU GIAO NHẬN CONTAINER');
+    // DEC-163: cùng mẫu phiếu tác nghiệp Hạ vỏ / Cấp vỏ — mã QR + LỘ TRÌNH
+    expect(ntSheet).toContain('PHIẾU EEIR TÁC NGHIỆP');
+    expect(ntSheet).toContain(`Mã QR QR-${ntItem.dossierCode}`);
+    expect(ntSheet).toContain('LỘ TRÌNH — QUÉT MÃ TẠI TỪNG BỘ PHẬN');
+    expect(ntSheet).toContain('GIÁM ĐỊNH');
+    expect(ntSheet).toContain('Duyệt nhập tàu');
+    expect(ntSheet).toContain('Văn phòng xác nhận');
     expect(ntSheet).toContain('k80-sheet'); // DEC-161: EEIR tàu khổ K80
     // Vệ sinh / Xe nâng: cont Nhập tàu hiện cả SỐ XE (danh sách chờ + khung cont vừa quét)
     const { OperationBadge } = await import('../src/features/vessel/VesselShared');
@@ -483,7 +489,7 @@ describe('DEC-081: EEIR cho hồ sơ Nhập tàu / Xuất tàu', () => {
     expect(ntSheet).toContain(`Số: ${ntItem.dossierCode}`);
     expect(ntSheet).toContain('TÁC NGHIỆP: NHẬP TÀU');
     expect(ntSheet).toContain('TÀU EEIR');
-    expect(ntSheet).toContain('Tình trạng vỏ (Giám định)');
+    expect(ntSheet).toContain('GIÁM ĐỊNH');
     expect(ntSheet).toContain('Móp vách');
     expect(ntSheet).toContain('Không thu phí');
 
@@ -494,7 +500,9 @@ describe('DEC-081: EEIR cho hồ sơ Nhập tàu / Xuất tàu', () => {
     const xtList = s.vesselLists.find((l) => l.id === xt.listId)!;
     const xtSheet = strip(renderToString(<VesselEeirPrintSheet state={s} list={xtList} item={xtList.items[0]} />));
     expect(xtSheet).toContain('TÁC NGHIỆP: XUẤT TÀU');
-    expect(xtSheet).toContain('Thời gian OUT');
+    expect(xtSheet).toContain('>OUT<');
+    expect(xtSheet).toContain(`Mã QR QR-${xtList.items[0].dossierCode}`);
+    expect(xtSheet).toContain('Quét mã • xuất cont lên xe');
     expect(xtSheet).toContain('15C-7');
     expect(strip(renderToString(<MasterDossierModal masterDossierCode={xtList.items[0].dossierCode!} state={s} onClose={noop} />))).toContain('EEIR XUẤT TÀU');
   });
