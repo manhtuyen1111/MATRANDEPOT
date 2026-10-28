@@ -5,6 +5,11 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-170: Báo cáo → Sửa chữa tab SẢN LƯỢNG SỬA CHỮA (giờ công từng nhân viên, chia đều theo số người tác nghiệp; lọc thời gian / tổ / nhân viên; Excel).
+- DEC-171: Chờ sửa chữa — nhãn đầu dòng CHỜ SỬA CHỮA.
+- DEC-169: Hồ sơ — Duyệt xuất tàu hiện tiến độ thực tế đã xuất/tổng.
+- DEC-168: Mộc KHÔNG XUẤT TÀU trong hồ sơ cont không kịp xuất; bỏ in EEIR cả danh sách.
+- DEC-167: EEIR Xuất tàu in ngay khi lập danh sách; XUẤT PDF tải thẳng file (jspdf + html2canvas-pro).
 - DEC-166: Danh mục **Phân loại đóng hàng** theo hãng tàu (thay M / K / E cố định); Giám định Hạ vỏ chọn hãng tàu (sổ xuống, mặc định hãng **Ưu tiên**); hãng không dùng → ẩn ô Đóng hàng. Migration `20261104000001` (pgTAP 201/201 local).
 - DEC-165: Văn phòng → DANH SÁCH NHẬP / XUẤT TÀU dạng bảng; Báo cáo tàu chế độ CHI TIẾT / TÊN TÀU.
 - Database Supabase (migration 5 bước + app_support), Edge Function tạo / đặt lại tài khoản, xóa ảnh hết hạn — pgTAP 170/170, Edge 16/16 trên local.
