@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_PASSWORD,
   environmentLabel,
+  isProductionEnv,
   PASSWORD_SUFFIX,
   toAuthPassword,
   usernameToEmail,
@@ -48,6 +49,9 @@ describe('DEC-151 / DEC-153: quy tắc đăng nhập dùng chung', () => {
     expect(environmentLabel('production')).toBe('Chính thức');
     expect(environmentLabel('dev')).toMatch(/dev/);
     expect(environmentLabel(undefined)).toMatch(/local/);
+    expect(environmentLabel('test')).toMatch(/kiểm thử.*dữ liệu test/); // Vercel test
+    expect(isProductionEnv('test')).toBe(false);
+    expect(isProductionEnv('production')).toBe(true);
   });
 });
 
@@ -59,7 +63,9 @@ describe('Màn đăng nhập / đổi mật khẩu (giao diện)', () => {
     expect(html).toContain('aria-label="Hiện mật khẩu"');
     expect(html).toContain('data-testid="remember-username"');
     expect(html).toContain('Quên mật khẩu? Liên hệ Admin');
-    expect(html).toMatch(/data-testid="login-env"[^>]*>Bản thử \(dev\)/);
+    expect(html).toMatch(/data-testid="login-env"[^>]*>Môi trường phát triển \(dev\)/);
+    expect(html).toContain('Made by');
+    expect(html).toContain('Nền tảng quản lý vận hành depot container rỗng');
     expect(html).toContain('MATRAN<br/>DEPOT'); // nửa trái máy tính
   });
 

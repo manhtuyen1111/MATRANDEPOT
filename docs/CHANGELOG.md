@@ -21,6 +21,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 
 ### Changed
 - DEC-161: bỏ EEIR A4 Hạ vỏ / Cấp vỏ — phiếu K80 thành **Phiếu EEIR (K80)** ("… — PHIẾU EEIR TÁC NGHIỆP"); **Phiếu thu (K80)**; Trả chứng từ in liền EEIR (K80) + Phiếu thu (K80), máy in tự cắt giữa; hồ sơ có **In hồ sơ container (A4)**. EEIR Nhập / Xuất tàu giữ nửa A4.
+- Màn đăng nhập: khẩu hiệu mới (Nền tảng quản lý vận hành depot container rỗng); nhãn môi trường rõ ràng — bản Vercel test (VITE_APP_ENV=test) ghi "Môi trường kiểm thử (UAT) — dữ liệu test" (trước nhầm thành local), nhãn vàng khi không phải bản chính thức; dòng "Made by MT".
 - Vệ sinh / Xe nâng: cont Nhập tàu / Xuất tàu hiện thêm số xe.
 - Mã QR Phiếu EEIR (K80) và QR link xuất hóa đơn ở Phiếu thu (K80) cùng cỡ 60px, cùng khung viền.
 - Phiếu EEIR (K80): mã QR tác nghiệp lên góc phải trên cùng (cạnh ô tác nghiệp); dưới cùng thay bằng ô VĂN PHÒNG XÁC NHẬN (người lập phiếu + giờ lập).

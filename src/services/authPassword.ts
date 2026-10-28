@@ -84,12 +84,19 @@ export function environmentLabel(env: string | undefined): string {
     case 'production':
     case 'prod':
       return 'Chính thức';
+    case 'test':
+    case 'uat':
     case 'staging':
-      return 'Bản kiểm thử (staging)';
+      return 'Môi trường kiểm thử (UAT) — dữ liệu test, không dùng cho vận hành thật';
     case 'dev':
     case 'development':
-      return 'Bản thử (dev)';
+      return 'Môi trường phát triển (dev) — dữ liệu test';
     default:
-      return 'Bản chạy trên máy (local)';
+      return 'Môi trường nội bộ (local) — dữ liệu test';
   }
+}
+
+// Bản chính thức hay không — bản test hiện nhãn cảnh báo nổi bật
+export function isProductionEnv(env: string | undefined): boolean {
+  return ['production', 'prod'].includes((env || '').toLowerCase());
 }
