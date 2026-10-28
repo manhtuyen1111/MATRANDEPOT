@@ -1473,7 +1473,7 @@ Quy ước trạng thái:
 - **Phiếu thu đổi sang khổ K80**, giữ đủ thông tin (công ty, Số, tác nghiệp, bảng phí, mã xuất hóa đơn, chữ ký, BẢN IN LẠI).
 - **Trả chứng từ** tự in liền 1 lệnh: Phiếu EEIR (K80) + Phiếu thu (K80); mỗi phiếu 1 trang → máy in nhiệt **tự cắt giữa các phiếu** (driver máy in đặt cắt sau mỗi trang).
 - Tên gọi thống nhất trên giao diện: **Phiếu EEIR (K80)**, **Phiếu thu (K80)**. Hạ vỏ và Cấp vỏ vẫn mỗi tác nghiệp 1 bộ phiếu riêng.
-- Hồ sơ container có nút **In hồ sơ container (A4)**: in toàn bộ hồ sơ tới thời điểm in.
+- Hồ sơ container có nút **HỒ SƠ CONTAINER** (A4): toàn bộ hồ sơ tới thời điểm in — mở cửa sổ xem, trong đó chọn **IN** hoặc **XUẤT PDF** (bổ sung 2026-10-29; PDF qua hộp thoại in "Lưu dưới dạng PDF", không thêm thư viện).
 - EEIR **Nhập tàu / Xuất tàu** cũng **khổ K80** (bổ sung 2026-10-28, đóng Q-045) — giữ nguyên thông tin tàu + tình trạng vỏ Giám định. Không còn giấy tờ nửa A4.
 - **Bản in giống hệt bản xem** (bổ sung 2026-10-28): mọi phiếu K80 (EEIR Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu, Phiếu thu) cùng bề rộng 72mm trên màn hình và khi in, **giữ khung nét đứt**; khổ giấy xem trước = 80mm × chiều dài phiếu (`printNow`), không còn tờ A4.
 - **Quy trình Xem → In** (bổ sung 2026-10-28): nút trên hồ sơ / Phiếu thu mở **cửa sổ xem phiếu**, nút In nằm trong cửa sổ xem (`PrintPreviewModal`). Trả chứng từ vẫn tự in (mục trên).

@@ -20,6 +20,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Ảnh cửa container: kính lúp khi rê chuột + xem toàn màn hình có phóng to (`PhotoZoom` trong `shared.tsx`) ở Văn phòng Hạ vỏ và Hồ sơ container.
 
 ### Changed
+- Hồ sơ: nút HỒ SƠ CONTAINER mở cửa sổ xem bản A4 → IN hoặc XUẤT PDF (hộp thoại in, chọn Lưu dưới dạng PDF; tên file HO-SO-<số cont>). Đã kiểm Edge PDF: khổ A4, tự chia trang.
 - DEC-162 sửa: phiếu trả khách hàng bỏ tiêu đề (đầu: Số / TÁC NGHIỆP + QR), khối PHIẾU THU, "Khách hàng", BẢN IN LẠI dưới khối phiếu thu; hồ sơ: PHIẾU EEIR HẠ VỎ / CẤP VỎ / NHẬP TÀU / XUẤT TÀU, bỏ nút Xem phiếu EEIR (K80). Đã đo PDF Edge: khung sát mép trên giấy (0mm).
 - DEC-162: Trả chứng từ in 1 phiếu **PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU"** (K80) gộp EEIR + phiếu thu — đầu như phiếu tác nghiệp, thay LỘ TRÌNH bằng THÔNG TIN THANH TOÁN + YÊU CẦU XUẤT HÓA ĐƠN; hồ sơ có 2 phiếu PHIẾU EEIR TÁC NGHIỆP + PHIẾU TRẢ KHÁCH HÀNG; số lần in theo bộ đếm phiếu thu; phiếu thu lẻ giữ nguyên.
 - DEC-161: bỏ EEIR A4 Hạ vỏ / Cấp vỏ — phiếu K80 thành **Phiếu EEIR (K80)** ("… — PHIẾU EEIR TÁC NGHIỆP"); **Phiếu thu (K80)**; Trả chứng từ in liền EEIR (K80) + Phiếu thu (K80), máy in tự cắt giữa; hồ sơ có **In hồ sơ container (A4)**. EEIR Nhập / Xuất tàu giữ nửa A4.
