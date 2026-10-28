@@ -82,6 +82,7 @@ export const OperationBadge: React.FC<{ state: DepotState; container: ContainerR
     >
       {op.label}
       {!hideVessel && op.vesselName && <span className={`font-semibold normal-case ${large ? 'text-xs' : ''}`}>• Tàu {op.vesselName}</span>}
+      {!hideVessel && op.truckNo && <span className={`font-semibold normal-case ${large ? 'text-xs' : ''}`}>• Xe {op.truckNo}</span>}
     </span>
   );
 };

@@ -645,6 +645,7 @@ export interface ContainerOperation {
   label: string;
   dossierCode: string;   // mã hồ sơ của tác nghiệp (HV- / CV- / NT- / XT-)
   vesselName?: string;   // Nhập tàu / Xuất tàu
+  truckNo?: string;      // Nhập tàu / Xuất tàu: số xe trong danh sách tàu — hiện ở Vệ sinh / Xe nâng
 }
 
 export function containerOperation(state: DepotState, c: ContainerRecord): ContainerOperation {
@@ -652,14 +653,15 @@ export function containerOperation(state: DepotState, c: ContainerRecord): Conta
   if (c.vesselExportItemId) {
     const list = lists.find((l) => l.items.some((i) => i.id === c.vesselExportItemId));
     const item = list?.items.find((i) => i.id === c.vesselExportItemId);
-    return { code: 'XUAT_TAU', label: CONTAINER_OPERATION_LABELS.XUAT_TAU, dossierCode: item?.dossierCode || c.masterDossierCode, vesselName: list?.vesselName };
+    return { code: 'XUAT_TAU', label: CONTAINER_OPERATION_LABELS.XUAT_TAU, dossierCode: item?.dossierCode || c.masterDossierCode, vesselName: list?.vesselName, truckNo: item?.truckNo };
   }
   if (c.status === 'ALLOCATED' && c.outDossierCode) {
     return { code: 'CAP_VO', label: CONTAINER_OPERATION_LABELS.CAP_VO, dossierCode: c.outDossierCode };
   }
   if (c.masterDossierCode.startsWith('NT-')) {
     const list = lists.find((l) => l.mode === 'NHAP_TAU' && l.items.some((i) => i.dossierCode === c.masterDossierCode));
-    return { code: 'NHAP_TAU', label: CONTAINER_OPERATION_LABELS.NHAP_TAU, dossierCode: c.masterDossierCode, vesselName: list?.vesselName };
+    const item = list?.items.find((i) => i.dossierCode === c.masterDossierCode);
+    return { code: 'NHAP_TAU', label: CONTAINER_OPERATION_LABELS.NHAP_TAU, dossierCode: c.masterDossierCode, vesselName: list?.vesselName, truckNo: item?.truckNo };
   }
   return { code: 'HA_VO', label: CONTAINER_OPERATION_LABELS.HA_VO, dossierCode: c.masterDossierCode };
 }
