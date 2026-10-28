@@ -151,7 +151,7 @@ const MENU: MenuGroup[] = [
       { id: 'DM_HANG_TAU', label: 'Hãng tàu' },
       { id: 'DM_VI_TRI', label: 'Vị trí bãi' },
       { id: 'DM_CONTAINER', label: 'Container' },
-      { id: 'DM_PHAN_LOAI', label: 'Phân loại đóng hàng' }, // DEC-166
+      { id: 'DM_PHAN_LOAI', label: 'Phân loại' }, // DEC-166
       { id: 'DM_BIEU_GIA', label: 'Biểu giá' },
       { id: 'DM_CONG_TY', label: 'Công ty' },
       { id: 'DM_SUA_CHUA', label: 'Sửa chữa' },
