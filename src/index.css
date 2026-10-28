@@ -60,50 +60,23 @@
   }
 }
 
-/* DEC-076: EEIR / Phiếu thu — mỗi phiếu nửa tờ A4 (khổ A5, 148mm); 2 phiếu = 1 tờ A4.
-   Khổ giấy có tên riêng (a4sheet) để không ảnh hưởng phiếu K80 in nhiệt 80mm. */
-@page a4sheet {
-  size: A4 portrait;
-  margin: 0;
+/* DEC-161: PHIẾU EEIR (K80) / PHIẾU THU (K80) / EEIR NHẬP TÀU – XUẤT TÀU (K80) — in nhiệt cuộn 80mm.
+   Bản in GIỐNG HỆT bản xem trên màn hình: cùng bề rộng 72mm (vùng in của máy K80), giữ khung nét đứt.
+   printNow() đặt khổ giấy riêng 80mm × chiều dài từng phiếu → xem trước đúng dải K80; mỗi phiếu 1 trang → máy in cắt giữa. */
+.k80-sheet {
+  box-sizing: border-box;
+  width: 72mm;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
-@media print {
-  .print-sheet {
-    page: a4sheet;
-    box-sizing: border-box;
-    width: 210mm;
-    height: 148mm;
-    margin: 0 !important;
-    padding: 7mm 10mm;
-    overflow: hidden;
-    border-width: 0;
-    border-bottom: 1px dashed #64748b; /* đường cắt giữa 2 nửa tờ */
-    font-size: 10px;
-    line-height: 1.3;
-  }
-  .print-sheet:nth-of-type(2n) {
-    border-bottom: 0;
-    break-after: page;
-  }
-  .print-area:has(.print-sheet) {
-    width: 210mm;
-  }
-}
-
-/* DEC-161: PHIẾU EEIR (K80) + PHIẾU THU (K80) — in nhiệt cuộn 80mm (vùng in 72mm).
-   Mỗi phiếu = 1 trang → máy in nhiệt cắt giấy sau mỗi trang (driver đặt "Cắt sau mỗi trang / Cut per page").
-   Trả chứng từ in liền EEIR + phiếu thu trong 1 lệnh in → 2 phiếu rời, tự cắt giữa. */
 @page k80 {
   margin: 0;
 }
 @media print {
   .k80-sheet {
     page: k80;
-    box-sizing: border-box;
-    width: 72mm !important;
-    max-width: 72mm !important;
-    margin: 0 !important;
-    padding: 2mm 1mm 6mm !important;
-    border: 0 !important;
+    max-width: none;
+    margin: 0 auto !important;
     break-inside: avoid;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -112,7 +85,8 @@
     break-before: page;
   }
   .print-area:has(.k80-sheet) {
-    width: 72mm;
+    width: 80mm;
+    padding-top: 1mm;
   }
 }
 

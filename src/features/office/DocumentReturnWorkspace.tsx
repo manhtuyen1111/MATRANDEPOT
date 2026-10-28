@@ -8,6 +8,7 @@ import { DocumentPack, previewDocumentPack, ticketsAwaitingReturn } from '../../
 import { linkCls, ContainerNo, Feedback, inputCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
 import { PrintPortal, ReceiptPrintSheet } from '../../components/ReceiptPrint';
 import { EeirK80Sheet } from '../../components/K80TicketModal';
+import { printNow } from '../../components/printNow';
 
 type Mode = 'HA_VO' | 'CAP_VO';
 const MODE_LABEL: Record<Mode, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP VỎ' };
@@ -109,12 +110,12 @@ const DocumentPackPrint: React.FC<{ state: DepotState; pack: DocumentPack; previ
   const [eeirOnly, setEeirOnly] = useState(false);
   useEffect(() => {
     if (preview) return;
-    const id = setTimeout(() => window.print(), 300);
+    const id = setTimeout(printNow, 300);
     return () => clearTimeout(id);
   }, [pack]);
   const printEeir = () => {
     setEeirOnly(true);
-    setTimeout(() => window.print(), 100);
+    setTimeout(printNow, 100);
   };
 
   return (

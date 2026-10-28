@@ -336,9 +336,9 @@ describe('DEC-161: Phiếu EEIR (K80) + Phiếu thu (K80); in hồ sơ container
     const s = createInitialState();
     const t = s.k80Tickets[0];
     const dossier = strip(renderToString(<MasterDossierModal masterDossierCode={t.masterDossierCode} state={s} onClose={noop} onUpdateState={noop} onOpenK80Ticket={noop} />));
-    expect(dossier).toContain('In EEIR (K80)');
+    expect(dossier).toContain('EEIR HẠ VỎ');
     expect(dossier).toContain('Xem / in phiếu EEIR (K80)');
-    expect(dossier).toContain('In hồ sơ container (A4)');
+    expect(dossier).toContain('HỒ SƠ CONTAINER');
     expect(dossier).not.toContain('EEIR — PHIẾU GIAO NHẬN CONTAINER');
   });
 });
@@ -421,9 +421,10 @@ describe('DEC-081: EEIR cho hồ sơ Nhập tàu / Xuất tàu', () => {
     });
     const nt = s.vesselLists[0];
     const ntItem = nt.items[0];
-    expect(strip(renderToString(<MasterDossierModal masterDossierCode={ntItem.dossierCode!} state={s} onClose={noop} />))).toContain('In EEIR NHẬP TÀU');
+    expect(strip(renderToString(<MasterDossierModal masterDossierCode={ntItem.dossierCode!} state={s} onClose={noop} />))).toContain('EIR NHẬP TÀU');
     const ntSheet = strip(renderToString(<VesselEeirPrintSheet state={s} list={nt} item={ntItem} />));
     expect(ntSheet).toContain('EEIR — PHIẾU GIAO NHẬN CONTAINER');
+    expect(ntSheet).toContain('k80-sheet'); // DEC-161: EEIR tàu khổ K80
     expect(ntSheet).toContain(`Số: ${ntItem.dossierCode}`);
     expect(ntSheet).toContain('TÁC NGHIỆP: NHẬP TÀU');
     expect(ntSheet).toContain('TÀU EEIR');
@@ -440,7 +441,7 @@ describe('DEC-081: EEIR cho hồ sơ Nhập tàu / Xuất tàu', () => {
     expect(xtSheet).toContain('TÁC NGHIỆP: XUẤT TÀU');
     expect(xtSheet).toContain('Thời gian OUT');
     expect(xtSheet).toContain('15C-7');
-    expect(strip(renderToString(<MasterDossierModal masterDossierCode={xtList.items[0].dossierCode!} state={s} onClose={noop} />))).toContain('In EEIR XUẤT TÀU');
+    expect(strip(renderToString(<MasterDossierModal masterDossierCode={xtList.items[0].dossierCode!} state={s} onClose={noop} />))).toContain('EIR XUẤT TÀU');
   });
 });
 

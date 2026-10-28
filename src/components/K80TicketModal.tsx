@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check, Copy, Printer, X } from 'lucide-react';
 import { QrImage } from './Qr';
+import { printNow } from './printNow';
 import { K80InternalTicket } from '../types/depot';
 import type { DepotState } from '../services/depotStore';
 import { getDriverRoute, isTicketClosed } from '../services/driverRoute';
@@ -133,7 +134,7 @@ export const K80TicketModal: React.FC<Props> = ({ ticket, state, onClose, onSimu
 
         <div className="mt-3 space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" disabled={closed} onClick={() => window.print()} className="flex items-center justify-center gap-1.5 rounded-xl bg-navy-900 px-3 py-2.5 text-xs font-bold text-white hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-40">
+            <button type="button" disabled={closed} onClick={printNow} className="flex items-center justify-center gap-1.5 rounded-xl bg-navy-900 px-3 py-2.5 text-xs font-bold text-white hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-40">
               <Printer className="h-4 w-4" />
               In phiếu EEIR (K80)
             </button>
