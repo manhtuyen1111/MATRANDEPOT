@@ -83,8 +83,8 @@ export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (c
                 <th className="px-3 py-2">Bậc thợ</th>
                 <th className="px-3 py-2 text-right">Số cont</th>
                 <th className="px-3 py-2 text-right">Giờ công</th>
-                <th className="px-3 py-2 text-right">Giờ công bậc thợ (đ / giờ)</th>
-                <th className="px-3 py-2 text-right">Thành tiền</th>
+                <th className="px-3 py-2 text-right">Đơn giá bậc thợ (đ / giờ)</th>
+                <th className="px-3 py-2 text-right">Tổng lương sản phẩm</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -126,8 +126,8 @@ export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (c
                 <th className="px-2 py-1.5 text-right">Số người</th>
                 <th className="px-2 py-1.5 text-right">Giờ công chia</th>
                 <th className="px-2 py-1.5">Bậc thợ</th>
-                <th className="px-2 py-1.5 text-right">Đơn giá (đ / giờ)</th>
-                <th className="px-2 py-1.5 text-right">Thành tiền</th>
+                <th className="px-2 py-1.5 text-right">Đơn giá bậc thợ (đ / giờ)</th>
+                <th className="px-2 py-1.5 text-right">Tổng lương sản phẩm</th>
                 <th className="px-2 py-1.5">Hoàn tất</th>
               </tr>
             </thead>

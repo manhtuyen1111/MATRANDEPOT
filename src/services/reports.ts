@@ -451,7 +451,7 @@ export function repairOutputSheets(rows: RepairOutputRow[]): SheetData[] {
   return [
     {
       name: 'SẢN LƯỢNG SỬA CHỮA',
-      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'BẬC THỢ', 'SỐ CONT', 'GIỜ CÔNG', 'GIỜ CÔNG BẬC THỢ (Đ/GIỜ)', 'THÀNH TIỀN'],
+      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'BẬC THỢ', 'SỐ CONT', 'GIỜ CÔNG', 'ĐƠN GIÁ BẬC THỢ (Đ/GIỜ)', 'TỔNG LƯƠNG SẢN PHẨM'],
       rows: [
         ...rows.map((r) => [r.teamName, r.memberName, r.gradeName || '', r.containers, r.hours, r.hourlyRate ?? '', r.amount ?? '']),
         ['', 'TỔNG', '', rows.reduce((s, r) => s + r.containers, 0), round2(rows.reduce((s, r) => s + r.hours, 0)), '', rows.reduce((s, r) => s + (r.amount || 0), 0)],
@@ -459,7 +459,7 @@ export function repairOutputSheets(rows: RepairOutputRow[]): SheetData[] {
     },
     {
       name: 'CHI TIẾT',
-      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'GIỜ CÔNG CONT', 'SỐ NGƯỜI', 'GIỜ CÔNG CHIA', 'BẬC THỢ', 'GIỜ CÔNG BẬC THỢ (Đ/GIỜ)', 'THÀNH TIỀN', 'NGÀY HOÀN TẤT'],
+      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'GIỜ CÔNG CONT', 'SỐ NGƯỜI', 'GIỜ CÔNG CHIA', 'BẬC THỢ', 'ĐƠN GIÁ BẬC THỢ (Đ/GIỜ)', 'TỔNG LƯƠNG SẢN PHẨM', 'NGÀY HOÀN TẤT'],
       rows: rows.flatMap((r) =>
         r.jobs.map((j) => [
           r.teamName, r.memberName, j.workOrder.masterDossierCode, j.workOrder.containerNo, j.container?.size || '', j.container?.type || '',
