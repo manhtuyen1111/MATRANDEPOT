@@ -25,6 +25,23 @@ revoke all on public.repair_grades from anon;
 
 alter table public.repair_team_members add column grade_id uuid references public.repair_grades (id);
 
+-- DEC-174: chốt BẬC THỢ + ĐƠN GIÁ của từng nhân viên LÚC HOÀN TẤT sửa chữa (đổi đơn giá sau → kỳ cũ giữ giá cũ).
+-- complete_repair_task ghi work_order_members → trigger tự điền, không phải sửa hàm cũ.
+alter table public.work_order_members add column grade_name text, add column hourly_rate numeric(14, 0);
+create or replace function public.work_order_member_rate() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.hourly_rate is null then
+    select g.name, g.hourly_rate into new.grade_name, new.hourly_rate
+    from public.repair_team_members m join public.repair_grades g on g.id = m.grade_id
+    where m.id = new.member_id;
+  end if;
+  return new;
+end $$;
+create trigger work_order_member_rate before insert on public.work_order_members
+  for each row execute function public.work_order_member_rate();
+revoke execute on function public.work_order_member_rate() from public, anon, authenticated;
+
 -- Thêm / sửa bậc thợ (p_id null = thêm mới, mã BT-nn tự cấp)
 create or replace function public.catalog_upsert_repair_grade(
   p_name text, p_hourly_rate numeric, p_active boolean default true, p_id uuid default null

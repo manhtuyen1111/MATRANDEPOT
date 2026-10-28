@@ -135,7 +135,7 @@ async function fetchRaw(client: SupabaseClient, since: string, until: string): P
   const [vcById, rcByTx, members] = await Promise.all([
     byIds(client, 'vouchers', 'id', [...gateIns.map((g) => g.voucher_id), ...gateOuts.map((o) => o.voucher_id)]),
     byIds(client, 'payment_receipts', 'transaction_id', txs.map((t) => t.id)),
-    byIds(client, 'work_order_members', 'work_order_id', works.map((w) => w.id), 'work_order_id, member_name'),
+    byIds(client, 'work_order_members', 'work_order_id', works.map((w) => w.id), 'work_order_id, member_name, grade_name, hourly_rate'),
   ]);
   const vouchers = merge(vcWin, vcById);
   const receipts = merge(rcWin, rcByTx);
@@ -314,6 +314,9 @@ function buildState(base: DepotState, raw: RawData, photo: (p: string | null) =>
     assignedTo: w.assigned_to, resultNotes: opt(w.result_notes), createdAt: w.created_at, completedAt: opt(w.completed_at), completedBy: opt(w.completed_by_name),
     laborHours: w.labor_hours === null ? undefined : num(w.labor_hours), repairTeamCode: opt(w.repair_team_code), repairTeamName: opt(w.repair_team_name),
     repairMembers: (membersByWork.get(w.id) || []).map((m) => m.member_name),
+    repairMemberRates: (membersByWork.get(w.id) || []).map((m) => ({
+      name: m.member_name, gradeName: opt(m.grade_name), hourlyRate: m.hourly_rate === null || m.hourly_rate === undefined ? undefined : num(m.hourly_rate),
+    })), // DEC-174
   });
 
   const mapHistory = (h: Row): LocationHistoryItem => ({
@@ -374,7 +377,7 @@ const SYNC_TABLES: { key: keyof RawData; table: string }[] = [
 // Bảng con không có id riêng: thay đổi → tải lại toàn bộ dòng con của cha đó
 const SYNC_CHILDREN: { key: keyof RawData; table: string; parent: string; select: string }[] = [
   { key: 'groupItems', table: 'invoice_group_items', parent: 'group_id', select: 'group_id, deduction_id' },
-  { key: 'members', table: 'work_order_members', parent: 'work_order_id', select: 'work_order_id, member_name' },
+  { key: 'members', table: 'work_order_members', parent: 'work_order_id', select: 'work_order_id, member_name, grade_name, hourly_rate' },
 ];
 
 export interface WorkingSync {

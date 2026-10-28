@@ -96,7 +96,7 @@ export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (c
                   <td className="px-3 py-2">{r.gradeName || <span className="text-amber-700">Chưa có bậc</span>}</td>
                   <td className="px-3 py-2 text-right font-mono">{r.containers}</td>
                   <td className="px-3 py-2 text-right font-mono font-bold">{r.hours}</td>
-                  <td className="px-3 py-2 text-right font-mono">{r.hourlyRate !== undefined ? formatVnd(r.hourlyRate) : '-'}</td>
+                  <td className="px-3 py-2 text-right font-mono">{r.hourlyRate !== undefined ? formatVnd(r.hourlyRate) : r.amount !== undefined ? 'Nhiều mức' : '-'}</td>
                   <td className="px-3 py-2 text-right font-mono font-bold">{r.amount !== undefined ? formatVnd(r.amount) : '-'}</td>
                 </tr>
               ))}
@@ -125,6 +125,9 @@ export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (c
                 <th className="px-2 py-1.5 text-right">Giờ công cont</th>
                 <th className="px-2 py-1.5 text-right">Số người</th>
                 <th className="px-2 py-1.5 text-right">Giờ công chia</th>
+                <th className="px-2 py-1.5">Bậc thợ</th>
+                <th className="px-2 py-1.5 text-right">Đơn giá (đ / giờ)</th>
+                <th className="px-2 py-1.5 text-right">Thành tiền</th>
                 <th className="px-2 py-1.5">Hoàn tất</th>
               </tr>
             </thead>
@@ -137,6 +140,9 @@ export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (c
                   <td className="px-2 py-1.5 text-right font-mono">{j.workOrder.laborHours ?? 0}</td>
                   <td className="px-2 py-1.5 text-right font-mono">{j.memberCount}</td>
                   <td className="px-2 py-1.5 text-right font-mono font-bold">{j.share}</td>
+                  <td className="px-2 py-1.5">{j.gradeName || '-'}</td>
+                  <td className="px-2 py-1.5 text-right font-mono">{j.hourlyRate !== undefined ? formatVnd(j.hourlyRate) : '-'}</td>
+                  <td className="px-2 py-1.5 text-right font-mono font-bold">{j.amount !== undefined ? formatVnd(j.amount) : '-'}</td>
                   <td className="px-2 py-1.5 font-mono">{formatViTime(j.workOrder.completedAt)}</td>
                 </tr>
               ))}

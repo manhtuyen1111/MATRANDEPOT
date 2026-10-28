@@ -545,6 +545,8 @@ export interface ServiceWorkOrder {
   repairTeamCode?: string;
   repairTeamName?: string;
   repairMembers?: string[];
+  // DEC-174: bậc thợ + đơn giá (đ / giờ) của từng nhân viên LÚC HOÀN TẤT sửa chữa — đổi đơn giá sau không ảnh hưởng
+  repairMemberRates?: { name: string; gradeName?: string; hourlyRate?: number }[];
 }
 
 export interface BookingReleasedItem {

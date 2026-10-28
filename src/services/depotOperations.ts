@@ -923,6 +923,11 @@ export function completeRepairTask(
               repairTeamCode: team.code,
               repairTeamName: team.name,
               repairMembers: memberNames,
+              // DEC-174: chốt đơn giá bậc thợ tại thời điểm sửa xong
+              repairMemberRates: members.map((m) => {
+                const g = (state.repairGrades || []).find((x) => x.id === m.gradeId);
+                return { name: m.fullName, gradeName: g?.name, hourlyRate: g?.hourlyRate };
+              }),
             }
           : w
       ),

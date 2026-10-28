@@ -373,6 +373,10 @@ export interface RepairOutputJob {
   container?: ContainerRecord;
   memberCount: number;
   share: number;
+  // DEC-174: bậc thợ + đơn giá CHỐT lúc sửa xong (cont sửa trước khi có bậc thợ → lấy bậc hiện tại)
+  gradeName?: string;
+  hourlyRate?: number;
+  amount?: number;
 }
 
 export interface RepairOutputRow {
@@ -381,7 +385,7 @@ export interface RepairOutputRow {
   containers: number;
   hours: number;
   jobs: RepairOutputJob[];
-  // DEC-173: bậc thợ hiện tại của nhân viên → thành tiền = giờ công × giờ công bậc thợ (đ / giờ)
+  // DEC-173 / DEC-174: thành tiền = tổng (giờ chia × đơn giá chốt của từng cont); bậc / đơn giá chỉ hiện khi cả kỳ cùng 1 mức
   gradeName?: string;
   hourlyRate?: number;
   amount?: number;
@@ -415,15 +419,29 @@ export function queryRepairOutput(state: DepotState, filter: RepairOutputFilter)
           const row = byMember.get(key) || { memberName: m, teamName: w.repairTeamName || '', containers: 0, hours: 0, jobs: [] };
           row.containers += 1;
           row.hours += share;
-          row.jobs.push({ workOrder: w, container, memberCount: members.length, share: round2(share) });
+          const fixed = (w.repairMemberRates || []).find((x) => x.name.trim() === m && x.hourlyRate !== undefined);
+          const now = fixed ? undefined : gradeOfMember(state, m);
+          const gradeName = fixed ? fixed.gradeName : now?.name;
+          const hourlyRate = fixed ? fixed.hourlyRate : now?.hourlyRate;
+          row.jobs.push({
+            workOrder: w, container, memberCount: members.length, share: round2(share),
+            gradeName, hourlyRate, amount: hourlyRate === undefined ? undefined : Math.round(share * hourlyRate),
+          });
           byMember.set(key, row);
         });
     });
   return Array.from(byMember.values())
     .map((r) => {
-      const grade = gradeOfMember(state, r.memberName);
-      const hours = round2(r.hours);
-      return { ...r, hours, gradeName: grade?.name, hourlyRate: grade?.hourlyRate, amount: grade ? Math.round(hours * grade.hourlyRate) : undefined };
+      const priced = r.jobs.filter((j) => j.amount !== undefined);
+      const rates = new Set(priced.map((j) => j.hourlyRate));
+      const grades = new Set(priced.map((j) => j.gradeName));
+      return {
+        ...r,
+        hours: round2(r.hours),
+        gradeName: grades.size === 1 ? [...grades][0] : grades.size > 1 ? 'Nhiều bậc' : undefined,
+        hourlyRate: rates.size === 1 ? [...rates][0] : undefined,
+        amount: priced.length ? priced.reduce((s, j) => s + (j.amount || 0), 0) : undefined,
+      };
     })
     .map((r) => ({ ...r, jobs: r.jobs.sort((a, b) => (b.workOrder.completedAt || '').localeCompare(a.workOrder.completedAt || '')) }))
     .sort((a, b) => a.teamName.localeCompare(b.teamName) || b.hours - a.hours || a.memberName.localeCompare(b.memberName));
@@ -441,11 +459,12 @@ export function repairOutputSheets(rows: RepairOutputRow[]): SheetData[] {
     },
     {
       name: 'CHI TIẾT',
-      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'GIỜ CÔNG CONT', 'SỐ NGƯỜI', 'GIỜ CÔNG CHIA', 'NGÀY HOÀN TẤT'],
+      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'GIỜ CÔNG CONT', 'SỐ NGƯỜI', 'GIỜ CÔNG CHIA', 'BẬC THỢ', 'GIỜ CÔNG BẬC THỢ (Đ/GIỜ)', 'THÀNH TIỀN', 'NGÀY HOÀN TẤT'],
       rows: rows.flatMap((r) =>
         r.jobs.map((j) => [
           r.teamName, r.memberName, j.workOrder.masterDossierCode, j.workOrder.containerNo, j.container?.size || '', j.container?.type || '',
-          j.container?.shippingLineCode || '', j.workOrder.laborHours || 0, j.memberCount, j.share, fmt(j.workOrder.completedAt),
+          j.container?.shippingLineCode || '', j.workOrder.laborHours || 0, j.memberCount, j.share,
+          j.gradeName || '', j.hourlyRate ?? '', j.amount ?? '', fmt(j.workOrder.completedAt),
         ])
       ),
     },
