@@ -3,7 +3,7 @@
 > Agent cập nhật file này sau mỗi việc (skill `matran-docs-sync`). Bạn chỉ cần đọc mục A, B và F.
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
-Cập nhật lần cuối: 2026-10-28 (tối, DEC-171) — Claude Code
+Cập nhật lần cuối: 2026-10-28 (cuối ngày, DEC-174, đã merge PR #46 + db push) — Claude Code
 Trạng thái chung (cập nhật 2026-10-27): **GĐ 4 Database ĐANG LÀM** trên nhánh **`agent/claude/p4-database`** (DEC-149 → DEC-153, đã push): Supabase Singapore; thiết kế `docs/DATABASE_SCHEMA.md` đã duyệt; **toàn bộ migration (5 bước + app_support + đồng bộ) + Edge Function xong, chạy thử trên Supabase local (Docker) — pgTAP 180/180, Edge Function 16/16**; **nối app với database N1 → N8 xong phần code** (docs/APP_DB_INTEGRATION.md): đăng nhập, ghi qua hàng chờ RPC, báo cáo theo khoảng lọc (DEC-157), dữ liệu làm việc 7 ngày + chỉ tải phần thay đổi + báo mất mạng (DEC-158), ảnh giữ 2 tháng (DEC-159), Nhập tàu không chụp ảnh (DEC-156) — chạy thật toàn luồng trên local pass; **tiếp theo: bạn thử tay toàn bộ trên database → reset → import tồn vỏ ban đầu (Q-044)**. Bản Demo trước database lưu ở tag `demo-truoc-database-2026-10-26` / nhánh `backup/demo-truoc-database`. — Trước đó: nhánh **`agent/claude/ui-design-v2`** (chứa toàn bộ `agent/claude/p4-prep-xlsx` + DEC-142 → **DEC-148**), **đã push đầy đủ lên GitHub 2026-10-26**, chưa merge vào `main`. Ngày 26/10 (tối): **giao diện mới v2** navy + Be Vietnam Pro, chuẩn ở `docs/DESIGN_SYSTEM.md` (145); bảng chi tiết tàu không gộp cột (146); **W-SURVEY (LÊN KỆ)** + giám định bổ sung trên kệ (147); **dữ liệu test** MSK / 10 khách / công ty MATRAN / biểu giá mới + danh sách lớn (148); hoàn tác đăng nhập Demo, quy tắc tài khoản để GĐ 4 (143, 144). Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110); **xuất hóa đơn từ phiếu thu**: mã bảo mật 12 ký tự, trang khách `#/hoa-don`, trạng thái CHƯA / YÊU CẦU / ĐÃ XHD, **thêm lại vai trò Kế toán**, người thu tiền luôn là nhân viên (111 → 114); **Đảo chuyển mobile 2 dòng**, bỏ ghi chú tác nghiệp (115, 116); **ô nhập mobile chữ 16px** (không tự phóng to vỡ khung — 116); **mọi mã có hồ sơ đều là link, cùng kiểu Mã hồ sơ** (117, 118). Ngày 26/10: **bỏ mã CT-** (số chứng từ = mã hồ sơ — 119); **Góp ý** (nút góc phải + Báo cáo → Góp ý chỉ Admin — 120, 123); phiếu thu trả trước **một mã PT-TTR-** (bỏ PTT- — 124), cột Mã hồ sơ chỉ tóm tắt (121, 122), **hóa đơn theo từng lượt, khách tự gộp** (130); **chọn vị trí từng bước** (125); báo cáo Hạ / Cấp vỏ có Thanh toán + Mã phiếu thu, bỏ ký hiệu (126, 127); Tồn vỏ Phân loại / AGE / Tiến độ, **mỗi cont 1 dòng**, Excel khớp màn hình (128, 129, 132); **Xuất tàu tự khóa + ghi chú, duyệt tàu khi chưa đủ** (131). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
 **Điểm dừng 2026-10-27 (tối):** nhánh `agent/claude/p4-database` (HEAD `ca46c39`, đã push). **Đọc mục I.5 trước khi làm việc tiếp theo.** (Quyết định tạm hoãn GĐ 4 ngày 25/10 đã được mở lại bằng DEC-149.)
@@ -251,9 +251,33 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 
 ### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-28 — đọc trước — mới nhất)
 
-**▶ BÀN GIAO MỚI NHẤT (2026-10-28 tối — DEC-167 → DEC-174):**
-- **Nhánh mới nhất: `agent/claude/repair-grades`** — chồng lên `chunk-reload` (DEC-172) ← `repair-output-report` ← `xt-skip-stamp` ← `xt-eeir-pdf` ← `p4-database`. **Chỉ cần PR nhánh này vào `main`** là có đủ DEC-164 → DEC-174.
-- **BẮT BUỘC `npx supabase db push --linked` TRƯỚC khi merge** — migration mới **`20261105000001_repair_grades.sql`** (DEC-173; kèm `20261104000001` nếu `p4-database` chưa merge). Chưa push → Danh mục Sửa chữa / app mở lỗi (đọc bảng `repair_grades`). Migration đã chạy thử Supabase local (pgTAP 213/213) — vẫn `--dry-run` trước.
+**▶ ĐIỂM DỪNG CUỐI NGÀY 2026-10-28 (đọc đầu tiên):**
+- **ĐÃ XONG HẾT, ĐÃ LÊN TEST:** `main` = PR #46 (`2e39021`) — đủ **DEC-164 → DEC-174**. `matran-test` đã `db push` đủ migration tới **`20261105000001_repair_grades.sql`** (người dùng xác nhận). Vercel build từ `main`. Không còn nhánh / migration nào chờ.
+- **Ca mới (agent):** `git checkout main` → `git pull` → tách nhánh mới `agent/claude/<việc>` từ `main`. Kiểm thử: `npx tsc -b`, `npx vite build`, `npx vitest run` (**186 pass / 3 bỏ qua**). pgTAP local **213/213**.
+- **Người dùng cần thử trên app thật (chưa ai thử):**
+  1. Danh mục chung → Sửa chữa: tab **BẬC THỢ** (tạo bậc + nhân công đ/giờ) → **TỔ SỬA CHỮA** (tạo theo số lượng) → **NHÂN VIÊN SỬA CHỮA** (gán tổ + bậc từng người; dòng "Thiếu cấu hình" phải hết).
+  2. Sửa chữa → Chờ sửa chữa: nhãn **CHỜ SỬA CHỮA**; hoàn tất 1 cont (chọn tổ + nhân viên) → Báo cáo → Sửa chữa → **SẢN LƯỢNG SỬA CHỮA**: giờ chia, **Nhân công bậc thợ**, **Tổng tiền sản phẩm (VND)**; đổi đơn giá bậc → cont cũ phải giữ giá cũ.
+  3. Văn phòng → Xuất tàu → chi tiết: in EEIR từng cont + **XUẤT PDF** (mở file xem chữ nét không); hồ sơ cont "Không kịp" có mộc **KHÔNG XUẤT TÀU**; bước Duyệt xuất tàu có "Tiến độ thực tế".
+  4. Hồ sơ container A4 → **XUẤT PDF** tải thẳng file.
+  5. Để 1 tab mở cũ → sau lần merge sau bấm Xuất Excel → phải báo "bản cập nhật mới" + tự tải lại (DEC-172).
+  6. Vẫn chưa: **in thật máy K80**, **quét QR trên điện thoại thật**.
+- **Việc lớn còn lại:** Q-044 import tồn vỏ ban đầu (`docs/IMPORT_TON_VO_BAN_DAU.md`); chốt Supabase Pro + `matran-prod`; Q-032 SePay (người dùng quyết sau test — **không làm trước**).
+- **Docker:** Supabase local còn bật sau khi chạy thử 2026-10-28 → hỏi người dùng rồi `npx supabase stop` → tắt Docker → `wsl --shutdown` → xóa `docker_data.vhdx` nếu cần chỗ (ổ C ~17 GB trống).
+- **LƯU Ý LÀM VIỆC VỚI NGƯỜI DÙNG (bổ sung 2026-10-28):**
+  - **Giữ đúng chữ** người dùng gửi cho tên cột / nút / nhãn (VD đã đổi 2 lần: "Thành tiền" → "Tổng lương sản phẩm" → chốt **"Tổng tiền sản phẩm (VND)"**, "Nhân công bậc thợ (đ / giờ)"). Có sẵn chức năng tương tự → nói rõ "đã có, chỉ đổi tên".
+  - Việc đụng database (bảng / cột mới) → **hỏi trước bằng AskUserQuestion** các điểm hiểu 2 cách (VD đơn giá là tiền/giờ hay hệ số; tự lấy theo bậc hay sửa riêng). Ưu tiên trigger / cột thêm thay vì sửa hàm RPC cũ.
+  - Số tiền / đơn giá theo thời gian → **chốt giá tại thời điểm phát sinh** (người dùng: "đơn giá cũ tính theo giá cũ").
+  - Không hỏi nội dung danh mục (tên khách, phí…) — danh mục người dùng tự tạo.
+  - Người dùng chạy lệnh Supabase **sai thư mục** (`MATRAN-DEPOT` thay vì `MATRAN-DEPOT\MATRANDEPOT`) → lỗi "Cannot find project ref". Luôn ghi lệnh kèm `cd C:\Users\Admin\Desktop\MATRAN-DEPOT\MATRANDEPOT`.
+  - Người dùng bảo "push" → push nhánh + đưa link PR; người dùng tự merge. Có migration → nhắc `db push --linked --dry-run` trước merge.
+- **LƯU Ý KỸ THUẬT AGENT (bổ sung 2026-10-28):**
+  - Build / test gộp hay **hết bộ nhớ** → chạy tách `npx tsc -b`, `npx vite build`, `npx vitest run`, ghi log ra file.
+  - **Không dùng sed / `node -e` / heredoc JS** để thay chuỗi có `\`, `${}`, backtick — đã hỏng script 3 lần hôm nay. Dùng công cụ Edit; file CRLF.
+  - Chạy thử migration: `npx supabase start -x edge-runtime,postgres-meta,studio` → `npx supabase test db` → test chạy thật đặt `MATRAN_LOCAL_*` từ output start (ANON_KEY / SERVICE_ROLE_KEY) → kiểm trigger bằng `docker exec -i supabase_db_MATRANDEPOT psql -U postgres` trong `begin … rollback`.
+  - Danh mục Sửa chữa: nhân viên = user role `REPAIR_STAFF`; gán qua `assignRepairStaff` / RPC `catalog_assign_repair_staff` (1 người 1 tổ). Bậc thợ `repairGrades` / bảng `repair_grades`. Báo cáo Sản lượng: `queryRepairOutput` dùng `repairMemberRates` (giá chốt), thiếu thì giá hiện tại.
+  - In / PDF: `exportPdf` (async) chụp **bản xem trong cửa sổ đang mở** (`[role=dialog] .k80-sheet` / `.dossier-a4`) — giấy tờ mới muốn xuất PDF phải hiện trong `PrintPreviewModal`.
+
+**▶ BÀN GIAO 2026-10-28 tối — DEC-167 → DEC-174 (đã merge PR #46, đã db push):**
 - DEC-172: lên bản mới → tab cũ lỗi "Failed to fetch dynamically imported module" → báo + tự tải lại trang (`vite:preloadError`, `src/main.tsx`).
 - DEC-173: Danh mục chung → Sửa chữa 3 tab **NHÂN VIÊN SỬA CHỮA** (user role Sửa chữa; bắt buộc Tổ + Bậc thợ; giờ công bậc thợ tự lấy theo bậc) / **TỔ SỬA CHỮA** (tạo theo số lượng) / **BẬC THỢ** (đơn giá / giờ). Bỏ gõ tên nhân viên tay. Báo cáo Sản lượng thêm Bậc thợ / Đơn giá / Thành tiền.
 - DEC-174: **đơn giá chốt lúc sửa xong** — đổi đơn giá bậc thợ sau không đổi kỳ cũ (`repairMemberRates`; DB `work_order_members.grade_name / hourly_rate` + trigger, cùng migration `20261105000001`). Cont sửa trước khi có bậc thợ → lấy giá hiện tại.
@@ -263,7 +287,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - DEC-170: Báo cáo → Sửa chữa tab **SẢN LƯỢNG SỬA CHỮA** — giờ công cont chia đều số nhân viên tác nghiệp, chỉ cont đã sửa xong; lọc thời gian / tổ / nhân viên; Excel 2 sheet (`queryRepairOutput`, `RepairOutputReport.tsx`).
 - DEC-171: Chờ sửa chữa — nhãn đầu dòng **CHỜ SỬA CHỮA** (prop `label` của `OperationBadge` / `QueueListRow`).
 - Đã chốt: mật khẩu giữ logic cũ; **OPEN-003 / OPEN-008 giữ hiện trạng**; A.1c đóng (danh mục do người dùng tự tạo — **không hỏi nội dung danh mục**); Q-032 chờ, dự định **SePay** — không làm trước.
-- Kiểm thử: `tsc` + `vite build` PASS, vitest **182 pass / 3 bỏ qua**. **Chưa thử trình duyệt, chưa in thật, chưa mở file PDF xuất ra.**
+- Kiểm thử (lúc DEC-171): `tsc` + `vite build` PASS, vitest 182 pass / 3 bỏ qua. **Chưa thử trình duyệt, chưa in thật, chưa mở file PDF xuất ra.**
 - **Người dùng cần thử:** EEIR Xuất tàu in từng cont + XUẤT PDF (hồ sơ A4 + phiếu K80 — chữ có nét không); mộc KHÔNG XUẤT TÀU; tab Sản lượng sửa chữa (số giờ chia đúng chưa); nhãn Chờ sửa chữa.
 - **Lưu ý agent:** `npm run build` / `npm test` gộp có lúc **hết bộ nhớ** ("out of memory" / "Zone Allocation failed") trên máy này → chạy tách `npx tsc -b`, `npx vite build`, `npx vitest run` (ghi log ra file) thì qua. Người dùng gửi việc mới giữa chừng → làm tiếp việc đang dở rồi làm việc mới, báo cả hai.
 
