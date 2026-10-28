@@ -24,7 +24,7 @@ const Row: React.FC<{ label: string; value?: React.ReactNode; big?: boolean }> =
 );
 
 // ĐẦU PHIẾU dùng chung PHIẾU EEIR TÁC NGHIỆP và PHIẾU TRẢ KHÁCH HÀNG: thông tin depot → (tên phiếu / Số / TÁC NGHIỆP | mã QR tác nghiệp)
-const TicketHeader: React.FC<{ ticket: K80InternalTicket; state?: DepotState; title: string; reprintNo?: number }> = ({ ticket, state, title, reprintNo }) => {
+const TicketHeader: React.FC<{ ticket: K80InternalTicket; state?: DepotState; title?: string }> = ({ ticket, state, title }) => {
   const company = state?.companyProfile;
   return (
     <div className="border-b-2 border-slate-800 pb-2">
@@ -40,7 +40,7 @@ const TicketHeader: React.FC<{ ticket: K80InternalTicket; state?: DepotState; ti
       {/* Bên trái: tên phiếu → Số → TÁC NGHIỆP; bên phải: MÃ QR TÁC NGHIỆP vừa khít 3 dòng (QR-<mã hồ sơ> như cũ, DEC-057) */}
       <div className="mt-2 flex items-center justify-between gap-2">
         <div className="min-w-0 space-y-1">
-          <p className="text-sm font-black tracking-wide">{title}</p>
+          {title && <p className="text-sm font-black tracking-wide">{title}</p>}
           <p className="text-xs font-bold">Số: {ticket.outDossierCode || ticket.masterDossierCode}</p>
           <p className="inline-block bg-navy-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {ticket.operationMode === 'CAP_VO' ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
         </div>
@@ -49,7 +49,6 @@ const TicketHeader: React.FC<{ ticket: K80InternalTicket; state?: DepotState; ti
           <span className="block text-[8px] font-black tracking-tighter">{ticket.qrCode}</span>
         </div>
       </div>
-      {reprintNo && reprintNo > 1 && <p className="mt-1 border-2 border-rose-600 py-0.5 text-center text-[11px] font-black text-rose-600">BẢN IN LẠI — LẦN {reprintNo}</p>}
     </div>
   );
 };
@@ -68,15 +67,16 @@ const TicketInfoRows: React.FC<{ ticket: K80InternalTicket }> = ({ ticket }) => 
   </div>
 );
 
-// PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU" (DEC-162): gộp EEIR + phiếu thu thành 1 phiếu K80 giao khách khi Trả chứng từ.
-// Đầu phiếu + thông tin cont như PHIẾU EEIR TÁC NGHIỆP; thay LỘ TRÌNH bằng THÔNG TIN THANH TOÁN + YÊU CẦU XUẤT HÓA ĐƠN (như Phiếu thu).
+// PHIẾU TRẢ KHÁCH HÀNG (DEC-162): gộp EEIR + phiếu thu thành 1 phiếu K80 giao khách khi Trả chứng từ.
+// Đầu phiếu (depot → Số / TÁC NGHIỆP | QR) + thông tin cont như phiếu EEIR; thay LỘ TRÌNH bằng khối PHIẾU THU (+ yêu cầu xuất hóa đơn);
+// BẢN IN LẠI — LẦN n ghi ngay dưới khối PHIẾU THU.
 // Số lần in = bộ đếm của phiếu thu kèm theo (recordReceiptPrint); không có phiếu thu (TTS / trừ trả trước) → không đếm.
 export const CustomerSlipK80: React.FC<{ ticket: K80InternalTicket; state: DepotState; receipts: PaymentReceipt[]; printNo?: number }> = ({ ticket, state, receipts, printNo }) => (
   <div className="k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white px-2 py-2 font-mono text-[11px] leading-snug text-ink">
-    <TicketHeader ticket={ticket} state={state} title="MATRAN EEIR - PHIẾU THU" reprintNo={printNo} />
+    <TicketHeader ticket={ticket} state={state} />
     <TicketInfoRows ticket={ticket} />
     <div className="border-t-2 border-slate-800 pt-2">
-      <p className="text-center text-xs font-black tracking-wider">THÔNG TIN THANH TOÁN</p>
+      <p className="text-center text-xs font-black tracking-wider">PHIẾU THU</p>
       {receipts.length === 0 ? (
         <p className="mt-1 text-center text-[10px]">{ticket.paymentLabel} — không phát hành phiếu thu lượt này.</p>
       ) : (
@@ -86,6 +86,7 @@ export const CustomerSlipK80: React.FC<{ ticket: K80InternalTicket; state: Depot
           </div>
         ))
       )}
+      {printNo && printNo > 1 && <p className="mt-2 border-2 border-rose-600 py-0.5 text-center text-[11px] font-black text-rose-600">BẢN IN LẠI — LẦN {printNo}</p>}
     </div>
     <Signatures
       left="Lái xe / Khách hàng"

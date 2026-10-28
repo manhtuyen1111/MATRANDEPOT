@@ -338,21 +338,21 @@ describe('DEC-161: Phiếu EEIR (K80) + Phiếu thu (K80); in hồ sơ container
     expect(html).toContain('Người thu tiền');
     expect(html).toContain('In lúc');
   });
-  it('Hồ sơ: 2 phiếu PHIẾU EEIR TÁC NGHIỆP + PHIẾU TRẢ KHÁCH HÀNG (DEC-162), Xem phiếu EEIR (K80), HỒ SƠ CONTAINER (A4)', () => {
+  it('Hồ sơ: PHIẾU EEIR HẠ VỎ / CẤP VỎ + PHIẾU TRẢ KHÁCH HÀNG (DEC-162), không còn nút Xem phiếu EEIR (K80), HỒ SƠ CONTAINER (A4)', () => {
     const s = createInitialState();
     const t = s.k80Tickets[0];
     const dossier = strip(renderToString(<MasterDossierModal masterDossierCode={t.masterDossierCode} state={s} onClose={noop} onUpdateState={noop} onOpenK80Ticket={noop} />));
-    expect(dossier).toContain('PHIẾU EEIR TÁC NGHIỆP');
+    expect(dossier).toMatch(/PHIẾU EEIR (HẠ|CẤP) VỎ/);
     expect(dossier).toContain('PHIẾU TRẢ KHÁCH HÀNG');
-    expect(dossier).toContain('Xem / in phiếu EEIR (K80)');
+    expect(dossier).not.toContain('Xem / in phiếu EEIR (K80)');
     expect(dossier).toContain('HỒ SƠ CONTAINER');
     expect(dossier).not.toContain('EEIR — PHIẾU GIAO NHẬN CONTAINER');
   });
 });
 
-describe('DEC-162: PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU" — gộp EEIR + phiếu thu, đếm in theo phiếu thu', () => {
+describe('DEC-162: PHIẾU TRẢ KHÁCH HÀNG — gộp EEIR + phiếu thu, đếm in theo phiếu thu', () => {
   const strip = (h: string) => h.replace(/<!-- -->/g, '');
-  it('Có phiếu thu: đầu như phiếu tác nghiệp (QR), bỏ LỘ TRÌNH, có THÔNG TIN THANH TOÁN + Số phiếu thu + yêu cầu xuất hóa đơn; bản in lại có nhãn', () => {
+  it('Có phiếu thu: đầu chỉ Số / TÁC NGHIỆP + QR, bỏ LỘ TRÌNH, khối PHIẾU THU (Khách hàng, Số phiếu thu, xuất hóa đơn); BẢN IN LẠI dưới khối phiếu thu', () => {
     const demo = createDemoState();
     const r = demo.paymentReceipts.find((x) => x.invoiceSecret && x.dossierCode)!;
     expect(r).toBeTruthy();
@@ -361,16 +361,23 @@ describe('DEC-162: PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU" — g�
     const pack = documentPackOf(demo, t);
     expect(pack.receipts.length).toBeGreaterThan(0);
     const html = strip(renderToString(<CustomerSlipK80 state={demo} ticket={t} receipts={pack.receipts} printNo={1} />));
-    expect(html).toContain('MATRAN EEIR - PHIẾU THU');
+    expect(html).not.toContain('MATRAN EEIR - PHIẾU THU');
+    expect(html).toContain(`Số: ${t.outDossierCode || t.masterDossierCode}`);
+    expect(html).toMatch(/TÁC NGHIỆP: (HẠ|CẤP) VỎ/);
     expect(html).toContain('k80-sheet');
     expect(html).toContain(`Mã QR ${t.qrCode}`); // QR tác nghiệp ở đầu phiếu như phiếu tác nghiệp
     expect(html).toContain(t.containerNo);
     expect(html).not.toContain('LỘ TRÌNH');
-    expect(html).toContain('THÔNG TIN THANH TOÁN');
+    expect(html).toContain('>PHIẾU THU<');
+    expect(html).not.toContain('THÔNG TIN THANH TOÁN');
+    expect(html).toContain('Khách hàng');
+    expect(html).not.toContain('Bên thanh toán');
     expect(html).toContain(pack.receipts[0].receiptNo);
     expect(html).toContain('data-testid="invoice-secret"');
     expect(html).not.toContain('BẢN IN LẠI');
-    expect(strip(renderToString(<CustomerSlipK80 state={demo} ticket={t} receipts={pack.receipts} printNo={2} />))).toContain('BẢN IN LẠI — LẦN 2');
+    const re = strip(renderToString(<CustomerSlipK80 state={demo} ticket={t} receipts={pack.receipts} printNo={2} />));
+    expect(re).toContain('BẢN IN LẠI — LẦN 2');
+    expect(re.indexOf('BẢN IN LẠI')).toBeGreaterThan(re.indexOf('>PHIẾU THU<')); // nhãn in lại nằm dưới khối phiếu thu
     // Đếm in = bộ đếm phiếu thu (lớn nhất của các phiếu thu kèm theo)
     expect(slipPrintCount([])).toBe(0);
     expect(slipPrintCount([{ ...pack.receipts[0], printLog: [{ at: 'x', by: 'a' }, { at: 'y', by: 'b' }] }])).toBe(2);
@@ -379,7 +386,7 @@ describe('DEC-162: PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU" — g�
     const s = createInitialState();
     const t = s.k80Tickets[0];
     const html = strip(renderToString(<CustomerSlipK80 state={s} ticket={t} receipts={[]} />));
-    expect(html).toContain('MATRAN EEIR - PHIẾU THU');
+    expect(html).toContain('>PHIẾU THU<');
     expect(html).toContain('không phát hành phiếu thu lượt này');
     expect(html).not.toContain('data-testid="invoice-secret"');
   });

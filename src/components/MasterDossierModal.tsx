@@ -1,10 +1,10 @@
 import React from 'react';
-import { CheckCircle2, Clock, Eye, FileText, Printer, QrCode, ReceiptText, X } from 'lucide-react';
+import { CheckCircle2, Clock, Eye, FileText, Printer, ReceiptText, X } from 'lucide-react';
 import { ContainerStatus, K80InternalTicket, PaymentVoucher, RECEIPT_OPERATION_LABELS, VesselList, VesselListItem } from '../types/depot';
 import { DepotState, formatVnd } from '../services/depotStore';
 import { formatLocation } from '../services/core';
 import { paymentLabelOf, receiptOperationOf } from '../services/payments';
-import { documentPackOf, isTicketClosed } from "../services/driverRoute";
+import { documentPackOf } from "../services/driverRoute";
 import { recordReceiptPrint } from "../services/api";
 import { formatDateTime } from "../services/datetime";
 import { CompanyHeader, PrintPortal, PrintPreviewModal, ReceiptPrintSheet, VesselEeirPrintSheet } from "./ReceiptPrint";
@@ -237,8 +237,6 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
   const placement = [...locations].reverse().find((l) => l.actionType === 'INITIAL_BLOCK');
   const moves = [...locations].reverse().filter((l) => l.actionType !== 'INITIAL_BLOCK' && l.actionType !== 'GATE_OUT_CLEAR');
   const activeOut = outOrders.find((o) => o.status !== 'CANCELLED');
-  const latestTicket = tickets[0];
-  const ticketClosed = latestTicket ? isTicketClosed(state, latestTicket) : false;
   const isDamageFlow = Boolean(inspectionWo || repairWo || gateIn?.conditionClass === 'DAMAGE');
 
   let n = 0;
@@ -523,16 +521,6 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
         {content}
 
         <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3">
-          {latestTicket && onOpenK80Ticket && (
-            <button
-              type="button"
-              onClick={() => onOpenK80Ticket(latestTicket)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-line-strong px-3 py-2 text-xs font-semibold text-ink hover:bg-canvas"
-            >
-              <QrCode className="h-4 w-4" />
-              {ticketClosed ? 'Xem phiếu EEIR (K80) (đã đóng)' : 'Xem / in phiếu EEIR (K80)'}
-            </button>
-          )}
           <button
             type="button"
             onClick={() => {
@@ -615,7 +603,7 @@ const DossierPrintBar: React.FC<{
 
   const btn = 'inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold';
   // Tên phiếu trên nút (IN HOA, thống nhất — người dùng 2026-10-28)
-  const docName = (mode: string) => ({ HA_VO: 'EEIR HẠ VỎ', CAP_VO: 'EEIR CẤP VỎ', NHAP_TAU: 'EEIR NHẬP TÀU', XUAT_TAU: 'EEIR XUẤT TÀU' } as Record<string, string>)[mode] || mode;
+  const docName = (mode: string) => ({ HA_VO: 'PHIẾU EEIR HẠ VỎ', CAP_VO: 'PHIẾU EEIR CẤP VỎ', NHAP_TAU: 'PHIẾU EEIR NHẬP TÀU', XUAT_TAU: 'PHIẾU EEIR XUẤT TÀU' } as Record<string, string>)[mode] || mode;
   const printedBefore = pack ? pack.receipts.filter((r) => (r.printLog?.length || 0) > 0) : [];
   const printed = pack ? slipPrintCount(pack.receipts) : 0;
   return (
@@ -630,7 +618,7 @@ const DossierPrintBar: React.FC<{
             </span>
             <button type="button" onClick={() => setView({ kind: 'ticket', id: p.ticket.ticketCode })} className={`${btn} border border-line-strong text-ink hover:bg-canvas`}>
               <Eye className="h-4 w-4" />
-              PHIẾU EEIR TÁC NGHIỆP
+              {docName(p.ticket.operationMode)}
             </button>
             <button type="button" onClick={() => setView({ kind: 'slip', id: p.ticket.ticketCode })} className={`${btn} bg-navy-900 text-white hover:bg-navy-700`}>
               <Eye className="h-4 w-4" />
@@ -663,12 +651,12 @@ const DossierPrintBar: React.FC<{
 
       {pack && view?.kind === 'ticket' && (
         <PrintPreviewModal
-          title={`PHIẾU EEIR TÁC NGHIỆP ${pack.ticket.operationMode === 'CAP_VO' ? 'CẤP VỎ' : 'HẠ VỎ'} — ${pack.dossierCode}`}
+          title={`${docName(pack.ticket.operationMode)} — ${pack.dossierCode}`}
           onClose={close}
           actions={
             <button type="button" onClick={() => setTimeout(printNow, 50)} className={`${btn} bg-navy-900 text-white hover:bg-navy-700`}>
               <Printer className="h-4 w-4" />
-              IN PHIẾU EEIR TÁC NGHIỆP
+              IN {docName(pack.ticket.operationMode)}
             </button>
           }
           print={<EeirK80Sheet state={state} ticket={pack.ticket} />}
