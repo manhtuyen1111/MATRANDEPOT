@@ -26,6 +26,7 @@ import { DepotState } from '../../services/depotStore';
 import { pendingRackInspections } from '../../services/depotOperations';
 import { peekNextCode } from '../../services/codes';
 import { formatDateTime } from '../../services/datetime';
+import { priorityShippingLine, stuffingOptions } from '../../services/stuffing';
 
 interface Props {
   state: DepotState;
@@ -74,6 +75,10 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
   const [customDamageNote, setCustomDamageNote] = useState('');
   const [stuffingClass, setStuffingClass] =
     useState<FieldStuffingClass | null>(null);
+  // DEC-166: Giám định chọn HÃNG TÀU trước → bộ Phân loại đóng hàng của hãng (hãng không dùng → ẩn mục Đóng hàng)
+  const [lineCode, setLineCode] = useState(() => priorityShippingLine(state)); // mặc định hãng ƯU TIÊN
+  const shippingLines = state.partners.filter((p) => p.isShippingLine);
+  const lineStuffing = stuffingOptions(state, lineCode);
   const [cleaningItems, setCleaningItems] = useState<FieldCleaningItem[]>([]);
   const [manufactureYear, setManufactureYear] = useState<string>('');
   const isDeferred = conditionClass === 'W-SURVEY'; // DEC-147: W-SURVEY (LÊN KỆ)
@@ -145,6 +150,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     setSelectedDamageRemarks([]);
     setCustomDamageNote('');
     setStuffingClass(null);
+    setLineCode(priorityShippingLine(state)); // DEC-166: hồ sơ mới chọn sẵn hãng ƯU TIÊN
     setCleaningItems([]);
     setManufactureYear('');
     setIsReadyToConfirmStep(false);
@@ -192,11 +198,13 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     selectedDamageRemarks.length > 0 ||
     customDamageNote.trim().length > 0;
 
+  const isStuffingValid = lineStuffing.length === 0 || (stuffingClass !== null && lineStuffing.includes(stuffingClass));
   const isAllFieldsValid = Boolean(
     doorPhotoDataUrl &&
+      lineCode &&
       conditionClass &&
       cleaningItems.length > 0 &&
-      (isDeferred || (isDamageValid && stuffingClass && isYearValid))
+      (isDeferred || (isDamageValid && isStuffingValid && isYearValid))
   );
 
   const handleNextToConfirm = () => {
@@ -223,8 +231,8 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
       );
       return;
     }
-    if (!stuffingClass) {
-      setErrorMsg('Vui lòng chọn PHÂN LOẠI ĐÓNG HÀNG (M / K / E).');
+    if (!isStuffingValid) {
+      setErrorMsg(`Vui lòng chọn PHÂN LOẠI ĐÓNG HÀNG (${lineStuffing.join(' / ')}).`);
       return;
     }
     if (cleaningItems.length === 0) {
@@ -252,9 +260,10 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
       const next = recordGateInFieldStep(state, {
         gateInType: 'CUSTOMER_RETURN',
         doorPhotoUrl: doorPhotoDataUrl,
+        shippingLineCode: lineCode,
         conditionClass,
         damageRemarks: remarks,
-        stuffingClass: isDeferred ? undefined : stuffingClass || undefined,
+        stuffingClass: isDeferred || lineStuffing.length === 0 ? undefined : stuffingClass || undefined,
         cleaningItems,
         manufactureYear: isDeferred ? undefined : parsedYear,
       });
@@ -316,11 +325,11 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                 {open && (
                   <div className="space-y-3 border-t border-line p-3">
                     {onDossierLink(c.masterDossierCode)}
-                    <InspectionFields value={rackInsp} onChange={setRackInsp} hideCleaning />
+                    <InspectionFields value={rackInsp} onChange={setRackInsp} hideCleaning stuffingOptions={stuffingOptions(state, c.shippingLineCode)} />
                     {errorMsg && <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-800">{errorMsg}</div>}
                     <button
                       type="button"
-                      disabled={!onRack || !isInspectionComplete({ ...rackInsp, cleaning: c.cleaningItems })}
+                      disabled={!onRack || !isInspectionComplete({ ...rackInsp, cleaning: c.cleaningItems }, stuffingOptions(state, c.shippingLineCode))}
                       onClick={() => {
                         setErrorMsg(null);
                         try {
@@ -328,7 +337,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                             containerId: c.id,
                             conditionClass: rackInsp.condition as 'AV' | 'DAMAGE',
                             damageRemarks: inspectionRemarks(rackInsp),
-                            stuffingClass: rackInsp.stuffing as FieldStuffingClass,
+                            stuffingClass: rackInsp.stuffing || undefined,
                             manufactureYear: Number(rackInsp.year),
                           }));
                           setSuccessMsg(`Đã giám định bổ sung ${c.containerNo} (${rackInsp.condition}).`);
@@ -768,10 +777,25 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   </button>
                 </div>
 
+                {/* DEC-166: chọn HÃNG TÀU trước — quyết định bộ Phân loại đóng hàng */}
+                <div className="space-y-1.5 rounded-lg border border-line bg-white p-3">
+                  <span className="block text-xs font-bold text-ink">HÃNG TÀU *</span>
+                  <select
+                    data-testid="inspector-line"
+                    value={lineCode}
+                    onChange={(e) => { setLineCode(e.target.value); setStuffingClass(null); }}
+                    className="w-full rounded-lg border border-line-strong bg-white px-3 py-2.5 text-sm font-bold text-ink"
+                  >
+                    <option value="">-- Chọn hãng tàu --</option>
+                    {shippingLines.map((p) => <option key={p.code} value={p.code}>{p.code} — {p.name}{p.isPriority ? ' (ưu tiên)' : ''}</option>)}
+                  </select>
+                </div>
+
                 {/* UI-02: form Giám định dùng chung (hiện lần lượt từng mục) */}
-                <InspectionFields
+                {lineCode && <InspectionFields
                   progressive
                   allowDeferred
+                  stuffingOptions={lineStuffing}
                   value={{
                     condition: conditionClass || '',
                     damage: selectedDamageRemarks,
@@ -788,7 +812,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                     setCleaningItems(x.cleaning);
                     setManufactureYear(x.year);
                   }}
-                />
+                />}
 
                 {/* NÚT TIẾP TỤC (NEXT) -> CHỈ HIỂN THỊ KHI ĐÃ NHẬP XONG ĐỦ CẢ 4 MỤC */}
                 {isAllFieldsValid && (

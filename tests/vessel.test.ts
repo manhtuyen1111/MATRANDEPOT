@@ -329,3 +329,28 @@ describe('DEC-163: phiếu EEIR Nhập tàu / Xuất tàu có mã QR + LỘ TRÌ
     expect(route().map((x) => x.done)).toEqual([true, true, false]);
   });
 });
+
+describe('DEC-165: danh sách tàu ở Văn phòng + báo cáo chế độ TÊN TÀU', () => {
+  it('Mỗi tàu 1 dòng: số lượng, 20 / 40, đã xong, chờ, không kịp, trạng thái; cùng bộ lọc, bắt buộc lọc', async () => {
+    const { queryVesselSummaryReport, vesselSummarySheet } = await import('../src/services/reports');
+    const { vesselListStatusLabel } = await import('../src/services/vessel');
+    const s0 = as(createInitialState(), 'usr-office');
+    const yard = s0.containers.filter((c) => c.status === 'IN_YARD' && !c.isOnHold).slice(0, 2);
+    let { state: s, listId } = createVesselList(s0, { mode: 'XUAT_TAU', vesselName: 'Wan Hai 305', plannedAt: PLANNED, truckNos: ['15C-333.33'], exportContainerIds: yard.map((c) => c.id) });
+    expect(vesselListStatusLabel(s.vesselLists[0])).toBe('ĐANG THỰC HIỆN');
+    s = executeVesselExport(as(s, 'usr-forklift'), { listId, itemId: s.vesselLists[0].items[0].id, truckNo: '15C-333.33' });
+    expect(() => queryVesselSummaryReport(s, 'XUAT_TAU', { dateFrom: '', dateTo: '' })).toThrow(/Tra cứu|trước khi tra cứu/);
+    let r = queryVesselSummaryReport(s, 'XUAT_TAU', { dateFrom: '', dateTo: '', vesselName: 'wan' });
+    expect(r.total).toBe(1);
+    expect(r.rows[0]).toMatchObject({ total: 2, done: 1, pending: 1, skipped: 0 });
+    expect(r.rows[0].size20 + r.rows[0].size40).toBe(2);
+    s = approveVesselList(as(s, 'usr-office'), { listId, mode: 'XUAT_TAU', reason: 'Tàu chạy sớm' });
+    r = queryVesselSummaryReport(s, 'XUAT_TAU', { dateFrom: '', dateTo: '', containerNo: yard[1].containerNo });
+    expect(r.rows[0]).toMatchObject({ done: 1, pending: 0, skipped: 1 });
+    expect(vesselListStatusLabel(r.rows[0].list)).toBe('DUYỆT THIẾU');
+    const sheet = vesselSummarySheet('XUAT_TAU', r.rows);
+    expect(sheet.columns.slice(0, 4)).toEqual(['TÊN TÀU', 'HÃNG TÀU', 'THỜI GIAN XUẤT TÀU', 'SỐ LƯỢNG']);
+    expect(sheet.rows[0][sheet.columns.indexOf('TRẠNG THÁI')]).toBe('DUYỆT THIẾU');
+    expect(queryVesselSummaryReport(s, 'NHAP_TAU', { dateFrom: '', dateTo: '', vesselName: 'wan' }).total).toBe(0);
+  });
+});

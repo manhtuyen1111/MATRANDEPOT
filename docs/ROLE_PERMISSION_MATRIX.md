@@ -49,7 +49,7 @@ Nguồn duy nhất trong code: `src/services/permissions.ts` (`PERMISSIONS`, `ME
 | Tạo phiếu thu TTT, xác nhận tiền mặt TTT | OFFICE | DEC-047 |
 | Báo cáo Tổng hợp, cột chi phí trong báo cáo | OFFICE, MANAGER | Mục 5 (dữ liệu tài chính) |
 | Giả lập ngân hàng (chỉ Demo) | OFFICE, MANAGER | DEC-039 |
-| Cấu hình Danh mục chung (kể cả tổ sửa chữa, công ty) | ADMIN | DEC-028, DEC-042, DEC-062 |
+| Cấu hình Danh mục chung (kể cả tổ sửa chữa, công ty, phân loại đóng hàng, hãng ưu tiên — menu `DM_PHAN_LOAI` xem: khối Văn phòng) | ADMIN | DEC-028, DEC-042, DEC-062, DEC-166 |
 | In / in lại phiếu thu (đếm số lần in) | OFFICE, MANAGER | DEC-063 |
 | Khóa / mở khóa, ghi chú hàng loạt ở Tồn vỏ | OFFICE, MANAGER | DEC-067 |
 | Lập / sửa thông tin / thêm cont / bỏ cont chờ / xóa (chưa tác nghiệp) / duyệt danh sách NHẬP TÀU, XUẤT TÀU — chỉ khi chưa duyệt | OFFICE, MANAGER (`VESSEL_LIST_MANAGE`) | DEC-069, DEC-070 |

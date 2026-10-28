@@ -5,6 +5,8 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-166: Danh mục **Phân loại đóng hàng** theo hãng tàu (thay M / K / E cố định); Giám định Hạ vỏ chọn hãng tàu (sổ xuống, mặc định hãng **Ưu tiên**); hãng không dùng → ẩn ô Đóng hàng. Migration `20261104000001` (pgTAP 201/201 local).
+- DEC-165: Văn phòng → DANH SÁCH NHẬP / XUẤT TÀU dạng bảng; Báo cáo tàu chế độ CHI TIẾT / TÊN TÀU.
 - Database Supabase (migration 5 bước + app_support), Edge Function tạo / đặt lại tài khoản, xóa ảnh hết hạn — pgTAP 170/170, Edge 16/16 trên local.
 - Nối app (DEC-155): đăng nhập, đổi mật khẩu; lớp `services/api.ts` + hàng chờ RPC; tải dữ liệu đang làm việc; trang hóa đơn khách qua RPC công khai.
 - Test chạy thật trên Supabase local: đăng nhập (N1), toàn luồng Hạ vỏ → Cấp vỏ (N2–N6).

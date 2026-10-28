@@ -45,6 +45,7 @@ const VIETLOG = 'Công ty Tiếp Vận Việt (VietLog)';
 function fieldStep(state: DepotState, overrides: Partial<Parameters<typeof recordGateInFieldStep>[1]> = {}) {
   return recordGateInFieldStep(as(state, 'usr-inspector'), {
     gateInType: 'CUSTOMER_RETURN',
+    shippingLineCode: 'MAERSK',
     doorPhotoUrl: 'data:image/jpeg;base64,AAA',
     conditionClass: 'AV',
     stuffingClass: 'E',
@@ -1404,5 +1405,80 @@ describe('N8: mất mạng ở chế độ database', () => {
   it('Lỗi mạng của trình duyệt → câu tiếng Việt; lỗi nghiệp vụ giữ nguyên', () => {
     expect(friendlyError('TypeError: Failed to fetch')).toBe(OFFLINE_MESSAGE);
     expect(friendlyError('Container đang bị khóa.')).toBe('Container đang bị khóa.');
+  });
+});
+
+describe('DEC-166: Danh mục PHÂN LOẠI ĐÓNG HÀNG theo hãng tàu', () => {
+  it('Admin thêm / ngừng dùng / mở lại; vai trò khác bị từ chối; chặn trùng, mã sai, hãng ngoài danh mục', async () => {
+    const { addStuffingClassCatalogItem, setStuffingClassActive } = await import('../src/services/depotOperations');
+    const { stuffingOptions } = await import('../src/services/stuffing');
+    const s0 = createInitialState();
+    expect(stuffingOptions(s0, 'MAERSK')).toEqual(['M', 'K', 'E']); // mặc định giữ hành vi cũ
+    expect(() => addStuffingClassCatalogItem(as(s0, 'usr-office'), { shippingLineCode: 'MAERSK', code: 'X' })).toThrow(/ADMIN/);
+    const admin = as(s0, 'usr-admin');
+    expect(() => addStuffingClassCatalogItem(admin, { shippingLineCode: 'MAERSK', code: 'M' })).toThrow(/đã có/);
+    expect(() => addStuffingClassCatalogItem(admin, { shippingLineCode: 'MAERSK', code: 'A B' })).toThrow(/1–5 chữ/);
+    expect(() => addStuffingClassCatalogItem(admin, { shippingLineCode: 'KHONGCO', code: 'X' })).toThrow(/HÃNG TÀU/);
+    let s = addStuffingClassCatalogItem(admin, { shippingLineCode: 'MAERSK', code: 'x', description: 'Đặc biệt' });
+    expect(stuffingOptions(s, 'MAERSK')).toEqual(['M', 'K', 'E', 'X']);
+    s = setStuffingClassActive(s, { shippingLineCode: 'MAERSK', code: 'K', isActive: false });
+    expect(stuffingOptions(s, 'MAERSK')).toEqual(['M', 'E', 'X']);
+    expect(() => setStuffingClassActive(as(s, 'usr-office'), { shippingLineCode: 'MAERSK', code: 'K', isActive: true })).toThrow(/ADMIN/);
+    s = addStuffingClassCatalogItem(s, { shippingLineCode: 'MAERSK', code: 'K' }); // mở lại
+    expect(stuffingOptions(s, 'MAERSK')).toContain('K');
+    expect(s.auditLogs[0].summary).toMatch(/Mở lại PHÂN LOẠI ĐÓNG HÀNG K/);
+  });
+
+  it('Giám định: bắt buộc hãng tàu; hãng dùng phân loại → bắt buộc + đúng bộ của hãng; hãng không dùng → lưu trống', async () => {
+    const { setStuffingClassActive } = await import('../src/services/depotOperations');
+    const s0 = createInitialState();
+    expect(() => fieldStep(s0, { shippingLineCode: '' })).toThrow(/HÃNG TÀU/);
+    expect(() => fieldStep(s0, { stuffingClass: undefined })).toThrow(/PHÂN LOẠI ĐÓNG HÀNG \(M \/ K \/ E\)/);
+    expect(() => fieldStep(s0, { stuffingClass: 'Z' })).toThrow(/không có trong Danh mục/);
+    expect(fieldStep(s0, { stuffingClass: 'k' }).gateInOrders[0]).toMatchObject({ shippingLineCode: 'MAERSK', stuffingClass: 'K' });
+    // ONE ngừng dùng cả 3 mã → không hỏi đóng hàng
+    let s = as(s0, 'usr-admin');
+    for (const code of ['M', 'K', 'E']) s = setStuffingClassActive(s, { shippingLineCode: 'ONE', code, isActive: false });
+    const one = fieldStep(s, { shippingLineCode: 'ONE', stuffingClass: 'E' }).gateInOrders[0];
+    expect(one.stuffingClass).toBeUndefined();
+    // W-SURVEY: không cần đóng hàng dù hãng có dùng
+    expect(fieldStep(s0, { conditionClass: 'W-SURVEY', stuffingClass: undefined, manufactureYear: undefined }).gateInOrders[0].stuffingClass).toBeUndefined();
+  });
+
+  it('Văn phòng đổi hãng: hãng mới không có mã cũ → bắt buộc chọn lại; hãng không dùng → xóa phân loại', async () => {
+    const { addStuffingClassCatalogItem, setStuffingClassActive } = await import('../src/services/depotOperations');
+    let s = as(createInitialState(), 'usr-admin');
+    for (const code of ['M', 'K', 'E']) s = setStuffingClassActive(s, { shippingLineCode: 'ONE', code, isActive: false });
+    s = addStuffingClassCatalogItem(s, { shippingLineCode: 'ONE', code: 'F' });
+    s = fieldStep(s, { stuffingClass: 'E' });
+    const id = s.gateInOrders[0].id;
+    const office = (line: string, stuffingClass?: string) =>
+      verifyGateInOfficeAndCreatePayment(as(s, 'usr-office'), {
+        gateInId: id, containerNo: 'MSCU1234565', size: '40', type: 'HC', truckNo: '15C-123.45', driverPhone: '0912 345 678',
+        customerName: VIETLOG, shippingLineCode: line, orderDocNo: 'EIR-001', feeCatalogIds: [FEE_RAC_40], stuffingClass,
+      });
+    expect(() => office('ONE')).toThrow(/không có trong Danh mục của hãng tàu ONE/);
+    expect(office('ONE', 'F').gateInOrders[0].stuffingClass).toBe('F');
+    expect(office('MAERSK').gateInOrders[0].stuffingClass).toBe('E');
+    s = setStuffingClassActive(as(s, 'usr-admin'), { shippingLineCode: 'ONE', code: 'F', isActive: false });
+    expect(office('ONE').gateInOrders[0].stuffingClass).toBeUndefined();
+  });
+});
+
+describe('DEC-166: hãng tàu ƯU TIÊN (Giám định Hạ vỏ chọn sẵn)', () => {
+  it('Chỉ Admin; chỉ 1 hãng ưu tiên — tích hãng khác thì hãng cũ tự bỏ; bỏ tích → không còn hãng ưu tiên', async () => {
+    const { setShippingLinePriority } = await import('../src/services/depotOperations');
+    const { priorityShippingLine } = await import('../src/services/stuffing');
+    const s0 = createInitialState();
+    expect(priorityShippingLine(s0)).toBe('');
+    expect(() => setShippingLinePriority(as(s0, 'usr-office'), { code: 'MAERSK', isPriority: true })).toThrow(/ADMIN/);
+    expect(() => setShippingLinePriority(as(s0, 'usr-admin'), { code: 'KHONGCO', isPriority: true })).toThrow(/HÃNG TÀU/);
+    let s = setShippingLinePriority(as(s0, 'usr-admin'), { code: 'MAERSK', isPriority: true });
+    expect(priorityShippingLine(s)).toBe('MAERSK');
+    s = setShippingLinePriority(s, { code: 'ONE', isPriority: true });
+    expect(priorityShippingLine(s)).toBe('ONE');
+    expect(s.partners.filter((p) => p.isPriority).map((p) => p.code)).toEqual(['ONE']);
+    s = setShippingLinePriority(s, { code: 'ONE', isPriority: false });
+    expect(priorityShippingLine(s)).toBe('');
   });
 });

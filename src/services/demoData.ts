@@ -13,6 +13,7 @@ import {
   createReleaseOrder,
   addDepotFeeCatalogItem,
   addPartnerCatalogItem,
+  addStuffingClassCatalogItem,
   deleteDepotFeeCatalogItem,
   deletePartnerCatalogItem,
   executeGateOut,
@@ -62,6 +63,7 @@ function seedCatalog(state: DepotState): DepotState {
   for (const p of s.partners) s = deletePartnerCatalogItem(s, p.id);
   for (const f of s.feeCatalog) s = deleteDepotFeeCatalogItem(s, f.id);
   s = addPartnerCatalogItem(s, { code: LINE, name: 'MSK', partnerType: 'SHIPPING_LINE', allowTts: true });
+  for (const code of ['M', 'K', 'E']) s = addStuffingClassCatalogItem(s, { shippingLineCode: LINE, code }); // DEC-166
   for (const c of CUSTOMERS) s = addPartnerCatalogItem(s, { code: c.code, name: c.name, partnerType: 'CUSTOMER', allowTts: c.allowTts });
   s = updateCompanyProfile(s, {
     name: 'CÔNG TY CỔ PHẦN MATRAN',
@@ -103,6 +105,7 @@ interface GateInCase {
 function gateIn(state: DepotState, c: GateInCase): DepotState {
   let s = recordGateInFieldStep(as(state, 'usr-inspector'), {
     gateInType: 'CUSTOMER_RETURN',
+    shippingLineCode: LINE,
     doorPhotoUrl: 'data:image/jpeg;base64,AAA',
     conditionClass: c.rack ? 'W-SURVEY' : c.damage ? 'DAMAGE' : 'AV',
     damageRemarks: c.damage,

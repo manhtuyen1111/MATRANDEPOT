@@ -154,7 +154,7 @@ describe('DEC-051: hồ sơ container link về Phiếu thu', () => {
   it('Khung Thu tiền nổi bật, link phiếu thu khi được vào menu Phiếu thu; chỉ chữ khi không có quyền', () => {
     const office = as(base, 'usr-office');
     let s = recordGateInFieldStep(as(base, 'usr-inspector'), {
-      gateInType: 'CUSTOMER_RETURN', doorPhotoUrl: 'data:x', conditionClass: 'AV', stuffingClass: 'E',
+      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MAERSK', doorPhotoUrl: 'data:x', conditionClass: 'AV', stuffingClass: 'E',
       cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
     });
     const gi = s.gateInOrders[0];
@@ -214,7 +214,7 @@ describe('DEC-062/064: mẫu in phiếu thu thống nhất; Trả chứng từ 2
   it('Phiếu thu in có tên công ty + TÁC NGHIỆP; bản in lại có nhãn; Trả chứng từ có 2 tab', () => {
     const office = as(base, 'usr-office');
     let s = recordGateInFieldStep(as(base, 'usr-inspector'), {
-      gateInType: 'CUSTOMER_RETURN', doorPhotoUrl: 'data:x', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
+      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MAERSK', doorPhotoUrl: 'data:x', conditionClass: 'AV', stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
     });
     const gi = s.gateInOrders[0];
     s = verifyGateInOfficeAndCreatePayment({ ...s, currentUser: office.currentUser }, {
@@ -252,7 +252,12 @@ describe('DEC-069: màn Nhập tàu / Xuất tàu', () => {
     const vpNt = strip(renderToString(<OfficeVesselWorkspace mode="NHAP_TAU" state={both} onUpdateState={noop} />));
     expect(vpNt).toContain('EVER GENTLE');
     expect(vpNt).toContain('Lập danh sách NHẬP TÀU');
-    expect(vpNt).toContain('Xong 0/1');
+    expect(vpNt).toContain('0/1'); // DEC-165: tiến độ 1 dòng trong bảng
+    // DEC-165: bảng DANH SÁCH NHẬP TÀU đủ cột + trạng thái
+    for (const col of ['Hãng tàu', 'Số lượng', 'Thời gian bắt đầu', 'Tiến độ', 'Trạng thái', 'Người tạo', 'Người duyệt']) expect(vpNt).toContain(col);
+    expect(vpNt).toContain('Danh sách NHẬP TÀU');
+    expect(vpNt).toContain('ĐANG THỰC HIỆN');
+    expect(vpNt).not.toContain('Đã duyệt gần đây');
     const vpXt = strip(renderToString(<OfficeVesselWorkspace mode="XUAT_TAU" state={both} onUpdateState={noop} />));
     expect(vpXt).toContain('WAN HAI');
     expect(vpXt).toContain('Lập danh sách XUẤT TÀU');
@@ -512,20 +517,28 @@ describe('UI-02: form Giám định dùng chung (Hạ vỏ / Nhập tàu)', () =
   it('progressive: chỉ hiện mục 1 khi trống, đủ mục trước mới hiện mục sau; không progressive hiện cả 4', async () => {
     const m = await import('../src/components/InspectionFields');
     const { InspectionFields, EMPTY_INSPECTION, isInspectionComplete, inspectionRemarks } = m;
-    const empty = renderToString(<InspectionFields progressive value={EMPTY_INSPECTION} onChange={noop} />);
+    const MKE = ['M', 'K', 'E'];
+    const empty = renderToString(<InspectionFields stuffingOptions={MKE} progressive value={EMPTY_INSPECTION} onChange={noop} />);
     expect(empty).toContain('1. TRẠNG THÁI');
     expect(empty).not.toContain('2. PHÂN LOẠI ĐÓNG HÀNG');
-    const step2 = renderToString(<InspectionFields progressive value={{ ...EMPTY_INSPECTION, condition: 'AV' }} onChange={noop} />);
+    const step2 = renderToString(<InspectionFields stuffingOptions={MKE} progressive value={{ ...EMPTY_INSPECTION, condition: 'AV' }} onChange={noop} />);
     expect(step2).toContain('2. PHÂN LOẠI ĐÓNG HÀNG');
     expect(step2).not.toContain('3. TÌNH TRẠNG VỆ SINH');
-    const damageNoRemark = renderToString(<InspectionFields progressive value={{ ...EMPTY_INSPECTION, condition: 'DAMAGE' }} onChange={noop} />);
+    const damageNoRemark = renderToString(<InspectionFields stuffingOptions={MKE} progressive value={{ ...EMPTY_INSPECTION, condition: 'DAMAGE' }} onChange={noop} />);
     expect(damageNoRemark).not.toContain('2. PHÂN LOẠI ĐÓNG HÀNG');
-    const all = renderToString(<InspectionFields value={EMPTY_INSPECTION} onChange={noop} />);
+    const all = renderToString(<InspectionFields stuffingOptions={MKE} value={EMPTY_INSPECTION} onChange={noop} />);
     expect(all).toContain('4. AGE');
     const full = { condition: 'DAMAGE' as const, damage: ['Móp vách'], damageNote: 'Thủng sàn, ', stuffing: 'E' as const, cleaning: ['WW - RỬA NƯỚC' as const], year: '2018' };
-    expect(isInspectionComplete(full)).toBe(true);
-    expect(isInspectionComplete({ ...full, year: '18' })).toBe(false);
-    expect(isInspectionComplete({ ...full, damage: [], damageNote: '' })).toBe(false);
+    expect(isInspectionComplete(full, MKE)).toBe(true);
+    // DEC-166: hãng không dùng phân loại → không hiện mục 2, không cần đóng hàng; hãng dùng → mã phải đúng bộ của hãng
+    const noLine = renderToString(<InspectionFields stuffingOptions={[]} progressive value={{ ...EMPTY_INSPECTION, condition: 'AV' }} onChange={noop} />);
+    expect(noLine).not.toContain('2. PHÂN LOẠI ĐÓNG HÀNG');
+    expect(noLine).toContain('3. TÌNH TRẠNG VỆ SINH');
+    expect(isInspectionComplete({ ...full, stuffing: '' }, [])).toBe(true);
+    expect(isInspectionComplete({ ...full, stuffing: '' }, MKE)).toBe(false);
+    expect(isInspectionComplete({ ...full, stuffing: 'X' }, MKE)).toBe(false);
+    expect(isInspectionComplete({ ...full, year: '18' }, MKE)).toBe(false);
+    expect(isInspectionComplete({ ...full, damage: [], damageNote: '' }, MKE)).toBe(false);
     expect(inspectionRemarks(full)).toEqual(['Móp vách', 'Thủng sàn']);
   });
 });
@@ -1014,5 +1027,21 @@ describe('DEC-057: mã QR tác nghiệp THẬT + quét bằng camera', () => {
     const field = renderToString(<FieldQueueWorkspaces mode="XN_CHO_HA_VO" state={as(base, 'usr-forklift')} onUpdateState={noop} />);
     expect(field).toContain('Mở camera quét QR');
     expect(renderToString(<DocumentReturnWorkspace state={as(base, 'usr-office')} onUpdateState={noop} />)).toContain('Mở camera quét QR');
+  });
+});
+
+describe('DEC-166: màn Danh mục → Phân loại đóng hàng', () => {
+  it('Admin thấy form thêm + bảng theo hãng; Văn phòng chỉ xem; hãng không dùng được liệt kê', async () => {
+    const { StuffingClassCatalog } = await import('../src/features/catalog/StuffingClassCatalog');
+    const { setStuffingClassActive } = await import('../src/services/depotOperations');
+    let s = as(createInitialState(), 'usr-admin');
+    for (const code of ['M', 'K', 'E']) s = setStuffingClassActive(s, { shippingLineCode: 'ONE', code, isActive: false });
+    const admin = renderToString(<StuffingClassCatalog state={s} onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    expect(admin).toContain('Thêm phân loại đóng hàng');
+    expect(admin).toContain('data-table');
+    expect(admin).toMatch(/không dùng phân loại.*ONE/);
+    const office = renderToString(<StuffingClassCatalog state={as(s, 'usr-office')} onUpdateState={noop} />);
+    expect(office).not.toContain('Thêm phân loại đóng hàng');
+    expect(office).not.toContain('Ngừng dùng</button>');
   });
 });

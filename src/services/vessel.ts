@@ -24,6 +24,7 @@ import {
 } from './core';
 import { gateInContainerConflict, normalizeCleaningItems } from './depotOperations';
 import { formatDateTime } from './datetime';
+import { resolveStuffing } from './stuffing';
 
 // ============================================================================
 // NHẬP TÀU / XUẤT TÀU (DEC-069)
@@ -296,7 +297,7 @@ export function inspectVesselImportItem(
     truckNo: string;
     conditionClass: FieldConditionClass;
     damageRemarks?: string[];
-    stuffingClass: FieldStuffingClass;
+    stuffingClass?: FieldStuffingClass;
     cleaningItems: (FieldCleaningItem | string)[];
     manufactureYear: number;
   }
@@ -312,7 +313,7 @@ export function inspectVesselImportItem(
   const truckNo = input.truckNo.trim().toUpperCase();
   if (!list.truckNos.includes(truckNo)) throw new Error('Bắt buộc chọn SỐ XE trong danh sách xe nhập tàu.');
   if (input.conditionClass !== 'AV' && input.conditionClass !== 'DAMAGE') throw new Error('Bắt buộc chọn TRẠNG THÁI: DAMAGE / AV.');
-  if (!['M', 'K', 'E'].includes(input.stuffingClass)) throw new Error('Bắt buộc chọn PHÂN LOẠI ĐÓNG HÀNG: M / K / E.');
+  const stuffing = resolveStuffing(state, list.shippingLineCode, input.stuffingClass); // DEC-166: theo Danh mục của hãng tàu
   if (!input.cleaningItems?.some((i) => String(i).trim())) throw new Error('Bắt buộc chọn TÌNH TRẠNG VỆ SINH (1 hoặc nhiều phương án).');
   const cleaningItems = normalizeCleaningItems(input.cleaningItems);
   const year = Number(input.manufactureYear);
@@ -360,7 +361,7 @@ export function inspectVesselImportItem(
     status: 'WAITING_PLACEMENT',
     conditionClass: input.conditionClass,
     damageRemarks: remarks,
-    stuffingClass: input.stuffingClass,
+    stuffingClass: stuffing,
     cleaningItems,
     activeQrCode: qr,
     isPaid: false,
@@ -379,14 +380,14 @@ export function inspectVesselImportItem(
   let next: DepotState = { ...allocated.state, containers: [container, ...allocated.state.containers], workOrders: [...workOrders, ...allocated.state.workOrders] };
   next = patchItem(next, list.id, item.id, {
     status: 'INSPECTED', dossierCode: code, containerId: container.id, truckNo, conditionClass: input.conditionClass,
-    stuffingClass: input.stuffingClass, cleaningItems, damageRemarks: remarks, manufactureYear: year, inspectedBy: actor, inspectedAt: now,
+    stuffingClass: stuffing, cleaningItems, damageRemarks: remarks, manufactureYear: year, inspectedBy: actor, inspectedAt: now,
   });
   return appendAudit(
     next,
     'NHAP_TAU_GIAM_DINH',
     'VESSEL',
     code,
-    `[Hồ sơ ${code}] Giám định xác nhận NHẬP TÀU ${actual} (tàu ${list.vesselName}, xe ${truckNo}): ${input.conditionClass}${remarks.length ? ` (${remarks.join(', ')})` : ''}, Đóng hàng ${input.stuffingClass}, Vệ sinh [${cleaningItems.join(', ')}], AGE ${year} -> ${requiresCleaning ? 'Chờ vệ sinh' : 'Chờ hạ vỏ'}`,
+    `[Hồ sơ ${code}] Giám định xác nhận NHẬP TÀU ${actual} (tàu ${list.vesselName}, xe ${truckNo}): ${input.conditionClass}${remarks.length ? ` (${remarks.join(', ')})` : ''}, Đóng hàng ${stuffing || '-'}, Vệ sinh [${cleaningItems.join(', ')}], AGE ${year} -> ${requiresCleaning ? 'Chờ vệ sinh' : 'Chờ hạ vỏ'}`,
     code
   );
 }
@@ -478,6 +479,12 @@ export function vesselListProgress(list: VesselList): { total: number; done: num
   const inspected = list.items.filter((i) => i.status === 'INSPECTED').length;
   const skipped = list.items.filter((i) => i.status === 'SKIPPED').length;
   return { total: list.items.length, done, inspected, skipped, pending: list.items.length - done - inspected - skipped };
+}
+
+// Trạng thái danh sách tàu hiển thị (DEC-165): ĐANG THỰC HIỆN / ĐÃ DUYỆT / DUYỆT THIẾU (có cont không kịp)
+export function vesselListStatusLabel(list: VesselList): string {
+  if (list.status !== 'APPROVED') return 'ĐANG THỰC HIỆN';
+  return list.items.some((i) => i.status === 'SKIPPED') ? 'DUYỆT THIẾU' : 'ĐÃ DUYỆT';
 }
 
 // DEC-131: duyệt được cả khi CHƯA làm đủ — bắt buộc ghi LÝ DO; cont chưa tác nghiệp (PENDING) bị gạch đi (SKIPPED).

@@ -13,6 +13,7 @@ import { DepotState, formatVnd } from '../../services/depotStore';
 import { gateInContainerConflict, getBookingSummary, blockedOnlyByHold, releaseBlocker } from '../../services/depotOperations';
 import { pendingTransactionOf } from '../../services/payments';
 import { formatLocation } from '../../services/core';
+import { stuffingOptions } from '../../services/stuffing';
 import { linkCls,
   ContainerNo,
   CustomerInput,
@@ -68,6 +69,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
     orderDocNo: o?.orderDocNo || '',
     truckNo: o?.truckNo || '',
     driverPhone: o?.driverPhone || '',
+    stuffing: o?.stuffingClass || '', // DEC-166
   });
   const [form, setForm] = useState(blankForm(order));
   const [feeIds, setFeeIds] = useState<string[]>(
@@ -98,8 +100,12 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
   const pendingTx = voucher ? pendingTransactionOf(state, voucher.id) : undefined;
   // DEC-060: kiểm tra Tồn vỏ ngay khi nhập số container — trùng thì chặn, không mở các bước tiếp
   const contConflict = order ? gateInContainerConflict(state, form.contNo, order.id) : null;
+  // DEC-166: Văn phòng đổi sang hãng có bộ phân loại khác lúc Giám định → chọn lại Phân loại đóng hàng
+  const lineStuffing = order && order.conditionClass !== 'W-SURVEY' ? stuffingOptions(state, form.shippingLineCode) : [];
+  const needStuffing = lineStuffing.length > 0 && !lineStuffing.includes(order?.stuffingClass || '');
   const section1Done = !contConflict && Boolean(
-    form.contNo.trim() && form.size && form.type && form.shippingLineCode && form.customerName && form.truckNo.trim() && form.driverPhone.trim()
+    form.contNo.trim() && form.size && form.type && form.shippingLineCode && form.customerName && form.truckNo.trim() && form.driverPhone.trim() &&
+      (!needStuffing || lineStuffing.includes(form.stuffing))
   );
   const suggested = suggestLoloFee(state.feeCatalog, form.size, form.type, form.shippingLineCode)?.id;
 
@@ -125,6 +131,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
         shippingLineCode: form.shippingLineCode,
         orderDocNo: form.orderDocNo,
         feeCatalogIds: feeIds,
+        stuffingClass: needStuffing ? form.stuffing : undefined,
       });
       const next = confirmGateInPaymentAndComplete(afterVerify, { gateInId: order.id, ...payment });
       onUpdateState(next);
@@ -233,7 +240,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                       </>
                     )}
                     <dt className="text-ink-muted">Phân loại đóng hàng</dt>
-                    <dd className="font-bold">{order.stuffingClass}</dd>
+                    <dd className="font-bold">{order.stuffingClass || '-'}{order.shippingLineCode ? ` (hãng ${order.shippingLineCode})` : ''}</dd>
                     <dt className="text-ink-muted">Vệ sinh</dt>
                     <dd className="font-semibold">{order.cleaningItems.join(' + ')}</dd>
                     <dt className="text-ink-muted">AGE</dt>
@@ -270,6 +277,15 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                       {shippingLines.map((l) => <option key={l.id} value={l.code}>{l.code} — {l.name}</option>)}
                     </select>
                   </label>
+                  {needStuffing && (
+                    <label>
+                      <span className={labelCls}>Phân loại đóng hàng * (hãng {form.shippingLineCode})</span>
+                      <select value={form.stuffing} onChange={(e) => set({ stuffing: e.target.value })} className={inputCls}>
+                        <option value="">-- Chọn --</option>
+                        {lineStuffing.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </label>
+                  )}
                   <label>
                     <span className={labelCls}>Khách hàng *</span>
                     <CustomerInput id="havo-customer" state={state} value={form.customerName} onChange={(v) => set({ customerName: v })} />

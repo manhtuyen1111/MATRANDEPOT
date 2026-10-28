@@ -7,8 +7,8 @@ import { parseTruckList, parseVesselImportText, sortVesselItems, vesselExportBlo
 import { formatLocation, parseContainerList, storageDays } from '../../services/core';
 import { formatDateTime, parseDateTime } from '../../services/datetime';
 import { can } from '../../services/permissions';
-import { linkCls, ContainerNo, DateTimeField, DetailDrawer, Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard, LocationText, CellText, CELL_MAX, BlockIcon, blockLabel } from '../../components/shared';
-import { VesselListTitle, VesselProgressBar } from './VesselShared';
+import { linkCls, ContainerNo, DateTimeField, DetailDrawer, Feedback, inputCls, labelCls, Pager, primaryBtn, secondaryBtn, SectionCard, usePageSize, LocationText, CellText, CELL_MAX, BlockIcon, blockLabel } from '../../components/shared';
+import { VesselListStatus, VesselListTitle, VesselProgressBar, VesselProgressInline } from './VesselShared';
 
 interface Props {
   mode: VesselMode;
@@ -44,7 +44,13 @@ export const OfficeVesselWorkspace: React.FC<Props> = ({ mode, state, onUpdateSt
 
   const lists = (state.vesselLists || []).filter((l) => l.mode === mode);
   const openLists = lists.filter((l) => l.status === 'OPEN').sort((a, b) => a.plannedAt.localeCompare(b.plannedAt));
-  const approved = lists.filter((l) => l.status === 'APPROVED').slice(0, 5);
+  // DEC-165: DANH SÁCH NHẬP / XUẤT TÀU — mọi danh sách (đang thực hiện + đã duyệt), mới nhất trước, phân trang
+  const allLists = [...lists].sort((a, b) => b.plannedAt.localeCompare(a.plannedAt));
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = usePageSize(`vessel-lists-${mode}`, 20);
+  const pageCount = Math.max(1, Math.ceil(allLists.length / pageSize));
+  const curPage = Math.min(page, pageCount);
+  const pageRows = allLists.slice((curPage - 1) * pageSize, curPage * pageSize);
   const detail = view.kind === 'DETAIL' ? lists.find((l) => l.id === view.listId) : undefined;
 
   // Chạy một thao tác service; trả true nếu thành công
@@ -137,7 +143,7 @@ export const OfficeVesselWorkspace: React.FC<Props> = ({ mode, state, onUpdateSt
                   <th className="py-2 pr-2">Thời gian {modeLabel.toLowerCase()}</th>
                   {mode === 'NHAP_TAU' && <th className="py-2 pr-2">Hãng tàu</th>}
                   <th className="py-2 pr-2 text-right">Số cont</th>
-                  <th className="w-56 py-2 pr-2">Tiến độ</th>
+                  <th className="py-2 pr-2">Tiến độ</th>
                   <th className="py-2 pr-2">Số xe</th>
                   <th className="py-2 pr-2">Lập bởi</th>
                   <th className="py-2">Thời gian lập</th>
@@ -150,7 +156,7 @@ export const OfficeVesselWorkspace: React.FC<Props> = ({ mode, state, onUpdateSt
                     <td className="py-2.5 pr-2 font-mono">{formatDateTime(l.plannedAt)}</td>
                     {mode === 'NHAP_TAU' && <td className="py-2.5 pr-2">{l.shippingLineCode}</td>}
                     <td className="py-2.5 pr-2 text-right font-mono font-bold">{l.items.length}</td>
-                    <td className="py-2.5 pr-2"><VesselProgressBar list={l} /></td>
+                    <td className="py-2.5 pr-2"><VesselProgressInline list={l} /></td>
                     <td className="py-2.5 pr-2">{l.truckNos.length} xe</td>
                     <td className="py-2.5 pr-2"><CellText text={l.createdBy} max={CELL_MAX.SHORT} /></td>
                     <td className="py-2.5 font-mono">{formatDateTime(l.createdAt)}</td>
@@ -162,18 +168,47 @@ export const OfficeVesselWorkspace: React.FC<Props> = ({ mode, state, onUpdateSt
         )}
       </SectionCard>
 
-      {approved.length > 0 && (
-        <SectionCard title={`Đã duyệt gần đây (xem đầy đủ ở Báo cáo → ${mode === 'NHAP_TAU' ? 'Nhập tàu' : 'Xuất tàu'})`} icon={<CheckCircle2 className="h-4 w-4 text-emerald-600" />}>
-          <ul className="divide-y divide-line text-xs">
-            {approved.map((l) => (
-              <li key={l.id}>
-                <button type="button" onClick={() => setView({ kind: 'DETAIL', listId: l.id })} className="flex w-full flex-wrap items-center justify-between gap-2 py-2 text-left hover:bg-canvas">
-                  <VesselListTitle list={l} />
-                  <span className="text-[11px] text-ink-muted">{l.items.length} cont • duyệt bởi {l.approvedBy} • {formatDateTime(l.approvedAt)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+      {allLists.length > 0 && (
+        <SectionCard
+          title={
+            <span className="flex items-center gap-2">
+              Danh sách {modeLabel}
+              <span className="rounded bg-navy-900 px-2 py-0.5 text-[11px] font-bold text-white">{allLists.length}</span>
+            </span>
+          }
+          icon={<CheckCircle2 className="h-4 w-4 text-ink-muted" />}
+        >
+          <div className="overflow-x-auto">
+            <table className="data-table w-full whitespace-nowrap text-left text-xs">
+              <thead className="border-b border-line text-[11px] uppercase text-ink-muted">
+                <tr>
+                  <th className="py-2 pr-2">Tên tàu</th>
+                  <th className="py-2 pr-2">Hãng tàu</th>
+                  <th className="py-2 pr-2 text-right">Số lượng</th>
+                  <th className="py-2 pr-2">Thời gian bắt đầu</th>
+                  <th className="py-2 pr-2">Tiến độ</th>
+                  <th className="py-2 pr-2">Trạng thái</th>
+                  <th className="py-2 pr-2">Người tạo</th>
+                  <th className="py-2">Người duyệt</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {pageRows.map((l) => (
+                  <tr key={l.id} onClick={() => { setError(null); setSuccess(null); setView({ kind: 'DETAIL', listId: l.id }); }} className="cursor-pointer hover:bg-canvas">
+                    <td className="py-2 pr-2 font-black text-navy-700"><CellText text={l.vesselName} max={CELL_MAX.SHORT} /></td>
+                    <td className="py-2 pr-2">{l.shippingLineCode || '-'}</td>
+                    <td className="py-2 pr-2 text-right font-mono font-bold">{l.items.length}</td>
+                    <td className="py-2 pr-2 font-mono">{formatDateTime(l.plannedAt)}</td>
+                    <td className="py-2 pr-2"><VesselProgressInline list={l} /></td>
+                    <td className="py-2 pr-2"><VesselListStatus list={l} /></td>
+                    <td className="py-2 pr-2"><CellText text={l.createdBy} max={CELL_MAX.SHORT} /></td>
+                    <td className="py-2"><CellText text={l.approvedBy || '-'} max={CELL_MAX.SHORT} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pager page={curPage} pageCount={pageCount} total={allLists.length} onPage={setPage} pageSize={pageSize} onPageSize={(n) => { setPageSize(n); setPage(1); }} />
         </SectionCard>
       )}
     </div>

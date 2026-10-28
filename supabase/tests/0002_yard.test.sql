@@ -29,6 +29,8 @@ insert into public.repair_teams (id, code, name) values ('00000000-0000-0000-000
 insert into public.repair_team_members (id, team_id, full_name) values
   ('00000000-0000-0000-0000-0000000000f2', '00000000-0000-0000-0000-0000000000f1', 'Thợ A');
 
+insert into public.partners (code, name, is_shipping_line) values ('MSK', 'MSK', true) on conflict do nothing;
+insert into public.stuffing_classes (shipping_line_code, code, sort_order) values ('MSK', 'M', 1), ('MSK', 'K', 2), ('MSK', 'E', 3) on conflict do nothing; -- DEC-166
 create or replace function pg_temp.login(uid uuid) returns void language sql as $$
   select set_config('request.jwt.claims', json_build_object('sub', uid, 'role', 'authenticated')::text, true);
 $$;
@@ -37,7 +39,7 @@ create or replace function pg_temp.cont(no text, cond public.condition_class, op
   insert into public.containers (dossier_code, container_no, size, type, condition_class, damage_remarks, stuffing_class, manufacture_year,
     cleaning_items, active_qr_code, needs_cleaning, needs_quotation, forklift_task)
   values ('HV-' || no, no, '40', 'HC', cond, case when cond = 'DAMAGE' then array['Móp vách'] else '{}' end,
-    case when cond = 'W-SURVEY' then null else 'E'::public.stuffing_class end, case when cond = 'W-SURVEY' then null else 2019 end,
+    case when cond = 'W-SURVEY' then null else 'E' end, case when cond = 'W-SURVEY' then null else 2019 end,
     coalesce((select array_agg(x) from jsonb_array_elements_text(opts->'cleaning') x), array['KHÔNG VỆ SINH']), 'QR-HV-' || no,
     coalesce((opts->>'needs_cleaning')::boolean, false), cond = 'DAMAGE',
     case when cond = 'W-SURVEY' then 'HA_KE_GIAM_DINH' else 'NONE' end::public.forklift_task)
@@ -48,27 +50,27 @@ select 'x', 'XXXX0000000', '40', 'HC', 'AV', 'E', 2019, array['KHÔNG VỆ SINH'
 
 -- ==== 1. Giám định Hạ vỏ ====
 select pg_temp.login('00000000-0000-0000-0000-00000000000a');
-select matches((public.record_gate_in_field_step(gen_random_uuid(), 'door/1.jpg', 'AV', array['WP - QUÉT'], '{}', 'E', 2019)->>'code'),
+select matches((public.record_gate_in_field_step(gen_random_uuid(), 'door/1.jpg', 'AV', array['WP - QUÉT'], '{}', 'E', 2019, p_shipping_line_code => 'MSK')->>'code'),
   '^HV-\d{6}-001$', 'Giám định tạo HV- tự cấp mã');
 select is((select count(*)::int from public.gate_in_orders), 1, 'Có 1 hồ sơ');
-select throws_like($$ select public.record_gate_in_field_step(gen_random_uuid(), '', 'AV', array['WP - QUÉT'], '{}', 'E', 2019) $$,
+select throws_like($$ select public.record_gate_in_field_step(gen_random_uuid(), '', 'AV', array['WP - QUÉT'], '{}', 'E', 2019, p_shipping_line_code => 'MSK') $$,
   '%chụp 1 ảnh%', 'Bắt buộc ảnh cửa cont');
-select throws_like($$ select public.record_gate_in_field_step(gen_random_uuid(), 'p', 'AV', array['WP - QUÉT'], '{}', null, 2019) $$,
+select throws_like($$ select public.record_gate_in_field_step(gen_random_uuid(), 'p', 'AV', array['WP - QUÉT'], '{}', null, 2019, p_shipping_line_code => 'MSK') $$,
   '%ĐÓNG HÀNG%', 'AV bắt buộc Đóng hàng');
-select throws_like($$ select public.record_gate_in_field_step(gen_random_uuid(), 'p', 'DAMAGE', array['KHÔNG VỆ SINH'], array['Móp'], 'E', 19) $$,
+select throws_like($$ select public.record_gate_in_field_step(gen_random_uuid(), 'p', 'DAMAGE', array['KHÔNG VỆ SINH'], array['Móp'], 'E', 19, p_shipping_line_code => 'MSK') $$,
   '%AGE%', 'AGE sai bị chặn');
 -- W-SURVEY: chỉ cần ảnh + vệ sinh, tự hạ kệ
-select lives_ok($$ select public.record_gate_in_field_step(gen_random_uuid(), 'p', 'W-SURVEY', array['WW - RỬA NƯỚC']) $$, 'W-SURVEY không cần Đóng hàng / AGE');
+select lives_ok($$ select public.record_gate_in_field_step(gen_random_uuid(), 'p', 'W-SURVEY', array['WW - RỬA NƯỚC'], p_shipping_line_code => 'MSK') $$, 'W-SURVEY không cần Đóng hàng / AGE');
 select ok((select to_inspection_rack and stuffing_class is null from public.gate_in_orders where condition_class = 'W-SURVEY'), 'W-SURVEY tự HẠ KỆ GIÁM ĐỊNH');
 -- Bấm lặp cùng request_id không tạo trùng
-select public.record_gate_in_field_step('11111111-1111-1111-1111-111111111111', 'p', 'AV', array['KHÔNG VỆ SINH'], '{}', 'K', 2018);
-select public.record_gate_in_field_step('11111111-1111-1111-1111-111111111111', 'p', 'AV', array['KHÔNG VỆ SINH'], '{}', 'K', 2018);
+select public.record_gate_in_field_step('11111111-1111-1111-1111-111111111111', 'p', 'AV', array['KHÔNG VỆ SINH'], '{}', 'K', 2018, p_shipping_line_code => 'MSK');
+select public.record_gate_in_field_step('11111111-1111-1111-1111-111111111111', 'p', 'AV', array['KHÔNG VỆ SINH'], '{}', 'K', 2018, p_shipping_line_code => 'MSK');
 select is((select count(*)::int from public.gate_in_orders), 3, 'Gửi lặp cùng request_id không tạo hồ sơ thứ hai');
 -- Vệ sinh: KHÔNG VỆ SINH bị bỏ khi có mục khác
-select public.record_gate_in_field_step(gen_random_uuid(), 'p', 'AV', array['KHÔNG VỆ SINH', 'RM - NHỔ ĐINH'], '{}', 'E', 2020);
+select public.record_gate_in_field_step(gen_random_uuid(), 'p', 'AV', array['KHÔNG VỆ SINH', 'RM - NHỔ ĐINH'], '{}', 'E', 2020, p_shipping_line_code => 'MSK');
 select is((select cleaning_items from public.gate_in_orders order by field_at desc, code desc limit 1), array['RM - NHỔ ĐINH'], 'Chuẩn hóa hạng mục vệ sinh');
 select pg_temp.login('00000000-0000-0000-0000-00000000000b');
-select throws_like($$ select public.record_gate_in_field_step(gen_random_uuid(), 'p', 'AV', array['WP - QUÉT'], '{}', 'E', 2019) $$,
+select throws_like($$ select public.record_gate_in_field_step(gen_random_uuid(), 'p', 'AV', array['WP - QUÉT'], '{}', 'E', 2019, p_shipping_line_code => 'MSK') $$,
   '%Không đủ quyền%', 'Xe nâng không được Giám định');
 -- Xóa hồ sơ chưa xử lý
 select pg_temp.login('00000000-0000-0000-0000-00000000000a');

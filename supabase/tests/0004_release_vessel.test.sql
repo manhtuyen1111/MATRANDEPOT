@@ -18,6 +18,7 @@ insert into public.container_sizes (code) values ('20'), ('40') on conflict do n
 insert into public.container_types (code) values ('DC'), ('HC') on conflict do nothing;
 insert into public.yard_blocks (code, name) values ('BLOCK-B', 'Khu B');
 insert into public.partners (code, name, is_shipping_line) values ('MSK', 'MSK', true);
+insert into public.stuffing_classes (shipping_line_code, code, sort_order) values ('MSK', 'M', 1), ('MSK', 'K', 2), ('MSK', 'E', 3) on conflict do nothing; -- DEC-166
 insert into public.partners (code, name, is_customer, allow_tts) values ('KH01', 'Khách hàng 01', true, true);
 insert into public.fee_catalog (id, code, name, category, amount) values
   ('00000000-0000-0000-0000-0000000000f1', 'LOLO', 'Nâng hạ', 'NANG_HA', 1000000);
@@ -31,7 +32,7 @@ declare v_g uuid;
 begin
   perform pg_temp.login('00000000-0000-0000-0000-0000000000a1');
   v_g := (public.record_gate_in_field_step(gen_random_uuid(), 'door.jpg', cond, array['KHÔNG VỆ SINH'],
-    case when cond = 'DAMAGE' then array['Móp'] else '{}' end, 'E', 2019)->>'id')::uuid;
+    case when cond = 'DAMAGE' then array['Móp'] else '{}' end, 'E', 2019, p_shipping_line_code => 'MSK')->>'id')::uuid;
   perform pg_temp.login('00000000-0000-0000-0000-0000000000a2');
   perform public.verify_gate_in_office(v_g, no, '20', 'DC', '15C-1', '0912345678', 'Khách hàng 01', 'MSK', '', array['00000000-0000-0000-0000-0000000000f1'::uuid]);
   perform public.confirm_gate_in_payment(gen_random_uuid(), v_g, 'TTTT', null, null, 'CASH');

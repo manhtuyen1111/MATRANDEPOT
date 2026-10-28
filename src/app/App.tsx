@@ -71,6 +71,7 @@ const ReportsWorkspace = named(() => import('../features/reports/ReportsWorkspac
 const ReceiptsWorkspace = named(() => import('../features/receipts/ReceiptsWorkspace'), 'ReceiptsWorkspace');
 const DocumentReturnWorkspace = named(() => import('../features/office/DocumentReturnWorkspace'), 'DocumentReturnWorkspace');
 const RepairTeamCatalog = named(() => import('../features/catalog/RepairTeamCatalog'), 'RepairTeamCatalog');
+const StuffingClassCatalog = named(() => import('../features/catalog/StuffingClassCatalog'), 'StuffingClassCatalog');
 const UserRoleCatalog = named(() => import('../features/catalog/UserRoleCatalog'), 'UserRoleCatalog');
 const CompanyCatalog = named(() => import('../features/catalog/CompanyCatalog'), 'CompanyCatalog');
 const FeedbackReport = named(() => import('../features/reports/FeedbackReport'), 'FeedbackReport');
@@ -150,6 +151,7 @@ const MENU: MenuGroup[] = [
       { id: 'DM_HANG_TAU', label: 'Hãng tàu' },
       { id: 'DM_VI_TRI', label: 'Vị trí bãi' },
       { id: 'DM_CONTAINER', label: 'Container' },
+      { id: 'DM_PHAN_LOAI', label: 'Phân loại đóng hàng' }, // DEC-166
       { id: 'DM_BIEU_GIA', label: 'Biểu giá' },
       { id: 'DM_CONG_TY', label: 'Công ty' },
       { id: 'DM_SUA_CHUA', label: 'Sửa chữa' },
@@ -554,6 +556,7 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
           )}
           {activeMenu === 'BC_GOP_Y' && <FeedbackReport state={state} onUpdateState={handleUpdateState} menuOptions={allMenuOptions} />}
           {activeMenu === 'DM_SUA_CHUA' && <RepairTeamCatalog state={state} onUpdateState={handleUpdateState} />}
+          {activeMenu === 'DM_PHAN_LOAI' && <StuffingClassCatalog state={state} onUpdateState={handleUpdateState} />}
           {activeMenu === 'DM_USER' && <UserRoleCatalog state={state} onUpdateState={handleUpdateState} />}
           {activeMenu === 'DM_CONG_TY' && <CompanyCatalog state={state} onUpdateState={handleUpdateState} />}
           {CATALOG_TABS[activeMenu] &&<MasterCatalogWorkspace state={state} onUpdateState={handleUpdateState} tab={CATALOG_TABS[activeMenu]} />}

@@ -20,6 +20,7 @@ import { formatDateTime, parseDateTime } from './datetime';
 import { receiptInvoiceLabel, receiptInvoiceStatus } from './invoice';
 import { FEEDBACK_STATUS_LABELS } from './feedback';
 import { assertPermission } from './core';
+import { vesselListProgress, vesselListStatusLabel } from './vessel';
 import type { FeedbackItem, FeedbackStatus, InvoiceStatus } from '../types/depot';
 
 // ============================================================================
@@ -524,6 +525,54 @@ export function vesselReportSheet(mode: VesselMode, rows: VesselReportRow[]): Sh
         ? [(i.cleaningItems || []).join(', '), i.manufactureYear || '', (i.damageRemarks || []).join(', '), i.inspectedBy || '', fmt(i.inspectedAt)]
         : [i.locationAtList || '']),
       i.doneBy || '', fmt(i.doneAt), l.createdBy, fmt(l.createdAt),
+    ]),
+  };
+}
+
+// BÁO CÁO NHẬP / XUẤT TÀU — chế độ xem THEO TÀU (DEC-165): mỗi danh sách tàu 1 dòng, cùng bộ lọc với chi tiết
+export interface VesselSummaryRow {
+  list: VesselList;
+  total: number;
+  size20: number;
+  size40: number;
+  done: number;
+  inspected: number;
+  pending: number;
+  skipped: number;
+}
+
+export function queryVesselSummaryReport(state: DepotState, mode: VesselMode, filter: VesselReportFilter, page = 1, pageSize = REPORT_PAGE_SIZE): PagedResult<VesselSummaryRow> {
+  const range = toRange(filter);
+  const no = filter.containerNo?.trim().toUpperCase();
+  const vessel = filter.vesselName?.trim().toUpperCase();
+  if (!range && !no && !vessel) throw new Error('Nhập số container / tên tàu hoặc chọn khoảng thời gian trước khi tra cứu.');
+  const rows = (state.vesselLists || [])
+    .filter((l) => l.mode === mode)
+    .filter((l) => !vessel || l.vesselName.includes(vessel))
+    .filter((l) => inRange(l.plannedAt, range))
+    .filter((l) => !no || l.items.some((i) => i.containerNo.includes(no)))
+    .sort((a, b) => b.plannedAt.localeCompare(a.plannedAt))
+    .map((list) => {
+      const p = vesselListProgress(list);
+      const size20 = list.items.filter((i) => String(i.size).startsWith('2')).length;
+      return { list, total: p.total, size20, size40: p.total - size20, done: p.done, inspected: p.inspected, pending: p.pending, skipped: p.skipped };
+    });
+  return paginate(rows, page, pageSize);
+}
+
+export function vesselSummarySheet(mode: VesselMode, rows: VesselSummaryRow[]): SheetData {
+  const isImport = mode === 'NHAP_TAU';
+  return {
+    name: isImport ? 'NHẬP TÀU THEO TÀU' : 'XUẤT TÀU THEO TÀU',
+    columns: [
+      'TÊN TÀU', 'HÃNG TÀU', isImport ? 'THỜI GIAN NHẬP TÀU' : 'THỜI GIAN XUẤT TÀU', 'SỐ LƯỢNG', "20'", "40'+",
+      isImport ? 'ĐÃ HẠ BÃI' : 'ĐÃ XUẤT', ...(isImport ? ['ĐÃ GIÁM ĐỊNH - CHỜ HẠ'] : []), isImport ? 'CHỜ XE VỀ' : 'CHỜ XUẤT', 'KHÔNG KỊP',
+      'TRẠNG THÁI', 'NGƯỜI TẠO', 'TẠO LÚC', 'NGƯỜI DUYỆT', 'DUYỆT LÚC', 'LÝ DO DUYỆT',
+    ],
+    rows: rows.map((r) => [
+      r.list.vesselName, r.list.shippingLineCode || '', fmt(r.list.plannedAt), r.total, r.size20, r.size40,
+      r.done, ...(isImport ? [r.inspected] : []), r.pending, r.skipped,
+      vesselListStatusLabel(r.list), r.list.createdBy, fmt(r.list.createdAt), r.list.approvedBy || '', fmt(r.list.approvedAt), r.list.approveNote || '',
     ]),
   };
 }
