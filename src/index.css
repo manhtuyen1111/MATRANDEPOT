@@ -77,6 +77,19 @@
   body > .print-job:has(.k80-sheet) > * + * {
     margin-top: 0 !important;
   }
+  /* HỒ SƠ CONTAINER A4: cùng cách — nằm trong luồng thường để khổ A4 + lề 10mm (dossierA4) có hiệu lực, chia trang đúng */
+  html:has(body > .print-job .dossier-a4),
+  body:has(> .print-job .dossier-a4) {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  body:has(> .print-job .dossier-a4) > *:not(.print-job) {
+    display: none !important;
+  }
+  body > .print-job:has(.dossier-a4) {
+    position: static !important;
+  }
 }
 
 /* DEC-161: PHIẾU EEIR (K80) / PHIẾU THU (K80) / EEIR NHẬP TÀU – XUẤT TÀU (K80) — in nhiệt cuộn 80mm.

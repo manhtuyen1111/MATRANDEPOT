@@ -40,3 +40,16 @@ export function printNow(): void {
   }
   window.print();
 }
+
+// XUẤT PDF: mở hộp thoại in với tên file đặt sẵn (tên tab = tên file gợi ý khi chọn "Lưu dưới dạng PDF").
+// Không cần thư viện thêm; in xong trả lại tên tab cũ.
+export function exportPdf(fileName: string): void {
+  const prev = document.title;
+  document.title = fileName.replace(/[\/:*?"<>|]+/g, '-');
+  const restore = () => {
+    document.title = prev;
+    window.removeEventListener('afterprint', restore);
+  };
+  window.addEventListener('afterprint', restore);
+  setTimeout(printNow, 50);
+}
