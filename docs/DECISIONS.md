@@ -1477,7 +1477,7 @@ Quy ước trạng thái:
 - EEIR **Nhập tàu / Xuất tàu** cũng **khổ K80** (bổ sung 2026-10-28, đóng Q-045) — giữ nguyên thông tin tàu + tình trạng vỏ Giám định. Không còn giấy tờ nửa A4.
 - **Bản in giống hệt bản xem** (bổ sung 2026-10-28): mọi phiếu K80 (EEIR Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu, Phiếu thu) cùng bề rộng 72mm trên màn hình và khi in, **giữ khung nét đứt**; khổ giấy xem trước = 80mm × chiều dài phiếu (`printNow`), không còn tờ A4.
 - **Quy trình Xem → In** (bổ sung 2026-10-28): nút trên hồ sơ / Phiếu thu mở **cửa sổ xem phiếu**, nút In nằm trong cửa sổ xem (`PrintPreviewModal`). Trả chứng từ vẫn tự in (mục trên).
-- **Tên nút IN HOA, thống nhất:** EEIR HẠ VỎ / PHIẾU THU • EIR CẤP VỎ / PHIẾU THU • EIR NHẬP TÀU • EIR XUẤT TÀU • HỒ SƠ CONTAINER • PHIẾU THU (đúng chữ người dùng gửi).
+- **Tên nút IN HOA, thống nhất:** EEIR HẠ VỎ / PHIẾU THU • EEIR CẤP VỎ / PHIẾU THU • EEIR NHẬP TÀU • EEIR XUẤT TÀU • HỒ SƠ CONTAINER • PHIẾU THU (đúng chữ người dùng gửi).
 
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 

@@ -615,7 +615,7 @@ const DossierPrintBar: React.FC<{
 
   const btn = 'inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold';
   // Tên phiếu trên nút (IN HOA, thống nhất — người dùng 2026-10-28)
-  const docName = (mode: string) => ({ HA_VO: 'EEIR HẠ VỎ', CAP_VO: 'EIR CẤP VỎ', NHAP_TAU: 'EIR NHẬP TÀU', XUAT_TAU: 'EIR XUẤT TÀU' } as Record<string, string>)[mode] || mode;
+  const docName = (mode: string) => ({ HA_VO: 'EEIR HẠ VỎ', CAP_VO: 'EEIR CẤP VỎ', NHAP_TAU: 'EEIR NHẬP TÀU', XUAT_TAU: 'EEIR XUẤT TÀU' } as Record<string, string>)[mode] || mode;
   const printedBefore = pack ? pack.receipts.filter((r) => (r.printLog?.length || 0) > 0) : [];
   return (
     <div className="space-y-2 border-t border-line px-5 py-3 text-xs">

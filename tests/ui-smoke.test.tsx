@@ -421,7 +421,7 @@ describe('DEC-081: EEIR cho hồ sơ Nhập tàu / Xuất tàu', () => {
     });
     const nt = s.vesselLists[0];
     const ntItem = nt.items[0];
-    expect(strip(renderToString(<MasterDossierModal masterDossierCode={ntItem.dossierCode!} state={s} onClose={noop} />))).toContain('EIR NHẬP TÀU');
+    expect(strip(renderToString(<MasterDossierModal masterDossierCode={ntItem.dossierCode!} state={s} onClose={noop} />))).toContain('EEIR NHẬP TÀU');
     const ntSheet = strip(renderToString(<VesselEeirPrintSheet state={s} list={nt} item={ntItem} />));
     expect(ntSheet).toContain('EEIR — PHIẾU GIAO NHẬN CONTAINER');
     expect(ntSheet).toContain('k80-sheet'); // DEC-161: EEIR tàu khổ K80
@@ -441,7 +441,7 @@ describe('DEC-081: EEIR cho hồ sơ Nhập tàu / Xuất tàu', () => {
     expect(xtSheet).toContain('TÁC NGHIỆP: XUẤT TÀU');
     expect(xtSheet).toContain('Thời gian OUT');
     expect(xtSheet).toContain('15C-7');
-    expect(strip(renderToString(<MasterDossierModal masterDossierCode={xtList.items[0].dossierCode!} state={s} onClose={noop} />))).toContain('EIR XUẤT TÀU');
+    expect(strip(renderToString(<MasterDossierModal masterDossierCode={xtList.items[0].dossierCode!} state={s} onClose={noop} />))).toContain('EEIR XUẤT TÀU');
   });
 });
 
