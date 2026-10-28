@@ -1486,7 +1486,8 @@ Quy ước trạng thái:
   - Phần đầu giống **PHIẾU EEIR TÁC NGHIỆP**: thông tin depot → (tên phiếu / Số / TÁC NGHIỆP | mã QR tác nghiệp) → thông tin cont.
   - **Bỏ LỘ TRÌNH — QUÉT MÃ**, thay bằng **THÔNG TIN THANH TOÁN** + **YÊU CẦU XUẤT HÓA ĐƠN** như Phiếu thu (Số phiếu thu, bên thanh toán, hình thức, thời gian thu, bảng phí, tổng thu, mã bảo mật + QR link xuất hóa đơn) — dùng chung khối `ReceiptPaymentBody`.
   - Không có phiếu thu (TTS / trừ phiếu trả trước) → ghi hình thức thanh toán, "không phát hành phiếu thu lượt này".
-- **Hồ sơ container**: mỗi tác nghiệp Hạ vỏ / Cấp vỏ có 2 phiếu **PHIẾU EEIR TÁC NGHIỆP** và **PHIẾU TRẢ KHÁCH HÀNG** (Xem → IN).
+- **Hồ sơ container**: mỗi tác nghiệp có **PHIẾU EEIR HẠ VỎ / CẤP VỎ** (phiếu tác nghiệp) + **PHIẾU TRẢ KHÁCH HÀNG** (Xem → IN); tàu: **PHIẾU EEIR NHẬP TÀU / XUẤT TÀU**. Bỏ nút "Xem / in phiếu EEIR (K80)" (trùng).
+- Sửa 2026-10-29: phiếu trả khách hàng **không có tiêu đề** — đầu bên trái chỉ "Số" + "TÁC NGHIỆP", bên phải QR; khối thanh toán tên **PHIẾU THU**; dòng **Khách hàng** (thay "Bên thanh toán"); **BẢN IN LẠI — LẦN n** nằm dưới khối PHIẾU THU.
 - **Số lần in** (người dùng chọn 2026-10-29): **chỉ dùng bộ đếm phiếu thu** (`recordReceiptPrint`, DEC-063) — in phiếu trả khách hàng = ghi 1 lần in cho mỗi phiếu thu kèm theo; từ lần 2 hỏi xác nhận + nhãn BẢN IN LẠI. Không đổi database. Phiếu EEIR tác nghiệp và phiếu trả khách không có phiếu thu **không đếm**.
 - **Phiếu thu lẻ** giữ nguyên ở Văn phòng → Phiếu thu (in / in lại có đếm).
 

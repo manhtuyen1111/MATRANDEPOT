@@ -131,7 +131,7 @@ export const ReceiptPaymentBody: React.FC<{ state: DepotState; receipt: PaymentR
         narrow
         rows={[
           ...(inSlip ? ([["Số phiếu thu", <span className="font-black">{r.receiptNo}</span>, true]] as [string, React.ReactNode, boolean][]) : []),
-          ["Bên thanh toán", r.payerName],
+          [inSlip ? "Khách hàng" : "Bên thanh toán", r.payerName],
           ...(isPrepaid || inSlip ? [] : ([["Mã hồ sơ", r.dossierCode || r.masterReceiptCode, true], ["Số container", r.containerNo, true]] as [string, React.ReactNode, boolean][])),
           ['Hình thức', `${PAYMENT_METHOD_LABELS[r.method]}${r.providerTxRef ? ` • Mã GD ${r.providerTxRef}` : ''}`],
           ['Thời gian thu', formatDateTime(tx?.confirmedAt || r.issuedAt), true],
