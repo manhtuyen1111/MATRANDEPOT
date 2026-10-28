@@ -24,7 +24,8 @@ import { InspectorHaVoMobile } from '../src/features/inspector/InspectorHaVoMobi
 import { RepairTeamCatalog } from '../src/features/catalog/RepairTeamCatalog';
 import { UserRoleCatalog } from '../src/features/catalog/UserRoleCatalog';
 import { DocumentReturnWorkspace } from '../src/features/office/DocumentReturnWorkspace';
-import { EeirK80Sheet, K80TicketModal } from '../src/components/K80TicketModal';
+import { CustomerSlipK80, EeirK80Sheet, K80TicketModal, slipPrintCount } from '../src/components/K80TicketModal';
+import { documentPackOf } from '../src/services/driverRoute';
 import { CompanyCatalog } from '../src/features/catalog/CompanyCatalog';
 import { ReceiptPrintSheet, VesselEeirPrintSheet } from '../src/components/ReceiptPrint';
 import { DetailDrawer, FeeLinesEditor, Pager } from '../src/components/shared';
@@ -337,14 +338,50 @@ describe('DEC-161: Phiếu EEIR (K80) + Phiếu thu (K80); in hồ sơ container
     expect(html).toContain('Người thu tiền');
     expect(html).toContain('In lúc');
   });
-  it('Hồ sơ: nút In EEIR (K80) / + Phiếu thu (K80), Xem phiếu EEIR (K80), In hồ sơ container (A4)', () => {
+  it('Hồ sơ: 2 phiếu PHIẾU EEIR TÁC NGHIỆP + PHIẾU TRẢ KHÁCH HÀNG (DEC-162), Xem phiếu EEIR (K80), HỒ SƠ CONTAINER (A4)', () => {
     const s = createInitialState();
     const t = s.k80Tickets[0];
     const dossier = strip(renderToString(<MasterDossierModal masterDossierCode={t.masterDossierCode} state={s} onClose={noop} onUpdateState={noop} onOpenK80Ticket={noop} />));
-    expect(dossier).toContain('EEIR HẠ VỎ');
+    expect(dossier).toContain('PHIẾU EEIR TÁC NGHIỆP');
+    expect(dossier).toContain('PHIẾU TRẢ KHÁCH HÀNG');
     expect(dossier).toContain('Xem / in phiếu EEIR (K80)');
     expect(dossier).toContain('HỒ SƠ CONTAINER');
     expect(dossier).not.toContain('EEIR — PHIẾU GIAO NHẬN CONTAINER');
+  });
+});
+
+describe('DEC-162: PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU" — gộp EEIR + phiếu thu, đếm in theo phiếu thu', () => {
+  const strip = (h: string) => h.replace(/<!-- -->/g, '');
+  it('Có phiếu thu: đầu như phiếu tác nghiệp (QR), bỏ LỘ TRÌNH, có THÔNG TIN THANH TOÁN + Số phiếu thu + yêu cầu xuất hóa đơn; bản in lại có nhãn', () => {
+    const demo = createDemoState();
+    const r = demo.paymentReceipts.find((x) => x.invoiceSecret && x.dossierCode)!;
+    expect(r).toBeTruthy();
+    const t = demo.k80Tickets.find((k) => (k.outDossierCode || k.masterDossierCode) === r.dossierCode)!;
+    expect(t).toBeTruthy();
+    const pack = documentPackOf(demo, t);
+    expect(pack.receipts.length).toBeGreaterThan(0);
+    const html = strip(renderToString(<CustomerSlipK80 state={demo} ticket={t} receipts={pack.receipts} printNo={1} />));
+    expect(html).toContain('MATRAN EEIR - PHIẾU THU');
+    expect(html).toContain('k80-sheet');
+    expect(html).toContain(`Mã QR ${t.qrCode}`); // QR tác nghiệp ở đầu phiếu như phiếu tác nghiệp
+    expect(html).toContain(t.containerNo);
+    expect(html).not.toContain('LỘ TRÌNH');
+    expect(html).toContain('THÔNG TIN THANH TOÁN');
+    expect(html).toContain(pack.receipts[0].receiptNo);
+    expect(html).toContain('data-testid="invoice-secret"');
+    expect(html).not.toContain('BẢN IN LẠI');
+    expect(strip(renderToString(<CustomerSlipK80 state={demo} ticket={t} receipts={pack.receipts} printNo={2} />))).toContain('BẢN IN LẠI — LẦN 2');
+    // Đếm in = bộ đếm phiếu thu (lớn nhất của các phiếu thu kèm theo)
+    expect(slipPrintCount([])).toBe(0);
+    expect(slipPrintCount([{ ...pack.receipts[0], printLog: [{ at: 'x', by: 'a' }, { at: 'y', by: 'b' }] }])).toBe(2);
+  });
+  it('Không có phiếu thu (TTS / trừ trả trước): vẫn in được, ghi hình thức thanh toán, không có khối xuất hóa đơn', () => {
+    const s = createInitialState();
+    const t = s.k80Tickets[0];
+    const html = strip(renderToString(<CustomerSlipK80 state={s} ticket={t} receipts={[]} />));
+    expect(html).toContain('MATRAN EEIR - PHIẾU THU');
+    expect(html).toContain('không phát hành phiếu thu lượt này');
+    expect(html).not.toContain('data-testid="invoice-secret"');
   });
 });
 
