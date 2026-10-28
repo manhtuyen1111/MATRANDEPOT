@@ -251,14 +251,27 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 
 ### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-28 — đọc trước — mới nhất)
 
-**▶ BẮT ĐẦU CA MỚI — LÀM THEO THỨ TỰ (cập nhật 2026-10-28 cuối ngày):**
-1. **Merge code:** GitHub → PR `agent/claude/p4-database` → `main` (gồm: QR thật + màn quét kiểu ngân hàng, bỏ nút Quét, lưu ngầm DEC-160, tài liệu). **Không có migration mới** → không cần `db push`. Chờ Vercel báo Ready.
-2. **Thử nhanh trên điện thoại (link Vercel HTTPS):** đăng nhập → in / mở 1 phiếu K80 → Xe nâng / Vệ sinh bấm camera: khung có dễ ngắm, bắt mã nhanh không; thử **Chọn ảnh**, **Đèn**.
-3. **Thử lưu (DEC-160):** làm 1 lượt Hạ vỏ đủ bước → màn có đổi ngay không, có "nhảy" không; bấm 2 lần liên tiếp có tạo trùng không; lỗi database có báo rõ không.
-4. **Xem góp ý của người test:** Báo cáo → Góp ý (Admin). Chép lỗi kèm màn + thao tác gửi agent.
-5. **Supabase `matran-test` → Reports / Logs:** có lỗi đỏ lặp lại không; dung lượng database / ảnh (gói Free: 500 MB / 1 GB).
-6. Agent đầu phiên: `git status` sạch → `git pull` → `npm test` + `npm run build` → đọc mục này.
-7. Việc lớn tiếp theo: trả lời bộ câu hỏi import tồn vỏ **Q-044** (`docs/IMPORT_TON_VO_BAN_DAU.md`) + quyết định gói Supabase Pro / project thật (`docs/VAN_HANH_VA_PHAT_TRIEN.md`).
+**▶ BẮT ĐẦU CA MỚI — LÀM THEO THỨ TỰ (cập nhật 2026-10-29, cuối phiên in ấn):**
+1. **Merge code:** `main` đã có tới PR #30; nhánh `agent/claude/p4-database` còn **3 commit** (tiêu đề / bố cục đầu phiếu tác nghiệp + tài liệu) → tạo PR → merge. **Không có migration** → không cần `db push`. Chờ Vercel báo Ready.
+2. **Thử IN (quan trọng nhất — chưa ai in thật):** máy in K80 đặt khổ **cuộn 80mm** + **cắt sau mỗi trang** (Printing Preferences → Cut per page).
+   - Trả chứng từ 1 cont có phiếu thu → ra **2 phiếu rời, tự cắt giữa**; bản xem trước là **dải K80** (không phải A4); in **giống hệt bản xem** (khung nét đứt, không mất chữ mép phải).
+   - Hồ sơ → **EEIR HẠ VỎ / PHIẾU THU**, **EEIR CẤP VỎ / PHIẾU THU**, **EEIR NHẬP TÀU**, **EEIR XUẤT TÀU** (mở cửa sổ Xem → nút IN), **HỒ SƠ CONTAINER** (máy in A4).
+   - Văn phòng → Phiếu thu → **PHIẾU THU** → In / In lại (đếm số lần in).
+3. **Thử QR:** quét QR tác nghiệp cỡ mới (60px) trên giấy in nhiệt ở Xe nâng / Vệ sinh / Trả chứng từ — chậm thì báo tăng 70px; quét QR link xuất hóa đơn trên Phiếu thu bằng camera thường → mở trang `#/hoa-don`.
+4. **Thử hiện trường:** cont Nhập tàu / Xuất tàu ở Vệ sinh / Xe nâng có **số xe**; lưu (DEC-160) không giật, bấm 2 lần không trùng.
+5. **Màn đăng nhập (Vercel):** nhãn vàng "Môi trường kiểm thử (UAT) — dữ liệu test…", khẩu hiệu mới, "Made by MT".
+6. **Góp ý người test:** Báo cáo → Góp ý (Admin). **Supabase `matran-test` → Reports / Logs**: lỗi lặp lại? dung lượng (Free 500 MB / 1 GB).
+7. Agent đầu phiên: `git status` sạch → `git pull` → `npm test` (169 pass) + `npm run build` → đọc mục này + **LƯU Ý IN ẤN** dưới đây.
+8. Việc lớn tiếp theo: trả lời **Q-044** import tồn vỏ (`docs/IMPORT_TON_VO_BAN_DAU.md`) + chốt gói Supabase Pro / project `matran-prod` (`docs/VAN_HANH_VA_PHAT_TRIEN.md`).
+
+**LƯU Ý IN ẤN (DEC-161 — đã chốt 2026-10-28, agent đọc trước khi sửa giấy tờ):**
+- Giấy tờ Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu / Phiếu thu đều **khổ K80** (`k80-sheet`, khung **76mm = 95% giấy**, biến CSS `--k80-width` — máy in cắt chữ mép phải thì hạ về 72mm). Giấy cắt **vừa đủ phiếu** (+1mm); 2 phiếu in liền, không khoảng trống. **Không còn giấy tờ nửa A4.** Chỉ HỒ SƠ CONTAINER in A4 (`dossier-a4`).
+- Phiếu tác nghiệp = **Phiếu EEIR (K80)** (`EeirK80Sheet`): đầu = thông tin depot (như Phiếu thu) → hàng: trái "PHIẾU EEIR TÁC NGHIỆP / Số / TÁC NGHIỆP", phải **QR tác nghiệp 60px có khung** → thông tin cont → LỘ TRÌNH → **VĂN PHÒNG XÁC NHẬN** (người lập + giờ). QR = `QR-<mã hồ sơ>` (DEC-057, không đổi).
+- Phiếu thu (K80): ô Yêu cầu xuất hóa đơn có **QR link trang xuất hóa đơn 60px có khung** góc phải (chỉ link, **không** chứa mã bảo mật).
+- Mọi lệnh in gọi **`printNow()`** (đo chiều dài phiếu → khổ 80mm × dài, mỗi phiếu 1 trang để máy cắt) — **cấm `window.print()`**. Bản in = bản xem (giữ khung nét đứt).
+- Quy trình **Xem → In**: nút mở `PrintPreviewModal`, nút IN ở trong. Riêng **Trả chứng từ**: có nút Xem trước; bấm Trả chứng từ là **tự in** EEIR (K80) + Phiếu thu (K80).
+- Tên nút IN HOA thống nhất **EEIR** (không viết EIR): EEIR HẠ VỎ / PHIẾU THU • EEIR CẤP VỎ / PHIẾU THU • EEIR NHẬP TÀU • EEIR XUẤT TÀU • HỒ SƠ CONTAINER • PHIẾU THU.
+- Người dùng rất nhạy với giao diện: **không** thêm thanh chạy / nhấp nháy; chỉnh in thì giữ đúng chữ người dùng gửi, đổi gì cũng báo lại rõ.
 
 **Rà soát + tư vấn vận hành / phát triển:** `docs/VAN_HANH_VA_PHAT_TRIEN.md` — bảo mật ổn; rủi ro chính: quy tắc viết 2 nơi (TS + SQL) phải sửa cùng lúc; tải 15.000 lượt / tháng nhẹ với database nhưng **ảnh cửa ~6 GB → bắt buộc Supabase Pro** khi chạy thật; database thật phải là project riêng (`matran-prod`); migration sau khi chạy thật chỉ thêm file mới.
 
@@ -495,4 +508,5 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-28 — Claude Code: bỏ nút Quét thừa; lưu ngầm không chặn màn + không tải lại danh mục sau mỗi lần lưu (DEC-160). 167 test • build PASS. Chưa đo trên cloud.
 - 2026-10-28 — Claude Code: DEC-161 Phiếu EEIR (K80) + Phiếu thu (K80), in hồ sơ A4. 169 test • build PASS. Chưa thử in thật.
 - 2026-10-28 — Claude Code: DEC-161 bổ sung — EEIR tàu K80, in giống bản xem, Xem → In, nút IN HOA, `printNow`. 169 test • build PASS. Chưa thử in thật.
+- 2026-10-28/29 — Claude Code: in ấn hoàn thiện theo góp ý — printNow (xem trước dải K80, in = bản xem), EEIR tàu K80, Xem → In, nút IN HOA EEIR, QR 60px có khung (phiếu tác nghiệp + QR link XHD phiếu thu), đầu phiếu tác nghiệp = thông tin depot + "PHIẾU EEIR TÁC NGHIỆP / Số / TÁC NGHIỆP" | QR, ô Văn phòng xác nhận; số xe cho cont tàu ở Vệ sinh / Xe nâng; màn đăng nhập (nhãn UAT, khẩu hiệu, Made by MT). 169 test • build PASS. **Chưa in thật trên máy K80.**
 - 2026-10-28 — Claude Code: màn quét QR kiểu ngân hàng (Đèn / Chọn ảnh); rà soát dự án + tư vấn vận hành `docs/VAN_HANH_VA_PHAT_TRIEN.md`; checklist bắt đầu ca mới ở đầu I.5.
