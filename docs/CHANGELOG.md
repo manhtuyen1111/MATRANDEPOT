@@ -20,6 +20,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - Ảnh cửa container: kính lúp khi rê chuột + xem toàn màn hình có phóng to (`PhotoZoom` trong `shared.tsx`) ở Văn phòng Hạ vỏ và Hồ sơ container.
 
 ### Changed
+- DEC-164: chiều cao dòng mọi bảng danh sách đồng bộ = Tồn vỏ (40px) — class `data-table`, nút / ô trong bảng thu gọn; test chặn bảng mới thiếu class. Chờ báo giá 53 → 40px.
 - DEC-163: PHIẾU EEIR NHẬP TÀU / XUẤT TÀU cùng mẫu phiếu tác nghiệp Hạ vỏ / Cấp vỏ — mã QR (QR-NT- / QR-XT-) + LỘ TRÌNH quét mã + Văn phòng xác nhận; màn Nhập / Xuất tàu quét được mã QR phiếu.
 - Hồ sơ: nút HỒ SƠ CONTAINER mở cửa sổ xem bản A4 → IN hoặc XUẤT PDF (hộp thoại in, chọn Lưu dưới dạng PDF; tên file HO-SO-<số cont>). Đã kiểm Edge PDF: khổ A4, tự chia trang.
 - DEC-162 sửa: phiếu trả khách hàng bỏ tiêu đề (đầu: Số / TÁC NGHIỆP + QR), khối PHIẾU THU, "Khách hàng", BẢN IN LẠI dưới khối phiếu thu; hồ sơ: PHIẾU EEIR HẠ VỎ / CẤP VỎ / NHẬP TÀU / XUẤT TÀU, bỏ nút Xem phiếu EEIR (K80). Đã đo PDF Edge: khung sát mép trên giấy (0mm).

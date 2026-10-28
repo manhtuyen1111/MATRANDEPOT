@@ -283,6 +283,8 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - **Quy trình Xem → In:** mọi nút mở `PrintPreviewModal` (nút IN / XUẤT PDF ở trong). Riêng **Trả chứng từ**: có nút Xem trước; bấm Trả chứng từ là **tự in** PHIẾU TRẢ KHÁCH HÀNG.
 - **Tên nút IN HOA, viết EEIR (không EIR):** PHIẾU EEIR HẠ VỎ • PHIẾU EEIR CẤP VỎ • PHIẾU EEIR NHẬP TÀU • PHIẾU EEIR XUẤT TÀU • PHIẾU TRẢ KHÁCH HÀNG • HỒ SƠ CONTAINER • PHIẾU THU. Hồ sơ **không** còn nút "Xem / in phiếu EEIR (K80)".
 
+**LƯU Ý GIAO DIỆN (DEC-164):** bảng danh sách mới → `<table className="data-table …">`; dòng tự cao 40px như Tồn vỏ (kể cả có nút). Đo chiều cao thật không cần mở app: render màn bằng vitest → HTML + CSS build → Edge `--headless --dump-dom` với script đo `getBoundingClientRect`.
+
 **LƯU Ý CHO AGENT (cách làm việc với người dùng):**
 - Người dùng gửi yêu cầu ngắn, thường **thêm / đổi ý giữa chừng** (VD "1 dải" → "cắt mỗi phiếu"; đếm in riêng → chỉ dùng bộ đếm phiếu thu) → làm từng bước nhỏ, commit sau mỗi bước để hoàn tác dễ (`git checkout -- <file>` khi chưa commit).
 - **Giữ đúng chữ người dùng gửi** cho tên phiếu / nút; chỗ nào hiểu 2 cách thì làm theo chữ + báo lại 1 dòng.
@@ -526,6 +528,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-28 — Claude Code: bỏ nút Quét thừa; lưu ngầm không chặn màn + không tải lại danh mục sau mỗi lần lưu (DEC-160). 167 test • build PASS. Chưa đo trên cloud.
 - 2026-10-28 — Claude Code: DEC-161 Phiếu EEIR (K80) + Phiếu thu (K80), in hồ sơ A4. 169 test • build PASS. Chưa thử in thật.
 - 2026-10-28 — Claude Code: DEC-161 bổ sung — EEIR tàu K80, in giống bản xem, Xem → In, nút IN HOA, `printNow`. 169 test • build PASS. Chưa thử in thật.
+- 2026-10-29 — Claude Code: DEC-164 chiều cao dòng bảng đồng bộ = Tồn vỏ (40px), class data-table 21 bảng + test chặn. 174 test • build PASS.
 - 2026-10-29 — Claude Code: bàn giao cuối ngày — checklist ca mới, việc chờ quyết, LƯU Ý IN ẤN (DEC-161 → 163), LƯU Ý CHO AGENT.
 - 2026-10-29 — Claude Code: DEC-163 EEIR tàu có QR + lộ trình; hồ sơ container xem → IN / XUẤT PDF; phiếu trả khách bỏ tiêu đề, khối PHIẾU THU, "Khách hàng". 173 test • build PASS. Chưa in thật.
 - 2026-10-29 — Claude Code: DEC-162 PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU" (gộp EEIR + phiếu thu); hồ sơ 2 phiếu; đếm in theo phiếu thu; in K80 lề 0 (bỏ đầu / chân trang trình duyệt). 171 test • build PASS. Chưa in thật.
