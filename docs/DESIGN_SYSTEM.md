@@ -63,6 +63,7 @@ Còn giữ màu Tailwind có sẵn cho trạng thái phụ (`emerald-*`, `red-*`
 | Số container | `ContainerNo` |
 | Vị trí | `LocationText`, `SlotPicker` |
 | Ô chữ dài trong bảng | `CellText` + `CELL_MAX` |
+| Bảng danh sách (chiều cao dòng chuẩn 40px = Tồn vỏ) | class `data-table` trên `<table>` (DEC-164) |
 | Phân trang, chi tiết | `Pager` + `usePageSize`, `DetailDrawer` |
 | Thời gian | `DateTimeField`, `DateRangeFilter` |
 | Nhãn tác nghiệp | `OperationBadge` (`src/features/vessel/VesselShared.tsx`) |

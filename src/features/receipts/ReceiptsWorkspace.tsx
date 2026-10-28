@@ -272,7 +272,7 @@ export const ReceiptsWorkspace: React.FC<{
             ) : (
               result && (
                 <>
-                  <table className="w-full min-w-[1180px] whitespace-nowrap text-left text-xs">
+                  <table className="data-table w-full min-w-[1180px] whitespace-nowrap text-left text-xs">
                     <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
                       <tr>
                         <th className="whitespace-nowrap px-2 py-2">Mã phiếu thu</th>
@@ -513,7 +513,7 @@ export const MasterUsagePanel: React.FC<{
         <p className="text-ink-muted">{usage.master.status === 'PENDING_PAYMENT' ? 'Chưa thu tiền nạp — chưa dùng được để trừ.' : 'Chưa có lượt tác nghiệp nào trừ vào phiếu thu trả trước này.'}</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-left">
+          <table className="data-table w-full min-w-[820px] text-left">
             <thead className="border-b border-line text-[11px] uppercase text-ink-muted">
               <tr>
                 <th className="py-1.5 pr-2">#</th>

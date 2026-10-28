@@ -239,7 +239,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
       )}
 
       <div className="overflow-x-auto rounded-lg border border-line bg-white">
-        <table className="w-full min-w-[1640px] text-left text-xs">
+        <table className="data-table w-full min-w-[1640px] text-left text-xs">
           <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
             <tr>
               {canBulk && (

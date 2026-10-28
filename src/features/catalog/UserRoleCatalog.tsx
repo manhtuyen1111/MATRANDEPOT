@@ -145,7 +145,7 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
       </SectionCard>
 
       <div className="overflow-x-auto rounded-lg border border-line bg-white">
-        <table className="w-full min-w-[720px] text-left text-xs">
+        <table className="data-table w-full min-w-[720px] text-left text-xs">
           <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
             <tr>
               <th className="px-3 py-2">Mã</th>
@@ -213,7 +213,7 @@ export const UserRoleCatalog: React.FC<{ state: DepotState; onUpdateState: (next
       </div>
 
       <SectionCard title="Vai trò & màn hình được truy cập" icon={<ShieldCheck className="h-4 w-4 text-ink-muted" />}>
-        <table className="w-full text-left text-xs">
+        <table className="data-table w-full text-left text-xs">
           <tbody className="divide-y divide-line">
             {ASSIGNABLE_ROLES.map((r) => (
               <tr key={r}>

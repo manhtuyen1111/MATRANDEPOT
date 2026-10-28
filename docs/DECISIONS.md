@@ -1499,6 +1499,14 @@ Quy ước trạng thái:
 - Lộ trình (`getVesselRoute`, chỉ đọc dữ liệu): **Nhập tàu** = Giám định → Vệ sinh (nếu có) → Xe nâng hạ vỏ → Văn phòng duyệt nhập tàu; **Xuất tàu** = Văn phòng lập danh sách → Xe nâng xuất cont → Văn phòng duyệt xuất tàu. Bước đã xong có ✓ + giờ.
 - Thời điểm xem / in giữ như cũ: Nhập tàu từ khi Giám định xác nhận; Xuất tàu khi cont đã OUT.
 
+### DEC-164 — Chiều cao dòng bảng danh sách đồng bộ, mốc = Tồn vỏ
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng — màn Chờ báo giá dòng cao hơn các màn khác).
+- Mọi bảng danh sách / báo cáo / tra cứu / danh mục dùng **cùng chiều cao dòng = Tồn vỏ (40px)**, kể cả dòng có nút tác nghiệp, ô nhập, ô chọn.
+- Cách làm: class **`data-table`** trên `<table>`; CSS chung (`src/index.css`) đặt chiều cao ô 40px, đệm 6px, căn giữa dọc; nút / ô trong bảng thu gọn (chữ 12px, đệm 2px, bỏ `min-h-10` của `primaryBtn` / `secondaryBtn`). Dòng thông báo trống (`colSpan`) không bị ép.
+- Bảng **không** phải danh sách (bảng phí trên phiếu in, bảng con trong hồ sơ, ô Chi phí, bảng con trong một ô) không dùng class này.
+- Test `DEC-164` (`tests/ui-smoke.test.tsx`) chặn `<table>` mới thiếu `data-table`. Đã đo bằng Edge: Tồn vỏ 40px, Chờ báo giá 53 → 40px.
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1588,6 +1596,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-163 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-164 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

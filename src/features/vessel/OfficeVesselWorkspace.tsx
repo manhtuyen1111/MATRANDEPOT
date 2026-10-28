@@ -130,7 +130,7 @@ export const OfficeVesselWorkspace: React.FC<Props> = ({ mode, state, onUpdateSt
           <p className="py-6 text-center text-xs text-ink-muted">Chưa có danh sách {modeLabel.toLowerCase()} nào đang thực hiện.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full whitespace-nowrap text-left text-xs">
+            <table className="data-table w-full whitespace-nowrap text-left text-xs">
               <thead className="border-b border-line text-[11px] uppercase text-ink-muted">
                 <tr>
                   <th className="py-2 pr-2">Tên tàu</th>
@@ -240,7 +240,7 @@ const ImportPaste: React.FC<{ state: DepotState; text: string; onChange: (t: str
           </ul>
         )}
         <div className="max-h-48 overflow-y-auto">
-          <table className="w-full text-left">
+          <table className="data-table w-full text-left">
             <tbody className="divide-y divide-line">
               {sortVesselItems(parsed.rows).map((r, i) => (
                 <tr key={r.containerNo}>
@@ -347,7 +347,7 @@ export const ExportPicker: React.FC<{ state: DepotState; picked: Set<string>; on
         </p>
       )}
       <div className="max-h-80 overflow-auto">
-        <table className="w-full min-w-[760px] text-left">
+        <table className="data-table w-full min-w-[760px] text-left">
           <thead className="sticky top-0 border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
             <tr>
               <th className="w-8 px-2 py-2">
@@ -555,7 +555,7 @@ export const ListDetail: React.FC<{
 
         <div className="overflow-x-auto">
           {/* DEC-146: mỗi cột 1 thông tin, mỗi cont 1 dòng (DEC-134) — không gộp Size/Type, Trạng thái • Phân loại, Người / giờ */}
-          <table className="w-full whitespace-nowrap text-left" data-testid="vessel-detail-table">
+          <table className="data-table w-full whitespace-nowrap text-left" data-testid="vessel-detail-table">
             <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
               <tr>
                 <th className="px-2 py-1.5">#</th>

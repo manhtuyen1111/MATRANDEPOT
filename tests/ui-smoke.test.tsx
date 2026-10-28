@@ -962,6 +962,23 @@ describe('DEC-155: giao diện ghi dữ liệu chỉ qua services/api.ts', () =>
   });
 });
 
+describe('DEC-164: bảng danh sách đồng bộ chiều cao dòng (mốc Tồn vỏ 40px)', () => {
+  it('mọi <table> trong màn hình / thành phần có class "data-table" (trừ bảng không phải danh sách)', () => {
+    // Bảng không phải danh sách: bảng phí trên phiếu in, bảng con trong hồ sơ / ô Chi phí / ô danh sách lệnh cấp
+    const NOT_LIST = ['/components/ReceiptPrint.tsx', '/components/MasterDossierModal.tsx', '/components/shared.tsx', '/features/office/OfficeWorkspaces.tsx#mt-2'];
+    const files = import.meta.glob(['../src/features/**/*.tsx', '../src/components/**/*.tsx'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+    const bad: string[] = [];
+    for (const [path, src] of Object.entries(files)) {
+      for (const m of src.matchAll(/<table className="([^"]*)"/g)) {
+        if (m[1].includes('data-table')) continue;
+        if (NOT_LIST.some((x) => { const [f, mark] = x.split('#'); return path.endsWith(f) && (!mark || m[1].includes(mark)); })) continue;
+        bad.push(`${path}: <table className="${m[1]}">`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+});
+
 describe('Danh mục Sửa chữa + kính lúp ảnh cửa cont', () => {
   it('Tổ sửa chữa: bảng mỗi tổ 1 dòng (DEC-134), bấm mở chi tiết — không còn khung từng tổ', () => {
     const html = renderToString(<RepairTeamCatalog state={{ ...createInitialState(), currentUser: createInitialState().staffUsers.find((u) => u.roles.includes('ADMIN'))! }} onUpdateState={() => {}} />);

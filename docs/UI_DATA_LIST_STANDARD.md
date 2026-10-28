@@ -14,6 +14,7 @@ Thứ tự từ trên xuống:
 
 ## 2. Danh sách (bảng)
 
+- **Chiều cao dòng đồng bộ (DEC-164):** mọi `<table>` danh sách / báo cáo / tra cứu / danh mục đặt class **`data-table`** → dòng luôn cao **40px = Tồn vỏ** (CSS chung trong `src/index.css`); nút / ô nhập / ô chọn trong bảng tự thu gọn — **không** tự đặt `py-*` / `min-h-*` cho dòng hay nút trong bảng. Test `DEC-164` chặn bảng mới thiếu class.
 - **Bắt buộc bộ lọc** trước khi tải dữ liệu. Bộ lọc thời gian mặc định là 1 ngày trước → hiện tại (DEC-056), tối đa 3 tháng khi có database (DEC-066).
 - **Đủ cột** thông tin cần đối chiếu. Thứ tự cột:
   - Đầu bảng: mã định danh (mã phiếu / mã hồ sơ / số cont).
@@ -45,6 +46,7 @@ Thứ tự từ trên xuống:
 ## 4. Kiểm tra khi làm màn mới / sửa màn
 
 - [ ] Danh sách full chiều ngang, đủ cột, thời gian và nhân viên tách riêng, trạng thái gần cuối.
+- [ ] `<table className="data-table …">` — dòng cao bằng Tồn vỏ (40px), kể cả dòng có nút (DEC-164).
 - [ ] `Pager` có `pageSize` + `onPageSize`; hàm service nhận `pageSize`.
 - [ ] Bấm dòng → `DetailDrawer`; Esc / X / bấm ngoài đều đóng được.
 - [ ] Nút tác nghiệp cùng hàng nút Tra cứu.

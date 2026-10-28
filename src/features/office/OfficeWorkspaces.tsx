@@ -547,7 +547,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-left text-xs">
+            <table className="data-table w-full min-w-[520px] text-left text-xs">
               <thead className="border-b border-line text-[11px] uppercase text-ink-muted">
                 <tr>
                   <th className="py-2 pr-2">Số container</th>
