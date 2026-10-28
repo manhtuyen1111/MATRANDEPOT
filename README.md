@@ -1,99 +1,96 @@
 # MATRAN DEPOT
 
-Hệ thống ERP quản lý vận hành bãi container rỗng của MATRAN DEPOT.
+ERP quản lý vận hành **bãi container rỗng**: Giám định, Văn phòng, Xe nâng, Vệ sinh, Báo giá, Sửa chữa, Kế toán cùng làm trên một hệ thống. Nhân viên hiện trường dùng điện thoại, văn phòng dùng máy tính.
 
-## 1. Mục tiêu dự án
+- Bản chạy thử: https://matrandepot.vercel.app/ (database Supabase `matran-test`, **dữ liệu test**)
+- Ngôn ngữ giao diện và tài liệu: tiếng Việt
 
-Xây dựng hệ thống quản lý tập trung, thay thế các quy trình rời rạc, hỗ trợ nhân viên hiện trường và văn phòng phối hợp trên cùng một hệ thống.
+## 1. Chức năng chính
 
-## 2. Phạm vi nghiệp vụ
+| Nhóm | Nội dung |
+|---|---|
+| **Hạ vỏ** | Giám định (ảnh cửa cont, hãng tàu, trạng thái AV / DAMAGE / W-SURVEY, phân loại đóng hàng, vệ sinh, AGE) → Văn phòng lập chứng từ + thu phí → Xe nâng hạ bãi |
+| **Cấp vỏ** | Booking, lệnh cấp vỏ, thanh toán, xuất bãi |
+| **Nhập tàu / Xuất tàu** | Danh sách theo tàu, Giám định / Xe nâng theo từng cont, Văn phòng duyệt |
+| **Bãi** | Tồn vỏ, vị trí Block-Bay-Row-Tier, đảo chuyển, khóa cont, kệ giám định |
+| **Vệ sinh / Báo giá / Sửa chữa** | Hàng chờ theo bộ phận, báo giá 2 bước, giao tổ sửa chữa |
+| **Thanh toán** | Trực tiếp (TT), trả trước (TTR), thanh toán sau (TTS); phiếu thu `PT-TT-` / `PT-TTR-`; yêu cầu xuất hóa đơn qua trang khách `#/hoa-don` |
+| **Giấy tờ in** | Khổ K80 (phiếu EEIR tác nghiệp, phiếu trả khách hàng, phiếu thu), Hồ sơ container A4 / PDF; mã QR quét bằng camera điện thoại |
+| **Báo cáo** | Hạ vỏ, Cấp vỏ, Tồn vỏ, Nhập / Xuất tàu (chi tiết / theo tàu), Sửa chữa, Tổng hợp; xuất Excel |
+| **Danh mục** | Khách hàng, Hãng tàu (có hãng ưu tiên), Vị trí bãi, Container, Phân loại (đóng hàng theo hãng), Biểu giá, Công ty, Sửa chữa, User - Role |
 
-- Gate In — tiếp nhận container vào bãi.
-- Quản lý tồn bãi và vị trí container.
-- Booking và cấp container.
-- Gate Out — xuất container khỏi bãi.
-- Vệ sinh container.
-- Giám định container.
-- Sửa chữa và theo dõi tiến độ sửa chữa.
-- Quản lý phí, thanh toán, công nợ và đối soát.
-- Quản lý người dùng, phân quyền và nhật ký hoạt động.
-- Báo cáo vận hành.
+9 vai trò: Giám định, Văn phòng, Xe nâng, Vệ sinh, Báo giá, Sửa chữa, Kế toán, Quản lý, Admin. Mỗi vai trò chỉ thấy màn của mình.
 
-## 3. Nguyên tắc quan trọng
+## 2. Công nghệ
 
-- Chỉ quản lý container rỗng.
-- Mỗi container đang ở trong bãi có một vị trí hiện tại; lịch sử phải được lưu.
-- Phí Gate In phải được thanh toán trước khi hoàn tất Gate In.
-- Tạo giao dịch thanh toán không đồng nghĩa với thanh toán thành công.
-- Ngăn cấp trùng container khi nhiều nhân viên thao tác đồng thời.
-- Kiểm tra quyền tại backend/database, không chỉ tại giao diện.
-- Các quy tắc nghiệp vụ chưa xác nhận phải được làm rõ trước khi triển khai.
+- **Frontend:** React 19 + TypeScript + Vite + Tailwind CSS. Deploy: Vercel (tự build khi merge vào `main`).
+- **Backend:** Supabase (PostgreSQL + Auth + Storage + Edge Functions). Mọi thao tác ghi đi qua RPC có kiểm quyền; bảng bật RLS.
+- **Quy tắc nghiệp vụ:** `src/services/` (chạy được cả không có database — chế độ Demo).
 
-## 4. Công nghệ (DEC-010 → DEC-013)
-
-- Frontend: React 19 + TypeScript + Vite + Tailwind CSS.
-- Backend/database: Supabase và PostgreSQL (chưa triển khai — xem mục 6).
-- Xác thực: Supabase Auth (chưa triển khai).
-- Lưu trữ ảnh: Supabase Storage (chưa triển khai).
-- Quản lý mã nguồn: Git và GitHub.
-
-## 4A. Chạy và kiểm tra
+## 3. Chạy trên máy
 
 ```bash
-npm install        # chỉ khi chưa có node_modules
-npm run dev        # chạy ứng dụng (http://localhost:5173)
-npm test           # chạy test tự động (Vitest)
-npm run build      # kiểm tra TypeScript + build production
+npm install        # lần đầu
+npm run dev        # http://localhost:5173
+npm test           # test tự động (Vitest)
+npm run build      # kiểm tra TypeScript + build
 ```
 
-Không có file `.env` → ứng dụng chạy chế độ **Demo** (dữ liệu mẫu lưu trên trình duyệt, nhãn `DEMO` trên thanh tiêu đề, có thể đổi người dùng để thử quyền).
+- **Không có `.env.local`** → chế độ **Demo**: dữ liệu mẫu trong trình duyệt, chọn người dùng ở góc phải để thử quyền.
+- **Có `.env.local`** (địa chỉ + khóa anon Supabase) → chế độ **Database**: đăng nhập tài khoản thật.
 
-## 5. Tài liệu dự án
+## 4. Database (Supabase)
 
-Các tài liệu nghiệp vụ và kỹ thuật nằm trong thư mục `docs/`.
+- Migration: `supabase/migrations/` — tiến độ từng bước ở `supabase/README.md`.
+- **Chỉ người dùng** chạy lệnh lên cloud:
+  ```bash
+  npx supabase db push --dry-run   # xem migration sẽ chạy
+  npx supabase db push             # áp dụng lên matran-test
+  ```
+- Chạy thử local (cần Docker, **ổ C trống ≥ 15 GB**) — chỉ khi sửa database:
+  ```bash
+  npx supabase start -x edge-runtime,postgres-meta,studio
+  npx supabase test db             # pgTAP
+  npx supabase stop
+  ```
+- Sửa giao diện / logic app **không cần** Docker.
+
+## 5. Cấu trúc thư mục
+
+```
+src/
+  app/          App.tsx (menu, điều hướng), RemoteApp (chế độ database)
+  features/     màn hình theo nghiệp vụ (inspector, office, yard, vessel, reports, catalog…)
+  components/   thành phần dùng chung (shared.tsx, Qr.tsx, in ấn K80…)
+  services/     quy tắc nghiệp vụ + quyền (depotOperations, payments, vessel, stuffing…), api.ts (cửa ghi chung)
+  types/        kiểu dữ liệu
+supabase/       migrations, tests (pgTAP), functions (Edge)
+tests/          Vitest: nghiệp vụ (acceptance), giao diện (ui-smoke), tàu, hóa đơn…
+docs/           đặc tả, quyết định, chuẩn giao diện
+devs/           tiến độ (PROGRESS.md), lộ trình (ROADMAP.md)
+```
+
+## 6. Tài liệu
 
 | File | Nội dung |
 |---|---|
-| `MASTER_SPEC.md` | Đặc tả tổng thể |
-| `BUSINESS_WORKFLOWS.md` | Quy trình nghiệp vụ |
-| `ROLE_PERMISSION_MATRIX.md` | Vai trò và phân quyền dự kiến |
-| `DATABASE_CONTRACT.md` | Nguyên tắc thiết kế dữ liệu |
-| `API_RPC_CONTRACT.md` | Nguyên tắc API/RPC |
-| `ACCEPTANCE_TESTS.md` | Kiểm thử nghiệm thu |
-| `DECISIONS.md` | Quyết định đã ghi nhận |
-| `CHANGELOG.md` | Lịch sử thay đổi |
-| `OPEN_QUESTIONS.md` | Câu hỏi nghiệp vụ còn mở |
-| `PROJECT_STRUCTURE.md` | Cấu trúc thư mục dự kiến |
-| `DEVELOPMENT_RULES.md` | Quy tắc phát triển |
-| `ENVIRONMENT_SETUP.md` | Chuẩn bị môi trường |
+| `devs/PROGRESS.md` | **Tiến độ, bàn giao, việc đầu ca** — đọc đầu tiên |
+| `docs/DECISIONS.md` | Quyết định nghiệp vụ đã chốt (DEC-001 → DEC-166) — là luật |
+| `docs/OPEN_QUESTIONS.md` | Câu hỏi còn mở |
+| `docs/BUSINESS_WORKFLOWS.md` | Quy trình nghiệp vụ |
+| `docs/ROLE_PERMISSION_MATRIX.md` | Vai trò và quyền |
+| `docs/DATABASE_SCHEMA.md`, `docs/APP_DB_INTEGRATION.md` | Thiết kế database, cách app nối database |
+| `docs/DESIGN_SYSTEM.md`, `docs/UI_DATA_LIST_STANDARD.md` | Chuẩn giao diện, chuẩn màn danh sách |
+| `docs/VAN_HANH_VA_PHAT_TRIEN.md` | Tư vấn vận hành / phát triển |
+| `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md` | Hướng dẫn test nhiều người |
+| `docs/CHANGELOG.md` | Lịch sử thay đổi |
 
-## 6. Trạng thái hiện tại (2026-10-22)
+## 7. Trạng thái (2026-10-28)
 
-- Giao diện và tầng nghiệp vụ chạy ở **chế độ Demo** (`src/services/`, lưu localStorage). Quy tắc nghiệp vụ và quyền được kiểm tra trong tầng nghiệp vụ; **chưa có kiểm tra ở database**.
-- Database Supabase: chỉ có migration bản nháp, chưa áp dụng, không khớp nghiệp vụ hiện tại — sẽ viết lại (xem `docs/DATABASE_CONTRACT.md` mục 8–9).
-- Nhập tàu / Xuất tàu: để giai đoạn sau (DEC-038).
-- Kết quả kiểm thử: `docs/ACCEPTANCE_TESTS.md` mục 13 (42/42 test tự động pass). Tiến độ & logic đã chốt: `devs/PROGRESS.md`.
-- Không đưa vào vận hành chính thức cho tới khi hoàn thành database, phân quyền backend và nghiệm thu (DEC-008).
+- Giai đoạn 4 (database): **xong code**, đang chạy thử trên `matran-test` + Vercel. Chưa vận hành thật.
+- Việc chờ: thử in K80 / quét QR trên máy thật, import tồn vỏ ban đầu (Q-044), chốt gói Supabase Pro + project `matran-prod`.
+- Chi tiết: `devs/PROGRESS.md` mục I.5.
 
-## 6A. Làm việc với AI agent
+## 8. Làm việc với AI agent
 
-Mọi AI agent (Claude Code, Antigravity, ...) phải đọc `AGENTS.md` trước khi làm việc.
-
-**Người giao việc: bắt đầu từ `devs/README.md`** (tiến độ, lộ trình, mẫu giao việc). Tài liệu cho agent: `docs/README.md`.
-
-## 7. Quy trình bắt đầu công việc
-
-1. Đọc `docs/MASTER_SPEC.md`.
-2. Đọc `docs/DECISIONS.md` và `docs/OPEN_QUESTIONS.md`.
-3. Đọc tài liệu nghiệp vụ liên quan đến nhiệm vụ.
-4. Kiểm tra code và cấu trúc repository hiện có.
-5. Xác định thay đổi cần thực hiện trước khi viết code.
-6. Triển khai và kiểm thử từng bước.
-7. Cập nhật tài liệu khi có quyết định mới.
-
-## 8. Quy tắc bảo mật
-
-- Không commit mật khẩu, token hoặc khóa bí mật.
-- Không đưa dữ liệu khách hàng thật lên repository công khai.
-- Không đưa Supabase service role key vào frontend.
-- Không chạy thao tác phá hủy dữ liệu khi chưa kiểm tra ảnh hưởng và phương án khôi phục.
+Mọi agent (Claude Code, Antigravity…) đọc `AGENTS.md` trước khi làm. Luật chính: không tự suy đoán nghiệp vụ, không tạo dữ liệu giả, không đụng `.env` / khóa bí mật, không chạy lệnh ghi lên Supabase cloud, mỗi việc một nhánh, **hỏi trước khi push**.

@@ -251,19 +251,17 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 
 ### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-28 — đọc trước — mới nhất)
 
-**▶ BẮT ĐẦU CA MỚI — LÀM THEO THỨ TỰ (cập nhật 2026-10-29 cuối ngày — sau DEC-163):**
-1. **Merge code:** `main` đã có tới PR #37; nhánh `agent/claude/p4-database` còn **2 commit** (EEIR tàu có QR + lộ trình — DEC-163) → tạo PR → merge. **Không có migration** → không cần `db push`. Chờ Vercel **Ready**, mở lại trang bằng **Ctrl + F5**.
-2. **Cài máy in K80 1 lần** (Windows → Máy in → Printing Preferences): khổ **cuộn** (VD 80 × 3276mm / Receipt), **cắt sau mỗi trang**, Top margin / Feed = 0. Hộp thoại in Chrome / Edge → Cài đặt khác: **Lề = Mặc định / Không**, **Tỷ lệ = Mặc định**, **bỏ tích "Đầu trang và chân trang"**.
-3. **Thử IN THẬT — quan trọng nhất (chưa ai in thật trên máy K80):**
-   - **Trả chứng từ** 1 cont có phiếu thu → ra **1 PHIẾU TRẢ KHÁCH HÀNG** (đầu: Số / TÁC NGHIỆP + QR; khối PHIẾU THU; Khách hàng; xuất hóa đơn) — vừa đủ giấy, không khoảng trắng trên / dưới.
-   - **Hồ sơ container** → **PHIẾU EEIR HẠ VỎ / CẤP VỎ** (phiếu tác nghiệp, không đếm in) • **PHIẾU TRẢ KHÁCH HÀNG** (in lần 2 phải hỏi + nhãn **BẢN IN LẠI — LẦN 2** dưới khối PHIẾU THU) • **PHIẾU EEIR NHẬP TÀU / XUẤT TÀU** (có QR + LỘ TRÌNH) • **HỒ SƠ CONTAINER** → IN (máy A4) / **XUẤT PDF** (chọn "Lưu dưới dạng PDF").
-   - **Văn phòng → Phiếu thu → PHIẾU THU** → In / In lại (phiếu thu lẻ, đếm in).
-   - Khung có bị **mất mép trái / phải** không (khung 76mm — mất thì báo, hạ `--k80-width` về 72mm).
-4. **Thử QR (60px):** quét phiếu EEIR Hạ vỏ ở Xe nâng / Vệ sinh / Trả chứng từ; quét phiếu EEIR Nhập tàu ở Vệ sinh / Xe nâng / màn Nhập tàu; quét QR link xuất hóa đơn bằng camera thường → mở `#/hoa-don`. Chậm → báo tăng 70px.
-5. **Thử hiện trường:** cont tàu ở Vệ sinh / Xe nâng có **số xe**; lưu (DEC-160) không giật, bấm 2 lần không trùng.
-6. **Góp ý người test** (Báo cáo → Góp ý) + **Supabase `matran-test` → Reports / Logs** (lỗi lặp, dung lượng Free 500 MB / 1 GB).
-7. Agent đầu phiên: `git status` sạch → `git pull` → `npm test` (**173 pass**, 3 bỏ qua) + `npm run build` → đọc mục này + **LƯU Ý IN ẤN** + **LƯU Ý CHO AGENT** dưới đây.
-8. Việc lớn tiếp theo: trả lời **Q-044** import tồn vỏ (`docs/IMPORT_TON_VO_BAN_DAU.md`) + chốt gói **Supabase Pro** / project `matran-prod` (`docs/VAN_HANH_VA_PHAT_TRIEN.md`).
+**▶ BẮT ĐẦU CA MỚI — LÀM THEO THỨ TỰ (cập nhật 2026-10-28 cuối ngày — sau DEC-166):**
+1. **Merge code:** nhánh `agent/claude/p4-database` đã push tới `c5de110` (DEC-164 → DEC-166) → tạo PR trên GitHub → merge. Chờ Vercel **Ready**, mở lại trang bằng **Ctrl + F5**.
+2. **`db push` — BẮT BUỘC lần này** (migration mới `20261104000001_stuffing_catalog.sql`): `git pull` → `npx supabase db push --dry-run` (phải thấy đúng file này, có thể kèm `20261103000001` nếu chưa push) → `npx supabase db push`. Làm **trước / ngay sau** khi Vercel chạy bản mới — chưa push thì Giám định Hạ vỏ lưu bị lỗi.
+3. **Sau db push:** Admin → Danh mục → **Phân loại** (mỗi hãng đang có phải có sẵn M / K / E) → Danh mục → **Hãng tàu** tích **Ưu tiên** cho hãng hay dùng → Giám định Hạ vỏ thử 1 hồ sơ (ô hãng tàu sổ xuống, chọn sẵn hãng ưu tiên).
+4. **Thử Nhập / Xuất tàu:** Văn phòng thấy bảng **Danh sách nhập tàu / xuất tàu** (8 cột); Báo cáo tàu có nút **CHI TIẾT / TÊN TÀU**, Excel theo chế độ đang xem.
+5. **Cài máy in K80 1 lần** (Windows → Máy in → Printing Preferences): khổ **cuộn** (VD 80 × 3276mm / Receipt), **cắt sau mỗi trang**, Top margin / Feed = 0. Hộp thoại in Chrome / Edge → Cài đặt khác: **Lề = Mặc định / Không**, **Tỷ lệ = Mặc định**, **bỏ tích "Đầu trang và chân trang"**.
+6. **Thử IN THẬT (chưa ai in thật trên máy K80):** Trả chứng từ → 1 PHIẾU TRẢ KHÁCH HÀNG; Hồ sơ container → PHIẾU EEIR HẠ VỎ / CẤP VỎ / NHẬP TÀU / XUẤT TÀU, PHIẾU TRẢ KHÁCH HÀNG (in lại có nhãn BẢN IN LẠI), HỒ SƠ CONTAINER (IN / XUẤT PDF); Văn phòng → Phiếu thu → PHIẾU THU. Mất mép → hạ `--k80-width` về 72mm.
+7. **Thử QR (60px)** ở Xe nâng / Vệ sinh / Trả chứng từ / màn tàu; QR link hóa đơn mở `#/hoa-don`.
+8. **Góp ý người test** (Báo cáo → Góp ý) + **Supabase `matran-test` → Reports / Logs**.
+9. Agent đầu phiên: `git status` sạch → `git pull` → `npm test` (**180 pass**, 3 bỏ qua) + `npm run build` → đọc mục này + **LƯU Ý IN ẤN** + **LƯU Ý CHO AGENT**. **Không bật Docker** trừ khi sửa database.
+10. Việc lớn tiếp theo: **Q-044** import tồn vỏ (`docs/IMPORT_TON_VO_BAN_DAU.md`) + chốt **Supabase Pro** / `matran-prod` (`docs/VAN_HANH_VA_PHAT_TRIEN.md`).
 
 **CHỜ BẠN QUYẾT (chưa làm):**
 - Phiếu **EEIR XUẤT TÀU** hiện chỉ in được **sau khi** cont đã OUT → lộ trình chỉ để ghi nhận. Muốn in ngay khi lập danh sách để lái xe cầm đi quét? (báo agent đổi thời điểm in).
@@ -286,7 +284,11 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 **LƯU Ý GIAO DIỆN (DEC-164):** bảng danh sách mới → `<table className="data-table …">`; dòng tự cao 40px như Tồn vỏ (kể cả có nút). Đo chiều cao thật không cần mở app: render màn bằng vitest → HTML + CSS build → Edge `--headless --dump-dom` với script đo `getBoundingClientRect`.
 
 **DEC-165 / DEC-166 (2026-10-28):** Văn phòng danh sách tàu dạng bảng + báo cáo tàu CHI TIẾT / TÊN TÀU; Danh mục **Phân loại đóng hàng** theo hãng + hãng **Ưu tiên**. **Có migration mới `20261104000001`** → người dùng phải `db push` (pgTAP 201/201 local). Supabase local: nếu image hỏng ("exec format error") chạy `npx supabase start -x edge-runtime,postgres-meta,studio`.
-- **Không tự push GitHub — hỏi người dùng trước** (người dùng dặn 2026-10-28).
+- **Không tự push GitHub — hỏi người dùng trước** (người dùng dặn 2026-10-28; chỉ push khi người dùng bảo).
+
+**LƯU Ý MÁY / DOCKER (2026-10-28):** ổ C chỉ 112 GB. **Chỉ bật Docker + Supabase local khi sửa `supabase/migrations`** — cần ổ trống ≥ 15 GB (image ~10 GB). Image hỏng ("exec format error") → `npx supabase start -x edge-runtime,postgres-meta,studio`. Xong: hỏi người dùng → tắt Docker → `wsl --shutdown` → xóa `%LOCALAPPDATA%/Docker/wsl/disk/docker_data.vhdx` (file không tự co). Sửa giao diện / logic app chỉ cần `npm test` + `npm run build`.
+
+**LƯU Ý NGHIỆP VỤ MỚI (DEC-165, DEC-166):** phân loại đóng hàng **không còn cố định M / K / E** — luôn lấy `stuffingOptions(state, hãng)` / kiểm bằng `resolveStuffing` (`src/services/stuffing.ts`); hãng không có mã → không hỏi, lưu trống. Form Giám định `InspectionFields` bắt buộc truyền `stuffingOptions`. Giám định Hạ vỏ có `shippingLineCode` (mặc định `priorityShippingLine`). Menu Danh mục `DM_PHAN_LOAI` tên "Phân loại".
 
 **LƯU Ý CHO AGENT (cách làm việc với người dùng):**
 - Người dùng gửi yêu cầu ngắn, thường **thêm / đổi ý giữa chừng** (VD "1 dải" → "cắt mỗi phiếu"; đếm in riêng → chỉ dùng bộ đếm phiếu thu) → làm từng bước nhỏ, commit sau mỗi bước để hoàn tác dễ (`git checkout -- <file>` khi chưa commit).
@@ -531,6 +533,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-28 — Claude Code: bỏ nút Quét thừa; lưu ngầm không chặn màn + không tải lại danh mục sau mỗi lần lưu (DEC-160). 167 test • build PASS. Chưa đo trên cloud.
 - 2026-10-28 — Claude Code: DEC-161 Phiếu EEIR (K80) + Phiếu thu (K80), in hồ sơ A4. 169 test • build PASS. Chưa thử in thật.
 - 2026-10-28 — Claude Code: DEC-161 bổ sung — EEIR tàu K80, in giống bản xem, Xem → In, nút IN HOA, `printNow`. 169 test • build PASS. Chưa thử in thật.
+- 2026-10-28 — Claude Code: DEC-165 (danh sách tàu dạng bảng, báo cáo tàu CHI TIẾT / TÊN TÀU) + DEC-166 (danh mục Phân loại đóng hàng theo hãng, hãng ưu tiên, migration `20261104000001`, pgTAP 201/201 local); README viết lại; dọn Docker (ổ C 25 GB trống). 180 test • build PASS.
 - 2026-10-29 — Claude Code: DEC-164 chiều cao dòng bảng đồng bộ = Tồn vỏ (40px), class data-table 21 bảng + test chặn. 174 test • build PASS.
 - 2026-10-29 — Claude Code: bàn giao cuối ngày — checklist ca mới, việc chờ quyết, LƯU Ý IN ẤN (DEC-161 → 163), LƯU Ý CHO AGENT.
 - 2026-10-29 — Claude Code: DEC-163 EEIR tàu có QR + lộ trình; hồ sơ container xem → IN / XUẤT PDF; phiếu trả khách bỏ tiêu đề, khối PHIẾU THU, "Khách hàng". 173 test • build PASS. Chưa in thật.
