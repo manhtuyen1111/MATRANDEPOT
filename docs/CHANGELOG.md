@@ -21,6 +21,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 
 ### Changed
 - DEC-161: bỏ EEIR A4 Hạ vỏ / Cấp vỏ — phiếu K80 thành **Phiếu EEIR (K80)** ("… — PHIẾU EEIR TÁC NGHIỆP"); **Phiếu thu (K80)**; Trả chứng từ in liền EEIR (K80) + Phiếu thu (K80), máy in tự cắt giữa; hồ sơ có **In hồ sơ container (A4)**. EEIR Nhập / Xuất tàu giữ nửa A4.
+- Sửa in K80 ra cả tờ dài cố định: vùng in "nổi" (position:absolute) làm Chrome bỏ qua khổ giấy riêng → khi in phiếu K80 bỏ hẳn phần còn lại của trang, phiếu nằm trong luồng thường; cửa sổ phiếu tác nghiệp in qua PrintPortal. Đã kiểm bằng Edge in PDF: mỗi phiếu 1 trang 80mm × đúng chiều dài phiếu.
 - Phiếu K80: khung 95% bề rộng giấy (76mm), lề trong gọn; cắt giấy vừa đủ phiếu (+1mm); 2 phiếu in liền không khoảng trống; sửa lỗi in từ cửa sổ phiếu tác nghiệp không đặt khổ K80.
 - Phiếu EEIR (K80): đầu phiếu có đủ thông tin depot (tên, địa chỉ, ĐT / email, MST) cùng mẫu Phiếu thu (K80); dòng Số + TÁC NGHIỆP bên trái, mã QR tác nghiệp bên phải (logic QR không đổi).
 - Màn đăng nhập: khẩu hiệu mới (Nền tảng quản lý vận hành depot container rỗng); nhãn môi trường rõ ràng — bản Vercel test (VITE_APP_ENV=test) ghi "Môi trường kiểm thử (UAT) — dữ liệu test" (trước nhầm thành local), nhãn vàng khi không phải bản chính thức; dòng "Made by MT".
