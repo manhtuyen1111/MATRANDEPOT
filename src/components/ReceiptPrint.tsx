@@ -150,7 +150,7 @@ export const ReceiptPrintSheet: React.FC<{ state: DepotState; receipt: PaymentRe
               <p className="font-bold uppercase">Yêu cầu xuất hóa đơn</p>
               <p>Truy cập: <span className="font-mono font-bold break-all">{invoicePortalUrl()}</span></p>
             </div>
-            <div className="shrink-0 text-center">
+            <div className="shrink-0 border-2 border-slate-900 bg-white p-0.5 text-center">
               <QrImage value={invoicePortalUrl()} size={60} />
               <p className="text-[8px] leading-tight">Quét để mở</p>
             </div>

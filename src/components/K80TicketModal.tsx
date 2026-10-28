@@ -52,7 +52,7 @@ export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotSt
             {state?.companyProfile.phone && <p className="mt-0.5 text-[10px]">ĐT: {state.companyProfile.phone}</p>}
           </div>
           <div className="shrink-0 border-2 border-slate-900 bg-white p-0.5 text-center">
-            <QrImage value={ticket.qrCode} size={84} />
+            <QrImage value={ticket.qrCode} size={60} />
             <span className="block text-[8px] font-black tracking-tighter">{ticket.qrCode}</span>
           </div>
         </div>
