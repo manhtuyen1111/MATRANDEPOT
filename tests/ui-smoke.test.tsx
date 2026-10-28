@@ -637,6 +637,7 @@ describe('DEC-111: xuất hóa đơn từ phiếu thu', () => {
     const r = demo.paymentReceipts.find((x) => x.invoiceSecret)!;
     const html = renderToString(<ReceiptPrintSheet state={demo} receipt={r} printNo={1} />);
     expect(html).toContain('data-testid="invoice-secret"');
+    expect(html).toContain('Quét để mở'); // QR nhỏ link trang xuất hóa đơn
     expect(html).toContain(r.invoiceSecret!);
     expect(html).toContain('#/hoa-don');
   });
