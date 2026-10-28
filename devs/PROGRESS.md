@@ -251,6 +251,17 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 
 ### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-28 — đọc trước — mới nhất)
 
+**▶ BẮT ĐẦU CA MỚI — LÀM THEO THỨ TỰ (cập nhật 2026-10-28 cuối ngày):**
+1. **Merge code:** GitHub → PR `agent/claude/p4-database` → `main` (gồm: QR thật + màn quét kiểu ngân hàng, bỏ nút Quét, lưu ngầm DEC-160, tài liệu). **Không có migration mới** → không cần `db push`. Chờ Vercel báo Ready.
+2. **Thử nhanh trên điện thoại (link Vercel HTTPS):** đăng nhập → in / mở 1 phiếu K80 → Xe nâng / Vệ sinh bấm camera: khung có dễ ngắm, bắt mã nhanh không; thử **Chọn ảnh**, **Đèn**.
+3. **Thử lưu (DEC-160):** làm 1 lượt Hạ vỏ đủ bước → màn có đổi ngay không, có "nhảy" không; bấm 2 lần liên tiếp có tạo trùng không; lỗi database có báo rõ không.
+4. **Xem góp ý của người test:** Báo cáo → Góp ý (Admin). Chép lỗi kèm màn + thao tác gửi agent.
+5. **Supabase `matran-test` → Reports / Logs:** có lỗi đỏ lặp lại không; dung lượng database / ảnh (gói Free: 500 MB / 1 GB).
+6. Agent đầu phiên: `git status` sạch → `git pull` → `npm test` + `npm run build` → đọc mục này.
+7. Việc lớn tiếp theo: trả lời bộ câu hỏi import tồn vỏ **Q-044** (`docs/IMPORT_TON_VO_BAN_DAU.md`) + quyết định gói Supabase Pro / project thật (`docs/VAN_HANH_VA_PHAT_TRIEN.md`).
+
+**Rà soát + tư vấn vận hành / phát triển:** `docs/VAN_HANH_VA_PHAT_TRIEN.md` — bảo mật ổn; rủi ro chính: quy tắc viết 2 nơi (TS + SQL) phải sửa cùng lúc; tải 15.000 lượt / tháng nhẹ với database nhưng **ảnh cửa ~6 GB → bắt buộc Supabase Pro** khi chạy thật; database thật phải là project riêng (`matran-prod`); migration sau khi chạy thật chỉ thêm file mới.
+
 **HIỆN TRẠNG (2026-10-28):**
 - **Đang TEST nhiều người trên database thật** (không phải Demo):
   - Database: Supabase cloud **`matran-test`** (Singapore, ref `rtbpmnfwkzndujjzxuxf`) — đủ migration tới `20261103000001`, 3 Edge Function, danh mục test, Admin `admin` / `123456`.
@@ -270,7 +281,8 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 7. **Lưu mượt hơn (DEC-160):** bấm Lưu → màn hình đổi **ngay** theo kết quả kiểm trên máy, database ghi ngầm phía sau; **bỏ lớp chặn cả màn** lúc lưu (chỉ còn viên "Đang lưu…" nhỏ khi > 300 ms); bấm tiếp trong lúc lưu → nối hàng chờ, chạy luôn. Sau khi lưu chỉ tải phần thay đổi, **không tải lại danh mục** (trừ khi vừa sửa Danh mục / nhân viên); bớt 1 lượt chờ mạng. Database từ chối → dải đỏ báo lỗi + tự tải lại dữ liệu đúng.
    **Lưu ý theo dõi khi test:** (a) thao tác lưu xong màn có "nhảy" không; (b) bấm 2 lần liên tiếp có tạo trùng không; (c) lỗi từ database có báo rõ không. Ghi lại màn + thao tác nếu gặp. Hướng làm tiếp nếu vẫn chậm: gộp nhiều RPC trong 1 lần bấm thành 1 lời gọi; dùng Supabase Realtime thay tự làm mới 30 giây.
 8. **Màn quét QR kiểu ngân hàng:** khung 4 góc + đường quét chạy (tắt khi máy bật "giảm chuyển động"), khung nằm giữa vùng camera (trùng vùng máy đọc mã) lệch lên trên → dễ lia máy; chữ hướng dẫn dưới khung + 3 dòng hướng dẫn tác nghiệp; nút lớn **Đèn** / **Chọn ảnh** (đọc mã QR từ ảnh có sẵn trong máy). Cần thử trên điện thoại thật.
-- Mục 5–8 chờ merge vào `main` (không có migration).
+9. **In ấn mới (DEC-161):** bỏ EEIR A4 Hạ vỏ / Cấp vỏ → phiếu K80 là **Phiếu EEIR (K80)** ("MATRAN DEPOT — PHIẾU EEIR TÁC NGHIỆP"); **Phiếu thu (K80)**; Trả chứng từ in liền 2 phiếu, máy in nhiệt cắt giữa (cần đặt driver **cắt sau mỗi trang**); hồ sơ có nút **In hồ sơ container (A4)**. EEIR Nhập / Xuất tàu giữ nửa A4 — chờ bạn quyết (Q-045). **Cần thử in thật** trên máy in K80 + máy in A4.
+- Mục 9 (2026-10-28) chờ merge vào `main` (không có migration).
 
 **BẠN — VIỆC TIẾP THEO:**
 1. **Test tiếp** theo Bước 7 `docs/HUONG_DAN_TEST_NHIEU_NGUOI.md`. Thử lại 4 điểm vừa sửa; xem tốc độ mở app (ghi số giây + wifi / 4G + máy tính / điện thoại nếu vẫn chậm).
@@ -481,3 +493,5 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-28 — Claude Code: giao diện chờ nhẹ nhàng (bỏ thanh chạy, chỉ hiện khi > 300 ms) + tải sẵn màn hình chạy ngầm. 165 test • build PASS.
 - 2026-10-28 — Claude Code: mã QR tác nghiệp thật + quét camera (qrcode, qr-scanner). 167 test • build PASS. Chưa thử camera trên điện thoại thật.
 - 2026-10-28 — Claude Code: bỏ nút Quét thừa; lưu ngầm không chặn màn + không tải lại danh mục sau mỗi lần lưu (DEC-160). 167 test • build PASS. Chưa đo trên cloud.
+- 2026-10-28 — Claude Code: DEC-161 Phiếu EEIR (K80) + Phiếu thu (K80), in hồ sơ A4. 169 test • build PASS. Chưa thử in thật.
+- 2026-10-28 — Claude Code: màn quét QR kiểu ngân hàng (Đèn / Chọn ảnh); rà soát dự án + tư vấn vận hành `docs/VAN_HANH_VA_PHAT_TRIEN.md`; checklist bắt đầu ca mới ở đầu I.5.

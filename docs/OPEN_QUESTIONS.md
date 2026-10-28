@@ -104,3 +104,5 @@ Cập nhật lần cuối: 2026-10-22.
   3. Mã hồ sơ cho cont tồn cũ: cấp mới `HV-` theo ngày import hay giữ mã cũ? Cont tồn cũ có tính là "đã thanh toán" không?
   4. Cont DAMAGE tồn cũ: có tạo việc Báo giá / Sửa chữa không?
   5. Ai chạy import (Admin, 1 lần) và có cần xem trước + báo lỗi từng dòng trước khi ghi không?
+
+- **Q-045 (2026-10-28) — EEIR Nhập tàu / Xuất tàu có đổi sang khổ K80 không?** DEC-161 đổi Hạ vỏ / Cấp vỏ sang Phiếu EEIR (K80). Nhập / Xuất tàu không có phiếu K80 (DEC-069) nên EEIR tàu vẫn in nửa A4 (DEC-081). Cần chốt: giữ nửa A4, hay làm mẫu EEIR tàu khổ K80 (giữ thông tin tàu + tình trạng vỏ Giám định)?

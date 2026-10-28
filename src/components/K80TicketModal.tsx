@@ -20,11 +20,9 @@ const Row: React.FC<{ label: string; value?: React.ReactNode; big?: boolean }> =
   </div>
 );
 
-// PHIẾU TÁC NGHIỆP NỘI BỘ K80 (DEC-023, DEC-052): thông tin chung ở đầu → LỘ TRÌNH các bước → mã QR
-export const K80TicketModal: React.FC<Props> = ({ ticket, state, onClose, onSimulateScanQr }) => {
-  const [copied, setCopied] = React.useState(false);
-  if (!ticket) return null;
-
+// PHIẾU EEIR (K80) — MẪU DUY NHẤT (DEC-023, DEC-052, DEC-161): thông tin chung → LỘ TRÌNH → mã QR.
+// Vừa là phiếu tác nghiệp lái xe cầm đi các bộ phận, vừa là EEIR giao khách khi Trả chứng từ (thay EEIR A4 cũ).
+export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotState; printable?: boolean }> = ({ ticket, state, printable }) => {
   const isOut = ticket.operationMode === 'CAP_VO';
   type Step = { key: string; dept: string; action: string; done: boolean; doneAt?: string };
   const steps: Step[] = state
@@ -38,6 +36,73 @@ export const K80TicketModal: React.FC<Props> = ({ ticket, state, onClose, onSimu
         { key: 'OFFICE_RETURN', dept: 'VĂN PHÒNG', action: 'Quét mã • nhận EEIR / phiếu thu', done: false },
       ];
   const nextStep = steps.find((s) => !s.done);
+  return (
+    // KHỔ GIẤY IN NHIỆT K80 (80mm)
+    <div className={`${printable ? 'print-area ' : ''}k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white p-3 font-mono text-[11px] leading-snug text-ink`}>
+      {/* 1. THÔNG TIN CHUNG */}
+      <div className="border-b-2 border-slate-800 pb-2 text-center">
+        <p className="text-xs font-black tracking-wider">{(state?.companyProfile.shortName || "MATRAN DEPOT").toUpperCase()} — PHIẾU EEIR TÁC NGHIỆP</p>
+        {state?.companyProfile.phone && <p className="text-[10px]">ĐT: {state.companyProfile.phone}</p>}
+        <p className="mt-1 inline-block bg-navy-900 px-2 py-0.5 text-sm font-black text-white">{isOut ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
+        <p className="mt-1 text-[10px]">Mã hồ sơ: <strong>{ticket.outDossierCode || ticket.masterDossierCode}</strong></p>
+      </div>
+      <div className="py-2">
+        <Row label="SỐ CONT" value={ticket.containerNo} big />
+        <Row label="SIZE / TYPE" value={`${ticket.size} / ${ticket.type}${ticket.manufactureYear ? ` • AGE ${ticket.manufactureYear}` : ''}`} />
+        <Row label="SỐ XE" value={ticket.truckNo} big />
+        <Row label="SĐT LÁI XE" value={ticket.driverPhone} />
+        <Row label="TRẠNG THÁI" value={ticket.stuffingClass ? `${ticket.conditionClass} • Đóng hàng ${ticket.stuffingClass}` : ticket.conditionClass} />
+        {ticket.damageRemarks && ticket.damageRemarks.length > 0 && <Row label="HƯ HỎNG" value={ticket.damageRemarks.join(', ')} />}
+        <Row label="VỆ SINH" value={ticket.cleaningItems.join(' + ')} />
+        <Row label="THANH TOÁN" value={`${ticket.isPaid ? '✓' : '✗'} ${ticket.paymentLabel}`} />
+      </div>
+
+      {/* 2. LỘ TRÌNH — đến bộ phận nào thì quét mã, tích ☐ bằng bút */}
+      <div className="border-y-2 border-slate-800 py-2">
+        <p className="mb-1.5 text-center text-xs font-black tracking-wider">LỘ TRÌNH — QUÉT MÃ TẠI TỪNG BỘ PHẬN</p>
+        <ol className="space-y-1.5">
+          {steps.map((s, i) => (
+            <li
+              key={s.key}
+              className={`flex items-start gap-2 ${state && nextStep?.key === s.key ? 'rounded bg-amber-100 px-1' : ''}`}
+            >
+              <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center border-2 border-slate-900 text-xs font-black">
+                {state && s.done ? '✓' : ''}
+              </span>
+              <span className="flex-1">
+                <span className="font-black">{i + 1}. {s.dept}</span>
+                <span className="block text-[10px]">{s.action}</span>
+              </span>
+              {state && s.done && s.doneAt && (
+                <span className="shrink-0 text-[9px] text-ink-muted">
+                  {formatDateTime(s.doneAt).slice(11)}
+                </span>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {/* 3. MÃ QR TÁC NGHIỆP */}
+      <div className="pt-2 text-center">
+        <div className="mx-auto flex w-32 flex-col items-center justify-center border-2 border-slate-900 bg-white p-1.5">
+          <QrImage value={ticket.qrCode} size={112} />
+          <span className="mt-1 text-[9px] font-black tracking-tighter">{ticket.qrCode}</span>
+        </div>
+        <p className="mt-1 text-[9px] text-ink-muted">
+          In lúc {formatDateTime(ticket.issuedAt)} • {ticket.issuedBy}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// Cửa sổ xem / in PHIẾU EEIR (K80)
+export const K80TicketModal: React.FC<Props> = ({ ticket, state, onClose, onSimulateScanQr }) => {
+  const [copied, setCopied] = React.useState(false);
+  if (!ticket) return null;
+
+  const nextStep = state ? getDriverRoute(state, ticket).find((s) => !s.done) : undefined;
   const closed = state ? isTicketClosed(state, ticket) : false;
 
   const handleCopy = () => {
@@ -47,69 +112,13 @@ export const K80TicketModal: React.FC<Props> = ({ ticket, state, onClose, onSimu
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-navy-900/60 p-4" role="dialog" aria-modal="true" aria-label="Phiếu K80">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-navy-900/60 p-4" role="dialog" aria-modal="true" aria-label="Phiếu EEIR (K80)">
       <div className="relative my-auto w-full max-w-[350px] rounded-2xl border border-line-strong bg-white p-4 shadow-2xl">
         <button type="button" onClick={onClose} aria-label="Đóng" className="absolute right-3 top-3 rounded-lg p-1.5 text-ink-muted hover:bg-navy-50 hover:text-ink">
           <X className="h-5 w-5" />
         </button>
 
-        {/* KHỔ GIẤY IN NHIỆT K80 (80mm) */}
-        <div className="print-area mx-auto border-2 border-dashed border-slate-800 bg-white p-3 font-mono text-[11px] leading-snug text-ink">
-          {/* 1. THÔNG TIN CHUNG */}
-          <div className="border-b-2 border-slate-800 pb-2 text-center">
-            <p className="text-xs font-black tracking-wider">{(state?.companyProfile.shortName || "MATRAN DEPOT").toUpperCase()} — PHIẾU TÁC NGHIỆP</p>
-            {state?.companyProfile.phone && <p className="text-[10px]">ĐT: {state.companyProfile.phone}</p>}
-            <p className="mt-1 inline-block bg-navy-900 px-2 py-0.5 text-sm font-black text-white">{isOut ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
-            <p className="mt-1 text-[10px]">Mã hồ sơ: <strong>{ticket.outDossierCode || ticket.masterDossierCode}</strong></p>
-          </div>
-          <div className="py-2">
-            <Row label="SỐ CONT" value={ticket.containerNo} big />
-            <Row label="SIZE / TYPE" value={`${ticket.size} / ${ticket.type}${ticket.manufactureYear ? ` • AGE ${ticket.manufactureYear}` : ''}`} />
-            <Row label="SỐ XE" value={ticket.truckNo} big />
-            <Row label="SĐT LÁI XE" value={ticket.driverPhone} />
-            <Row label="TRẠNG THÁI" value={ticket.stuffingClass ? `${ticket.conditionClass} • Đóng hàng ${ticket.stuffingClass}` : ticket.conditionClass} />
-            {ticket.damageRemarks && ticket.damageRemarks.length > 0 && <Row label="HƯ HỎNG" value={ticket.damageRemarks.join(', ')} />}
-            <Row label="VỆ SINH" value={ticket.cleaningItems.join(' + ')} />
-            <Row label="THANH TOÁN" value={`${ticket.isPaid ? '✓' : '✗'} ${ticket.paymentLabel}`} />
-          </div>
-
-          {/* 2. LỘ TRÌNH — đến bộ phận nào thì quét mã, tích ☐ bằng bút */}
-          <div className="border-y-2 border-slate-800 py-2">
-            <p className="mb-1.5 text-center text-xs font-black tracking-wider">LỘ TRÌNH — QUÉT MÃ TẠI TỪNG BỘ PHẬN</p>
-            <ol className="space-y-1.5">
-              {steps.map((s, i) => (
-                <li
-                  key={s.key}
-                  className={`flex items-start gap-2 ${state && nextStep?.key === s.key ? 'rounded bg-amber-100 px-1' : ''}`}
-                >
-                  <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center border-2 border-slate-900 text-xs font-black">
-                    {state && s.done ? '✓' : ''}
-                  </span>
-                  <span className="flex-1">
-                    <span className="font-black">{i + 1}. {s.dept}</span>
-                    <span className="block text-[10px]">{s.action}</span>
-                  </span>
-                  {state && s.done && s.doneAt && (
-                    <span className="shrink-0 text-[9px] text-ink-muted">
-                      {formatDateTime(s.doneAt).slice(11)}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          {/* 3. MÃ QR TÁC NGHIỆP */}
-          <div className="pt-2 text-center">
-            <div className="mx-auto flex w-32 flex-col items-center justify-center border-2 border-slate-900 bg-white p-1.5">
-              <QrImage value={ticket.qrCode} size={112} />
-              <span className="mt-1 text-[9px] font-black tracking-tighter">{ticket.qrCode}</span>
-            </div>
-            <p className="mt-1 text-[9px] text-ink-muted">
-              In lúc {formatDateTime(ticket.issuedAt)} • {ticket.issuedBy}
-            </p>
-          </div>
-        </div>
+        <EeirK80Sheet ticket={ticket} state={state} printable />
 
         {closed && (
           <p className="mt-3 rounded-md bg-navy-50 px-3 py-1.5 text-center text-xs font-semibold text-ink">
@@ -126,7 +135,7 @@ export const K80TicketModal: React.FC<Props> = ({ ticket, state, onClose, onSimu
           <div className="grid grid-cols-2 gap-2">
             <button type="button" disabled={closed} onClick={() => window.print()} className="flex items-center justify-center gap-1.5 rounded-xl bg-navy-900 px-3 py-2.5 text-xs font-bold text-white hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-40">
               <Printer className="h-4 w-4" />
-              In phiếu K80
+              In phiếu EEIR (K80)
             </button>
             <button type="button" onClick={handleCopy} className="flex items-center justify-center gap-1.5 rounded-xl border border-line-strong bg-canvas px-3 py-2.5 text-xs font-bold text-ink hover:bg-navy-50">
               {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}

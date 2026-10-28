@@ -1466,6 +1466,16 @@ Quy ước trạng thái:
 - Sau khi lưu chỉ tải phần thay đổi, dùng lại danh mục đã tải; RPC `catalog_*` / `admin_*` → tải lại danh mục (`takeCatalogTouched`). Tự làm mới 30 giây vẫn tải cả danh mục.
 - Database từ chối → dải đỏ báo lỗi + tải lại dữ liệu thật (như cũ).
 
+### DEC-161 — Phiếu EEIR (K80) + Phiếu thu (K80); In hồ sơ container A4
+
+- Trạng thái: CONFIRMED (2026-10-28, người dùng). **Sửa DEC-072, DEC-076** (EEIR / phiếu thu nửa A4) cho Hạ vỏ / Cấp vỏ.
+- **Bỏ EEIR A4** Hạ vỏ / Cấp vỏ. Phiếu tác nghiệp K80 **là** phiếu EEIR giao khách, tên trên phiếu: **"<tên ngắn công ty> — PHIẾU EEIR TÁC NGHIỆP"** (mặc định MATRAN DEPOT). Giữ nguyên toàn bộ thông tin, lộ trình, QR (DEC-052, DEC-057).
+- **Phiếu thu đổi sang khổ K80**, giữ đủ thông tin (công ty, Số, tác nghiệp, bảng phí, mã xuất hóa đơn, chữ ký, BẢN IN LẠI).
+- **Trả chứng từ** tự in liền 1 lệnh: Phiếu EEIR (K80) + Phiếu thu (K80); mỗi phiếu 1 trang → máy in nhiệt **tự cắt giữa các phiếu** (driver máy in đặt cắt sau mỗi trang).
+- Tên gọi thống nhất trên giao diện: **Phiếu EEIR (K80)**, **Phiếu thu (K80)**. Hạ vỏ và Cấp vỏ vẫn mỗi tác nghiệp 1 bộ phiếu riêng.
+- Hồ sơ container có nút **In hồ sơ container (A4)**: in toàn bộ hồ sơ tới thời điểm in.
+- EEIR **Nhập tàu / Xuất tàu** (không có K80 — DEC-069) giữ mẫu nửa A4 (DEC-081) cho tới khi người dùng quyết định khác (Q-045).
+
 ### DEC-039 — Giả lập ngân hàng ở chế độ Demo
 
 - Trạng thái: CONFIRMED (2026-10-22)
@@ -1555,6 +1565,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-160 đã xác nhận (cập nhật 2026-10-28).
+- Quyết định nghiệp vụ: DEC-001 → DEC-161 đã xác nhận (cập nhật 2026-10-28).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
