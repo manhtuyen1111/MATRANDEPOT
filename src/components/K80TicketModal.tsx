@@ -52,12 +52,12 @@ export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotSt
             {company.taxCode && <p className="text-[10px]">MST: {company.taxCode}</p>}
           </div>
         )}
-        <p className="mt-1.5 text-center text-xs font-black tracking-wider">{(company?.shortName || "MATRAN DEPOT").toUpperCase()} — PHIẾU EEIR TÁC NGHIỆP</p>
-        {/* Số + tác nghiệp bên trái — MÃ QR TÁC NGHIỆP bên phải (mã QR-<mã hồ sơ> như cũ, DEC-057) */}
-        <div className="mt-1.5 flex items-center justify-between gap-2">
-          <div className="min-w-0">
+        {/* Bên trái: tên phiếu → Số → TÁC NGHIỆP; bên phải: MÃ QR TÁC NGHIỆP vừa khít 3 dòng (QR-<mã hồ sơ> như cũ, DEC-057) */}
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="min-w-0 space-y-1">
+            <p className="text-sm font-black tracking-wide">PHIẾU EEIR TÁC NGHIỆP</p>
             <p className="text-xs font-bold">Số: {ticket.outDossierCode || ticket.masterDossierCode}</p>
-            <p className="mt-1 inline-block bg-navy-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {isOut ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
+            <p className="inline-block bg-navy-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {isOut ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
           </div>
           <div className="shrink-0 border-2 border-slate-900 bg-white p-0.5 text-center">
             <QrImage value={ticket.qrCode} size={60} />

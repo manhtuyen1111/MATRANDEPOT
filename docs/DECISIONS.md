@@ -1469,7 +1469,7 @@ Quy ước trạng thái:
 ### DEC-161 — Phiếu EEIR (K80) + Phiếu thu (K80); In hồ sơ container A4
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). **Sửa DEC-072, DEC-076** (EEIR / phiếu thu nửa A4) cho Hạ vỏ / Cấp vỏ.
-- **Bỏ EEIR A4** Hạ vỏ / Cấp vỏ. Phiếu tác nghiệp K80 **là** phiếu EEIR giao khách, tên trên phiếu: **"<tên ngắn công ty> — PHIẾU EEIR TÁC NGHIỆP"** (mặc định MATRAN DEPOT). Giữ nguyên toàn bộ thông tin, lộ trình, QR (DEC-052, DEC-057).
+- **Bỏ EEIR A4** Hạ vỏ / Cấp vỏ. Phiếu tác nghiệp K80 **là** phiếu EEIR giao khách, tên trên phiếu: **"PHIẾU EEIR TÁC NGHIỆP"**, đặt dưới khối thông tin depot (tên, địa chỉ, ĐT, MST — cùng mẫu Phiếu thu (K80); sửa 2026-10-28: bỏ tên depot khỏi tiêu đề vì đã có ở trên). Giữ nguyên toàn bộ thông tin, lộ trình, QR (DEC-052, DEC-057).
 - **Phiếu thu đổi sang khổ K80**, giữ đủ thông tin (công ty, Số, tác nghiệp, bảng phí, mã xuất hóa đơn, chữ ký, BẢN IN LẠI).
 - **Trả chứng từ** tự in liền 1 lệnh: Phiếu EEIR (K80) + Phiếu thu (K80); mỗi phiếu 1 trang → máy in nhiệt **tự cắt giữa các phiếu** (driver máy in đặt cắt sau mỗi trang).
 - Tên gọi thống nhất trên giao diện: **Phiếu EEIR (K80)**, **Phiếu thu (K80)**. Hạ vỏ và Cấp vỏ vẫn mỗi tác nghiệp 1 bộ phiếu riêng.
