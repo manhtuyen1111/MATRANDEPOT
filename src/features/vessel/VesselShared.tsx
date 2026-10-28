@@ -2,8 +2,30 @@ import React from 'react';
 import { Ship } from 'lucide-react';
 import { ContainerRecord, VesselList } from '../../types/depot';
 import type { DepotState } from '../../services/depotStore';
-import { ContainerOperationCode, containerOperation, vesselListProgress } from '../../services/vessel';
+import { ContainerOperationCode, containerOperation, vesselListProgress, vesselListStatusLabel } from '../../services/vessel';
 import { formatDateTime } from '../../services/datetime';
+
+// Tiến độ trong ô bảng (DEC-164, DEC-165): đúng 1 dòng — thanh nhỏ + "xong / tổng"
+export const VesselProgressInline: React.FC<{ list: VesselList }> = ({ list }) => {
+  const p = vesselListProgress(list);
+  const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
+  return (
+    <span className="inline-flex items-center gap-2" title={`Xong ${p.done} • ${list.mode === 'NHAP_TAU' ? 'chờ hạ ' + p.inspected + ' • chờ xe về' : 'chờ xuất'} ${p.pending}${p.skipped ? ' • không kịp ' + p.skipped : ''}`}>
+      <span className="h-2 w-24 overflow-hidden rounded-full bg-line"><span className="block h-full bg-emerald-500" style={{ width: `${pct}%` }} /></span>
+      <span className="font-mono text-[11px] font-bold text-emerald-700">{p.done}/{p.total}</span>
+    </span>
+  );
+};
+
+const STATUS_CLS: Record<string, string> = {
+  'ĐANG THỰC HIỆN': 'bg-amber-100 text-amber-800',
+  'ĐÃ DUYỆT': 'bg-emerald-100 text-emerald-800',
+  'DUYỆT THIẾU': 'bg-rose-100 text-rose-700',
+};
+export const VesselListStatus: React.FC<{ list: VesselList }> = ({ list }) => {
+  const label = vesselListStatusLabel(list);
+  return <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${STATUS_CLS[label]}`}>{label}</span>;
+};
 
 // Thanh tiến độ 1 danh sách tàu — mọi bộ phận cùng theo dõi (DEC-069)
 export const VesselProgressBar: React.FC<{ list: VesselList }> = ({ list }) => {

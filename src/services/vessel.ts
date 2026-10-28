@@ -480,6 +480,12 @@ export function vesselListProgress(list: VesselList): { total: number; done: num
   return { total: list.items.length, done, inspected, skipped, pending: list.items.length - done - inspected - skipped };
 }
 
+// Trạng thái danh sách tàu hiển thị (DEC-165): ĐANG THỰC HIỆN / ĐÃ DUYỆT / DUYỆT THIẾU (có cont không kịp)
+export function vesselListStatusLabel(list: VesselList): string {
+  if (list.status !== 'APPROVED') return 'ĐANG THỰC HIỆN';
+  return list.items.some((i) => i.status === 'SKIPPED') ? 'DUYỆT THIẾU' : 'ĐÃ DUYỆT';
+}
+
 // DEC-131: duyệt được cả khi CHƯA làm đủ — bắt buộc ghi LÝ DO; cont chưa tác nghiệp (PENDING) bị gạch đi (SKIPPED).
 //   Xuất tàu: cont không kịp tự mở khóa + xóa ghi chú, trở lại tồn bãi bình thường.
 //   Nhập tàu: cont đã Giám định (đang chờ hạ) vẫn đi tiếp luồng hạ bãi; chỉ cont chưa về mới bị gạch.

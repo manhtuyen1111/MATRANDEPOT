@@ -252,7 +252,12 @@ describe('DEC-069: màn Nhập tàu / Xuất tàu', () => {
     const vpNt = strip(renderToString(<OfficeVesselWorkspace mode="NHAP_TAU" state={both} onUpdateState={noop} />));
     expect(vpNt).toContain('EVER GENTLE');
     expect(vpNt).toContain('Lập danh sách NHẬP TÀU');
-    expect(vpNt).toContain('Xong 0/1');
+    expect(vpNt).toContain('0/1'); // DEC-165: tiến độ 1 dòng trong bảng
+    // DEC-165: bảng DANH SÁCH NHẬP TÀU đủ cột + trạng thái
+    for (const col of ['Hãng tàu', 'Số lượng', 'Thời gian bắt đầu', 'Tiến độ', 'Trạng thái', 'Người tạo', 'Người duyệt']) expect(vpNt).toContain(col);
+    expect(vpNt).toContain('Danh sách NHẬP TÀU');
+    expect(vpNt).toContain('ĐANG THỰC HIỆN');
+    expect(vpNt).not.toContain('Đã duyệt gần đây');
     const vpXt = strip(renderToString(<OfficeVesselWorkspace mode="XUAT_TAU" state={both} onUpdateState={noop} />));
     expect(vpXt).toContain('WAN HAI');
     expect(vpXt).toContain('Lập danh sách XUẤT TÀU');
