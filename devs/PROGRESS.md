@@ -251,11 +251,12 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 
 ### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-28 — đọc trước — mới nhất)
 
-**▶ BÀN GIAO MỚI NHẤT (2026-10-28 tối — DEC-167 → DEC-173):**
-- **Nhánh mới nhất: `agent/claude/repair-grades`** — chồng lên `chunk-reload` (DEC-172) ← `repair-output-report` ← `xt-skip-stamp` ← `xt-eeir-pdf` ← `p4-database`. **Chỉ cần PR nhánh này vào `main`** là có đủ DEC-164 → DEC-173.
+**▶ BÀN GIAO MỚI NHẤT (2026-10-28 tối — DEC-167 → DEC-174):**
+- **Nhánh mới nhất: `agent/claude/repair-grades`** — chồng lên `chunk-reload` (DEC-172) ← `repair-output-report` ← `xt-skip-stamp` ← `xt-eeir-pdf` ← `p4-database`. **Chỉ cần PR nhánh này vào `main`** là có đủ DEC-164 → DEC-174.
 - **BẮT BUỘC `npx supabase db push --linked` TRƯỚC khi merge** — migration mới **`20261105000001_repair_grades.sql`** (DEC-173; kèm `20261104000001` nếu `p4-database` chưa merge). Chưa push → Danh mục Sửa chữa / app mở lỗi (đọc bảng `repair_grades`). **Migration + pgTAP `0009` CHƯA chạy thử trên Supabase local** (không bật Docker) — `--dry-run` trước, lỗi thì báo agent.
 - DEC-172: lên bản mới → tab cũ lỗi "Failed to fetch dynamically imported module" → báo + tự tải lại trang (`vite:preloadError`, `src/main.tsx`).
-- DEC-173: Danh mục chung → Sửa chữa 3 tab **NHÂN VIÊN SỬA CHỮA** (user role Sửa chữa; bắt buộc Tổ + Bậc thợ; giờ công bậc thợ tự lấy theo bậc) / **TỔ SỬA CHỮA** (tạo theo số lượng) / **BẬC THỢ** (đơn giá / giờ). Bỏ gõ tên nhân viên tay. Báo cáo Sản lượng thêm Bậc thợ / Đơn giá / Thành tiền (theo bậc hiện tại).
+- DEC-173: Danh mục chung → Sửa chữa 3 tab **NHÂN VIÊN SỬA CHỮA** (user role Sửa chữa; bắt buộc Tổ + Bậc thợ; giờ công bậc thợ tự lấy theo bậc) / **TỔ SỬA CHỮA** (tạo theo số lượng) / **BẬC THỢ** (đơn giá / giờ). Bỏ gõ tên nhân viên tay. Báo cáo Sản lượng thêm Bậc thợ / Đơn giá / Thành tiền.
+- DEC-174: **đơn giá chốt lúc sửa xong** — đổi đơn giá bậc thợ sau không đổi kỳ cũ (`repairMemberRates`; DB `work_order_members.grade_name / hourly_rate` + trigger, cùng migration `20261105000001`). Cont sửa trước khi có bậc thợ → lấy giá hiện tại.
 - DEC-167: EEIR XUẤT TÀU in ngay khi lập danh sách (nút in từng cont ở Văn phòng → Xuất tàu → chi tiết); **XUẤT PDF tải thẳng file** (`exportPdf` async, jspdf + html2canvas-pro, chụp bản xem trong cửa sổ đang mở).
 - DEC-168: **bỏ** in EEIR cả danh sách; hồ sơ cont Xuất tàu "Không kịp" → nút phiếu khóa + **mộc đỏ KHÔNG XUẤT TÀU**; dòng tàu trong hồ sơ bỏ chữ "EEIR (K80)".
 - DEC-169: hồ sơ — bước Văn phòng — Duyệt xuất tàu: "Xác nhận hoàn thành danh sách xuất tàu <tàu>" + "Tiến độ thực tế : đã xuất/tổng".

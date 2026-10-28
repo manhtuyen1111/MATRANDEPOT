@@ -1527,6 +1527,12 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-174 — Đơn giá bậc thợ CHỐT lúc sửa xong (đơn giá cũ tính theo giá cũ)
+
+- Trạng thái: CONFIRMED (2026-10-28, người dùng). **Sửa DEC-173** phần Thành tiền.
+- Hoàn tất sửa chữa → lưu **bậc thợ + đơn giá (đ / giờ)** của từng nhân viên vào cont đó (`ServiceWorkOrder.repairMemberRates`; database: `work_order_members.grade_name / hourly_rate`, trigger `work_order_member_rate` tự điền — không sửa `complete_repair_task`).
+- Báo cáo Sản lượng: Thành tiền = tổng (giờ chia × **đơn giá đã chốt** của từng cont). Đổi đơn giá bậc thợ sau đó **không** đổi kỳ cũ. Cont sửa **trước khi có bậc thợ** (chưa chốt) → lấy đơn giá hiện tại. Nhân viên có nhiều mức trong kỳ → cột đơn giá ghi "Nhiều mức", bậc ghi "Nhiều bậc"; chi tiết từng cont ở cửa sổ trượt + Excel sheet CHI TIẾT.
+
 ### DEC-173 — Danh mục SỬA CHỮA: nhân viên, tổ theo số lượng, BẬC THỢ
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). **Sửa DEC-048** (bỏ thêm nhân viên gõ tên tay).
@@ -1652,6 +1658,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-173 đã xác nhận (cập nhật 2026-10-28).
+- Quyết định nghiệp vụ: DEC-001 → DEC-174 đã xác nhận (cập nhật 2026-10-28).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
