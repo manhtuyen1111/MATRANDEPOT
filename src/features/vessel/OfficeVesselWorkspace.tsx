@@ -502,7 +502,7 @@ export const ListDetail: React.FC<{
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const parsed = parseVesselImportText(state, importText);
   const items = sortVesselItems(list.items);
-  // DEC-167: EEIR XUẤT TÀU in được ngay khi lập danh sách — từng cont hoặc cả danh sách (bỏ cont Không kịp)
+  // DEC-167 / DEC-168: EEIR XUẤT TÀU in được ngay khi lập danh sách — từng cont (bỏ cont Không kịp; bỏ in cả danh sách)
   const printable = isImport ? [] : items.filter((i) => i.dossierCode && i.status !== 'SKIPPED');
   const [printIds, setPrintIds] = useState<string[] | null>(null);
   const printItems = printIds ? printable.filter((i) => printIds.includes(i.id)) : [];
@@ -520,13 +520,8 @@ export const ListDetail: React.FC<{
     <SectionCard
       title="Chi tiết danh sách"
       right={
-        (canManage || printable.length > 0) && (
+        canManage && (
           <div className="flex flex-wrap gap-2">
-            {printable.length > 0 && (
-              <button type="button" onClick={() => setPrintIds(printable.map((i) => i.id))} className={secondaryBtn}>
-                <Printer className="h-3.5 w-3.5" />PHIẾU EEIR XUẤT TÀU — CẢ DANH SÁCH ({printable.length})
-              </button>
-            )}
             {canManage && <>
             <button type="button" onClick={() => openPanel('EDIT')} className={secondaryBtn}><Pencil className="h-3.5 w-3.5" />Sửa thông tin</button>
             <button type="button" onClick={() => openPanel('ADD')} className={secondaryBtn}><Plus className="h-3.5 w-3.5" />Thêm cont</button>
