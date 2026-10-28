@@ -251,31 +251,45 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 
 ### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-28 — đọc trước — mới nhất)
 
-**▶ BẮT ĐẦU CA MỚI — LÀM THEO THỨ TỰ (cập nhật 2026-10-29, cuối phiên in ấn):**
-1. **Merge code:** `main` đã có tới PR #30; nhánh `agent/claude/p4-database` còn **3 commit** (tiêu đề / bố cục đầu phiếu tác nghiệp + tài liệu) → tạo PR → merge. **Không có migration** → không cần `db push`. Chờ Vercel báo Ready.
-2. **Thử IN (quan trọng nhất — chưa ai in thật):** máy in K80 đặt khổ **cuộn 80mm** + **cắt sau mỗi trang** (Printing Preferences → Cut per page).
-   - Trả chứng từ 1 cont có phiếu thu → ra **2 phiếu rời, tự cắt giữa**; bản xem trước là **dải K80** (không phải A4); in **giống hệt bản xem** (khung nét đứt, không mất chữ mép phải).
-   - Hồ sơ → **EEIR HẠ VỎ / PHIẾU THU**, **EEIR CẤP VỎ / PHIẾU THU**, **EEIR NHẬP TÀU**, **EEIR XUẤT TÀU** (mở cửa sổ Xem → nút IN), **HỒ SƠ CONTAINER** (máy in A4).
-   - Văn phòng → Phiếu thu → **PHIẾU THU** → In / In lại (đếm số lần in).
-3. **Thử QR:** quét QR tác nghiệp cỡ mới (60px) trên giấy in nhiệt ở Xe nâng / Vệ sinh / Trả chứng từ — chậm thì báo tăng 70px; quét QR link xuất hóa đơn trên Phiếu thu bằng camera thường → mở trang `#/hoa-don`.
-4. **Thử hiện trường:** cont Nhập tàu / Xuất tàu ở Vệ sinh / Xe nâng có **số xe**; lưu (DEC-160) không giật, bấm 2 lần không trùng.
-5. **Màn đăng nhập (Vercel):** nhãn vàng "Môi trường kiểm thử (UAT) — dữ liệu test…", khẩu hiệu mới, "Made by MT".
-6. **Góp ý người test:** Báo cáo → Góp ý (Admin). **Supabase `matran-test` → Reports / Logs**: lỗi lặp lại? dung lượng (Free 500 MB / 1 GB).
-7. Agent đầu phiên: `git status` sạch → `git pull` → `npm test` (169 pass) + `npm run build` → đọc mục này + **LƯU Ý IN ẤN** dưới đây.
-8. Việc lớn tiếp theo: trả lời **Q-044** import tồn vỏ (`docs/IMPORT_TON_VO_BAN_DAU.md`) + chốt gói Supabase Pro / project `matran-prod` (`docs/VAN_HANH_VA_PHAT_TRIEN.md`).
+**▶ BẮT ĐẦU CA MỚI — LÀM THEO THỨ TỰ (cập nhật 2026-10-29 cuối ngày — sau DEC-163):**
+1. **Merge code:** `main` đã có tới PR #37; nhánh `agent/claude/p4-database` còn **2 commit** (EEIR tàu có QR + lộ trình — DEC-163) → tạo PR → merge. **Không có migration** → không cần `db push`. Chờ Vercel **Ready**, mở lại trang bằng **Ctrl + F5**.
+2. **Cài máy in K80 1 lần** (Windows → Máy in → Printing Preferences): khổ **cuộn** (VD 80 × 3276mm / Receipt), **cắt sau mỗi trang**, Top margin / Feed = 0. Hộp thoại in Chrome / Edge → Cài đặt khác: **Lề = Mặc định / Không**, **Tỷ lệ = Mặc định**, **bỏ tích "Đầu trang và chân trang"**.
+3. **Thử IN THẬT — quan trọng nhất (chưa ai in thật trên máy K80):**
+   - **Trả chứng từ** 1 cont có phiếu thu → ra **1 PHIẾU TRẢ KHÁCH HÀNG** (đầu: Số / TÁC NGHIỆP + QR; khối PHIẾU THU; Khách hàng; xuất hóa đơn) — vừa đủ giấy, không khoảng trắng trên / dưới.
+   - **Hồ sơ container** → **PHIẾU EEIR HẠ VỎ / CẤP VỎ** (phiếu tác nghiệp, không đếm in) • **PHIẾU TRẢ KHÁCH HÀNG** (in lần 2 phải hỏi + nhãn **BẢN IN LẠI — LẦN 2** dưới khối PHIẾU THU) • **PHIẾU EEIR NHẬP TÀU / XUẤT TÀU** (có QR + LỘ TRÌNH) • **HỒ SƠ CONTAINER** → IN (máy A4) / **XUẤT PDF** (chọn "Lưu dưới dạng PDF").
+   - **Văn phòng → Phiếu thu → PHIẾU THU** → In / In lại (phiếu thu lẻ, đếm in).
+   - Khung có bị **mất mép trái / phải** không (khung 76mm — mất thì báo, hạ `--k80-width` về 72mm).
+4. **Thử QR (60px):** quét phiếu EEIR Hạ vỏ ở Xe nâng / Vệ sinh / Trả chứng từ; quét phiếu EEIR Nhập tàu ở Vệ sinh / Xe nâng / màn Nhập tàu; quét QR link xuất hóa đơn bằng camera thường → mở `#/hoa-don`. Chậm → báo tăng 70px.
+5. **Thử hiện trường:** cont tàu ở Vệ sinh / Xe nâng có **số xe**; lưu (DEC-160) không giật, bấm 2 lần không trùng.
+6. **Góp ý người test** (Báo cáo → Góp ý) + **Supabase `matran-test` → Reports / Logs** (lỗi lặp, dung lượng Free 500 MB / 1 GB).
+7. Agent đầu phiên: `git status` sạch → `git pull` → `npm test` (**173 pass**, 3 bỏ qua) + `npm run build` → đọc mục này + **LƯU Ý IN ẤN** + **LƯU Ý CHO AGENT** dưới đây.
+8. Việc lớn tiếp theo: trả lời **Q-044** import tồn vỏ (`docs/IMPORT_TON_VO_BAN_DAU.md`) + chốt gói **Supabase Pro** / project `matran-prod` (`docs/VAN_HANH_VA_PHAT_TRIEN.md`).
 
-**LƯU Ý IN ẤN (DEC-161 — đã chốt 2026-10-28, agent đọc trước khi sửa giấy tờ):**
-- Giấy tờ Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu / Phiếu thu đều **khổ K80** (`k80-sheet`, khung **76mm = 95% giấy**, biến CSS `--k80-width` — máy in cắt chữ mép phải thì hạ về 72mm). Giấy cắt **vừa đủ phiếu** (+1mm); 2 phiếu in liền, không khoảng trống. **Không còn giấy tờ nửa A4.** Chỉ HỒ SƠ CONTAINER in A4 (`dossier-a4`).
-- Phiếu tác nghiệp = **Phiếu EEIR (K80)** (`EeirK80Sheet`): đầu = thông tin depot (như Phiếu thu) → hàng: trái "PHIẾU EEIR TÁC NGHIỆP / Số / TÁC NGHIỆP", phải **QR tác nghiệp 60px có khung** → thông tin cont → LỘ TRÌNH → **VĂN PHÒNG XÁC NHẬN** (người lập + giờ). QR = `QR-<mã hồ sơ>` (DEC-057, không đổi).
-- Phiếu thu (K80): ô Yêu cầu xuất hóa đơn có **QR link trang xuất hóa đơn 60px có khung** góc phải (chỉ link, **không** chứa mã bảo mật).
-- **Cuộn K80 cắt vừa phiếu:** khi in K80 trang web khác bị bỏ hẳn (`display:none`) và phiếu **không** được `position:absolute` (Chrome bỏ qua `@page size` + ngắt trang → in cả tờ dài). Phiếu nào in cũng qua `PrintPortal`. Kiểm nhanh không cần máy in: Edge `--headless --print-to-pdf` rồi đọc `MediaBox` (80mm = 227pt).
-- **Cài máy in K80 (Windows → Printing Preferences):** khổ giấy cuộn (VD 80 × 3276mm / Receipt), **cắt sau mỗi trang**; hộp thoại in Chrome / Edge: Lề = Không (None) hoặc Mặc định, Tỷ lệ = 100% / Mặc định, **bỏ tích "Đầu trang và chân trang"** (nếu không trình duyệt in thêm ngày giờ + tên trang ở trên, địa chỉ web ở dưới → khoảng trắng). App đã đặt lề trang = 0 khi in K80.
-- Mọi lệnh in gọi **`printNow()`** (đo chiều dài phiếu → khổ 80mm × dài, mỗi phiếu 1 trang để máy cắt) — **cấm `window.print()`**. Bản in = bản xem (giữ khung nét đứt).
-- Quy trình **Xem → In**: nút mở `PrintPreviewModal`, nút IN ở trong. Riêng **Trả chứng từ**: có nút Xem trước; bấm Trả chứng từ là **tự in 1 PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU"** (DEC-162 — gộp EEIR + phiếu thu, `CustomerSlipK80`).
-- **EEIR tàu (DEC-163)**: PHIẾU EEIR NHẬP TÀU / XUẤT TÀU cùng mẫu phiếu tác nghiệp — QR `QR-NT-…` / `QR-XT-…` + LỘ TRÌNH (Giám định → Vệ sinh → Xe nâng → VP duyệt / VP lập → Xe nâng xuất → VP duyệt). Vẫn không thu phí, không K80 riêng, không Trả chứng từ.
-- **Hồ sơ**: mỗi tác nghiệp 2 nút **PHIẾU EEIR TÁC NGHIỆP** (không đếm in) / **PHIẾU TRẢ KHÁCH HÀNG** (đếm in = bộ đếm phiếu thu, từ lần 2 hỏi + BẢN IN LẠI). Phiếu thu lẻ vẫn ở Văn phòng → Phiếu thu. **Không** thêm bảng đếm in riêng (người dùng chốt chỉ dùng bộ đếm phiếu thu).
-- Tên nút IN HOA thống nhất **EEIR** (không viết EIR): EEIR HẠ VỎ / PHIẾU THU • EEIR CẤP VỎ / PHIẾU THU • EEIR NHẬP TÀU • EEIR XUẤT TÀU • HỒ SƠ CONTAINER • PHIẾU THU.
-- Người dùng rất nhạy với giao diện: **không** thêm thanh chạy / nhấp nháy; chỉnh in thì giữ đúng chữ người dùng gửi, đổi gì cũng báo lại rõ.
+**CHỜ BẠN QUYẾT (chưa làm):**
+- Phiếu **EEIR XUẤT TÀU** hiện chỉ in được **sau khi** cont đã OUT → lộ trình chỉ để ghi nhận. Muốn in ngay khi lập danh sách để lái xe cầm đi quét? (báo agent đổi thời điểm in).
+- **XUẤT PDF** đang qua hộp thoại in ("Lưu dưới dạng PDF"). Muốn bấm 1 nút **tải thẳng file PDF** → cần cài thêm thư viện tạo PDF (~300–400 KB, chỉ tải khi bấm) — cần bạn đồng ý.
+- Độ dài mật khẩu tối thiểu cho Admin / Văn phòng / Kế toán (đề xuất trong `docs/VAN_HANH_VA_PHAT_TRIEN.md`).
+
+**LƯU Ý IN ẤN (DEC-161 → DEC-163 — agent đọc trước khi sửa giấy tờ):**
+- Mọi giấy tờ là **khổ K80** (`k80-sheet`, khung **76mm = 95% giấy**, biến `--k80-width` trong `src/index.css`). **Không còn giấy tờ nửa A4.** Chỉ **HỒ SƠ CONTAINER** khổ A4 (`dossier-a4`, `@page dossierA4`).
+- **Các mẫu phiếu** (đều trong `src/components/K80TicketModal.tsx`, dùng chung `SheetHeader` / `TicketInfoRows` / `RouteBox` / `OfficeConfirm`):
+  - **PHIẾU EEIR TÁC NGHIỆP** Hạ vỏ / Cấp vỏ (`EeirK80Sheet`): depot → trái "PHIẾU EEIR TÁC NGHIỆP / Số / TÁC NGHIỆP", phải **QR 60px có khung** → thông tin cont → **LỘ TRÌNH** → **Văn phòng xác nhận**. QR = `QR-<mã hồ sơ>` (DEC-057).
+  - **PHIẾU EEIR NHẬP TÀU / XUẤT TÀU** (`VesselEeirPrintSheet`, DEC-163): cùng mẫu, QR `QR-NT-…` / `QR-XT-…` (`vesselQrCode`), lộ trình `getVesselRoute` (src/services/vessel.ts, chỉ đọc dữ liệu).
+  - **PHIẾU TRẢ KHÁCH HÀNG** (`CustomerSlipK80`, DEC-162): **không tiêu đề** — đầu trái chỉ "Số" + "TÁC NGHIỆP", phải QR → thông tin cont → khối **PHIẾU THU** (`ReceiptPaymentBody inSlip`: Số phiếu thu, **Khách hàng**, hình thức, giờ thu, bảng phí, tổng, xuất hóa đơn + QR link) → **BẢN IN LẠI — LẦN n** ngay dưới khối PHIẾU THU → chữ ký. Không có phiếu thu (TTS / trừ trả trước) → ghi hình thức, không đếm.
+  - **PHIẾU THU (K80) lẻ** (`ReceiptPrintSheet` trong `ReceiptPrint.tsx`) — Văn phòng → Phiếu thu; ô xuất hóa đơn có **QR link 60px có khung** (chỉ link, **không** chứa mã bảo mật).
+- **Đếm số lần in = chỉ bộ đếm phiếu thu** (`recordReceiptPrint`, `slipPrintCount`) — người dùng đã chốt, **không** thêm bảng đếm riêng / migration. Phiếu EEIR tác nghiệp + EEIR tàu không đếm.
+- **Lệnh in:** luôn gọi `printNow()` / `exportPdf()` (`src/components/printNow.ts`) — **cấm `window.print()`**. `printNow` đo từng phiếu → khổ **80mm × chiều dài vừa đủ (+1mm)**, **mỗi phiếu 1 trang** (máy cắt sau mỗi phiếu — người dùng chốt), lề trang 0 (không còn đầu / chân trang trình duyệt).
+- **Vùng in** luôn qua `PrintPortal`; khi in K80 / A4 phần còn lại của trang bị `display:none` và vùng in **không** được `position:absolute` (nếu không Chrome bỏ qua khổ giấy → in cả tờ dài). Kiểm nhanh không cần máy in: Edge `--headless --print-to-pdf` → đọc `MediaBox` (80mm = 227pt; A4 = 595 × 842) + giải nén luồng nội dung xem tọa độ khung (đã đo: khung sát mép trên 0mm).
+- **Quy trình Xem → In:** mọi nút mở `PrintPreviewModal` (nút IN / XUẤT PDF ở trong). Riêng **Trả chứng từ**: có nút Xem trước; bấm Trả chứng từ là **tự in** PHIẾU TRẢ KHÁCH HÀNG.
+- **Tên nút IN HOA, viết EEIR (không EIR):** PHIẾU EEIR HẠ VỎ • PHIẾU EEIR CẤP VỎ • PHIẾU EEIR NHẬP TÀU • PHIẾU EEIR XUẤT TÀU • PHIẾU TRẢ KHÁCH HÀNG • HỒ SƠ CONTAINER • PHIẾU THU. Hồ sơ **không** còn nút "Xem / in phiếu EEIR (K80)".
+
+**LƯU Ý CHO AGENT (cách làm việc với người dùng):**
+- Người dùng gửi yêu cầu ngắn, thường **thêm / đổi ý giữa chừng** (VD "1 dải" → "cắt mỗi phiếu"; đếm in riêng → chỉ dùng bộ đếm phiếu thu) → làm từng bước nhỏ, commit sau mỗi bước để hoàn tác dễ (`git checkout -- <file>` khi chưa commit).
+- **Giữ đúng chữ người dùng gửi** cho tên phiếu / nút; chỗ nào hiểu 2 cách thì làm theo chữ + báo lại 1 dòng.
+- Đụng dữ liệu / database (bảng mới, migration) → **hỏi trước** (AskUserQuestion) — người dùng thích phương án không đổi database.
+- Rất nhạy giao diện: **không** thanh chạy / nhấp nháy; in ấn phải **vừa giấy, không khoảng trắng**.
+- Trả lời tiếng Việt, ngắn, có bảng "đã làm"; luôn nói rõ **chưa in thật / chưa thử máy thật**.
+- Máy Windows: sửa file bằng Edit hoặc script node ghi vào scratchpad (heredoc `<<'EOF'`); **tránh `node -e` có dấu nháy lồng** (đã lỗi nhiều lần); anchor khi thay chữ phải **duy nhất** (CHANGELOG có nhiều "### Changed").
 
 **Rà soát + tư vấn vận hành / phát triển:** `docs/VAN_HANH_VA_PHAT_TRIEN.md` — bảo mật ổn; rủi ro chính: quy tắc viết 2 nơi (TS + SQL) phải sửa cùng lúc; tải 15.000 lượt / tháng nhẹ với database nhưng **ảnh cửa ~6 GB → bắt buộc Supabase Pro** khi chạy thật; database thật phải là project riêng (`matran-prod`); migration sau khi chạy thật chỉ thêm file mới.
 
@@ -512,6 +526,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-28 — Claude Code: bỏ nút Quét thừa; lưu ngầm không chặn màn + không tải lại danh mục sau mỗi lần lưu (DEC-160). 167 test • build PASS. Chưa đo trên cloud.
 - 2026-10-28 — Claude Code: DEC-161 Phiếu EEIR (K80) + Phiếu thu (K80), in hồ sơ A4. 169 test • build PASS. Chưa thử in thật.
 - 2026-10-28 — Claude Code: DEC-161 bổ sung — EEIR tàu K80, in giống bản xem, Xem → In, nút IN HOA, `printNow`. 169 test • build PASS. Chưa thử in thật.
+- 2026-10-29 — Claude Code: bàn giao cuối ngày — checklist ca mới, việc chờ quyết, LƯU Ý IN ẤN (DEC-161 → 163), LƯU Ý CHO AGENT.
 - 2026-10-29 — Claude Code: DEC-163 EEIR tàu có QR + lộ trình; hồ sơ container xem → IN / XUẤT PDF; phiếu trả khách bỏ tiêu đề, khối PHIẾU THU, "Khách hàng". 173 test • build PASS. Chưa in thật.
 - 2026-10-29 — Claude Code: DEC-162 PHIẾU TRẢ KHÁCH HÀNG "MATRAN EEIR - PHIẾU THU" (gộp EEIR + phiếu thu); hồ sơ 2 phiếu; đếm in theo phiếu thu; in K80 lề 0 (bỏ đầu / chân trang trình duyệt). 171 test • build PASS. Chưa in thật.
 - 2026-10-28/29 — Claude Code: in ấn hoàn thiện theo góp ý — printNow (xem trước dải K80, in = bản xem), EEIR tàu K80, Xem → In, nút IN HOA EEIR, QR 60px có khung (phiếu tác nghiệp + QR link XHD phiếu thu), đầu phiếu tác nghiệp = thông tin depot + "PHIẾU EEIR TÁC NGHIỆP / Số / TÁC NGHIỆP" | QR, ô Văn phòng xác nhận; số xe cho cont tàu ở Vệ sinh / Xe nâng; màn đăng nhập (nhãn UAT, khẩu hiệu, Made by MT). 169 test • build PASS. **Chưa in thật trên máy K80.**
