@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { addVesselListItems, approveVesselList, createVesselList, deleteVesselList, removeVesselListItem, updateVesselList } from '../../services/api';
-import { CheckCircle2, ClipboardList, ListChecks, ListPlus, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { CheckCircle2, ClipboardList, FileDown, ListChecks, ListPlus, Pencil, Plus, Printer, Search, Trash2, X } from 'lucide-react';
+import { PrintPreviewModal } from '../../components/ReceiptPrint';
+import { VesselEeirPrintSheet } from '../../components/K80TicketModal';
+import { exportPdf, printNow } from '../../components/printNow';
 import { FieldConditionClass, VesselList, VesselMode, VESSEL_MODE_LABELS } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import { parseTruckList, parseVesselImportText, sortVesselItems, vesselExportBlocker, vesselListProgress } from '../../services/vessel';
@@ -499,6 +502,12 @@ export const ListDetail: React.FC<{
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const parsed = parseVesselImportText(state, importText);
   const items = sortVesselItems(list.items);
+  // DEC-167: EEIR XUẤT TÀU in được ngay khi lập danh sách — từng cont hoặc cả danh sách (bỏ cont Không kịp)
+  const printable = isImport ? [] : items.filter((i) => i.dossierCode && i.status !== 'SKIPPED');
+  const [printIds, setPrintIds] = useState<string[] | null>(null);
+  const printItems = printIds ? printable.filter((i) => printIds.includes(i.id)) : [];
+  const closePrint = React.useCallback(() => setPrintIds(null), []);
+  const sheets = printItems.map((i) => <VesselEeirPrintSheet key={i.id} state={state} list={list} item={i} />);
 
   const openPanel = (p2: typeof panel) => {
     setPanel(panel === p2 ? '' : p2);
@@ -511,8 +520,14 @@ export const ListDetail: React.FC<{
     <SectionCard
       title="Chi tiết danh sách"
       right={
-        canManage && (
+        (canManage || printable.length > 0) && (
           <div className="flex flex-wrap gap-2">
+            {printable.length > 0 && (
+              <button type="button" onClick={() => setPrintIds(printable.map((i) => i.id))} className={secondaryBtn}>
+                <Printer className="h-3.5 w-3.5" />PHIẾU EEIR XUẤT TÀU — CẢ DANH SÁCH ({printable.length})
+              </button>
+            )}
+            {canManage && <>
             <button type="button" onClick={() => openPanel('EDIT')} className={secondaryBtn}><Pencil className="h-3.5 w-3.5" />Sửa thông tin</button>
             <button type="button" onClick={() => openPanel('ADD')} className={secondaryBtn}><Plus className="h-3.5 w-3.5" />Thêm cont</button>
             <button type="button" onClick={() => openPanel('DELETE')} className={`${secondaryBtn} text-rose-700`}><Trash2 className="h-3.5 w-3.5" />Xóa danh sách</button>
@@ -521,6 +536,7 @@ export const ListDetail: React.FC<{
               <CheckCircle2 className="h-4 w-4" />
               Duyệt {VESSEL_MODE_LABELS[mode]} thành công
             </button>
+            </>}
           </div>
         )
       }
@@ -642,7 +658,12 @@ export const ListDetail: React.FC<{
                     <td className="px-2 py-1.5"><span className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${st.cls}`}>{st.label}</span></td>
                     <td className="px-2 py-1.5"><CellText text={by} max={CELL_MAX.SHORT} /></td>
                     <td className="px-2 py-1.5 font-mono">{at ? formatDateTime(at) : '-'}</td>
-                    <td className="px-2 py-1.5 text-right">
+                    <td className="px-2 py-1.5 text-right whitespace-nowrap">
+                      {printable.includes(i) && (
+                        <button type="button" onClick={() => setPrintIds([i.id])} className={`${secondaryBtn} mr-1`} title="PHIẾU EEIR XUẤT TÀU">
+                          <Printer className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                       {canManage && i.status === 'PENDING' && (
                         <button type="button" onClick={() => run(() => removeVesselListItem(state, { listId: list.id, itemId: i.id, mode }), `Đã bỏ ${i.containerNo} khỏi danh sách.`)} className={secondaryBtn} title="Bỏ khỏi danh sách">
                           <Trash2 className="h-3.5 w-3.5" />
@@ -656,6 +677,25 @@ export const ListDetail: React.FC<{
           </table>
         </div>
       </div>
+      {printItems.length > 0 && (
+        <PrintPreviewModal
+          title={`PHIẾU EEIR XUẤT TÀU — ${list.vesselName}${printItems.length > 1 ? ` (${printItems.length} phiếu)` : ` — ${printItems[0].dossierCode}`}`}
+          onClose={closePrint}
+          actions={
+            <>
+              <button type="button" onClick={() => setTimeout(printNow, 50)} className={secondaryBtn}>
+                <Printer className="h-3.5 w-3.5" />IN
+              </button>
+              <button type="button" onClick={() => exportPdf(`EEIR-XUAT-TAU-${list.vesselName}${printItems.length === 1 ? `-${printItems[0].dossierCode}` : ''}`).catch((e) => window.alert(e instanceof Error ? e.message : 'Không xuất được PDF'))} className={primaryBtn}>
+                <FileDown className="h-4 w-4" />XUẤT PDF
+              </button>
+            </>
+          }
+          print={sheets}
+        >
+          {sheets}
+        </PrintPreviewModal>
+      )}
     </SectionCard>
   );
 };

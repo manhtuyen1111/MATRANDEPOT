@@ -545,7 +545,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                   <Printer className="h-4 w-4" />
                   IN
                 </button>
-                <button type="button" onClick={() => exportPdf(`HO-SO-${containerNo || visitCode}`)} className="inline-flex items-center gap-1.5 rounded-md bg-navy-900 px-3 py-2 text-xs font-semibold text-white hover:bg-navy-700">
+                <button type="button" onClick={() => exportPdf(`HO-SO-${containerNo || visitCode}`).catch((e) => window.alert(e instanceof Error ? e.message : 'Không xuất được PDF'))} className="inline-flex items-center gap-1.5 rounded-md bg-navy-900 px-3 py-2 text-xs font-semibold text-white hover:bg-navy-700">
                   <FileDown className="h-4 w-4" />
                   XUẤT PDF
                 </button>
@@ -556,7 +556,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
             <div className="w-full overflow-x-auto">
               <div className="mx-auto w-[190mm] max-w-none bg-white p-4 shadow">{dossierA4}</div>
             </div>
-            <p className="w-full text-center text-[11px] text-ink-muted">XUẤT PDF: trong hộp thoại in chọn Máy in = <strong>Lưu dưới dạng PDF</strong> (Save as PDF) → Lưu. Tên file đã đặt sẵn theo số container.</p>
+            <p className="w-full text-center text-[11px] text-ink-muted">XUẤT PDF: tải thẳng file PDF khổ A4, tên file theo số container.</p>
           </PrintPreviewModal>
         )}
         <DossierPrintBar state={state} tickets={tickets} onUpdateState={onUpdateState} vessel={[...(importHit ? [importHit] : []), ...exportHits]} />
@@ -597,8 +597,8 @@ const DossierPrintBar: React.FC<{
     .map((t) => documentPackOf(state, t));
   if (packs.length === 0 && vessel.length === 0) return null;
 
-  // EEIR tàu: Nhập tàu xem được từ khi Giám định xác nhận; Xuất tàu khi cont đã OUT
-  const vesselReady = (v: { list: VesselList; item: VesselListItem }) => (v.list.mode === 'NHAP_TAU' ? v.item.status !== 'PENDING' : v.item.status === 'DONE');
+  // EEIR tàu: Nhập tàu xem được từ khi Giám định xác nhận; Xuất tàu ngay khi lập danh sách (đã có mã XT-) — DEC-167
+  const vesselReady = (v: { list: VesselList; item: VesselListItem }) => (v.list.mode === 'NHAP_TAU' ? v.item.status !== 'PENDING' : Boolean(v.item.dossierCode) && v.item.status !== 'SKIPPED');
   const pack = view?.kind === 'ticket' || view?.kind === 'slip' ? packs.find((p) => p.ticket.ticketCode === view.id) : undefined;
   const vesselHit = view?.kind === 'vessel' ? vessel.find((v) => v.item.id === view.id) : undefined;
 
