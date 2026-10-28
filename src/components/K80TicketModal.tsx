@@ -37,19 +37,27 @@ export const EeirK80Sheet: React.FC<{ ticket: K80InternalTicket; state?: DepotSt
         { key: 'OFFICE_RETURN', dept: 'VĂN PHÒNG', action: 'Quét mã • nhận EEIR / phiếu thu', done: false },
       ];
   const nextStep = steps.find((s) => !s.done);
+  const company = state?.companyProfile;
   return (
     // KHỔ GIẤY IN NHIỆT K80 (80mm)
     <div className={`${printable ? 'print-area ' : ''}k80-sheet mx-auto border-2 border-dashed border-slate-800 bg-white p-3 font-mono text-[11px] leading-snug text-ink`}>
       {/* 1. THÔNG TIN CHUNG */}
       <div className="border-b-2 border-slate-800 pb-2">
-        <p className="text-center text-xs font-black tracking-wider">{(state?.companyProfile.shortName || "MATRAN DEPOT").toUpperCase()} — PHIẾU EEIR TÁC NGHIỆP</p>
-        {/* Tác nghiệp bên trái — MÃ QR TÁC NGHIỆP góc phải trên cùng (gọn, vẫn quét nhanh: mã ngắn → ô QR thưa) */}
+        {/* Thông tin depot — cùng mẫu đầu Phiếu thu (K80) */}
+        {company && (
+          <div className="text-center">
+            <p className="text-xs font-black uppercase">{company.name}</p>
+            {company.address && <p className="text-[10px]">{company.address}</p>}
+            {(company.phone || company.email) && <p className="text-[10px]">{[company.phone && `ĐT: ${company.phone}`, company.email].filter(Boolean).join(' • ')}</p>}
+            {company.taxCode && <p className="text-[10px]">MST: {company.taxCode}</p>}
+          </div>
+        )}
+        <p className="mt-1.5 text-center text-xs font-black tracking-wider">{(company?.shortName || "MATRAN DEPOT").toUpperCase()} — PHIẾU EEIR TÁC NGHIỆP</p>
+        {/* Số + tác nghiệp bên trái — MÃ QR TÁC NGHIỆP bên phải (mã QR-<mã hồ sơ> như cũ, DEC-057) */}
         <div className="mt-1.5 flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="inline-block bg-navy-900 px-2 py-0.5 text-sm font-black text-white">{isOut ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
-            <p className="mt-1 text-[10px]">Mã hồ sơ:</p>
-            <p className="text-xs font-black">{ticket.outDossierCode || ticket.masterDossierCode}</p>
-            {state?.companyProfile.phone && <p className="mt-0.5 text-[10px]">ĐT: {state.companyProfile.phone}</p>}
+            <p className="text-xs font-bold">Số: {ticket.outDossierCode || ticket.masterDossierCode}</p>
+            <p className="mt-1 inline-block bg-navy-900 px-2 py-0.5 text-xs font-black text-white">TÁC NGHIỆP: {isOut ? 'CẤP VỎ' : 'HẠ VỎ'}</p>
           </div>
           <div className="shrink-0 border-2 border-slate-900 bg-white p-0.5 text-center">
             <QrImage value={ticket.qrCode} size={60} />
