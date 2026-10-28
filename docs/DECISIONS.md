@@ -1513,6 +1513,10 @@ Quy ước trạng thái:
 - Hồ sơ container: cont trong danh sách Xuất tàu nhưng **không xuất được** (SKIPPED — Không kịp, DEC-131) → nút PHIẾU EEIR XUẤT TÀU **không mở được** + **mộc đỏ "KHÔNG XUẤT TÀU"** bên trái nút.
 - Dòng tác nghiệp tàu trong hồ sơ ghi `XUẤT TÀU — XT-… • tàu …` / `NHẬP TÀU — NT-… • tàu …` (bỏ chữ "EEIR (K80)").
 
+### DEC-169 — Hồ sơ container: bước VĂN PHÒNG — DUYỆT XUẤT TÀU có tiến độ thực tế
+
+- Trạng thái: CONFIRMED (2026-10-28, người dùng). Nội dung bước duyệt của cont Xuất tàu trong hồ sơ: "Xác nhận hoàn thành danh sách xuất tàu <tên tàu>" + "Tiến độ thực tế : <đã xuất>/<tổng cont danh sách>" (`vesselListProgress`). Bỏ dòng "Duyệt cả danh sách… Không thu phí, không phiếu EEIR (K80)". Nhập tàu giữ như cũ.
+
 ### DEC-166 — Danh mục PHÂN LOẠI ĐÓNG HÀNG theo hãng tàu + hãng tàu ƯU TIÊN
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng — trả lời câu hỏi). **Thay** bộ cố định M / K / E (DEC-016, DEC-128 giữ nguyên chỗ hiển thị).
@@ -1628,6 +1632,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-168 đã xác nhận (cập nhật 2026-10-28).
+- Quyết định nghiệp vụ: DEC-001 → DEC-169 đã xác nhận (cập nhật 2026-10-28).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
