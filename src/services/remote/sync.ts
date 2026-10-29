@@ -6,6 +6,7 @@
 //   Database từ chối → báo lỗi + tải lại (không mất gì). Không có hàng chờ (Demo) → hàm bọc chỉ chạy hàm gốc.
 // ============================================================================
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { gateInPhotoPath, photoBlob, repairPhotoPath } from '../photo';
 
 export type RemoteOp = (client: SupabaseClient) => Promise<void>;
 
@@ -72,34 +73,31 @@ export async function rpc<T = unknown>(client: SupabaseClient, name: string, par
 export const requestId = (): string => crypto.randomUUID();
 
 // ---------------------------------------------------------------------------
-// ẢNH CỬA CONTAINER (DEC-150): nén ~200 KB trên máy rồi tải lên kho riêng tư door-photos
+// ẢNH CỬA CONTAINER (DEC-150) + ẢNH HOÀN THÀNH SỬA CHỮA (DEC-176): nén < 200 KB trên máy rồi tải lên kho riêng tư
+// Thư mục theo ngày — ANH-GATE-IN/<năm>/<tháng>/<ngày>, ANH-SUA-CHUA/<năm>/<tháng>/<ngày>/<tổ>/<số cont> (services/photo.ts)
 // ---------------------------------------------------------------------------
-async function compressDataUrl(dataUrl: string, maxSide = 1280, quality = 0.7): Promise<Blob> {
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const i = new Image();
-    i.onload = () => resolve(i);
-    i.onerror = () => reject(new Error('Không đọc được ảnh chụp.'));
-    i.src = dataUrl;
-  });
-  const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(img.width * scale);
-  canvas.height = Math.round(img.height * scale);
-  canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
-  for (let q = quality; q >= 0.4; q -= 0.1) {
-    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', q));
-    if (blob && (blob.size <= 220_000 || q <= 0.45)) return blob;
-  }
-  throw new Error('Không nén được ảnh chụp.');
+async function uploadPhoto(client: SupabaseClient, bucket: string, path: string, dataUrl: string): Promise<void> {
+  const blob = await photoBlob(dataUrl);
+  const { error } = await client.storage.from(bucket).upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+  if (error) throw new Error(`Không tải được ảnh lên: ${error.message}`);
 }
 
 // Ảnh dạng data: → tải lên, trả đường dẫn kho; ảnh dạng link (ảnh mẫu khi thử trên máy tính) → giữ nguyên
 export async function uploadDoorPhoto(client: SupabaseClient, photo: string, label: string): Promise<string> {
   if (!photo.startsWith('data:')) return photo;
-  const blob = await compressDataUrl(photo);
-  const now = new Date();
-  const path = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${label}-${crypto.randomUUID().slice(0, 8)}.jpg`;
-  const { error } = await client.storage.from('door-photos').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
-  if (error) throw new Error(`Không tải được ảnh lên: ${error.message}`);
+  const path = gateInPhotoPath(label);
+  await uploadPhoto(client, 'door-photos', path, photo);
   return path;
+}
+
+// Ảnh sửa chữa: tải song song 4 ảnh / lượt (nhanh trên 4G, không nghẽn); trả đường dẫn theo đúng thứ tự chụp
+export async function uploadRepairPhotos(client: SupabaseClient, photos: string[], teamCode: string, containerNo: string): Promise<string[]> {
+  const at = new Date();
+  const paths = photos.map((p, i) => (p.startsWith('data:') ? repairPhotoPath(teamCode, containerNo, i, at) : p));
+  const queue = photos.map((p, i) => i).filter((i) => photos[i].startsWith('data:'));
+  const worker = async () => {
+    for (let i = queue.shift(); i !== undefined; i = queue.shift()) await uploadPhoto(client, 'repair-photos', paths[i], photos[i]);
+  };
+  await Promise.all(Array.from({ length: Math.min(4, queue.length) }, worker));
+  return paths;
 }
