@@ -1,16 +1,16 @@
 import React from 'react';
-import { Clock, Eye, FileDown, FileText, Printer, ReceiptText, X } from 'lucide-react';
+import { Clock, Eye, EyeOff, FileDown, FileText, Printer, ReceiptText, X } from 'lucide-react';
 import { ContainerStatus, K80InternalTicket, VesselList, VesselListItem } from '../types/depot';
 import { DepotState } from '../services/depotStore';
 import { formatLocation } from '../services/core';
 import { documentPackOf } from "../services/driverRoute";
 import { recordReceiptPrint } from "../services/api";
 import { formatDateTime } from "../services/datetime";
-import { dossierHistory, DossierHistoryRow, HistoryAction, HistoryReceipt, resolveDossier } from '../services/dossierHistory';
+import { DossierHistory, dossierHistory, DossierHistoryRow, HistoryAction, HistoryReceipt, resolveDossier } from '../services/dossierHistory';
 import { CompanyHeader, PrintPreviewModal } from "./ReceiptPrint";
 import { exportPdf, printNow } from "./printNow";
 import { CustomerSlipK80, EeirK80Sheet, slipPrintCount, VesselEeirPrintSheet } from './K80TicketModal';
-import { linkCls, formatViTime, LocText, PhotoGallery } from './shared';
+import { CELL_MAX, CellText, linkCls, formatViTime, LocText, PhotoGallery } from './shared';
 
 interface Props {
   masterDossierCode: string | null; // Mã hồ sơ HẠ VỎ (HV-...) hoặc CẤP VỎ (CV-...)
@@ -55,6 +55,7 @@ const ACTION_TONE: Record<HistoryAction, string> = {
 
 const HistoryDetail: React.FC<{ row: DossierHistoryRow; onOpenReceipt?: (key: string) => void }> = ({ row, onOpenReceipt }) => (
   <div className="space-y-1">
+    <p className="font-bold text-ink">{row.operation}</p>
     {row.location && (
       <p className="inline-flex flex-wrap items-center gap-1 font-semibold">
         {row.location.from && <><LocText text={row.location.from} /> →</>}
@@ -67,14 +68,109 @@ const HistoryDetail: React.FC<{ row: DossierHistoryRow; onOpenReceipt?: (key: st
         {row.receipts.map((r) => <ReceiptLink key={r.target} receipt={r} onOpenReceipt={onOpenReceipt} />)}
       </p>
     )}
-    {/* Ảnh chỉ tải khi bấm XEM ẢNH (DEC-178) */}
+    {/* Ảnh cửa cont Giám định hiện luôn (DEC-182); ảnh khác chỉ tải khi bấm XEM ẢNH (DEC-178) */}
     {row.photos && row.photos.length > 0 && (
       <div data-testid={row.operation === 'Sửa chữa' ? 'repair-photo-list' : undefined}>
-        <PhotoGallery photos={row.photos} alt={row.photoAlt || 'Ảnh'} className="h-16 w-16" />
+        <PhotoGallery photos={row.photos} alt={row.photoAlt || 'Ảnh'} className={row.showPhotos ? 'h-24 w-36' : 'h-16 w-16'} autoShow={row.showPhotos} />
       </div>
     )}
   </div>
 );
+
+// LỊCH SỬ HỒ SƠ (DEC-181, DEC-183, DEC-184): cột BỘ PHẬN (tác nghiệp cụ thể ở đầu dòng chi tiết); mỗi tác nghiệp đúng 1 dòng; CHI TIẾT luôn ẩn (nút mắt) — bấm mắt mở dòng chi tiết ngay bên dưới;
+// nút MỞ / ẨN TOÀN BỘ CHI TIẾT. Bản in A4 (printMode) luôn mở hết, không có nút.
+export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (key: string) => void; printMode?: boolean }> = ({ history, onOpenReceipt, printMode = false }) => {
+  const [open, setOpen] = React.useState<Set<string>>(() => new Set());
+  const all = history.rows.length > 0 && history.rows.every((r) => open.has(r.id));
+  const toggle = (id: string) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const isOpen = (id: string) => printMode || open.has(id);
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <h3 className="text-xs font-black uppercase tracking-wider text-ink-muted">Lịch sử hồ sơ</h3>
+        {!printMode && history.rows.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setOpen(all ? new Set() : new Set(history.rows.map((r) => r.id)))}
+            className="no-print inline-flex items-center gap-1.5 rounded-md border border-line-strong px-2.5 py-1.5 text-[11px] font-bold text-navy-700 hover:bg-navy-50"
+          >
+            {all ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {all ? 'ẨN TOÀN BỘ CHI TIẾT' : 'MỞ TOÀN BỘ CHI TIẾT'}
+          </button>
+        )}
+      </div>
+      <div className="overflow-x-auto rounded-md border border-line">
+        <table className="dossier-history w-full whitespace-nowrap text-left text-xs" data-testid="dossier-history">
+          <thead className="bg-canvas text-[10px] font-bold uppercase text-ink-muted">
+            <tr>
+              <th className="px-2.5 py-2">Thời gian</th>
+              <th className="px-2.5 py-2">Bộ phận</th>
+              <th className="px-2.5 py-2">Nội dung</th>
+              <th className="px-2.5 py-2 text-center">Chi tiết</th>
+              <th className="px-2.5 py-2">Nhân viên</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {history.rows.map((r) => (
+              <React.Fragment key={r.id}>
+                <tr>
+                  <td className="px-2.5 py-2 font-mono">{formatViTime(r.at)}</td>
+                  <td className="px-2.5 py-2 font-semibold" title={r.operation}>{r.dept}</td>
+                  <td className="px-2.5 py-2">
+                    <span className={`rounded border px-1.5 py-0.5 text-[10px] font-bold ${ACTION_TONE[r.action]}`}>{r.action}</span>
+                  </td>
+                  <td className="px-2.5 py-1 text-center">
+                    {!printMode && (
+                      <button
+                        type="button"
+                        onClick={() => toggle(r.id)}
+                        aria-label={isOpen(r.id) ? 'Ẩn chi tiết' : 'Xem chi tiết'}
+                        aria-expanded={isOpen(r.id)}
+                        className={`no-print rounded-md p-1 hover:bg-navy-50 ${isOpen(r.id) ? 'text-navy-700' : 'text-ink-muted'}`}
+                      >
+                        {isOpen(r.id) ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                      </button>
+                    )}
+                  </td>
+                  <td className="px-2.5 py-2"><CellText text={r.staff} max={CELL_MAX.MEDIUM} /></td>
+                </tr>
+                {isOpen(r.id) && (
+                  <tr className="bg-canvas/60" data-testid="dossier-detail">
+                    <td colSpan={5} className="whitespace-normal px-2.5 py-2 pl-6">
+                      <HistoryDetail row={r} onOpenReceipt={onOpenReceipt} />
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
+            {history.rows.length === 0 && (
+              <tr><td colSpan={5} className="px-2.5 py-3 text-center text-ink-muted">Chưa có tác nghiệp.</td></tr>
+            )}
+            {/* ĐANG CHỜ (DEC-184): mỗi việc chờ 1 dòng — icon đồng hồ, bộ phận phụ trách, nội dung chờ */}
+            {history.pending.map((p, i) => (
+              <tr key={`p${i}`} className="bg-amber-50/70" data-testid="dossier-pending">
+                <td className="px-2.5 py-2 text-amber-600">
+                  <Clock className="h-4 w-4 animate-pulse" aria-label="Đang chờ" />
+                </td>
+                <td className="px-2.5 py-2 font-semibold text-amber-900">{p.dept}</td>
+                <td className="px-2.5 py-2">
+                  <span className="rounded border border-amber-400 bg-white px-1.5 py-0.5 text-[10px] font-bold text-amber-700">ĐANG CHỜ</span>
+                </td>
+                <td colSpan={2} className="px-2.5 py-2 font-semibold text-amber-900">{p.label}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // HỒ SƠ CONTAINER: thông tin container ở đầu (DEC-058) → LỊCH SỬ HỒ SƠ dạng bảng, cũ trên – mới dưới (DEC-181)
@@ -111,8 +207,8 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
   const activeOut = outOrders.find((o) => o.status !== 'CANCELLED');
   const history = dossierHistory(state, dossier);
 
-  // Nội dung hồ sơ — dùng chung cho màn hình và bản in A4
-  const content = (
+  // Nội dung hồ sơ — dùng chung cho màn hình và bản in A4 (bản in mở toàn bộ chi tiết)
+  const renderContent = (printMode: boolean) => (
     <>
         {/* THÔNG TIN CƠ BẢN CONTAINER — focus số cont */}
         <header className="bg-navy-900 px-5 py-4 text-white">
@@ -152,45 +248,8 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
             </p>
           )}
 
-          {/* LỊCH SỬ HỒ SƠ (DEC-181): cũ trên, mới dưới; dòng ĐANG CHỜ cuối bảng */}
-          <h3 className="pt-1 text-xs font-black uppercase tracking-wider text-ink-muted">Lịch sử hồ sơ</h3>
-          <div className="overflow-x-auto rounded-md border border-line">
-            <table className="dossier-history w-full text-left text-xs" data-testid="dossier-history">
-              <thead className="bg-canvas text-[10px] font-bold uppercase text-ink-muted">
-                <tr>
-                  <th className="px-2.5 py-2">Thời gian</th>
-                  <th className="px-2.5 py-2">Tác nghiệp</th>
-                  <th className="px-2.5 py-2">Nội dung</th>
-                  <th className="px-2.5 py-2">Chi tiết</th>
-                  <th className="px-2.5 py-2">Nhân viên</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line align-top">
-                {history.rows.map((r) => (
-                  <tr key={r.id}>
-                    <td className="whitespace-nowrap px-2.5 py-2 font-mono">{formatViTime(r.at)}</td>
-                    <td className="whitespace-nowrap px-2.5 py-2 font-semibold">{r.operation}</td>
-                    <td className="whitespace-nowrap px-2.5 py-2">
-                      <span className={`rounded border px-1.5 py-0.5 text-[10px] font-bold ${ACTION_TONE[r.action]}`}>{r.action}</span>
-                    </td>
-                    <td className="min-w-[240px] px-2.5 py-2"><HistoryDetail row={r} onOpenReceipt={onOpenReceipt} /></td>
-                    <td className="whitespace-nowrap px-2.5 py-2">{r.staff}</td>
-                  </tr>
-                ))}
-                {history.rows.length === 0 && (
-                  <tr><td colSpan={5} className="px-2.5 py-3 text-center text-ink-muted">Chưa có tác nghiệp.</td></tr>
-                )}
-                {history.pending.length > 0 && (
-                  <tr className="bg-amber-50" data-testid="dossier-pending">
-                    <td colSpan={2} className="whitespace-nowrap px-2.5 py-2 font-bold text-amber-800">
-                      <span className="inline-flex items-center gap-1"><Clock className="h-4 w-4" />ĐANG CHỜ</span>
-                    </td>
-                    <td colSpan={3} className="px-2.5 py-2 font-semibold text-amber-900">{history.pending.join(' • ')}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          {/* LỊCH SỬ HỒ SƠ (DEC-181, DEC-183): mỗi tác nghiệp 1 dòng, chi tiết ẩn — bản in A4 mở hết */}
+          <HistoryTable history={history} onOpenReceipt={onOpenReceipt} printMode={printMode} />
         </div>
     </>
   );
@@ -199,7 +258,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
   const dossierA4 = (
     <div className="dossier-a4 space-y-3 bg-white text-ink">
       <CompanyHeader company={state.companyProfile} title="HỒ SƠ CONTAINER" subtitle={<p className="text-[11px]">Toàn bộ hồ sơ tới thời điểm in • In lúc {formatDateTime(new Date())}</p>} />
-      {content}
+      {renderContent(true)}
     </div>
   );
 
@@ -207,7 +266,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
     // DEC-080: hồ sơ mở dạng cửa sổ trượt bên phải (giống chi tiết các danh sách); bấm ra ngoài / Esc để đóng
     <div className="fixed inset-0 z-50 flex justify-end bg-navy-900/30" role="dialog" aria-modal="true" aria-label="Hồ sơ container" onClick={onClose}>
       <div className="h-full w-full overflow-y-auto bg-white shadow-2xl sm:w-[min(960px,80vw)]" onClick={(e) => e.stopPropagation()}>
-        {content}
+        {renderContent(false)}
 
         <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3">
           <button

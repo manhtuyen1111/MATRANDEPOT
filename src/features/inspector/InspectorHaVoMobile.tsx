@@ -480,7 +480,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
               <p className="mb-1 text-xs font-semibold text-ink-muted">
                 Ảnh chụp cửa Container:
               </p>
-              <PhotoGallery photos={[selectedOrder.doorPhotoUrl]} alt={`Ảnh cửa cont ${selectedOrder.orderCode}`} className="h-48 w-full" />
+              <PhotoGallery photos={[selectedOrder.doorPhotoUrl]} alt={`Ảnh cửa cont ${selectedOrder.orderCode}`} className="h-48 w-full" autoShow />
             </div>
 
             <div className="md:col-span-7 grid grid-cols-2 gap-2.5 text-xs">

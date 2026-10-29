@@ -1846,6 +1846,9 @@ describe('DEC-181: lịch sử hồ sơ container', () => {
     expect(ops.indexOf('Giám định — Hạ vỏ')).toBeLessThan(ops.indexOf('Sửa chữa'));
     const repair = rows.find((r) => r.operation === 'Sửa chữa')!;
     expect(repair.action).toBe('TẠO MỚI');
+    // DEC-184: cột BỘ PHẬN — Thanh toán thuộc Văn phòng
+    expect(rows.find((r) => r.operation === 'Thanh toán — Hạ vỏ')?.dept).toBe('Văn phòng');
+    expect(rows.find((r) => r.operation === 'Báo giá — Xác nhận chờ sửa chữa')?.dept).toBe('Báo giá');
     expect(repair.staff).toBe(wo.completedBy);
     expect(repair.photos).toEqual(wo.repairPhotos);
   });
@@ -1871,7 +1874,7 @@ describe('DEC-181: lịch sử hồ sơ container', () => {
     expect(cancel.action).toBe('XÓA');
     expect(cancel.detail).toContain('Khách đổi lịch');
     expect(ops.indexOf('Văn phòng — Cấp vỏ')).toBeLessThan(ops.indexOf('Văn phòng — Hủy lệnh cấp'));
-    expect(pending.some((p) => p.includes(order.gateOutCode))).toBe(false);
+    expect(pending.some((p) => p.label.includes(order.gateOutCode))).toBe(false);
   });
 
   it('bước chưa làm vào ĐANG CHỜ, không thành dòng lịch sử; mã không tồn tại → không có hồ sơ', () => {
@@ -1883,7 +1886,8 @@ describe('DEC-181: lịch sử hồ sơ container', () => {
     const h = historyOf(s, code);
     expect(h.rows.map((r) => r.operation)).toEqual(['Giám định — Hạ vỏ']);
     expect(h.rows[0].photos).toEqual(['data:x']);
-    expect(h.pending).toEqual(['Chờ Văn phòng bổ sung thông tin hạ vỏ']);
+    expect(h.pending).toEqual([{ dept: 'Văn phòng', label: 'Chờ Văn phòng bổ sung thông tin hạ vỏ' }]);
+    expect(h.rows[0].dept).toBe('Giám định');
     expect(resolveDossier(s, 'HV-000000-999')).toBeNull();
   });
 });
