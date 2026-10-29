@@ -1527,6 +1527,19 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-178 — Dữ liệu lớn: RLS 1 lần / truy vấn, tải theo nhu cầu, báo cáo tính ở database
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng — sau thử tải 200.000 lượt vào – ra + 200.000 lượt sửa chữa, 2.000 cont tồn trên Supabase local).
+- **Lỗi phát hiện:** đăng nhập → "canceling statement due to statement timeout". RLS `using (public.is_active_staff())` gọi hàm cho từng dòng. **Đã sửa:** migration `20261108000001_rls_initplan_indexes.sql` bọc `(select …)` cho mọi policy `public` (quyền không đổi) + chỉ mục cho cột lọc khi mở app; pgTAP `0012_rls_initplan.test.sql` (chặn policy mới quên bọc). Giữ giới hạn 8 giây của database làm "chuông báo" truy vấn chậm.
+- **Nguyên tắc tải dữ liệu** (làm dần, đo bằng `tests/load.local.test.ts`):
+  - Mở app chỉ tải **chữ** của Tồn vỏ + việc đang chờ; chỉ lấy cột màn hình cần; tải theo vai trò (hiện trường chỉ hàng chờ của mình).
+  - **Bỏ tải sẵn lịch sử 7 ngày.** Màn hiện trường **không cần** xem việc đã xong gần đây — cần thì tìm số cont ở Tồn vỏ / tra cứu → mở hồ sơ. (Tab Đã xong / Tất cả của màn tàu thuộc danh sách tàu đang mở — giữ.)
+  - Hồ sơ container tải khi bấm mở.
+  - **Ảnh chỉ lưu đường dẫn**; mở app không xin link ảnh; mở hồ sơ mới xin link ảnh của cont đó, ảnh hiện dần khi cuộn tới.
+  - **Báo cáo tính ở database** (lọc, phân trang, tổng, Excel tải theo đợt) → **bỏ giới hạn 3 tháng** (thay DEC-157 phần giới hạn).
+- **Tìm số container (mọi ô tìm):** tìm theo **7 số seri** và tìm **chính xác**; hiển thị gợi ý gần đúng khi đang gõ (chi tiết gợi ý: chờ người dùng xác nhận).
+- Mục tiêu: mở app hiện trường < 2 giây / < 0,3 MB; Văn phòng < 4 giây / < 2 MB; báo cáo trang đầu < 2 giây; tìm số cont < 0,5 giây; mở hồ sơ < 1 giây.
+
 ### DEC-177 — Header 1 dòng: icon QUẢN TRỊ HỆ THỐNG gộp tài khoản; Góp ý cùng dòng tên màn
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng). Mục đích: tối ưu hiển thị màn tác nghiệp mobile (Giám định, Vệ sinh, Xe nâng, Sửa chữa).
@@ -1691,6 +1704,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-177 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-178 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
