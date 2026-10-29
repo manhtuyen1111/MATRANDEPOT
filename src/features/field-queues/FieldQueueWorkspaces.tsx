@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ScanField } from '../../components/Qr';
 import { completeCleaningTask, completeRepairTask, executeGateOut, updateContainerLocation } from '../../services/api';
-import { Camera, CheckCircle2, ChevronDown, ChevronUp, MapPin, QrCode, X } from 'lucide-react';
+import { Camera, CheckCircle2, ChevronDown, ChevronUp, MapPin, QrCode, Search, X } from 'lucide-react';
 import { ContainerRecord } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 
@@ -104,12 +104,17 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
     setSlot(EMPTY_SLOT);
   }, [mode]);
 
+  // DEC-176: Sửa chữa không quét QR — tìm theo số container (gõ một phần số cont, danh sách lọc ngay)
+  const [search, setSearch] = useState('');
+  const searchKey = search.replace(/[\s-]/g, '').toUpperCase();
+  const matches = searchKey ? queue.filter((c) => c.containerNo.includes(searchKey)) : [];
+
   // Chỉ nhận container đang nằm trong hàng chờ của bộ phận này
   const lookup = (raw: string) => {
     setError(null);
     setSuccess(null);
     const code = raw.trim().toUpperCase();
-    if (!code) return setError('Vui lòng quét hoặc nhập mã QR trên phiếu EEIR (K80).');
+    if (!code) return setError(mode === 'SC_CHO_SUA_CHUA' ? 'Vui lòng nhập số container.' : 'Vui lòng quét hoặc nhập mã QR trên phiếu EEIR (K80).');
     const found = queue.find(
       (c) =>
         c.activeQrCode.toUpperCase() === code ||
@@ -125,6 +130,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
     }
     setScannedQr(found.activeQrCode);
     setScanned(found);
+    setSearch('');
     setSlot(EMPTY_SLOT);
   };
 
@@ -194,13 +200,51 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
       <QueueHeader dept={title.dept} name={title.name} count={queue.length} />
       <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
 
-      <div className="space-y-3 rounded-lg border border-line bg-white p-4">
-        <span className="flex items-center gap-1.5 text-xs font-bold uppercase text-ink">
-          <QrCode className="h-4 w-4 text-ink-muted" />
-          Quét mã QR trên phiếu EEIR (K80)
-        </span>
-        <ScanField value={scannedQr} onChange={setScannedQr} onSubmit={lookup} placeholder="Mã QR phiếu EEIR (K80) / Mã hồ sơ / Số cont..." />
-      </div>
+      {isRepair ? (
+        <div className="space-y-2 rounded-lg border border-line bg-white p-4" data-testid="repair-search">
+          <span className="flex items-center gap-1.5 text-xs font-bold uppercase text-ink">
+            <Search className="h-4 w-4 text-ink-muted" />
+            Tìm theo số container
+          </span>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              lookup(matches.length === 1 ? matches[0].containerNo : searchKey);
+            }}
+          >
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value.toUpperCase())}
+              placeholder="Nhập số container (VD 1234567)"
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              className={`${inputCls} font-mono uppercase`}
+            />
+          </form>
+          {searchKey && (
+            <ul className="divide-y divide-line overflow-hidden rounded-md border border-line">
+              {matches.length === 0 ? (
+                <li className="p-3 text-center text-xs text-ink-muted">Không có cont "{searchKey}" trong danh sách chờ sửa chữa.</li>
+              ) : (
+                matches.slice(0, 20).map((c) => (
+                  <li key={c.id}>
+                    <QueueListRow state={state} container={c} label="CHỜ SỬA CHỮA" extra={`${repairWoOf(c)?.laborHours ?? c.quotationLaborHours ?? '-'} giờ công`} onClick={() => lookup(c.activeQrCode)} />
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3 rounded-lg border border-line bg-white p-4">
+          <span className="flex items-center gap-1.5 text-xs font-bold uppercase text-ink">
+            <QrCode className="h-4 w-4 text-ink-muted" />
+            Quét mã QR trên phiếu EEIR (K80)
+          </span>
+          <ScanField value={scannedQr} onChange={setScannedQr} onSubmit={lookup} placeholder="Mã QR phiếu EEIR (K80) / Mã hồ sơ / Số cont..." />
+        </div>
+      )}
 
       {scanned && (
         <div className="space-y-3 rounded-lg border border-navy-900 bg-white p-4 text-xs">

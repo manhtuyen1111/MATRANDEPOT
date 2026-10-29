@@ -1030,6 +1030,14 @@ describe('DEC-057: mã QR tác nghiệp THẬT + quét bằng camera', () => {
     expect(field).toContain('Mở camera quét QR');
     expect(renderToString(<DocumentReturnWorkspace state={as(base, 'usr-office')} onUpdateState={noop} />)).toContain('Mở camera quét QR');
   });
+
+  it('DEC-176: Chờ sửa chữa không quét QR — tìm theo số container', () => {
+    const html = renderToString(<FieldQueueWorkspaces mode="SC_CHO_SUA_CHUA" state={as(base, 'usr-repair')} onUpdateState={noop} />);
+    expect(html).toContain('data-testid="repair-search"');
+    expect(html).toContain('Tìm theo số container');
+    expect(html).not.toContain('Mở camera quét QR');
+    expect(html).not.toContain('Quét mã QR trên phiếu EEIR');
+  });
 });
 
 describe('DEC-166: màn Danh mục → Phân loại đóng hàng', () => {
