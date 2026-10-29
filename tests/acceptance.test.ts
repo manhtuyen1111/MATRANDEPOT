@@ -1688,7 +1688,6 @@ describe('DEC-178: tải theo vai trò + hồ sơ tải khi bấm mở', () => {
 
 // DEC-178: tìm số container theo 7 số seri — chính xác khi đủ, gợi ý theo đầu seri khi đang gõ
 import { containerSerial, isExactContainerQuery, matchContainerNo } from '../src/services/containerSearch';
-import { queryGateInReport } from '../src/services/reports';
 
 describe('DEC-178: tìm số container', () => {
   it('Đủ 7 số seri / 11 ký tự → chính xác; đang gõ → gợi ý theo đầu seri', () => {

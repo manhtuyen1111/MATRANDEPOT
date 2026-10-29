@@ -62,8 +62,8 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
                 fileName={`MATRAN_${mode}${view === 'VESSEL' ? '_THEO-TAU' : ''}_${fileStamp(applied.dateFrom) || applied.vesselName || applied.containerNo || 'tra-cuu'}.xlsx`}
                 getSheets={() => [
                   view === 'DETAIL'
-                    ? vesselReportSheet(mode, collectAllPages((p) => queryVesselReport(state, mode, applied, p)))
-                    : vesselSummarySheet(mode, collectAllPages((p) => queryVesselSummaryReport(state, mode, applied, p))),
+                    ? vesselReportSheet(mode, collectAllPages((p, size) => queryVesselReport(state, mode, applied, p, size)))
+                    : vesselSummarySheet(mode, collectAllPages((p, size) => queryVesselSummaryReport(state, mode, applied, p, size))),
                 ]}
               />
             ) : null}

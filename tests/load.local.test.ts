@@ -198,7 +198,7 @@ describe.skipIf(!run)('Thử tải: 200.000 lượt vào – ra + 200.000 lượ
       console.log(`[LOAD]   → ${s.gateInOrders.length} hồ sơ hạ vỏ, ${s.workOrders.length} phiếu sửa chữa`);
       const filter = { dateFrom: formatDateTime(from), dateTo: formatDateTime(to) };
       const page = await measure('Báo cáo Hạ vỏ — trang 1', () => queryGateInReport(s, 'CUSTOMER_RETURN', filter, 1, 50));
-      await measure('Excel Hạ vỏ (toàn bộ kết quả)', () => gateInSheet('HẠ VỎ', collectAllPages((p) => queryGateInReport(s, 'CUSTOMER_RETURN', filter, p)), s));
+      await measure('Excel Hạ vỏ (toàn bộ kết quả)', () => gateInSheet('HẠ VỎ', collectAllPages((p, size) => queryGateInReport(s, 'CUSTOMER_RETURN', filter, p, size)), s));
       const out = await measure('Báo cáo Sản lượng sửa chữa', () => queryRepairOutput(s, filter));
       await measure('Excel Sản lượng sửa chữa', () => repairOutputSheets(out));
       expect(page.total).toBeGreaterThan(0);

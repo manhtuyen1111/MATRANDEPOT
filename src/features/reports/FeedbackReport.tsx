@@ -61,7 +61,7 @@ export const FeedbackReport: React.FC<{ state: DepotState; onUpdateState: (next:
             {applied && result && result.total > 0 && (
               <ExportExcelButton
                 fileName={`MATRAN_GOP_Y_${fileStamp(applied.dateFrom) || 'tra-cuu'}.xlsx`}
-                getSheets={() => [feedbackSheet(collectAllPages((p) => queryFeedback(listState, applied, p)))]}
+                getSheets={() => [feedbackSheet(collectAllPages((p, size) => queryFeedback(listState, applied, p, size)))]}
               />
             )}
           </div>

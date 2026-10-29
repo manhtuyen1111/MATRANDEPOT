@@ -192,7 +192,7 @@ export const ReceiptsWorkspace: React.FC<{
             {applied && result && result.total > 0 && (
               <ExportExcelButton
                 fileName={`MATRAN_PHIEU_THU_${fileStamp(applied.dateFrom) || applied.receiptNo || "tra-cuu"}.xlsx`}
-                getSheets={() => [receiptsSheet(listState, collectAllPages((p) => queryReceipts(listState, applied, p)))]}
+                getSheets={() => [receiptsSheet(listState, collectAllPages((p, size) => queryReceipts(listState, applied, p, size)))]}
               />
             )}
             {canCreate && (

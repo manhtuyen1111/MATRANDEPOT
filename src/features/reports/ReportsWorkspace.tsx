@@ -57,10 +57,10 @@ const SECTION_FILE: Record<ReportSection, string> = {
 function operationSheet(state: DepotState, section: ReportSection, f: OperationReportFilter): SheetData {
   if (section === 'BC_HA_VO' || section === 'BC_NHAP_TAU') {
     const type = section === 'BC_HA_VO' ? 'CUSTOMER_RETURN' : 'VESSEL_IMPORT';
-    return gateInSheet(section === 'BC_HA_VO' ? 'HẠ VỎ' : 'NHẬP TÀU', collectAllPages((p) => queryGateInReport(state, type, f, p)), state);
+    return gateInSheet(section === 'BC_HA_VO' ? 'HẠ VỎ' : 'NHẬP TÀU', collectAllPages((p, size) => queryGateInReport(state, type, f, p, size)), state);
   }
   const types: GateOutType[] = section === 'BC_CAP_VO' ? ['EMPTY_RELEASE'] : ['VESSEL_EXPORT'];
-  return gateOutSheet(section === 'BC_CAP_VO' ? 'CẤP VỎ' : 'XUẤT TÀU', state, collectAllPages((p) => queryGateOutReport(state, types, f, p)));
+  return gateOutSheet(section === 'BC_CAP_VO' ? 'CẤP VỎ' : 'XUẤT TÀU', state, collectAllPages((p, size) => queryGateOutReport(state, types, f, p, size)));
 }
 
 const GATE_IN_STATUS: Record<GateInOrder['status'], string> = {
@@ -407,7 +407,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
             </button>
             {result && result.total > 0 && (
               <ExportExcelButton
-                getSheets={() => [repairReportSheet(collectAllPages((p) => queryRepairReport(state, clean(applied!), p)))]}
+                getSheets={() => [repairReportSheet(collectAllPages((p, size) => queryRepairReport(state, clean(applied!), p, size)))]}
                 fileName={`MATRAN_SUA_CHUA_${fileStamp(applied!.dateFrom) || applied!.containerNo || "tra-cuu"}.xlsx`}
               />
             )}

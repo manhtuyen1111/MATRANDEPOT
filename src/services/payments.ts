@@ -572,6 +572,25 @@ export function containerPaymentInfo(state: DepotState, c: { masterDossierCode: 
 }
 
 // DEC-126: THANH TOÁN + MÃ PHIẾU THU theo chứng từ chi phí (Hạ vỏ hoặc Cấp vỏ)
+// Bảng tra giao dịch thành công theo chứng từ / phiếu thu theo giao dịch — tính 1 lần cho mỗi bộ dữ liệu
+// (báo cáo / Excel gọi voucherPaymentInfo cho hàng chục nghìn dòng — DEC-178)
+const paymentIndexCache = new WeakMap<object, { succeededByVoucher: Map<string, PaymentTransaction[]>; receiptsByTx: Map<string, PaymentReceipt[]> }>();
+function paymentIndex(state: DepotState) {
+  const key = state.paymentReceipts;
+  const hit = paymentIndexCache.get(state.paymentTransactions);
+  if (hit && (hit as { key?: object }).key === key) return hit;
+  const succeededByVoucher = new Map<string, PaymentTransaction[]>();
+  for (const t of state.paymentTransactions) {
+    if (t.status !== 'SUCCEEDED' || !t.voucherId) continue;
+    succeededByVoucher.set(t.voucherId, [...(succeededByVoucher.get(t.voucherId) || []), t]);
+  }
+  const receiptsByTx = new Map<string, PaymentReceipt[]>();
+  for (const r of state.paymentReceipts) receiptsByTx.set(r.transactionId, [...(receiptsByTx.get(r.transactionId) || []), r]);
+  const idx = Object.assign({ succeededByVoucher, receiptsByTx }, { key });
+  paymentIndexCache.set(state.paymentTransactions, idx);
+  return idx;
+}
+
 export function voucherPaymentInfo(state: DepotState, voucher: PaymentVoucher | undefined): ContainerPaymentInfo {
   if (!voucher) return { label: 'Chưa lập chứng từ', receipt: '' };
   if (voucher.status !== 'CONFIRMED' && voucher.status !== 'DEFERRED') {
@@ -586,7 +605,7 @@ export function voucherPaymentInfo(state: DepotState, voucher: PaymentVoucher | 
     const r = topup && state.paymentReceipts.find((x) => x.transactionId === topup.id);
     return { category, label: PAYMENT_CATEGORY_SHORT_LABELS.TTT, receipt: voucher.masterReceiptCode || '', receiptTarget: r?.receiptNo || topup?.id };
   }
-  const txIds = state.paymentTransactions.filter((t) => t.voucherId === voucher.id && t.status === 'SUCCEEDED').map((t) => t.id);
-  const receipts = state.paymentReceipts.filter((r) => txIds.includes(r.transactionId)).map((r) => r.receiptNo);
+  const idx = paymentIndex(state);
+  const receipts = (idx.succeededByVoucher.get(voucher.id) || []).flatMap((t) => idx.receiptsByTx.get(t.id) || []).map((r) => r.receiptNo);
   return { category: 'TTTT', label: PAYMENT_CATEGORY_SHORT_LABELS.TTTT, receipt: receipts.join(', '), receiptTarget: receipts[0] };
 }

@@ -70,8 +70,11 @@ function inRange(iso: string | undefined, range: { from: number; to: number } | 
   return t >= range.from && t <= range.to;
 }
 
+// Xuất Excel lấy 1 lần mọi dòng (DEC-178 — trước đây lặp từng trang 20 dòng, mỗi trang lọc + sắp xếp lại toàn bộ)
+export const ALL_ROWS = Number.MAX_SAFE_INTEGER;
+
 function paginate<T>(rows: T[], page: number, requested: number): PagedResult<T> {
-  const pageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(requested) ? requested : REPORT_PAGE_SIZE;
+  const pageSize = requested === ALL_ROWS ? Math.max(1, rows.length) : (PAGE_SIZE_OPTIONS as readonly number[]).includes(requested) ? requested : REPORT_PAGE_SIZE;
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const safePage = Math.min(Math.max(1, page), pageCount);
   return {
@@ -198,6 +201,7 @@ export interface SheetData {
 const fmt = (iso?: string) => (iso ? formatDateTime(iso) : '');
 
 export function gateInSheet(name: string, orders: GateInOrder[], state?: DepotState): SheetData {
+  const voucherById = new Map((state?.vouchers || []).map((v) => [v.id, v]));
   return {
     name,
     columns: [
@@ -213,13 +217,15 @@ export function gateInSheet(name: string, orders: GateInOrder[], state?: DepotSt
       o.manufactureYear || '', o.fieldStaffName, fmt(o.fieldRecordedAt), o.officeStaffName || '', fmt(o.officeVerifiedAt),
       o.feeAmount || 0,
       // DEC-126: thanh toán + mã phiếu thu (như Tồn vỏ)
-      ...(() => { const p = state ? voucherPaymentInfo(state, state.vouchers.find((v) => v.id === o.voucherId)) : undefined; return [p?.label || '', p?.receipt || '']; })(),
+      ...(() => { const p = state ? voucherPaymentInfo(state, o.voucherId ? voucherById.get(o.voucherId) : undefined) : undefined; return [p?.label || '', p?.receipt || '']; })(),
       fmt(o.gateInOkAt), o.gateInOkBy || '', o.cancelReason || '',
     ]),
   };
 }
 
 export function gateOutSheet(name: string, state: DepotState, orders: GateOutOrder[]): SheetData {
+  const contByDossier = new Map(state.containers.map((c) => [c.masterDossierCode, c]));
+  const voucherById = new Map(state.vouchers.map((v) => [v.id, v]));
   return {
     name,
     columns: [
@@ -229,8 +235,8 @@ export function gateOutSheet(name: string, state: DepotState, orders: GateOutOrd
       'LÝ DO HỦY',
     ],
     rows: orders.map((o) => {
-      const c = state.containers.find((x) => x.masterDossierCode === o.masterDossierCode);
-      const v = state.vouchers.find((x) => x.id === o.voucherId);
+      const c = contByDossier.get(o.masterDossierCode);
+      const v = o.voucherId ? voucherById.get(o.voucherId) : undefined;
       return [
         o.gateOutCode, o.containerNo, c?.size || '', c?.type || '', c?.shippingLineCode || '',
         o.masterDossierCode, o.gateOutType, o.status, o.bookingNo, c?.conditionClass || '', c?.stuffingClass || '', o.receiverRep,
@@ -411,6 +417,12 @@ export function queryRepairOutput(state: DepotState, filter: RepairOutputFilter)
   const range = toRange(filter);
   if (!range) throw new Error('Chọn khoảng thời gian trước khi tra cứu.');
   const byMember = new Map<string, RepairOutputRow>();
+  const contByDossier = new Map(state.containers.map((c) => [c.masterDossierCode, c]));
+  const gradeCache = new Map<string, ReturnType<typeof gradeOfMember>>();
+  const gradeOf = (name: string) => {
+    if (!gradeCache.has(name)) gradeCache.set(name, gradeOfMember(state, name));
+    return gradeCache.get(name);
+  };
   state.workOrders
     .filter((w) => w.category === 'REPAIR' && w.workStatus === 'COMPLETED' && inRange(w.completedAt, range))
     .filter((w) => !filter.teamCode || w.repairTeamCode === filter.teamCode)
@@ -418,7 +430,7 @@ export function queryRepairOutput(state: DepotState, filter: RepairOutputFilter)
       const members = Array.from(new Set((w.repairMembers || []).map((m) => m.trim()).filter(Boolean)));
       if (!members.length) return;
       const share = (w.laborHours || 0) / members.length;
-      const container = state.containers.find((c) => c.masterDossierCode === w.masterDossierCode);
+      const container = contByDossier.get(w.masterDossierCode);
       members
         .filter((m) => !filter.memberName || m === filter.memberName)
         .forEach((m) => {
@@ -427,7 +439,7 @@ export function queryRepairOutput(state: DepotState, filter: RepairOutputFilter)
           row.containers += 1;
           row.hours += share;
           const fixed = (w.repairMemberRates || []).find((x) => x.name.trim() === m && x.hourlyRate !== undefined);
-          const now = fixed ? undefined : gradeOfMember(state, m);
+          const now = fixed ? undefined : gradeOf(m);
           const gradeName = fixed ? fixed.gradeName : now?.name;
           const hourlyRate = fixed ? fixed.hourlyRate : now?.hourlyRate;
           row.jobs.push({
@@ -529,10 +541,10 @@ export async function toXlsxBuffer(sheets: SheetData[]): Promise<ArrayBuffer> {
 export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 // Lấy toàn bộ kết quả theo bộ lọc (mọi trang) để xuất Excel
-export function collectAllPages<T>(query: (page: number) => PagedResult<T>): T[] {
-  const first = query(1);
+export function collectAllPages<T>(query: (page: number, pageSize: number) => PagedResult<T>): T[] {
+  const first = query(1, ALL_ROWS);
   const rows = [...first.rows];
-  for (let p = 2; p <= first.pageCount; p++) rows.push(...query(p).rows);
+  for (let p = 2; p <= first.pageCount; p++) rows.push(...query(p, ALL_ROWS).rows);
   return rows;
 }
 
