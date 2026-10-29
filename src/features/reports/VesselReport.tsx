@@ -7,6 +7,7 @@ import { VesselListStatus } from '../vessel/VesselShared';
 import { quickRange, fileStamp, formatDateTime } from '../../services/datetime';
 import { linkCls, ContainerNo, DateRangeFilter, ExportExcelButton, Feedback, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize, CellText, CELL_MAX } from '../../components/shared';
 import { useReportState } from '../../components/useReportState';
+import { CONTAINER_SEARCH_HINT } from '../../services/containerSearch';
 
 const STATUS: Record<VesselMode, Record<string, string>> = {
   NHAP_TAU: { PENDING: 'Chờ xe về', INSPECTED: 'Đã giám định — chờ hạ', DONE: 'Đã hạ bãi', SKIPPED: 'Không kịp (gạch)' },
@@ -44,7 +45,7 @@ export const VesselReport: React.FC<{ state: DepotState; mode: VesselMode; onOpe
         <form onSubmit={(e) => { e.preventDefault(); report.run(draft, () => { setApplied({ ...draft }); setPage(1); }); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2 sm:col-span-1">
             <span className={labelCls}>Số container</span>
-            <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
+            <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} placeholder={CONTAINER_SEARCH_HINT} className={`${inputCls} font-mono uppercase`} />
           </label>
           <label className="col-span-2 sm:col-span-1">
             <span className={labelCls}>Tên tàu</span>

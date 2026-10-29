@@ -35,6 +35,7 @@ import { linkCls,
   LocationText,
   PhotoGallery,
 } from '../../components/shared';
+import { CONTAINER_SEARCH_HINT, matchContainerNo } from '../../services/containerSearch';
 
 interface OfficeProps {
   state: DepotState;
@@ -355,7 +356,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
     () =>
       state.containers
         .filter((c) => releaseBlocker(c) === null || blockedOnlyByHold(c))
-        .filter((c) => !filters.search.trim() || c.containerNo.includes(filters.search.trim().toUpperCase()))
+        .filter((c) => matchContainerNo(c.containerNo, filters.search))
         .filter((c) => filters.line === 'ALL' || c.shippingLineCode === filters.line)
         .filter((c) => filters.size === 'ALL' || c.size === filters.size)
         .filter((c) => filters.type === 'ALL' || c.type === filters.type)
@@ -528,7 +529,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
               <span className={labelCls}>Số cont</span>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
-                <input value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className={`${inputCls} pl-7 font-mono uppercase`} />
+                <input value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} placeholder={CONTAINER_SEARCH_HINT} className={`${inputCls} pl-7 font-mono uppercase`} />
               </div>
             </label>
             <label>

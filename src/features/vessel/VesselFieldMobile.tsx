@@ -15,6 +15,7 @@ import { stuffingOptions } from '../../services/stuffing';
 import { linkCls, EMPTY_SLOT, Feedback, inputCls, isSlotComplete, labelCls, primaryBtn, SlotPicker, SlotValue } from '../../components/shared';
 import { ChoiceButtons } from './VesselShared';
 import { EMPTY_INSPECTION, InspectionFields, InspectionValue, inspectionRemarks, isInspectionComplete } from '../../components/InspectionFields';
+import { CONTAINER_SEARCH_HINT, containerSerial as containerSerialOf, matchContainerNo } from '../../services/containerSearch';
 
 export type VesselFieldMode = 'GD_NHAP_TAU' | 'GD_XUAT_TAU' | 'XN_NHAP_TAU' | 'XN_XUAT_TAU';
 
@@ -55,11 +56,11 @@ export const VesselFieldMobile: React.FC<{
 
   const active = rows.find((r) => r.item.id === itemId && r.info.status === 'TODO');
   const item = active?.item;
-  // Tìm như Tồn vỏ: lọc ngay khi gõ (số cont chứa chuỗi)
+  // Tìm như Tồn vỏ: lọc ngay khi gõ — 7 số seri / số cont, gợi ý theo đầu seri (DEC-178)
   // Quét mã QR phiếu EEIR tàu (QR-NT-… / QR-XT-…, DEC-163) → bỏ tiền tố QR-, tra như mã hồ sơ
   const q = code.trim().toUpperCase().replace(/^QR-(?=(NT|XT)-)/, '');
   const tabRows = rows.filter((r) => tab === 'ALL' || (tab === 'DONE' ? r.info.status === 'DONE' : r.info.status !== 'DONE'));
-  const shownRows = q && !item ? tabRows.filter((r) => r.item.containerNo.includes(q)) : tabRows;
+  const shownRows = q && !item ? tabRows.filter((r) => matchContainerNo(r.item.containerNo, q)) : tabRows;
 
   const resetForm = () => {
     setItemId('');
@@ -81,8 +82,8 @@ export const VesselFieldMobile: React.FC<{
     e.preventDefault();
     setError(null);
     if (!q) return;
-    const matches = rows.filter((r) => r.item.containerNo.includes(q) || r.item.dossierCode === q);
-    const exact = rows.find((r) => r.item.containerNo === q || r.item.dossierCode === q);
+    const matches = rows.filter((r) => matchContainerNo(r.item.containerNo, q) || r.item.dossierCode === q);
+    const exact = rows.find((r) => r.item.containerNo === q || containerSerialOf(r.item.containerNo) === q || r.item.dossierCode === q);
     const hit = exact || (matches.length === 1 ? matches[0] : undefined);
     if (!hit) {
       setItemId('');
@@ -216,7 +217,7 @@ export const VesselFieldMobile: React.FC<{
           <form onSubmit={lookup} className="space-y-2 rounded-lg border border-line bg-white p-3">
             <span className={labelCls}>{isInspect ? 'Số container về thực tế *' : 'Tìm số container'} (gõ vài số cuối để lọc)</span>
             <div className="flex gap-2">
-              <input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); if (item) setItemId(''); }} placeholder="TCLU1234567" className={`${inputCls} py-2.5 font-mono text-base font-bold uppercase`} />
+              <input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); if (item) setItemId(''); }} placeholder={CONTAINER_SEARCH_HINT} className={`${inputCls} py-2.5 font-mono text-base font-bold uppercase`} />
               <button type="submit" className={`${primaryBtn} shrink-0`} aria-label="Tìm"><Search className="h-4 w-4" /></button>
             </div>
           </form>

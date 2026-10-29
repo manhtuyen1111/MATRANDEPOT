@@ -21,6 +21,7 @@ import { linkCls,
   CellText,
   CELL_MAX,
 } from '../../components/shared';
+import { CONTAINER_SEARCH_HINT, matchContainerNo } from '../../services/containerSearch';
 
 // BÁO GIÁ → CHỜ BÁO GIÁ (DEC-084): danh sách giống Tồn vỏ; bấm dòng mở cửa sổ trượt nhập Remark sửa chữa + giờ công (DEC-080)
 export const QuotationWorkspace: React.FC<{
@@ -50,7 +51,7 @@ export const QuotationWorkspace: React.FC<{
     () =>
       queue
         .filter((c) => bulkList.length === 0 || bulkSet.has(c.containerNo))
-        .filter((c) => !search.trim() || c.containerNo.includes(search.trim().toUpperCase()))
+        .filter((c) => matchContainerNo(c.containerNo, search))
         .filter((c) => size === 'ALL' || c.size === size)
         .filter((c) => type === 'ALL' || c.type === type),
     [queue, bulkList, bulkSet, search, size, type]
@@ -128,7 +129,7 @@ export const QuotationWorkspace: React.FC<{
             <span className={labelCls}>Số container</span>
             <div className="relative">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
-              <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} w-44 pl-7 font-mono uppercase`} />
+              <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder={CONTAINER_SEARCH_HINT} className={`${inputCls} w-44 pl-7 font-mono uppercase`} />
             </div>
           </label>
           <label>

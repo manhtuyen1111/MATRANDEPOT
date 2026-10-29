@@ -22,6 +22,7 @@ import { FEEDBACK_STATUS_LABELS } from './feedback';
 import { assertPermission } from './core';
 import { vesselListProgress, vesselListStatusLabel } from './vessel';
 import type { FeedbackItem, FeedbackStatus, InvoiceStatus } from '../types/depot';
+import { matchContainerNo } from './containerSearch';
 
 // ============================================================================
 // BÁO CÁO & TRA CỨU (CR-08, CR-04 PHIẾU THU)
@@ -107,7 +108,7 @@ export function queryGateOutReport(
   const no = filter.containerNo?.trim().toUpperCase();
   const rows = state.gateOutOrders
     .filter((o) => types.includes(o.gateOutType))
-    .filter((o) => !no || o.containerNo.includes(no))
+    .filter((o) => matchContainerNo(o.containerNo, no))
     .filter((o) => inRange(o.confirmedAt || o.createdAt, range))
     .filter((o) => {
       if (!filter.shippingLineCode && !filter.size) return true;
@@ -132,7 +133,7 @@ export function queryGateInReport(
   const no = filter.containerNo?.trim().toUpperCase();
   const rows = state.gateInOrders
     .filter((o) => o.gateInType === type)
-    .filter((o) => !no || (o.containerNo || '').includes(no))
+    .filter((o) => matchContainerNo(o.containerNo, no))
     .filter((o) => inRange(o.gateInOkAt || o.fieldRecordedAt, range))
     .filter((o) => !filter.shippingLineCode || o.shippingLineCode === filter.shippingLineCode)
     .filter((o) => !filter.size || o.size === filter.size)
@@ -337,7 +338,7 @@ export function queryRepairReport(state: DepotState, filter: RepairReportFilter,
       workOrder,
       container: state.containers.find((c) => c.masterDossierCode === workOrder.masterDossierCode),
     }))
-    .filter(({ workOrder: w }) => !no || w.containerNo.includes(no))
+    .filter(({ workOrder: w }) => matchContainerNo(w.containerNo, no))
     .filter(({ workOrder: w }) => inRange(w.completedAt || w.createdAt, range))
     .filter(({ workOrder: w }) => !filter.teamCode || w.repairTeamCode === filter.teamCode)
     .filter(({ container }) => !filter.shippingLineCode || container?.shippingLineCode === filter.shippingLineCode)
@@ -626,7 +627,7 @@ export function queryVesselReport(state: DepotState, mode: VesselMode, filter: V
     .filter((l) => l.mode === mode)
     .filter((l) => !vessel || l.vesselName.includes(vessel))
     .filter((l) => inRange(l.plannedAt, range))
-    .flatMap((list) => list.items.filter((i) => !no || i.containerNo.includes(no)).map((item) => ({ list, item })))
+    .flatMap((list) => list.items.filter((i) => matchContainerNo(i.containerNo, no)).map((item) => ({ list, item })))
     .sort((a, b) => b.list.plannedAt.localeCompare(a.list.plannedAt) || a.item.containerNo.localeCompare(b.item.containerNo));
   return paginate(rows, page, pageSize);
 }
@@ -679,7 +680,7 @@ export function queryVesselSummaryReport(state: DepotState, mode: VesselMode, fi
     .filter((l) => l.mode === mode)
     .filter((l) => !vessel || l.vesselName.includes(vessel))
     .filter((l) => inRange(l.plannedAt, range))
-    .filter((l) => !no || l.items.some((i) => i.containerNo.includes(no)))
+    .filter((l) => !no || l.items.some((i) => matchContainerNo(i.containerNo, no)))
     .sort((a, b) => b.plannedAt.localeCompare(a.plannedAt))
     .map((list) => {
       const p = vesselListProgress(list);

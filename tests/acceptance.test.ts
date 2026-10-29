@@ -1685,3 +1685,43 @@ describe('DEC-178: tải theo vai trò + hồ sơ tải khi bấm mở', () => {
     }
   });
 });
+
+// DEC-178: tìm số container theo 7 số seri — chính xác khi đủ, gợi ý theo đầu seri khi đang gõ
+import { containerSerial, isExactContainerQuery, matchContainerNo } from '../src/services/containerSearch';
+import { queryGateInReport } from '../src/services/reports';
+
+describe('DEC-178: tìm số container', () => {
+  it('Đủ 7 số seri / 11 ký tự → chính xác; đang gõ → gợi ý theo đầu seri', () => {
+    expect(containerSerial('MSKU1234567')).toBe('1234567');
+    expect(matchContainerNo('MSKU1234567', '1234567')).toBe(true);
+    expect(matchContainerNo('MSKU1234568', '1234567')).toBe(false);
+    expect(matchContainerNo('MSKU1234567', '12345')).toBe(true);
+    expect(matchContainerNo('TCLU1234501', '12345')).toBe(true);
+    expect(matchContainerNo('MSKU1234567', 'msku 1234-567')).toBe(true);
+    expect(matchContainerNo('MSKU1234567', 'MSKU12')).toBe(true);
+    expect(isExactContainerQuery('1234567')).toBe(true);
+    expect(isExactContainerQuery('MSKU1234567')).toBe(true);
+    expect(isExactContainerQuery('12345')).toBe(false);
+    expect(matchContainerNo('MSKU1234567', '')).toBe(true);
+  });
+
+  it('Từ chối: số nằm giữa seri, đuôi seri, sai hãng không còn khớp (trước đây "chứa chuỗi")', () => {
+    expect(matchContainerNo('MSKU1234567', '34567')).toBe(false);
+    expect(matchContainerNo('MSKU1234567', '567')).toBe(false);
+    expect(matchContainerNo('MSKU1234567', 'TCLU1234567')).toBe(false);
+    expect(matchContainerNo('MSKU1234567', 'SKU')).toBe(false);
+    expect(matchContainerNo(undefined, '123')).toBe(false);
+  });
+
+  it('Báo cáo dùng cùng quy tắc', () => {
+    const s = createDemoState();
+    const order = s.gateInOrders.find((o) => o.containerNo && o.gateInOkAt)!;
+    const day = order.gateInOkAt!;
+    const filter = { dateFrom: fmtDt(new Date(new Date(day).getTime() - 86_400_000)), dateTo: fmtDt(new Date(new Date(day).getTime() + 86_400_000)) };
+    const serial = containerSerial(order.containerNo);
+    const hit = queryGateInReport(s, order.gateInType, { ...filter, containerNo: serial }, 1, 100).rows;
+    expect(hit.some((o) => o.id === order.id)).toBe(true);
+    const miss = queryGateInReport(s, order.gateInType, { ...filter, containerNo: serial.slice(2) }, 1, 100).rows;
+    expect(miss.some((o) => o.id === order.id)).toBe(false);
+  });
+});

@@ -20,6 +20,7 @@ import {
   BlockIcon,
   blockLabel,
 } from '../../components/shared';
+import { CONTAINER_SEARCH_HINT, matchContainerNo } from '../../services/containerSearch';
 
 const PAGE_SIZE = 20;
 // DEC-092: phần chi tiết vị trí "17-02-02" (bỏ chiều không có) — đi sau ô tên Block rộng cố định
@@ -49,7 +50,7 @@ export const YardShiftWorkspace: React.FC<{
     () =>
       state.containers
         .filter((c) => (c.status === 'IN_YARD' || c.status === 'ALLOCATED') && c.currentBlock)
-        .filter((c) => !search.trim() || c.containerNo.includes(search.trim().toUpperCase()))
+        .filter((c) => matchContainerNo(c.containerNo, search))
         .filter((c) => size === 'ALL' || c.size === size)
         .filter((c) => progress === 'ALL' || getContainerProgress(c).includes(progress))
         .sort((a, b) => a.containerNo.localeCompare(b.containerNo)),
@@ -120,7 +121,7 @@ export const YardShiftWorkspace: React.FC<{
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); resetPage(); }}
-            placeholder="Tìm số container..."
+            placeholder={CONTAINER_SEARCH_HINT}
             className={`${inputCls} py-2.5 pl-8 font-mono text-sm uppercase`}
           />
         </div>

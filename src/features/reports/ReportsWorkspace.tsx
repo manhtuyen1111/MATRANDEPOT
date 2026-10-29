@@ -24,6 +24,7 @@ import { useReportState } from '../../components/useReportState';
 import { linkCls, DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize, CellText, CELL_MAX } from '../../components/shared';
 import { PaymentInfoCells } from '../../components/PaymentInfoCells';
 import { voucherPaymentInfo } from '../../services/payments';
+import { CONTAINER_SEARCH_HINT } from '../../services/containerSearch';
 
 export type ReportSection = 'BC_HA_VO' | 'BC_CAP_VO' | 'BC_NHAP_TAU' | 'BC_XUAT_TAU' | 'BC_SUA_CHUA' | 'BC_TONG_HOP';
 
@@ -121,7 +122,7 @@ const OperationReport: React.FC<Props> = ({ state: live, section, onOpenDossier,
         <form onSubmit={(e) => { e.preventDefault(); report.run(draft, () => { setApplied({ ...draft }); setPage(1); }); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2">
             <span className={labelCls}>Số container</span>
-            <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
+            <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} placeholder={CONTAINER_SEARCH_HINT} className={`${inputCls} font-mono uppercase`} />
           </label>
           <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <label>
@@ -373,7 +374,7 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
         <form onSubmit={(e) => { e.preventDefault(); report.run(draft, () => { setApplied({ ...draft }); setPage(1); }); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2 sm:col-span-1">
             <span className={labelCls}>Số container</span>
-            <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
+            <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} placeholder={CONTAINER_SEARCH_HINT} className={`${inputCls} font-mono uppercase`} />
           </label>
           <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <label>
