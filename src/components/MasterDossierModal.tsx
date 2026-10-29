@@ -320,6 +320,17 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
           ) : (
             <p className="text-ink-muted">Chưa sửa.</p>
           )}
+          {/* DEC-176: ảnh HOÀN THÀNH SỬA CHỮA */}
+          {repairWo.repairPhotos && repairWo.repairPhotos.length > 0 && (
+            <div className="mt-2" data-testid="repair-photo-list">
+              <p className="mb-1 text-ink-muted">Ảnh hoàn thành sửa chữa ({repairWo.repairPhotos.length})</p>
+              <div className="flex flex-wrap gap-1.5">
+                {repairWo.repairPhotos.map((p, i) => (
+                  <PhotoZoom key={i} src={p} alt={`Ảnh hoàn thành sửa chữa ${i + 1}`} className="h-16 w-16" />
+                ))}
+              </div>
+            </div>
+          )}
         </Step>
       )}
     </>

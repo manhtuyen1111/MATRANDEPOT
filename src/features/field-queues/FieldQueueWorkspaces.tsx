@@ -4,6 +4,8 @@ import { completeCleaningTask, completeRepairTask, executeGateOut, updateContain
 import { Camera, CheckCircle2, ChevronDown, ChevronUp, MapPin, QrCode, Search, X } from 'lucide-react';
 import { ContainerRecord } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
+import { REPAIR_PHOTO_MAX, REPAIR_PHOTO_MIN } from '../../services/depotOperations';
+import { PhotoCamera } from '../../components/PhotoCamera';
 
 import { formatLocation } from '../../services/core';
 import { findTicketByQr, isTicketClosed } from '../../services/driverRoute';
@@ -76,6 +78,9 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
   const [showList, setShowList] = useState(false);
   const [teamId, setTeamId] = useState('');
   const [memberIds, setMemberIds] = useState<string[]>([]);
+  // DEC-176: ảnh HOÀN THÀNH SỬA CHỮA (đã nén < 200 KB khi chụp)
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const activeTeams = state.repairTeams.filter((t) => t.isActive);
   const selectedTeam = activeTeams.find((t) => t.id === teamId);
   // Chọn tổ → mặc định chọn hết nhân viên đang hoạt động trong tổ (DEC-043)
@@ -129,6 +134,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
       return setError(`Mã "${code}" không có trong danh sách ${title.name.toLowerCase()} của ${title.dept}.`);
     }
     setScannedQr(found.activeQrCode);
+    if (found.id !== scanned?.id) setPhotos([]);
     setScanned(found);
     setSearch('');
     setSlot(EMPTY_SLOT);
@@ -150,6 +156,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
       setSlot(EMPTY_SLOT);
       setTeamId('');
       setMemberIds([]);
+      setPhotos([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lỗi xác nhận hoàn tất');
     }
@@ -177,7 +184,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
       );
     } else if (mode === 'SC_CHO_SUA_CHUA') {
       run(
-        () => completeRepairTask(state, { containerNo: no, teamId, memberIds }),
+        () => completeRepairTask(state, { containerNo: no, teamId, memberIds, photos }),
         `Đã hoàn tất SỬA CHỮA ${no} → AV (${selectedTeam?.name}).`
       );
     }
@@ -191,7 +198,8 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
   const needsSlot = mode === 'XN_CHO_HA_VO';
   const isForklift = mode === 'XN_CHO_HA_VO' || mode === 'XN_CHO_CAP_VO';
   const isRepair = mode === 'SC_CHO_SUA_CHUA';
-  const canConfirm = scanned && (!needsSlot || isSlotComplete(slot, state)) && (!isRepair || (selectedTeam && memberIds.length > 0));
+  const canConfirm =
+    scanned && (!needsSlot || isSlotComplete(slot, state)) && (!isRepair || (selectedTeam && memberIds.length > 0 && photos.length >= REPAIR_PHOTO_MIN));
 
   const scannedRepair = scanned && isRepair ? repairWoOf(scanned) : undefined;
 
@@ -387,7 +395,44 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                   </div>
                 </fieldset>
               )}
+              {/* DEC-176: chọn tổ + xác nhận nhân viên xong → CHỤP ẢNH HOÀN THÀNH SỬA CHỮA (1–30 ảnh) */}
+              {selectedTeam && memberIds.length > 0 && (
+                <div className="space-y-2 border-t border-line pt-3" data-testid="repair-photos">
+                  <span className={labelCls}>Ảnh hoàn thành sửa chữa * ({photos.length}/{REPAIR_PHOTO_MAX})</span>
+                  <button type="button" onClick={() => setCameraOpen(true)} disabled={photos.length >= REPAIR_PHOTO_MAX} className={`${primaryBtn} w-full py-3`}>
+                    <Camera className="h-5 w-5" />
+                    CHỤP ẢNH HOÀN THÀNH SỬA CHỮA
+                  </button>
+                  {photos.length > 0 && (
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {photos.map((p, i) => (
+                        <div key={i} className="relative aspect-square overflow-hidden rounded border border-line bg-canvas">
+                          <img src={p} alt={`Ảnh hoàn thành sửa chữa ${i + 1}`} className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setPhotos((prev) => prev.filter((_, k) => k !== i))}
+                            aria-label={`Xóa ảnh ${i + 1}`}
+                            className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+          )}
+          {cameraOpen && (
+            <PhotoCamera
+              title="Hoàn thành sửa chữa"
+              count={photos.length}
+              max={REPAIR_PHOTO_MAX}
+              lastPhoto={photos[photos.length - 1]}
+              onAdd={(p) => setPhotos((prev) => (prev.length >= REPAIR_PHOTO_MAX ? prev : [...prev, p]))}
+              onClose={() => setCameraOpen(false)}
+            />
           )}
           <button type="button" onClick={confirm} disabled={!canConfirm} className={`${primaryBtn} w-full py-3`}>
             <CheckCircle2 className="h-4 w-4" />
