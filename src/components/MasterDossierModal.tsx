@@ -6,7 +6,7 @@ import { formatLocation } from '../services/core';
 import { documentPackOf } from "../services/driverRoute";
 import { recordReceiptPrint } from "../services/api";
 import { formatDateTime } from "../services/datetime";
-import { DossierHistory, dossierHistory, DossierHistoryRow, HistoryAction, HistoryReceipt, resolveDossier } from '../services/dossierHistory';
+import { DossierHistory, dossierHistory, DossierHistoryRow, SWAP_TASK, HistoryAction, HistoryReceipt, resolveDossier } from '../services/dossierHistory';
 import { CompanyHeader, PrintPreviewModal } from "./ReceiptPrint";
 import { exportPdf, printNow } from "./printNow";
 import { CustomerSlipK80, EeirK80Sheet, slipPrintCount, VesselEeirPrintSheet } from './K80TicketModal';
@@ -55,7 +55,6 @@ const ACTION_TONE: Record<HistoryAction, string> = {
 
 const HistoryDetail: React.FC<{ row: DossierHistoryRow; onOpenReceipt?: (key: string) => void }> = ({ row, onOpenReceipt }) => (
   <div className="space-y-1">
-    <p className="font-bold text-ink">{row.operation}</p>
     {row.location && (
       <p className="inline-flex flex-wrap items-center gap-1 font-semibold">
         {row.location.from && <><LocText text={row.location.from} /> →</>}
@@ -77,7 +76,11 @@ const HistoryDetail: React.FC<{ row: DossierHistoryRow; onOpenReceipt?: (key: st
   </div>
 );
 
-// LỊCH SỬ HỒ SƠ (DEC-181, DEC-183, DEC-184): cột BỘ PHẬN (tác nghiệp cụ thể ở đầu dòng chi tiết); mỗi tác nghiệp đúng 1 dòng; CHI TIẾT luôn ẩn (nút mắt) — bấm mắt mở dòng chi tiết ngay bên dưới;
+// Tác nghiệp ĐỔI CONT nổi bật (DEC-187)
+const TaskText: React.FC<{ task: string }> = ({ task }) =>
+  task.startsWith(SWAP_TASK.SWAP) ? <span className="rounded bg-danger-fg px-1.5 py-0.5 text-[10px] font-bold text-white">{task}</span> : <>{task}</>;
+
+// LỊCH SỬ HỒ SƠ (DEC-181, DEC-183, DEC-184, DEC-187): BỘ PHẬN | TÁC NGHIỆP (trong bộ phận); mỗi tác nghiệp đúng 1 dòng; CHI TIẾT luôn ẩn (nút mắt) — bấm mắt mở dòng chi tiết ngay bên dưới;
 // nút MỞ / ẨN TOÀN BỘ CHI TIẾT. Bản in A4 (printMode) luôn mở hết, không có nút.
 export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (key: string) => void; printMode?: boolean }> = ({ history, onOpenReceipt, printMode = false }) => {
   const [open, setOpen] = React.useState<Set<string>>(() => new Set());
@@ -111,6 +114,7 @@ export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (
             <tr>
               <th className="px-2.5 py-2">Thời gian</th>
               <th className="px-2.5 py-2">Bộ phận</th>
+              <th className="px-2.5 py-2">Tác nghiệp</th>
               <th className="px-2.5 py-2">Nội dung</th>
               <th className="px-2.5 py-2 text-center">Chi tiết</th>
               <th className="px-2.5 py-2">Nhân viên</th>
@@ -121,7 +125,8 @@ export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (
               <React.Fragment key={r.id}>
                 <tr>
                   <td className="px-2.5 py-2 font-mono">{formatViTime(r.at)}</td>
-                  <td className="px-2.5 py-2 font-semibold" title={r.operation}>{r.dept}</td>
+                  <td className="px-2.5 py-2 font-semibold">{r.dept}</td>
+                  <td className="px-2.5 py-2"><TaskText task={r.task} /></td>
                   <td className="px-2.5 py-2">
                     <span className={`rounded border px-1.5 py-0.5 text-[10px] font-bold ${ACTION_TONE[r.action]}`}>{r.action}</span>
                   </td>
@@ -142,7 +147,7 @@ export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (
                 </tr>
                 {isOpen(r.id) && (
                   <tr className="bg-canvas/60" data-testid="dossier-detail">
-                    <td colSpan={5} className="whitespace-normal px-2.5 py-2 pl-6">
+                    <td colSpan={6} className="whitespace-normal px-2.5 py-2 pl-6">
                       <HistoryDetail row={r} onOpenReceipt={onOpenReceipt} />
                     </td>
                   </tr>
@@ -150,7 +155,7 @@ export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (
               </React.Fragment>
             ))}
             {history.rows.length === 0 && (
-              <tr><td colSpan={5} className="px-2.5 py-3 text-center text-ink-muted">Chưa có tác nghiệp.</td></tr>
+              <tr><td colSpan={6} className="px-2.5 py-3 text-center text-ink-muted">Chưa có tác nghiệp.</td></tr>
             )}
             {/* ĐANG CHỜ (DEC-184): mỗi việc chờ 1 dòng — icon đồng hồ, bộ phận phụ trách, nội dung chờ */}
             {history.pending.map((p, i) => (
@@ -159,6 +164,7 @@ export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (
                   <Clock className="h-4 w-4 animate-pulse" aria-label="Đang chờ" />
                 </td>
                 <td className="px-2.5 py-2 font-semibold text-amber-900">{p.dept}</td>
+                <td className="px-2.5 py-2 text-amber-900"><TaskText task={p.task} /></td>
                 <td className="px-2.5 py-2">
                   <span className="rounded border border-amber-400 bg-white px-1.5 py-0.5 text-[10px] font-bold text-amber-700">ĐANG CHỜ</span>
                 </td>

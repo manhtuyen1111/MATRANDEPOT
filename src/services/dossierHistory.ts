@@ -22,7 +22,8 @@ export interface DossierHistoryRow {
   id: string;
   at: string;
   dept: string;      // BỘ PHẬN (DEC-184): Giám định / Văn phòng / Vệ sinh / Xe nâng / Báo giá / Sửa chữa
-  operation: string; // tác nghiệp cụ thể (đầu dòng chi tiết): "Giám định — Hạ vỏ", "Xe nâng — Đảo chuyển"…
+  task: string;      // TÁC NGHIỆP (DEC-187) trong bộ phận: Hạ vỏ, Đảo chuyển, Thanh toán Hạ vỏ, ĐỔI CONT…
+  operation: string; // tên đầy đủ "Bộ phận — Tác nghiệp" (khóa nội bộ, test)
   action: HistoryAction;
   detail: string;
   staff: string;
@@ -102,8 +103,12 @@ const inspectText = (cond?: string, damage?: string[]) => `${cond || '-'}${damag
 // Việc đang chờ — mỗi việc 1 dòng, kèm bộ phận phụ trách (DEC-184)
 export interface DossierPending {
   dept: string;
+  task: string; // DEC-187
   label: string;
 }
+
+// DEC-187: tác nghiệp ĐỔI CONT ghi rõ (không lẫn vào Trả chứng từ / Cấp vỏ / Hạ vỏ thường)
+export const SWAP_TASK = { SWAP: 'ĐỔI CONT', RETURN: 'ĐỔI CONT — Hạ lại', ISSUE: 'ĐỔI CONT — Cấp vỏ' } as const;
 
 export interface DossierHistory {
   rows: DossierHistoryRow[];
@@ -115,13 +120,19 @@ const deptOf = (operation: string) => {
   const head = operation.split(' — ')[0];
   return head === 'Thanh toán' ? 'Văn phòng' : head;
 };
+// Tác nghiệp = phần sau "Bộ phận — "; Thanh toán giữ chữ Thanh toán; không có phần sau thì = tên bộ phận (Vệ sinh, Sửa chữa…)
+const taskOf = (operation: string) => {
+  const [head, ...rest] = operation.split(' — ');
+  if (head === 'Thanh toán') return `Thanh toán ${rest.join(' ')}`.trim();
+  return rest.length ? rest.join(' — ') : head;
+};
 
 export function dossierHistory(state: DepotState, d: DossierContext): DossierHistory {
   const rows: DossierHistoryRow[] = [];
   const pending: DossierPending[] = [];
-  const pend = (dept: string, label: string) => pending.push({ dept, label });
-  const add = (row: Omit<DossierHistoryRow, 'id' | 'staff' | 'dept'> & { staff?: string }) => {
-    if (row.at) rows.push({ ...row, id: `h${rows.length}`, dept: deptOf(row.operation), staff: row.staff || '-' });
+  const pend = (dept: string, task: string, label: string) => pending.push({ dept, task, label });
+  const add = (row: Omit<DossierHistoryRow, 'id' | 'staff' | 'dept' | 'task'> & { staff?: string; task?: string }) => {
+    if (row.at) rows.push({ ...row, id: `h${rows.length}`, dept: deptOf(row.operation), task: row.task || taskOf(row.operation), staff: row.staff || '-' });
   };
   const { gateIn, container, importHit, inVoucher } = d;
 
@@ -151,10 +162,10 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
       });
     } else if (voucher.status === 'CANCELLED') {
       // Chứng từ không lưu giờ hủy → không có dòng lịch sử; ghi chú ở dòng chờ để không mất thông tin
-      pend('Văn phòng', `Chứng từ ${op.toLowerCase()} đã hủy`);
+      pend('Văn phòng', `Thanh toán ${op}`, `Chứng từ ${op.toLowerCase()} đã hủy`);
     } else {
       const req = txs.find((t) => t.status === 'PENDING');
-      pend('Văn phòng', req ? `Chờ ngân hàng xác nhận chuyển khoản ${op.toLowerCase()} (yêu cầu ${req.paymentRef})` : `Chờ thanh toán ${op.toLowerCase()}`);
+      pend('Văn phòng', `Thanh toán ${op}`, req ? `Chờ ngân hàng xác nhận chuyển khoản ${op.toLowerCase()} (yêu cầu ${req.paymentRef})` : `Chờ thanh toán ${op.toLowerCase()}`);
     }
   };
 
@@ -189,7 +200,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
           ]),
           staff: gateIn.rackInspectedBy,
         });
-      } else if (container && container.status !== 'GATED_OUT') pend('Giám định', 'Chờ giám định trên kệ');
+      } else if (container && container.status !== 'GATED_OUT') pend('Giám định', 'Giám định trên kệ', 'Chờ giám định trên kệ');
     }
     if (gateIn.officeVerifiedAt) {
       add({
@@ -209,7 +220,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
       if (gateIn.gateInOkAt) {
         add({ at: gateIn.gateInOkAt, operation: 'Văn phòng — GATE IN OK', action: 'TẠO MỚI', detail: 'Cho cont vào bãi', staff: gateIn.gateInOkBy });
       }
-    } else if (gateIn.status !== 'CANCELLED') pend('Văn phòng', 'Chờ Văn phòng bổ sung thông tin hạ vỏ');
+    } else if (gateIn.status !== 'CANCELLED') pend('Văn phòng', 'Hạ vỏ', 'Chờ Văn phòng bổ sung thông tin hạ vỏ');
   }
 
   // ===================== NHẬP TÀU (DEC-069) =====================
@@ -239,7 +250,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
         photoAlt: 'Ảnh cửa container',
         showPhotos: true,
       });
-    } else pend('Giám định', 'Chờ xe về — Giám định nhập tàu');
+    } else pend('Giám định', 'Nhập tàu', 'Chờ xe về — Giám định nhập tàu');
   }
 
   // ===================== SAU KHI VÀO BÃI (Hạ vỏ / Nhập tàu) =====================
@@ -257,7 +268,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
         detail: join([`Hạng mục ${cleaningItems.join(' + ')}`, cleaningWo.resultNotes]),
         staff: cleaningWo.completedBy,
       });
-    } else if (stillInYard) pend('Vệ sinh', 'Chờ vệ sinh');
+    } else if (stillInYard) pend('Vệ sinh', 'Vệ sinh', 'Chờ vệ sinh');
   }
 
   // Xe nâng: hạ vỏ / hạ kệ / đảo chuyển… (lấy ra khi cấp vỏ / xuất tàu đã có dòng riêng)
@@ -271,13 +282,14 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
       detail: l.reason && (!first || l.actionType === 'SWAP_RETURN') ? l.reason : '',
       staff: l.performedBy,
       location: { from: first ? undefined : l.fromLocation, to: l.toLocation },
+      task: l.actionType === 'SWAP_RETURN' ? SWAP_TASK.RETURN : undefined,
     });
   }
   if (stillInYard && (gateIn?.officeVerifiedAt || importHit?.item.inspectedAt) && !d.locations.some((l) => l.actionType === 'INITIAL_BLOCK' || l.actionType === 'SHIFT_INSPECTION_RACK')) {
-    pend('Xe nâng', 'Chờ xe nâng hạ vỏ');
+    pend('Xe nâng', 'Hạ vỏ', 'Chờ xe nâng hạ vỏ');
   }
   if (container?.swapReturn) {
-    pend('Xe nâng', `Chờ xe nâng hạ lại (đổi container ${container.swapReturn.gateOutCode}${container.swapReturn.reason === 'DAMAGE' ? ' — hạ khu sửa chữa' : ''})`);
+    pend('Xe nâng', SWAP_TASK.RETURN, `Chờ xe nâng hạ lại (đổi container ${container.swapReturn.gateOutCode}${container.swapReturn.reason === 'DAMAGE' ? ' — hạ khu sửa chữa' : ''})`);
   }
 
   // Báo giá (DEC-086: cập nhật tình trạng + giờ công → xác nhận chờ sửa chữa) → Sửa chữa (DEC-176)
@@ -324,13 +336,13 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
         });
       } else if (repairWo.workStatus === 'CANCELLED') {
         add({ at: repairWo.completedAt || '', operation: 'Sửa chữa', action: 'XÓA', detail: 'Đóng khi cấp vỏ DAMAGE', staff: repairWo.completedBy });
-      } else if (stillInYard) pend('Sửa chữa', 'Chờ sửa chữa');
+      } else if (stillInYard) pend('Sửa chữa', 'Sửa chữa', 'Chờ sửa chữa');
     } else if (inspectionWo?.workStatus === 'CANCELLED') {
       add({ at: inspectionWo.completedAt || '', operation: 'Báo giá', action: 'XÓA', detail: 'Đóng khi cấp vỏ DAMAGE', staff: inspectionWo.completedBy });
-    } else if (stillInYard && !(gateIn?.toInspectionRack && !gateIn.rackInspectedAt)) pend('Báo giá', 'Chờ báo giá');
+    } else if (stillInYard && !(gateIn?.toInspectionRack && !gateIn.rackInspectedAt)) pend('Báo giá', 'Báo giá', 'Chờ báo giá');
   }
   // DEC-185: hư hỏng PHÁT SINH CẤP VỎ — lượt đã từng sửa chữa xong vẫn phải hiện chờ báo giá lần mới
-  if (container?.needsQuotation && !pending.some((p) => p.label === 'Chờ báo giá')) pend('Báo giá', 'Chờ báo giá (phát sinh cấp vỏ)');
+  if (container?.needsQuotation && !pending.some((p) => p.label === 'Chờ báo giá')) pend('Báo giá', 'Báo giá', 'Chờ báo giá (phát sinh cấp vỏ)');
 
   // Văn phòng — ghi chú Tồn vỏ / khóa container (chỉ lưu lần gần nhất — DEC-030, DEC-065)
   if (container?.officeNoteUpdatedAt && container.officeNote) {
@@ -343,13 +355,13 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
   if (gateIn?.officeVerifiedAt) {
     if (gateIn.documentsReturnedAt) {
       add({ at: gateIn.documentsReturnedAt, operation: 'Văn phòng — Trả chứng từ Hạ vỏ', action: 'TẠO MỚI', detail: 'Trả Phiếu EEIR (K80) + phiếu thu cho lái xe', staff: gateIn.documentsReturnedBy });
-    } else pend('Văn phòng', 'Chờ lái xe quay về trả chứng từ hạ vỏ');
+    } else pend('Văn phòng', 'Trả chứng từ Hạ vỏ', 'Chờ lái xe quay về trả chứng từ hạ vỏ');
   }
   if (importHit) {
     const { list } = importHit;
     if (list.status === 'APPROVED') {
       add({ at: list.approvedAt || '', operation: 'Văn phòng — Duyệt nhập tàu', action: 'TẠO MỚI', detail: join([`Tàu ${list.vesselName}`, list.approveNote]), staff: list.approvedBy });
-    } else pend('Văn phòng', `Chờ duyệt nhập tàu ${list.vesselName}`);
+    } else pend('Văn phòng', 'Duyệt nhập tàu', `Chờ duyệt nhập tàu ${list.vesselName}`);
   }
 
   // ===================== CẤP VỎ =====================
@@ -368,6 +380,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
         add({
           at: s.swappedAt,
           operation: 'Văn phòng — Đổi container',
+          task: SWAP_TASK.SWAP,
           action: 'SỬA',
           detail: join([SWAP_REASON_LABELS[s.reason], s.note, `Lệnh ${o.gateOutCode} chuyển sang ${s.toContainerNo}`, s.reason === 'DAMAGE' && 'Chuyển DAMAGE — PHÁT SINH CẤP VỎ']),
           staff: s.swappedBy,
@@ -377,6 +390,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
         add({
           at: s.swappedAt,
           operation: 'Văn phòng — Đổi container',
+          task: SWAP_TASK.SWAP,
           action: 'TẠO MỚI',
           detail: join([`Cấp thay cont ${s.fromContainerNo}`, SWAP_REASON_LABELS[s.reason], s.note]),
           staff: s.swappedBy,
@@ -390,13 +404,14 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
     }
     payment(state.vouchers.find((x) => x.id === o.voucherId), 'Cấp vỏ');
     if (o.status === 'GATE_OUT_OK') {
-      add({ at: o.confirmedAt || '', operation: 'Xe nâng — Cấp vỏ', action: 'TẠO MỚI', detail: join(['Đã OUT khỏi bãi', o.truckNo && `Số xe ${o.truckNo}`]), staff: o.confirmedBy });
+      const swappedIn = (o.swaps || []).some((s) => s.toMasterDossierCode === d.visitCode);
+      add({ at: o.confirmedAt || '', operation: 'Xe nâng — Cấp vỏ', task: swappedIn ? SWAP_TASK.ISSUE : undefined, action: 'TẠO MỚI', detail: join(['Đã OUT khỏi bãi', o.truckNo && `Số xe ${o.truckNo}`]), staff: o.confirmedBy });
       if (o.documentsReturnedAt) {
         add({ at: o.documentsReturnedAt, operation: 'Văn phòng — Trả chứng từ Cấp vỏ', action: 'TẠO MỚI', detail: 'Trả Phiếu EEIR (K80) + phiếu thu cho lái xe', staff: o.documentsReturnedBy });
-      } else pend('Văn phòng', `Chờ lái xe quay về trả chứng từ cấp vỏ ${o.gateOutCode}`);
+      } else pend('Văn phòng', 'Trả chứng từ Cấp vỏ', `Chờ lái xe quay về trả chứng từ cấp vỏ ${o.gateOutCode}`);
     } else if (o.status === 'PENDING_FORKLIFT') {
       const waitSwap = (o.swaps || []).map((s) => state.containers.find((c) => c.id === s.fromContainerId)).find((c) => c?.swapReturn);
-      pend('Xe nâng', waitSwap ? `Chờ xe nâng hạ ${waitSwap.containerNo} rồi cấp vỏ ${o.gateOutCode}` : `Chờ xe nâng cấp vỏ ${o.gateOutCode}`);
+      pend('Xe nâng', (o.swaps || []).some((s) => s.toMasterDossierCode === d.visitCode) ? SWAP_TASK.ISSUE : 'Cấp vỏ', waitSwap ? `Chờ xe nâng hạ ${waitSwap.containerNo} rồi cấp vỏ ${o.gateOutCode}` : `Chờ xe nâng cấp vỏ ${o.gateOutCode}`);
     }
   }
 
@@ -411,7 +426,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
     });
     if (item.status === 'DONE') {
       add({ at: item.doneAt || '', operation: 'Xe nâng — Xuất tàu', action: 'TẠO MỚI', detail: join(['Đã OUT khỏi bãi', item.truckNo && `Số xe ${item.truckNo}`]), staff: item.doneBy });
-    } else if (item.status !== 'SKIPPED') pend('Xe nâng', `Chờ xuất tàu ${list.vesselName}`);
+    } else if (item.status !== 'SKIPPED') pend('Xe nâng', 'Xuất tàu', `Chờ xuất tàu ${list.vesselName}`);
     if (list.status === 'APPROVED') {
       const p = vesselListProgress(list);
       add({
@@ -421,7 +436,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
         detail: join([`Tàu ${list.vesselName}`, `Tiến độ thực tế ${p.done}/${p.total}`, item.status === 'SKIPPED' && 'Cont này KHÔNG XUẤT TÀU', list.approveNote]),
         staff: list.approvedBy,
       });
-    } else pend('Văn phòng', `Chờ duyệt xuất tàu ${list.vesselName}`);
+    } else pend('Văn phòng', 'Duyệt xuất tàu', `Chờ duyệt xuất tàu ${list.vesselName}`);
   }
 
   // Cũ trên, mới dưới; cùng giờ giữ thứ tự tác nghiệp (sort ổn định)

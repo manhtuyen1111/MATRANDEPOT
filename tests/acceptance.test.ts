@@ -1886,7 +1886,8 @@ describe('DEC-181: lịch sử hồ sơ container', () => {
     const h = historyOf(s, code);
     expect(h.rows.map((r) => r.operation)).toEqual(['Giám định — Hạ vỏ']);
     expect(h.rows[0].photos).toEqual(['data:x']);
-    expect(h.pending).toEqual([{ dept: 'Văn phòng', label: 'Chờ Văn phòng bổ sung thông tin hạ vỏ' }]);
+    expect(h.pending).toEqual([{ dept: 'Văn phòng', task: 'Hạ vỏ', label: 'Chờ Văn phòng bổ sung thông tin hạ vỏ' }]);
+    expect(h.rows[0].task).toBe('Hạ vỏ');
     expect(h.rows[0].dept).toBe('Giám định');
     expect(resolveDossier(s, 'HV-000000-999')).toBeNull();
   });
@@ -1958,9 +1959,12 @@ describe('DEC-185: đổi container khi chờ trả chứng từ cấp vỏ', ()
     // Hồ sơ: cont cũ có dòng Đổi container (SỬA) + Xe nâng hạ lại; cont mới có dòng cấp thay
     const oldRows = dossierHistory(s, resolveDossier(s, old.masterDossierCode)!).rows;
     expect(oldRows.find((r) => r.operation === 'Văn phòng — Đổi container')?.action).toBe('SỬA');
+    // DEC-187: tác nghiệp ĐỔI CONT ghi rõ (không lẫn Trả chứng từ / Cấp vỏ)
+    expect(oldRows.filter((r) => r.task.startsWith('ĐỔI CONT')).map((r) => `${r.dept}|${r.task}`)).toEqual(['Văn phòng|ĐỔI CONT', 'Xe nâng|ĐỔI CONT — Hạ lại']);
     expect(oldRows.some((r) => r.operation === 'Xe nâng — Hạ lại (đổi container)')).toBe(true);
     const newRows = dossierHistory(s, resolveDossier(s, order.gateOutCode)!).rows;
     expect(newRows.find((r) => r.operation === 'Văn phòng — Đổi container')?.detail).toContain(old.containerNo);
+    expect(newRows.find((r) => r.operation === 'Xe nâng — Cấp vỏ')?.task).toBe('ĐỔI CONT — Cấp vỏ');
   });
 
   it('Phát sinh hư hỏng: cont cũ chuyển DAMAGE + PHÁT SINH CẤP VỎ; Xe nâng hạ xong → Chờ báo giá', () => {
