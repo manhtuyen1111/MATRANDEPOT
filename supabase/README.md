@@ -19,6 +19,7 @@ Thiết kế: `docs/DATABASE_SCHEMA.md`. **Agent chỉ viết file. Người dù
 | 10 | `20261106000001` | DEC-175: bảng 1 dòng `repair_overtime_settings` (trên 200 giờ — 3.000 đ / giờ), RPC `catalog_update_repair_overtime`; pgTAP `0010_repair_overtime.test.sql` (8 kiểm tra) | **pgTAP 231/231 local 2026-10-29** — chờ bạn `db push --linked` lên `matran-test` |
 | 11 | `20261107000001` | DEC-176: kho `repair-photos` (< 200 KB / ảnh), `work_orders.photo_paths`, RPC `complete_repair_with_photos` (1–30 ảnh); **tắt tự xóa ảnh** (`expired_photo_paths` trả rỗng — thay DEC-159); pgTAP `0011_repair_photos.test.sql` (10 kiểm tra) | **pgTAP 231/231 + chạy thật 5/5 local 2026-10-29** — chờ bạn `db push --linked` (sau dòng 10) |
 | 12 | `20261108000001` | DEC-178: RLS bọc `(select …)` cho mọi policy `public` (gọi hàm quyền 1 lần / truy vấn — sửa lỗi quá 8 giây khi dữ liệu lớn), chỉ mục cột lọc khi mở app; pgTAP `0012_rls_initplan.test.sql` | **pgTAP 239/239 local 2026-10-29** — chờ bạn `db push --linked` (sau dòng 11) |
+| 13 | `20261109000001` | DEC-178 bước 4b: cột sinh `report_at` + `container_serial` (gate_in_orders / gate_out_orders / work_orders; containers chỉ `container_serial`) + chỉ mục — báo cáo phân trang ở database; chỉ mục giao dịch theo chứng từ; pgTAP `0013_report_paging.test.sql` (10 kiểm tra) | **pgTAP 249/249 + chạy thật 5/5 local 2026-10-29** — chờ bạn `db push --linked` (sau dòng 12) |
 | — | — | Chuyển kho > 36 tháng | Làm khi có dữ liệu đủ 3 năm (2029) |
 | — | — | Nhận báo có ngân hàng (callback) | Chờ Q-032 chọn ngân hàng; hiện Văn phòng xác nhận tay |
 

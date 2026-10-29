@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-178 bước 4b (2026-10-29): **báo cáo Hạ vỏ / Cấp vỏ / Sửa chữa phân trang ở database** — mỗi trang ~0,1 giây với mọi khoảng lọc, bỏ giới hạn 3 tháng (tối đa 1 năm / lần), Excel lấy theo đợt; Sản lượng sửa chữa chỉ tải phiếu sửa xong. **Migration mới `20261109000001_report_paging.sql`** (pgTAP 249/249 local). Sửa: báo cáo Sửa chữa / Sản lượng bản database thiếu phiếu của cont hạ trước khoảng lọc.
 - DEC-178 (2026-10-29): **tìm số container theo 7 số seri** ở mọi ô tìm — đủ 7 số là chính xác, đang gõ thì gợi ý cont có seri bắt đầu bằng các số đã gõ (`containerSearch.ts`).
 - DEC-178 (2026-10-29): **mở app gọn** — chỉ tải việc đang mở + việc hôm nay (trước: 7 ngày), bỏ tải trùng, hiện trường không tải phiếu thu / giao dịch; hồ sơ container tải khi bấm mở.
 - DEC-178 (2026-10-29): **ảnh chỉ tải khi bấm XEM ẢNH (n)** — mở app / mở hồ sơ không xin link, không tải ảnh (`PhotoGallery`, `photoLink.ts`).

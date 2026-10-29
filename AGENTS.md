@@ -36,7 +36,7 @@ Code mâu thuẫn với DECISIONS → báo lại, không tự chọn bên nào.
 - **Thanh toán:** đi qua `src/services/payments.ts` (chứng từ → giao dịch → phiếu thu).
 - Mỗi lượt lưu bãi là một bản ghi container riêng; tìm container đang trong bãi bằng `findActiveContainer`, cập nhật bằng `updateContainerById` (không cập nhật theo số container).
 - Thành phần giao diện dùng chung ở `src/components/shared.tsx` (Chi phí, Thanh toán, Chọn vị trí, Phân trang, Thông báo) — tái sử dụng, không chép khối code.
-- Danh sách lớn / báo cáo: không tự tải toàn bộ; bắt buộc bộ lọc; có phân trang.
+- Danh sách lớn / báo cáo: không tự tải toàn bộ; bắt buộc bộ lọc; có phân trang. Chế độ database (DEC-178): báo cáo nhiều dòng dùng `usePagedReport` (database trả từng trang, Excel theo đợt — `reportPaging.ts`); ảnh chỉ tải khi bấm XEM ẢNH; hồ sơ container tải khi bấm mở (`dossierSource.ts`); tìm số cont chỉ qua `matchContainerNo` (`containerSearch.ts` — 7 số seri, gợi ý theo đầu seri). Thêm truy vấn mới → chạy bài thử tải `tests/load.local.test.ts` trên Supabase local.
 
 ## 5. Kiểm tra trước khi báo xong
 
