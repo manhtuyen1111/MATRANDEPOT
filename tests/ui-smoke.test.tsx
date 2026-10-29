@@ -1186,3 +1186,23 @@ describe('DEC-189: Danh mục chung → Database', () => {
     expect(html).not.toContain('db-health-checks');
   });
 });
+
+describe('DEC-191: User - Role dạng tab + Thông tin chi tiết ở icon khiên', () => {
+  const strip = (h: string) => h.replace(/<!-- -->/g, '');
+  it('Tab DANH SÁCH NHÂN VIÊN (mặc định) + VAI TRÒ & QUYỀN; cột Phòng ban / Thông tin chi tiết', () => {
+    const html = strip(renderToString(<UserRoleCatalog state={as(base, 'usr-admin')} onUpdateState={noop} />));
+    expect(html).toContain('DANH SÁCH NHÂN VIÊN');
+    expect(html).toContain('VAI TRÒ &amp; QUYỀN');
+    expect(html).toContain('THÊM NHÂN VIÊN');
+    for (const col of ['Mã NV', 'Họ và tên', 'Phòng ban', 'Vai trò', 'Tên đăng nhập', 'Thông tin chi tiết', 'Trạng thái']) expect(html).toContain(`>${col}<`);
+    expect(html).toContain('Thiếu 5 mục');
+  });
+  it('Thông tin chi tiết của mình: chỉ xem, ô trống ghi Chưa cập nhật', async () => {
+    const { MyProfile } = await import('../src/components/AccountMenu');
+    const html = strip(renderToString(<MyProfile user={{ ...base.staffUsers[0], gender: 'NU', birthYear: 1990 }} onClose={noop} />));
+    expect(html).toContain('Nữ');
+    expect(html).toContain('1990');
+    expect(html).toContain('Chưa cập nhật');
+    expect(html).not.toContain('<input');
+  });
+});

@@ -18,6 +18,8 @@ import {
   RepairTeam,
   RepairTeamMember,
   ServiceWorkOrder,
+  STAFF_GENDER_LABELS,
+  StaffGender,
   SWAP_REASON_LABELS,
   SwapReason,
   CONDITION_DEFERRED,
@@ -2330,10 +2332,11 @@ function assertKeepsAdmin(state: DepotState, users: StaffUser[]): void {
 
 export function addStaffUser(
   state: DepotState,
-  input: { fullName: string; email: string; roles: AppRole[] }
+  input: { fullName: string; email: string; roles: AppRole[]; department?: AppRole }
 ): DepotState {
   assertAdmin(state);
   const fullName = input.fullName.trim();
+  if (input.department && !ASSIGNABLE_ROLES.includes(input.department)) throw new Error('Phòng ban không hợp lệ.'); // DEC-191
   const email = input.email.trim().toLowerCase();
   if (!fullName) throw new Error('Vui lòng nhập họ tên.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Email không hợp lệ.');
@@ -2341,7 +2344,7 @@ export function addStaffUser(
   const roles = cleanRoles(input.roles);
   const maxNo = state.staffUsers.reduce((m, u) => Math.max(m, Number(u.staffCode.replace(/\D/g, '')) || 0), 0);
   const staffCode = `NV-${String(maxNo + 1).padStart(3, '0')}`;
-  const user: StaffUser = { id: newId('usr'), staffCode, fullName, email, roles, isActive: true };
+  const user: StaffUser = { id: newId('usr'), staffCode, fullName, email, roles, isActive: true, department: input.department };
   return appendAudit(
     { ...state, staffUsers: [...state.staffUsers, user] },
     'ADMIN_ADD_USER',
@@ -2375,6 +2378,57 @@ export function updateStaffUser(
     target.staffCode,
     `[Admin] Cập nhật user ${target.staffCode} ${target.fullName}: vai trò ${updated.roles.join(', ')}, ${updated.isActive ? 'đang hoạt động' : 'đã khóa'}`
   );
+}
+
+// DEC-191: THÔNG TIN CHI TIẾT NHÂN VIÊN — chỉ Admin sửa; để trống = chưa cập nhật. Nhật ký không ghi số CCCD.
+export const STAFF_MIN_AGE = 15;
+export function updateStaffProfile(
+  state: DepotState,
+  input: { userId: string; department?: AppRole | null; gender?: StaffGender | null; idNumber?: string | null; birthYear?: number | null; hometown?: string | null }
+): DepotState {
+  assertAdmin(state);
+  const target = state.staffUsers.find((u) => u.id === input.userId);
+  if (!target) throw new Error('Không tìm thấy nhân viên.');
+  const idNumber = (input.idNumber || '').replace(/\s/g, '') || undefined;
+  if (idNumber && !/^\d{12}$/.test(idNumber)) throw new Error('Số CCCD phải gồm đúng 12 chữ số.');
+  if (idNumber && state.staffUsers.some((u) => u.id !== target.id && u.idNumber === idNumber)) throw new Error('Số CCCD đã có ở nhân viên khác.');
+  const maxYear = new Date().getFullYear() - STAFF_MIN_AGE;
+  const birthYear = input.birthYear || undefined;
+  if (birthYear !== undefined && (!Number.isInteger(birthYear) || birthYear < 1940 || birthYear > maxYear)) {
+    throw new Error(`Năm sinh không hợp lệ (1940 → ${maxYear}).`);
+  }
+  if (input.gender && !STAFF_GENDER_LABELS[input.gender]) throw new Error('Giới tính chỉ là Nam hoặc Nữ.');
+  if (input.department && !ASSIGNABLE_ROLES.includes(input.department)) throw new Error('Phòng ban không hợp lệ.');
+  const updated: StaffUser = {
+    ...target,
+    department: input.department || undefined,
+    gender: input.gender || undefined,
+    idNumber,
+    birthYear,
+    hometown: input.hometown?.trim() || undefined,
+  };
+  return appendAudit(
+    {
+      ...state,
+      staffUsers: state.staffUsers.map((u) => (u.id === target.id ? updated : u)),
+      currentUser: state.currentUser.id === target.id ? { ...state.currentUser, ...updated } : state.currentUser,
+    },
+    'ADMIN_UPDATE_STAFF_PROFILE',
+    'USER',
+    target.staffCode,
+    `[Admin] Cập nhật thông tin chi tiết ${target.staffCode} ${target.fullName}`
+  );
+}
+
+// Ô thông tin chi tiết còn trống (hiện "Chưa cập nhật")
+export function staffProfileMissing(u: StaffUser): string[] {
+  return [
+    !u.gender && 'Giới tính',
+    !u.idNumber && 'CCCD',
+    !u.birthYear && 'Năm sinh',
+    !u.hometown && 'Quê quán',
+    !u.department && 'Phòng ban',
+  ].filter(Boolean) as string[];
 }
 
 // ============================================================================

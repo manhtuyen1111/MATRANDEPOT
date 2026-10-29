@@ -214,7 +214,16 @@ export interface StaffUser {
   email: string;
   roles: AppRole[];
   isActive: boolean;
+  // DEC-191: thông tin chi tiết — chỉ Admin + chính nhân viên xem; để trống = chưa cập nhật (cập nhật / xác minh sau)
+  department?: AppRole; // PHÒNG BAN (1) — độc lập với vai trò / role phân quyền
+  gender?: StaffGender;
+  idNumber?: string;    // CCCD 12 số
+  birthYear?: number;
+  hometown?: string;
 }
+
+export type StaffGender = 'NAM' | 'NU';
+export const STAFF_GENDER_LABELS: Record<StaffGender, string> = { NAM: 'Nam', NU: 'Nữ' };
 
 export interface Partner {
   id: string;
