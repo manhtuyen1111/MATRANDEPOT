@@ -681,7 +681,7 @@ export const DateRangeFilter: React.FC<{
 
 // Tải file Excel .xlsx (DEC-050, DEC-055) — dùng chung cho Phiếu thu và mọi báo cáo
 export const ExportExcelButton: React.FC<{
-  getSheets: () => SheetData[];
+  getSheets: () => SheetData[] | Promise<SheetData[]>; // database: lấy dữ liệu theo đợt (DEC-178)
   fileName: string;
   disabled?: boolean;
 }> = ({ getSheets, fileName, disabled }) => {
@@ -691,7 +691,7 @@ export const ExportExcelButton: React.FC<{
     setErr(null);
     setBusy(true);
     try {
-      const buf = await toXlsxBuffer(getSheets());
+      const buf = await toXlsxBuffer(await getSheets());
       const url = URL.createObjectURL(new Blob([buf], { type: XLSX_MIME }));
       const a = document.createElement('a');
       a.href = url;

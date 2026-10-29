@@ -1724,3 +1724,41 @@ describe('DEC-178: tìm số container', () => {
     expect(miss.some((o) => o.id === order.id)).toBe(false);
   });
 });
+
+// DEC-178 bước 4b: báo cáo phân trang ở database — bộ lọc trên màn → bộ lọc gửi database (cùng điều kiện với reports.ts)
+import { reportPagerActive, setReportPager, toServerFilter, fetchReportPage } from '../src/services/remote/reportPaging';
+
+describe('DEC-178 bước 4b: báo cáo phân trang ở database', () => {
+  it('Đổi bộ lọc màn hình sang ISO; bỏ giới hạn 3 tháng (tối đa 1 năm như Demo); chỉ số cont cũng tra được', () => {
+    const f = toServerFilter({ dateFrom: '01/01/2026 00:00:00', dateTo: '31/10/2026 23:59:59', containerNo: ' 12345 ', shippingLineCode: '', size: '40' });
+    expect(new Date(f.from!).getTime()).toBe(new Date(2026, 0, 1, 0, 0, 0).getTime());
+    expect(new Date(f.to!).getTime()).toBe(new Date(2026, 9, 31, 23, 59, 59, 999).getTime()); // hết giây cuối, như reports.ts
+    expect(f).toMatchObject({ containerNo: '12345', shippingLineCode: undefined, size: '40' });
+    expect(toServerFilter({ containerNo: 'MSKU1234567' })).toMatchObject({ from: undefined, containerNo: 'MSKU1234567' });
+  });
+
+  it('Từ chối: thiếu TỪ / ĐẾN, TỪ sau ĐẾN, quá 1 năm, không ngày + không số cont, ngày sai', () => {
+    expect(() => toServerFilter({ dateFrom: '01/01/2026 00:00:00' })).toThrow('đủ TỪ và ĐẾN');
+    expect(() => toServerFilter({ dateFrom: '02/01/2026 00:00:00', dateTo: '01/01/2026 00:00:00' })).toThrow('TỪ phải trước');
+    expect(() => toServerFilter({ dateFrom: '01/01/2025 00:00:00', dateTo: '31/12/2026 00:00:00' })).toThrow('tối đa');
+    expect(() => toServerFilter({})).toThrow('Nhập số container hoặc chọn khoảng thời gian');
+    expect(() => toServerFilter({ dateFrom: 'abc', dateTo: 'xyz' })).toThrow('không hợp lệ');
+  });
+
+  it('Database: gọi đúng loại báo cáo / trang, giữ người dùng hiện tại; Demo không có pager', async () => {
+    const s = createInitialState();
+    expect(reportPagerActive()).toBe(false);
+    await expect(fetchReportPage(s, 'HA_VO', { containerNo: '1234567' }, 1, 50)).rejects.toThrow('Chưa kết nối');
+    let asked: unknown[] = [];
+    const other = { ...createInitialState(), currentUser: { ...s.currentUser, id: 'khac' } };
+    setReportPager({ page: async (_st, kind, f, page, size) => { asked = [kind, f.containerNo, page, size]; return { state: other, total: 123 }; }, all: async () => other });
+    try {
+      const r = await fetchReportPage(s, 'CAP_VO', { containerNo: '1234567' }, 3, 50);
+      expect(asked).toEqual(['CAP_VO', '1234567', 3, 50]);
+      expect(r.total).toBe(123);
+      expect(r.state.currentUser).toBe(s.currentUser);
+    } finally {
+      setReportPager(null);
+    }
+  });
+});

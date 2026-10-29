@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import type { DepotState } from '../services/depotStore';
 import type { DateRange } from '../services/reports';
-import { needsRangeLoad, stateForRange } from '../services/remote/reportSource';
+import { needsRangeLoad, stateForRange, type RangeKind } from '../services/remote/reportSource';
 
 // Báo cáo / tra cứu (N7): bấm Tra cứu → run(khoảng lọc, apply); chạy query trên `data`.
-// Demo hoặc lọc trong cửa sổ làm việc (7 ngày) → apply ngay, data = state hiện tại.
-// Database lọc xa hơn → tải riêng theo khoảng lọc (tối đa 3 tháng) rồi mới apply.
-export function useReportState(state: DepotState) {
+// Demo hoặc lọc trong cửa sổ làm việc (từ 00:00 hôm nay — DEC-178) → apply ngay, data = state hiện tại.
+// Database lọc xa hơn → tải riêng theo khoảng lọc (tối đa 3 tháng) rồi mới apply; kind → chỉ tải dữ liệu báo cáo đó cần.
+export function useReportState(state: DepotState, kind?: RangeKind) {
   const [loaded, setLoaded] = useState<DepotState | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export function useReportState(state: DepotState) {
       return;
     }
     setLoading(true);
-    stateForRange(state, range)
+    stateForRange(state, range, kind)
       .then((next) => {
         setLoaded(next);
         apply(next);

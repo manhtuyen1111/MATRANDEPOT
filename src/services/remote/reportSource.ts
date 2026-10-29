@@ -10,7 +10,9 @@ import { workingWindowStart } from './loadWorking';
 
 export const REMOTE_MAX_RANGE_DAYS = 92; // ~3 tháng (APP_DB_INTEGRATION nguyên tắc 4)
 
-type RangeLoader = (range: { from: string; to: string }) => Promise<DepotState>;
+// kind: báo cáo cần dữ liệu gọn riêng (Sản lượng sửa chữa — DEC-178); không có → tải đủ hồ sơ của khoảng
+export type RangeKind = 'REPAIR_OUTPUT';
+type RangeLoader = (range: { from: string; to: string }, kind?: RangeKind) => Promise<DepotState>;
 let loader: RangeLoader | null = null;
 
 // RemoteApp đăng ký khi đăng nhập, gỡ khi đăng xuất
@@ -43,8 +45,8 @@ export function assertRemoteRange(range: DateRange): { from: string; to: string 
 }
 
 // Trả về state để chạy báo cáo: state hiện tại, hoặc dữ liệu tải riêng theo khoảng lọc (giữ người dùng hiện tại)
-export async function stateForRange(state: DepotState, range: DateRange): Promise<DepotState> {
+export async function stateForRange(state: DepotState, range: DateRange, kind?: RangeKind): Promise<DepotState> {
   if (!loader || !needsRangeLoad(range)) return state;
-  const loaded = await loader(assertRemoteRange(range));
+  const loaded = await loader(assertRemoteRange(range), kind);
   return { ...loaded, currentUser: state.currentUser };
 }

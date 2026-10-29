@@ -9,10 +9,10 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { loadStaffSession, signIn } from '../src/services/remote/session';
-import { createWorkingSync, loadDossierState, loadWorkingState } from '../src/services/remote/loadWorking';
+import { createWorkingSync, loadDossierState, loadRepairOutputState, loadReportAll, loadReportPage, loadWorkingState } from '../src/services/remote/loadWorking';
 import { toAuthPassword, usernameToEmail } from '../src/services/authPassword';
 import { formatDateTime } from '../src/services/datetime';
-import { collectAllPages, gateInSheet, queryGateInReport, queryRepairOutput, repairOutputSheets } from '../src/services/reports';
+import { collectAllPages, gateInSheet, queryGateInReport, queryGateOutReport, queryRepairOutput, queryRepairReport, repairOutputSheets } from '../src/services/reports';
 
 const ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env || {};
 const URL = ENV.MATRAN_LOCAL_SUPABASE_URL;
@@ -204,4 +204,70 @@ describe.skipIf(!run)('Thử tải: 200.000 lượt vào – ra + 200.000 lượ
       expect(page.total).toBeGreaterThan(0);
     }, 1_800_000);
   }
+
+  // DEC-178 bước 4b: báo cáo phân trang ở database — từng trang + Excel theo đợt; tổng số dòng khớp cách tính cũ
+  it('Báo cáo phân trang ở database: Hạ vỏ / Cấp vỏ / Sửa chữa', async () => {
+    const me = (await loadStaffSession(client))!;
+    const base = await createWorkingSync(client, me).full();
+    const to = new Date();
+    for (const days of [30, 92, DAYS]) {
+      const f = { from: new Date(Date.now() - days * DAY).toISOString(), to: to.toISOString() };
+      const hv = await measure(`Hạ vỏ ${days} ngày — trang 1 (50 dòng)`, () => loadReportPage(client, base, 'HA_VO', f, 1, 50));
+      console.log(`[LOAD]   → tổng ${hv.total} dòng, trang có ${hv.state.gateInOrders.length} dòng`);
+      expect(hv.state.gateInOrders.length).toBe(Math.min(50, hv.total));
+      const last = Math.max(1, Math.ceil(hv.total / 50));
+      await measure(`Hạ vỏ ${days} ngày — trang cuối (${last})`, () => loadReportPage(client, base, 'HA_VO', f, last, 50));
+      await measure(`Cấp vỏ ${days} ngày — trang 1, lọc hãng MSK`, () => loadReportPage(client, base, 'CAP_VO', { ...f, shippingLineCode: 'MSK' }, 1, 50));
+      await measure(`Sửa chữa ${days} ngày — trang 1`, () => loadReportPage(client, base, 'SUA_CHUA', f, 1, 50));
+    }
+    const serial = sampleNo.slice(-7, -2);
+    const bySerial = await measure(`Hạ vỏ — tìm đầu seri "${serial}" (không chọn ngày)`, () => loadReportPage(client, base, 'HA_VO', { containerNo: serial }, 1, 50));
+    expect(bySerial.total).toBeGreaterThan(0);
+
+    // Đối chiếu 30 ngày: tổng database đếm = cách tính cũ (tải cả khoảng rồi lọc trên máy)
+    const from30 = new Date(Date.now() - 30 * DAY);
+    const range = { from: from30.toISOString(), to: to.toISOString() };
+    const screen = { dateFrom: formatDateTime(from30), dateTo: formatDateTime(to) };
+    const old = await loadWorkingState(client, me, range);
+    const pHv = await loadReportPage(client, base, 'HA_VO', range, 1, 50);
+    expect(pHv.total).toBe(queryGateInReport(old, 'CUSTOMER_RETURN', screen, 1, 50).total);
+    expect(queryGateInReport(pHv.state, 'CUSTOMER_RETURN', screen, 1, 50).rows.map((o) => o.id)).toEqual(queryGateInReport(old, 'CUSTOMER_RETURN', screen, 1, 50).rows.map((o) => o.id));
+    const pCv = await loadReportPage(client, base, 'CAP_VO', range, 1, 50);
+    expect(pCv.total).toBe(queryGateOutReport(old, ['EMPTY_RELEASE'], screen, 1, 50).total);
+    // Sửa chữa: đúng = mọi phiếu có (hoàn tất lúc / tạo lúc) trong khoảng — cách tải cũ chỉ lấy phiếu của cont HẠ trong khoảng nên thiếu
+    const pSc = await loadReportPage(client, base, 'SUA_CHUA', range, 1, 50);
+    const { count: scCount } = await admin.from('work_orders').select('id', { count: 'exact', head: true }).eq('category', 'REPAIR').gte('report_at', range.from).lte('report_at', range.to);
+    expect(pSc.total).toBe(scCount);
+    expect(pSc.total).toBeGreaterThanOrEqual(queryRepairReport(old, screen, 1, 50).total);
+    console.log(`[LOAD]   → Sửa chữa 30 ngày: database ${pSc.total} phiếu; cách tải cũ ${queryRepairReport(old, screen, 1, 50).total} phiếu`);
+
+    // Excel theo đợt — 3 tháng
+    const f92 = { from: new Date(Date.now() - 92 * DAY).toISOString(), to: to.toISOString() };
+    const all = await measure('Excel Hạ vỏ 3 tháng — tải theo đợt', () => loadReportAll(client, base, 'HA_VO', f92));
+    const sheet = await measure('Excel Hạ vỏ 3 tháng — dựng sheet', () =>
+      gateInSheet('HẠ VỎ', collectAllPages((p, size) => queryGateInReport(all, 'CUSTOMER_RETURN', { dateFrom: formatDateTime(new Date(f92.from)), dateTo: formatDateTime(to) }, p, size)), all)
+    );
+    console.log(`[LOAD]   → ${sheet.rows.length} dòng Excel`);
+    expect(sheet.rows.length).toBe(all.gateInOrders.length);
+  }, 1_800_000);
+
+  it('Sản lượng sửa chữa: chỉ tải phiếu sửa chữa đã xong — kết quả khớp cách tải cũ', async () => {
+    const me = (await loadStaffSession(client))!;
+    for (const days of [30, 92]) {
+      const from = new Date(Date.now() - days * DAY);
+      const to = new Date();
+      const range = { from: from.toISOString(), to: to.toISOString() };
+      const screen = { dateFrom: formatDateTime(from), dateTo: formatDateTime(to) };
+      const lean = await measure(`Sản lượng ${days} ngày — tải gọn`, () => loadRepairOutputState(client, me, range));
+      const rows = queryRepairOutput(lean, screen);
+      // Đúng = mọi phiếu sửa xong trong khoảng (mỗi phiếu 2 thợ). Cách tải cũ chỉ lấy phiếu của cont HẠ trong khoảng → sót ở đầu khoảng
+      const { count } = await admin.from('work_order_members').select('work_order_id, w:work_orders!inner(id)', { count: 'exact', head: true })
+        .eq('w.category', 'REPAIR').eq('w.work_status', 'COMPLETED').gte('w.completed_at', range.from).lte('w.completed_at', range.to);
+      expect(rows.reduce((n, r) => n + r.containers, 0)).toBe(count); // mỗi thợ của mỗi phiếu = 1 lượt
+      if (days === 30) {
+        const old = queryRepairOutput(await loadWorkingState(client, me, range), screen);
+        console.log(`[LOAD]   → tải gọn ${rows.reduce((n, r) => n + r.containers, 0)} lượt thợ; cách tải cũ ${old.reduce((n, r) => n + r.containers, 0)} lượt thợ`);
+      }
+    }
+  }, 1_800_000);
 });

@@ -16,6 +16,7 @@ import type { DepotState } from '../depotStore';
 import type { StaffSession } from './session';
 import { loadCatalogState } from './loadState';
 import { can } from '../permissions';
+import { normalizeContainerQuery } from '../containerSearch';
 
 const FAR = '9999-12-31T23:59:59Z';
 const OVERLAP_MS = 60_000; // lấy chồng 1 phút khi đồng bộ (giao dịch ghi chậm) — trùng thì ghép theo id
@@ -164,12 +165,15 @@ async function expand(client: SupabaseClient, r: Roots, payments: boolean): Prom
         ...gateIns.filter((g) => OPEN_GATE_IN.includes(g.status)).map((g) => g.voucher_id),
         ...gateOuts.filter((o) => OPEN_GATE_OUT.includes(o.status)).map((o) => o.voucher_id),
       ];
-  const [vcById, rcByTx, members] = await Promise.all([
+  const [vcById, members] = await Promise.all([
     byIds(client, 'vouchers', 'id', missing(voucherOf, r.vouchers)),
-    payments ? byIds(client, 'payment_receipts', 'transaction_id', missing(txs.map((t) => t.id), r.receipts, 'transaction_id')) : NONE,
     byIds(client, 'work_order_members', 'work_order_id', works.map((w) => w.id), 'work_order_id, member_name, grade_name, hourly_rate'),
   ]);
   const vouchers = merge(r.vouchers, vcById);
+  // Giao dịch theo chứng từ (hồ sơ cũ mở từ báo cáo / tra cứu — cột Thanh toán / Mã phiếu thu) rồi phiếu thu của giao dịch
+  const txByVoucher = payments ? await byIds(client, 'payment_transactions', 'voucher_id', missing(vouchers.map((v) => v.id), txs, 'voucher_id')) : [];
+  const allTxs = merge(txs, txByVoucher);
+  const rcByTx = payments ? await byIds(client, 'payment_receipts', 'transaction_id', missing(allTxs.map((t) => t.id), r.receipts, 'transaction_id')) : [];
   const receipts = merge(r.receipts, rcByTx);
 
   // Đợt 4: dòng chi phí, lần in, yêu cầu hóa đơn
@@ -183,7 +187,7 @@ async function expand(client: SupabaseClient, r: Roots, payments: boolean): Prom
   const groupItems = await byIds(client, 'invoice_group_items', 'group_id', groups.map((g) => g.id), 'group_id, deduction_id');
 
   return {
-    containers, gateIns, gateOuts, bookings, prepaids, vouchers, txs, receipts, deductions, prints, groups, groupItems, fees, tickets,
+    containers, gateIns, gateOuts, bookings, prepaids, vouchers, txs: allTxs, receipts, deductions, prints, groups, groupItems, fees, tickets,
     works, members, history, lists, items, feedbacks: r.feedbacks,
   };
 }
@@ -482,4 +486,115 @@ export function createWorkingSync(client: SupabaseClient, me: StaffSession): Wor
   };
 
   return { full, refresh };
+}
+
+// ============================================================================
+// BÁO CÁO PHÂN TRANG Ở DATABASE (DEC-178 bước 4b): database lọc + đếm + trả 1 trang (cột report_at / container_serial —
+// migration 20261109000001); chỉ tải thêm chứng từ / giao dịch / phiếu thu / container / thợ của các dòng trên trang.
+// Dòng báo cáo vẫn dựng bằng hàm trong reports.ts (cùng kết quả với bản Demo).
+// ============================================================================
+export type ServerReportKind = 'HA_VO' | 'CAP_VO' | 'SUA_CHUA';
+export interface ServerReportFilter {
+  from?: string; // ISO
+  to?: string;
+  containerNo?: string;
+  shippingLineCode?: string;
+  size?: string;
+  teamCode?: string;
+  status?: string;
+}
+
+const emptyRaw = (): RawData => ({
+  containers: [], gateIns: [], gateOuts: [], bookings: [], prepaids: [], vouchers: [], txs: [], receipts: [], deductions: [], prints: [],
+  groups: [], groupItems: [], fees: [], tickets: [], works: [], members: [], history: [], lists: [], items: [], feedbacks: [],
+});
+
+function reportQuery(client: SupabaseClient, kind: ServerReportKind, f: ServerReportFilter, withCount: boolean) {
+  const table = kind === 'HA_VO' ? 'gate_in_orders' : kind === 'CAP_VO' ? 'gate_out_orders' : 'work_orders';
+  // Hãng tàu / size của Cấp vỏ, Sửa chữa nằm ở container → lọc qua bảng container
+  const viaCont = kind !== 'HA_VO' && Boolean(f.shippingLineCode || (kind === 'CAP_VO' && f.size));
+  let q: any = client.from(table).select(viaCont ? '*, c:containers!container_id!inner(id)' : '*', withCount ? { count: 'exact' } : undefined);
+  if (kind === 'HA_VO') q = q.eq('gate_in_type', 'CUSTOMER_RETURN');
+  if (kind === 'CAP_VO') q = q.eq('gate_out_type', 'EMPTY_RELEASE');
+  if (kind === 'SUA_CHUA') q = q.eq('category', 'REPAIR');
+  if (f.from) q = q.gte('report_at', f.from);
+  if (f.to) q = q.lte('report_at', f.to);
+  const no = normalizeContainerQuery(f.containerNo);
+  if (no) q = /^\d+$/.test(no) ? q.like('container_serial', `${no}%`) : q.like('container_no', `${no}%`);
+  if (kind === 'HA_VO') {
+    if (f.shippingLineCode) q = q.eq('shipping_line_code', f.shippingLineCode);
+    if (f.size) q = q.eq('size', f.size);
+  } else {
+    if (f.shippingLineCode) q = q.eq('c.shipping_line_code', f.shippingLineCode);
+    if (kind === 'CAP_VO' && f.size) q = q.eq('c.size', f.size);
+  }
+  if (kind === 'SUA_CHUA') {
+    if (f.teamCode) q = q.eq('repair_team_code', f.teamCode);
+    if (f.status && f.status !== 'ALL') q = q.eq('work_status', f.status);
+  }
+  return q.order('report_at', { ascending: false }).order('id');
+}
+
+// Hồ sơ đi kèm các dòng báo cáo: container, chứng từ → giao dịch → phiếu thu (vai trò xem thu tiền), thợ sửa chữa
+async function reportRelated(client: SupabaseClient, kind: ServerReportKind, rows: Row[], payments: boolean): Promise<RawData> {
+  const raw = emptyRaw();
+  if (kind === 'HA_VO') raw.gateIns = rows;
+  if (kind === 'CAP_VO') raw.gateOuts = rows;
+  if (kind === 'SUA_CHUA') raw.works = rows;
+  const [containers, members, vouchers] = await Promise.all([
+    kind === 'HA_VO' ? NONE : byIds(client, 'containers', 'id', rows.map((r) => r.container_id)),
+    kind === 'SUA_CHUA' ? byIds(client, 'work_order_members', 'work_order_id', rows.map((r) => r.id), 'work_order_id, member_name, grade_name, hourly_rate') : NONE,
+    kind === 'SUA_CHUA' ? NONE : byIds(client, 'vouchers', 'id', rows.map((r) => r.voucher_id)),
+  ]);
+  Object.assign(raw, { containers, members, vouchers });
+  if (payments && vouchers.length) {
+    raw.txs = await byIds(client, 'payment_transactions', 'voucher_id', vouchers.map((v) => v.id));
+    raw.receipts = await byIds(client, 'payment_receipts', 'transaction_id', raw.txs.map((t) => t.id));
+  }
+  return raw;
+}
+
+// 1 trang báo cáo: state chỉ gồm các dòng của trang + tổng số dòng khớp bộ lọc
+export async function loadReportPage(
+  client: SupabaseClient, base: DepotState, kind: ServerReportKind, f: ServerReportFilter, page: number, size: number
+): Promise<{ state: DepotState; total: number }> {
+  const from = (Math.max(1, page) - 1) * size;
+  const { data, error, count } = await reportQuery(client, kind, f, true).range(from, from + size - 1);
+  if (error) throw new Error(`Không tải được dữ liệu: ${error.message}`);
+  const raw = await reportRelated(client, kind, data || [], seesPayments(base.currentUser));
+  return { state: buildState(base, raw), total: count ?? 0 };
+}
+
+// Toàn bộ kết quả để xuất Excel — lấy theo đợt (PostgREST trả tối đa 1.000 dòng / lần)
+export async function loadReportAll(
+  client: SupabaseClient, base: DepotState, kind: ServerReportKind, f: ServerReportFilter, onProgress?: (done: number, total: number) => void
+): Promise<DepotState> {
+  const rows: Row[] = [];
+  let total = 0;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error, count } = await reportQuery(client, kind, f, from === 0).range(from, from + PAGE - 1);
+    if (error) throw new Error(`Không tải được dữ liệu: ${error.message}`);
+    if (from === 0) total = count ?? 0;
+    rows.push(...(data || []));
+    onProgress?.(rows.length, total);
+    if (!data || data.length < PAGE) break;
+  }
+  const raw = await reportRelated(client, kind, rows, seesPayments(base.currentUser));
+  return buildState(base, raw);
+}
+
+// SẢN LƯỢNG SỬA CHỮA lọc trước hôm nay (DEC-178): chỉ tải phiếu sửa chữa ĐÃ XONG trong khoảng + thợ + container của phiếu
+// (trước đây tải cả Hạ vỏ / Cấp vỏ / phiếu thu của khoảng lọc)
+export async function loadRepairOutputState(client: SupabaseClient, me: StaffSession, range: { from: string; to: string }): Promise<DepotState> {
+  const [base, works] = await Promise.all([
+    loadCatalogState(client, me),
+    all((a, b) =>
+      client.from('work_orders').select('*').eq('category', 'REPAIR').eq('work_status', 'COMPLETED').gte('completed_at', range.from).lte('completed_at', range.to).order('id').range(a, b)
+    ),
+  ]);
+  const [members, containers] = await Promise.all([
+    byIds(client, 'work_order_members', 'work_order_id', works.map((w) => w.id), 'work_order_id, member_name, grade_name, hourly_rate'),
+    byIds(client, 'containers', 'id', works.map((w) => w.container_id)),
+  ]);
+  return buildState(base, { ...emptyRaw(), works, members, containers });
 }
