@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-182 (2026-10-29): **ảnh cửa cont Giám định hiện luôn** khi mở hồ sơ container / chi tiết Giám định – Hạ vỏ / chi tiết Văn phòng – Hạ vỏ (bỏ nút XEM ẢNH ở đây); ảnh sửa chữa và cột ảnh báo cáo vẫn bấm XEM ẢNH.
 - DEC-181 (2026-10-29): **Hồ sơ container — LỊCH SỬ HỒ SƠ dạng bảng** (Thời gian | Tác nghiệp | Nội dung TẠO MỚI / SỬA / XÓA | Chi tiết | Nhân viên), cũ trên – mới dưới, dòng ĐANG CHỜ cuối bảng; đầu trang giữ thông tin container. Dựng từ dữ liệu tác nghiệp (`dossierHistory.ts`), không cần migration.
 - DEC-180 (2026-10-29): menu **Báo cáo chỉ có bộ phận** (Giám định / Văn phòng / Vệ sinh / Xe nâng / Sửa chữa + Góp ý cho Admin); báo cáo con là tab trong trang bộ phận; Tổng hợp chuyển vào Văn phòng.
 - DEC-179 (2026-10-29): **Báo cáo tách theo bộ phận** — Giám định (Chi tiết — mới), Văn phòng (Hạ vỏ / Cấp vỏ / Xuất vỏ / Nhập vỏ), Vệ sinh (Chi tiết — mới), Xe nâng (Chi tiết — mới), Sửa chữa (Chi tiết / Sản lượng); bộ phận xem báo cáo của mình. **Migration mới `20261110000001_department_reports.sql`** (pgTAP 252/252 local).

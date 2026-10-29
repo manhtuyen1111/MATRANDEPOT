@@ -1527,6 +1527,18 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-182 — Ảnh cửa cont Giám định hiện luôn, không cần bấm XEM ẢNH
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng). **Sửa DEC-178** cho riêng ảnh cửa cont.
+- Ảnh cửa container do Giám định chụp (1 ảnh) **hiện ngay** khi mở:
+  - Hồ sơ container — dòng Giám định — Hạ vỏ / Nhập tàu;
+  - chi tiết hồ sơ ở Giám định – Hạ vỏ;
+  - chi tiết Văn phòng – Hạ vỏ.
+- Không còn nút XEM ẢNH ở các chỗ này (`PhotoGallery autoShow`).
+- Giữ nút **XEM ẢNH (n)** cho:
+  - ảnh hoàn thành sửa chữa (1–30 ảnh);
+  - cột ảnh trong danh sách báo cáo nhiều dòng (Báo cáo Giám định — Chi tiết) — mở danh sách không tải hàng loạt ảnh (DEC-178).
+
 ### DEC-181 — Hồ sơ container: LỊCH SỬ HỒ SƠ dạng bảng
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi). **Sửa DEC-058** phần thân hồ sơ (bỏ các khối bộ phận có ô ✓ HOÀN THÀNH bên phải; Thanh toán không còn là khối riêng mà là 1 dòng lịch sử).
@@ -1745,6 +1757,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-181 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-182 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
