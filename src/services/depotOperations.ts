@@ -1386,6 +1386,29 @@ export function releaseAllocatedContainer(
 //   Cont cũ quay về bãi (giữ hồ sơ HV- / ngày hạ gốc) → Xe nâng HẠ LẠI, chọn vị trí mới.
 //   KEN_VO: giữ trạng thái, hạ xong cấp được cho khách khác. DAMAGE: chuyển DAMAGE + PHÁT SINH CẤP VỎ, hạ xong → Chờ báo giá.
 // ============================================================================
+// DEC-185: lệnh cấp đổi được container (cont đã cấp ra, chưa trả chứng từ) + danh sách cont thay thế hợp lệ
+export function canSwapGateOut(order: GateOutOrder | undefined): boolean {
+  return Boolean(order && order.status === 'GATE_OUT_OK' && !order.documentsReturnedAt);
+}
+export function swapCandidates(state: DepotState, gateOutOrderId: string): ContainerRecord[] {
+  const order = state.gateOutOrders.find((o) => o.id === gateOutOrderId);
+  if (!canSwapGateOut(order)) return [];
+  const old = state.containers.find((c) => c.masterDossierCode === order!.masterDossierCode && c.containerNo === order!.containerNo);
+  const booking = state.bookings.find((b) => b.bookingNo === order!.bookingNo);
+  if (!old || !booking) return [];
+  return state.containers
+    .filter(
+      (c) =>
+        c.status === 'IN_YARD' &&
+        c.containerNo !== old.containerNo &&
+        c.size === booking.size &&
+        c.type === booking.type &&
+        c.shippingLineCode === old.shippingLineCode &&
+        !releaseBlocker(c)
+    )
+    .sort((a, b) => a.containerNo.localeCompare(b.containerNo));
+}
+
 export function swapGateOutContainer(
   state: DepotState,
   input: { gateOutOrderId: string; reason: SwapReason; newContainerNo: string; note?: string }
@@ -1394,7 +1417,7 @@ export function swapGateOutContainer(
   if (!SWAP_REASON_LABELS[input.reason]) throw new Error('Vui lòng chọn lý do ĐỔI CONTAINER.');
   const order = state.gateOutOrders.find((o) => o.id === input.gateOutOrderId);
   if (!order) throw new Error('Không tìm thấy hồ sơ CẤP VỎ.');
-  if (order.status !== 'GATE_OUT_OK' || order.documentsReturnedAt) {
+  if (!canSwapGateOut(order)) {
     throw new Error(`Hồ sơ ${order.gateOutCode}: chỉ ĐỔI CONTAINER khi cont đã cấp ra và đang chờ trả chứng từ.`);
   }
   const old = state.containers.find(

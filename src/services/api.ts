@@ -134,6 +134,12 @@ export const confirmReleasePayment = wrap(ops.confirmReleasePayment, ([, i]) => 
 export const releaseAllocatedContainer = wrap(ops.releaseAllocatedContainer, ([, i]) => async (c) => {
   await rpc(c, 'release_allocated_container', { p_container_no: i.containerNo, p_reason: i.reason });
 });
+// DEC-185: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ (RPC swap_gate_out_container — migration 20261111000001)
+export const swapGateOutContainer = wrap(ops.swapGateOutContainer, ([, i]) => async (c) => {
+  await rpc(c, 'swap_gate_out_container', {
+    p_request_id: requestId(), p_gate_out_id: realId(i.gateOutOrderId), p_reason: i.reason, p_new_container_no: i.newContainerNo, p_note: nul(i.note),
+  });
+});
 export const executeGateOut = wrap(ops.executeGateOut, ([, i]) => async (c) => {
   await rpc(c, 'execute_gate_out', { p_request_id: requestId(), p_container_no: nul(i.containerNo), p_scanned_code: nul(i.scannedQrCode), p_pickup_block: nul(i.pickupBlock) });
 });

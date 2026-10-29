@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CameraScanButton } from '../../components/Qr';
 import { confirmDocumentsReturn, recordReceiptPrint } from '../../services/api';
-import { Eye, FileCheck2, Printer, QrCode, X } from 'lucide-react';
+import { Eye, FileCheck2, Printer, QrCode, Repeat, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
 
 import { DocumentPack, previewDocumentPack, ticketsAwaitingReturn } from '../../services/driverRoute';
@@ -9,6 +9,8 @@ import { linkCls, ContainerNo, Feedback, inputCls, primaryBtn, secondaryBtn, Sec
 import { PrintPortal } from '../../components/ReceiptPrint';
 import { CustomerSlipK80, slipPrintCount } from '../../components/K80TicketModal';
 import { printNow } from '../../components/printNow';
+import { canSwapGateOut } from '../../services/depotOperations';
+import { SwapContainerModal } from './SwapContainerModal';
 
 type Mode = 'HA_VO' | 'CAP_VO';
 const MODE_LABEL: Record<Mode, string> = { HA_VO: 'HẠ VỎ', CAP_VO: 'CẤP VỎ' };
@@ -23,6 +25,8 @@ export const DocumentReturnWorkspace: React.FC<{
   const [pack, setPack] = useState<DocumentPack | null>(null);
   const [preview, setPreview] = useState<DocumentPack | null>(null); // DEC-110: xem trước, không in
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [swapOrderId, setSwapOrderId] = useState<string | null>(null); // DEC-185
   const allWaiting = ticketsAwaitingReturn(state);
 
   const confirm = (raw: string) => {
@@ -52,7 +56,7 @@ export const DocumentReturnWorkspace: React.FC<{
 
   return (
     <div className="space-y-4">
-      <Feedback error={error} onClose={() => setError(null)} />
+      <Feedback error={error} success={success} onClose={() => { setError(null); setSuccess(null); }} />
       <SectionCard title="Trả chứng từ — quét mã QR phiếu EEIR (K80)" icon={<QrCode className="h-4 w-4 text-ink-muted" />}>
         <form onSubmit={(e) => { e.preventDefault(); confirm(code); }} className="flex gap-2">
           <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} autoFocus placeholder="Quét mã QR phiếu EEIR (K80) / mã hồ sơ..." className={`${inputCls} py-2.5 font-mono text-sm uppercase`} />
@@ -77,7 +81,10 @@ export const DocumentReturnWorkspace: React.FC<{
                 <p className="text-xs text-ink-muted">Không có lái xe nào đang chờ.</p>
               ) : (
                 <ul className="divide-y divide-line text-xs">
-                  {waiting.map((t) => (
+                  {waiting.map((t) => {
+                    // DEC-185: cont đã cấp ra, chờ trả chứng từ → được ĐỔI CONTAINER
+                    const outOrder = m === 'CAP_VO' ? state.gateOutOrders.find((o) => o.gateOutCode === t.outDossierCode) : undefined;
+                    return (
                     <li key={t.ticketCode} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="flex flex-wrap items-center gap-2">
                         <ContainerNo no={t.containerNo} />
@@ -87,9 +94,13 @@ export const DocumentReturnWorkspace: React.FC<{
                       <span className="flex gap-2">
                         <button type="button" onClick={() => showPreview(t.qrCode)} className={secondaryBtn}><Eye className="h-3.5 w-3.5" />Xem trước</button>
                         <button type="button" onClick={() => confirm(t.qrCode)} className={secondaryBtn}>Trả chứng từ</button>
+                        {outOrder && canSwapGateOut(outOrder) && (
+                          <button type="button" onClick={() => setSwapOrderId(outOrder.id)} className={secondaryBtn}><Repeat className="h-3.5 w-3.5" />ĐỔI CONTAINER</button>
+                        )}
                       </span>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
             </SectionCard>
@@ -98,6 +109,14 @@ export const DocumentReturnWorkspace: React.FC<{
       </div>
 
       {pack && <DocumentPackPrint state={state} pack={pack} onClose={() => setPack(null)} />}
+      {swapOrderId && (
+        <SwapContainerModal
+          state={state}
+          gateOutOrderId={swapOrderId}
+          onClose={() => setSwapOrderId(null)}
+          onDone={(next, message) => { onUpdateState(next); setSwapOrderId(null); setSuccess(message); }}
+        />
+      )}
       {preview && <DocumentPackPrint state={state} pack={preview} preview onClose={() => setPreview(null)} />}
     </div>
   );

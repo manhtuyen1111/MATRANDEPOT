@@ -135,6 +135,10 @@ export const LocationText: React.FC<{
   );
 };
 
+// DEC-185: nhãn PHÁT SINH CẤP VỎ — cont hư phát hiện khi cấp vỏ (Đổi container), đi lại Báo giá → Sửa chữa
+export const ReleaseDamageTag: React.FC<{ show?: boolean }> = ({ show }) =>
+  show ? <span className="ml-1.5 inline-block rounded bg-danger-fg px-1.5 py-0.5 align-middle text-[10px] font-bold text-white" data-testid="release-damage">PHÁT SINH CẤP VỎ</span> : null;
+
 // Vị trí lưu dạng chữ BLOCK-… (lịch sử vị trí, hồ sơ) → icon định vị thay chữ "BLOCK-" (DEC-136)
 export const LocText: React.FC<{ text?: string }> = ({ text }) =>
   text && /^BLOCK-/i.test(text) ? (
