@@ -19,6 +19,7 @@ import { K80InternalTicket, ROLE_LABELS, WorkspaceMenuId } from '../types/depot'
 import { DepotState, loadDepotState, resetDepotState, saveDepotState } from '../services/depotStore';
 import { createDemoState } from '../services/demoData';
 import { canOpenMenu } from '../services/permissions';
+import { dossierLoaderActive, loadDossier, mergeDossier } from '../services/remote/dossierSource';
 import { isSupabaseConfigured } from '../lib/env';
 import { openVesselLists, VesselFieldStep, vesselStepSummary } from '../services/vessel';
 import { FieldQueueMode, FieldQueueWorkspaces, getFieldQueue } from '../features/field-queues/FieldQueueWorkspaces';
@@ -208,6 +209,24 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
   const [activeMenu, setActiveMenu] = useState<WorkspaceMenuId>('GD_HA_VO');
   const [activeK80Ticket, setActiveK80Ticket] = useState<K80InternalTicket | null>(null);
   const [activeDossierCode, setActiveDossierCode] = useState<string | null>(null);
+  // DEC-178: chế độ database — hồ sơ tải đủ khi bấm mở rồi ghép vào dữ liệu đang có
+  const [dossierExtra, setDossierExtra] = useState<{ code: string; data: DepotState | null; error?: string } | null>(null);
+  useEffect(() => {
+    if (!activeDossierCode || !dossierLoaderActive()) {
+      setDossierExtra(null);
+      return;
+    }
+    let alive = true;
+    setDossierExtra({ code: activeDossierCode, data: null });
+    loadDossier(state, activeDossierCode)
+      .then((data) => alive && setDossierExtra({ code: activeDossierCode, data }))
+      .catch((err) => alive && setDossierExtra({ code: activeDossierCode, data: null, error: err instanceof Error ? err.message : 'Không tải được hồ sơ.' }));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ tải lại khi đổi hồ sơ
+  }, [activeDossierCode]);
+  const dossierState = useMemo(() => mergeDossier(state, dossierExtra?.data ?? null), [state, dossierExtra]);
   const [simulatedQr, setSimulatedQr] = useState('');
   const [receiptFocus, setReceiptFocus] = useState<{ key: string; nonce: number } | null>(null);
   // DEC-051, DEC-105: mở thẳng Văn phòng → Phiếu thu (chỉ khi user được vào menu Phiếu thu)
@@ -535,9 +554,14 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
 
       {/* Hồ sơ / phiếu K80 chỉ tải khi mở lần đầu */}
       <Suspense fallback={null}>
+      {activeDossierCode && dossierExtra && !dossierExtra.data && (
+        <div className="fixed bottom-4 left-1/2 z-[90] -translate-x-1/2 rounded-md bg-navy-900 px-3 py-2 text-xs font-semibold text-white shadow-lg" role="status" data-testid="dossier-loading">
+          {dossierExtra.error ? `Không tải đủ hồ sơ: ${dossierExtra.error}` : 'Đang tải hồ sơ…'}
+        </div>
+      )}
       {activeDossierCode && <MasterDossierModal
         masterDossierCode={activeDossierCode}
-        state={state}
+        state={dossierState}
         onClose={() => setActiveDossierCode(null)}
         onOpenK80Ticket={setActiveK80Ticket}
         onUpdateState={handleUpdateState}

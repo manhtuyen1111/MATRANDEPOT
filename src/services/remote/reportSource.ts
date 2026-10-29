@@ -1,12 +1,12 @@
 // ============================================================================
 // NGUỒN DỮ LIỆU BÁO CÁO (N7 — DEC-157). Demo: báo cáo chạy trên state sẵn có.
-// Database: app chỉ giữ dữ liệu đang làm việc (trong bãi + 7 ngày — loadWorking.ts, DEC-158). Lọc có ngày bắt đầu cũ hơn →
+// Database: app chỉ giữ dữ liệu đang làm việc (trong bãi + từ 00:00 hôm nay — loadWorking.ts, DEC-178). Lọc có ngày bắt đầu cũ hơn →
 // tải riêng đúng khoảng lọc (tối đa 3 tháng) rồi chạy cùng hàm báo cáo / Excel trong reports.ts.
 // ============================================================================
 import type { DepotState } from '../depotStore';
 import { parseDateTime } from '../datetime';
 import type { DateRange } from '../reports';
-import { WORKING_DAYS } from './loadWorking';
+import { workingWindowStart } from './loadWorking';
 
 export const REMOTE_MAX_RANGE_DAYS = 92; // ~3 tháng (APP_DB_INTEGRATION nguyên tắc 4)
 
@@ -29,7 +29,7 @@ export function needsRangeLoad(range: DateRange, now = new Date(), active = load
   if (!active) return false;
   const b = bounds(range);
   if (!b) return false;
-  return b.from.getTime() < now.getTime() - (WORKING_DAYS - 1) * 86_400_000;
+  return b.from.getTime() < workingWindowStart(now).getTime();
 }
 
 export function assertRemoteRange(range: DateRange): { from: string; to: string } {
@@ -37,7 +37,7 @@ export function assertRemoteRange(range: DateRange): { from: string; to: string 
   if (!b) throw new Error('Chọn đủ thời gian TỪ và ĐẾN.');
   if (b.from > b.to) throw new Error('Thời gian TỪ phải trước hoặc bằng ĐẾN.');
   if ((b.to.getTime() - b.from.getTime()) / 86_400_000 > REMOTE_MAX_RANGE_DAYS) {
-    throw new Error('Tra cứu dữ liệu cũ hơn 7 ngày: mỗi lần tối đa 3 tháng.');
+    throw new Error('Tra cứu dữ liệu trước hôm nay: mỗi lần tối đa 3 tháng.');
   }
   return { from: b.from.toISOString(), to: b.to.toISOString() };
 }

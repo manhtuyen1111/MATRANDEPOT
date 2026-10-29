@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { ChangePasswordScreen, LoginScreen } from '../features/auth/LoginScreen';
 import { changePassword, loadStaffSession, signIn, signOut, type StaffSession } from '../services/remote/session';
-import { createWorkingSync, loadWorkingState, type WorkingSync } from '../services/remote/loadWorking';
+import { createWorkingSync, loadDossierState, loadWorkingState, type WorkingSync } from '../services/remote/loadWorking';
 import { clearIdMap, friendlyError, isOffline, setRemoteSink, takeCatalogTouched, type RemoteOp } from '../services/remote/sync';
 import { setReportLoader } from '../services/remote/reportSource';
 import { setPhotoClient } from '../services/remote/photoLink';
+import { setDossierLoader } from '../services/remote/dossierSource';
 import type { DepotState } from '../services/depotStore';
 import { App } from './App';
 import { AppLoading, SavingIndicator, StatusPill } from '../components/LoadingScreens';
@@ -118,10 +119,14 @@ export const RemoteApp: React.FC = () => {
     return () => setReportLoader(null);
   }, [client]);
 
-  // Ảnh: bấm XEM ẢNH mới xin link (DEC-178)
+  // Ảnh: bấm XEM ẢNH mới xin link; hồ sơ container tải đủ khi bấm mở (DEC-178)
   useEffect(() => {
     setPhotoClient(client);
-    return () => setPhotoClient(null);
+    setDossierLoader((state, code) => loadDossierState(client, state, code));
+    return () => {
+      setPhotoClient(null);
+      setDossierLoader(null);
+    };
   }, [client]);
 
   useEffect(() => {

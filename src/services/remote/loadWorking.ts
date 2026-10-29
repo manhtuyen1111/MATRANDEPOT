@@ -1,24 +1,31 @@
 // ============================================================================
-// CHẾ ĐỘ DATABASE — tải DỮ LIỆU ĐANG LÀM VIỆC (DEC-155, DEC-158): mọi thứ đang mở / trong bãi + 7 ngày gần nhất,
+// CHẾ ĐỘ DATABASE — tải DỮ LIỆU ĐANG LÀM VIỆC (DEC-155, DEC-158, DEC-178): mọi thứ đang mở / trong bãi + việc xong từ 00:00 hôm nay
+// (vai trò không thu tiền: không tải phiếu thu / giao dịch); hồ sơ container đầy đủ tải khi bấm mở (loadDossierState),
 // chuyển về đúng kiểu DepotState mà giao diện đang dùng. Chỉ tải dữ liệu dạng bảng; ảnh chỉ giữ đường dẫn,
 // bấm XEM ẢNH mới xin link + tải ảnh (DEC-178). Mở app tải đủ 1 lần, sau đó chỉ lấy phần thay đổi (createWorkingSync).
-// Báo cáo lọc ngoài 7 ngày → tải riêng theo khoảng lọc (tối đa 3 tháng, reportSource.ts — N7).
+// Báo cáo lọc trước hôm nay → tải riêng theo khoảng lọc (tối đa 3 tháng, reportSource.ts — N7).
 // ============================================================================
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   ContainerRecord, FeeLineItem, FeedbackItem, GateInOrder, GateOutOrder, InvoiceGroup, K80InternalTicket, LocationHistoryItem,
   MasterPrepaidReceipt, MasterReceiptDeduction, PaymentReceipt, PaymentTransaction, PaymentVoucher, ReleaseBooking,
-  ServiceWorkOrder, VesselList, VesselListItem,
+  ServiceWorkOrder, StaffUser, VesselList, VesselListItem,
 } from '../../types/depot';
 import type { DepotState } from '../depotStore';
 import type { StaffSession } from './session';
 import { loadCatalogState } from './loadState';
+import { can } from '../permissions';
 
-export const WORKING_DAYS = 7; // DEC-158 (đo N8: 90 ngày = 206 giây / 171 MB — không dùng được)
 const FAR = '9999-12-31T23:59:59Z';
 const OVERLAP_MS = 60_000; // lấy chồng 1 phút khi đồng bộ (giao dịch ghi chậm) — trùng thì ghép theo id
-const windowStart = () => new Date(Date.now() - WORKING_DAYS * 86400000).toISOString();
+// Cửa sổ làm việc: việc đang mở + việc xong TỪ 00:00 HÔM NAY (DEC-178 — trước là 7 ngày, DEC-158). Cũ hơn → tra cứu / báo cáo tải riêng
+export function workingWindowStart(now = new Date()): Date {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+const windowStart = () => workingWindowStart().toISOString();
 const PAGE = 1000;
 const CHUNK = 150;
 const PARALLEL = 6;
@@ -82,79 +89,134 @@ export interface RawData {
   history: Row[]; lists: Row[]; items: Row[]; feedbacks: Row[];
 }
 
-async function fetchRaw(client: SupabaseClient, since: string, until: string): Promise<RawData> {
+// Ai làm phần thu tiền (Văn phòng / Quản lý / Kế toán / Admin). Vai trò khác không tải phiếu thu, giao dịch, phiếu trả trước;
+// chứng từ chỉ của hồ sơ đang làm dở (Xe nâng vẫn kiểm điều kiện 4 khi xuất bãi) — DEC-178
+export const seesPayments = (me: StaffUser) => can(me, 'RECEIPT_VIEW') || can(me, 'PAYMENT_CONFIRM');
+const OPEN_GATE_IN = ['FIELD_RECORDED', 'PAYMENT_PENDING'];
+const OPEN_GATE_OUT = ['PAYMENT_PENDING', 'PENDING_FORKLIFT'];
+const NONE: Promise<Row[]> = Promise.resolve([]);
+
+// Gốc đã tải ở bước đầu (theo trạng thái / thời gian, hoặc theo 1 hồ sơ)
+type Roots = Pick<RawData, 'containers' | 'gateIns' | 'gateOuts' | 'bookings' | 'prepaids' | 'vouchers' | 'txs' | 'receipts' | 'deductions' | 'tickets' | 'lists' | 'feedbacks'>;
+
+async function fetchRaw(client: SupabaseClient, since: string, until: string, payments = true): Promise<RawData> {
   // Chạy theo ĐỢT: truy vấn không phụ thuộc nhau gửi cùng lúc (trước đây ~25 lượt nối tiếp → chậm qua mạng thật)
   const win = (table: string, col: string) => all((a, b) => client.from(table).select('*').gte(col, since).lte(col, until).range(a, b));
+  const pay = (q: () => Promise<Row[]>) => (payments ? q() : NONE);
 
   // Đợt 1: mọi thứ lọc theo trạng thái / thời gian
   const [contOpen, contWin, giOpen, giWin, goOpen, goWin, bkWin, ppOpen, ppWin, vcWin, txWin, txPending, rcWin, ddWin, tkWin, lsOpen, lsWin, feedbacks] = await Promise.all([
     all((a, b) => client.from('containers').select('*').neq('status', 'GATED_OUT').range(a, b)),
     win('containers', 'gate_in_at'),
-    all((a, b) => client.from('gate_in_orders').select('*').in('status', ['FIELD_RECORDED', 'PAYMENT_PENDING']).range(a, b)),
+    all((a, b) => client.from('gate_in_orders').select('*').in('status', OPEN_GATE_IN).range(a, b)),
     win('gate_in_orders', 'created_at'),
-    all((a, b) => client.from('gate_out_orders').select('*').in('status', ['PAYMENT_PENDING', 'PENDING_FORKLIFT']).range(a, b)),
+    all((a, b) => client.from('gate_out_orders').select('*').in('status', OPEN_GATE_OUT).range(a, b)),
     win('gate_out_orders', 'created_at'),
     win('release_bookings', 'created_at'),
-    all((a, b) => client.from('prepaid_receipts').select('*').in('status', ['PENDING_PAYMENT', 'ACTIVE']).range(a, b)),
-    win('prepaid_receipts', 'created_at'),
-    win('vouchers', 'created_at'),
-    win('payment_transactions', 'created_at'),
-    all((a, b) => client.from('payment_transactions').select('*').eq('status', 'PENDING').range(a, b)),
-    win('payment_receipts', 'issued_at'),
-    win('prepaid_deductions', 'performed_at'),
+    pay(() => all((a, b) => client.from('prepaid_receipts').select('*').in('status', ['PENDING_PAYMENT', 'ACTIVE']).range(a, b))),
+    pay(() => win('prepaid_receipts', 'created_at')),
+    pay(() => win('vouchers', 'created_at')),
+    pay(() => win('payment_transactions', 'created_at')),
+    pay(() => all((a, b) => client.from('payment_transactions').select('*').eq('status', 'PENDING').range(a, b))),
+    pay(() => win('payment_receipts', 'issued_at')),
+    pay(() => win('prepaid_deductions', 'performed_at')),
     win('k80_tickets', 'issued_at'),
     all((a, b) => client.from('vessel_lists').select('*').eq('status', 'OPEN').range(a, b)),
     win('vessel_lists', 'created_at'),
     win('feedbacks', 'created_at'),
   ]);
-  const containers = merge(contOpen, contWin);
-  const gateOuts = merge(goOpen, goWin);
-  const prepaids = merge(ppOpen, ppWin);
-  const lists = merge(lsOpen, lsWin);
+  return expand(client, {
+    containers: merge(contOpen, contWin), gateIns: merge(giOpen, giWin), gateOuts: merge(goOpen, goWin), bookings: bkWin,
+    prepaids: merge(ppOpen, ppWin), vouchers: vcWin, txs: merge(txWin, txPending), receipts: rcWin, deductions: ddWin,
+    tickets: tkWin, lists: merge(lsOpen, lsWin), feedbacks,
+  }, payments);
+}
+
+// Các đợt sau: hồ sơ liên quan tới gốc. Chỉ tải phần CHƯA có (trước đây tải trùng phần đã có theo thời gian — DEC-178)
+async function expand(client: SupabaseClient, r: Roots, payments: boolean): Promise<RawData> {
+  const missing = (ids: (string | null | undefined)[], have: Row[], key = 'id') => {
+    const got = new Set(have.map((x) => x[key]));
+    return ids.filter((id) => id && !got.has(id));
+  };
+  const { containers, gateOuts, prepaids, lists } = r;
 
   // Đợt 2: hồ sơ liên quan tới cont / lệnh / phiếu trả trước / danh sách tàu đã có
   const [giById, bkById, txByPrepaid, ddByPrepaid, tkByDossier, works, history, items] = await Promise.all([
-    byIds(client, 'gate_in_orders', 'id', containers.map((c) => c.gate_in_id)),
-    byIds(client, 'release_bookings', 'id', gateOuts.map((o) => o.booking_id)),
-    byIds(client, 'payment_transactions', 'prepaid_id', prepaids.map((p) => p.id)),
-    byIds(client, 'prepaid_deductions', 'prepaid_id', prepaids.map((p) => p.id)),
-    byIds(client, 'k80_tickets', 'dossier_code', containers.map((c) => c.dossier_code)),
+    byIds(client, 'gate_in_orders', 'id', missing(containers.map((c) => c.gate_in_id), r.gateIns)),
+    byIds(client, 'release_bookings', 'id', missing(gateOuts.map((o) => o.booking_id), r.bookings)),
+    payments ? byIds(client, 'payment_transactions', 'prepaid_id', prepaids.map((p) => p.id)) : NONE,
+    payments ? byIds(client, 'prepaid_deductions', 'prepaid_id', prepaids.map((p) => p.id)) : NONE,
+    byIds(client, 'k80_tickets', 'dossier_code', missing(containers.map((c) => c.dossier_code), r.tickets, 'dossier_code')),
     byIds(client, 'work_orders', 'container_id', containers.map((c) => c.id)),
     byIds(client, 'location_history', 'container_id', containers.map((c) => c.id)),
     byIds(client, 'vessel_list_items', 'list_id', lists.map((l) => l.id)),
   ]);
-  const gateIns = merge(giOpen, giWin, giById);
-  const bookings = merge(bkWin, bkById);
-  const txs = merge(txWin, txPending, txByPrepaid);
-  const deductions = merge(ddWin, ddByPrepaid);
-  const tickets = merge(tkWin, tkByDossier);
+  const gateIns = merge(r.gateIns, giById);
+  const bookings = merge(r.bookings, bkById);
+  const txs = merge(r.txs, txByPrepaid);
+  const deductions = merge(r.deductions, ddByPrepaid);
+  const tickets = merge(r.tickets, tkByDossier);
 
   // Đợt 3: chứng từ của hồ sơ, phiếu thu của giao dịch, thành viên tổ sửa chữa
+  const voucherOf = payments
+    ? [...gateIns.map((g) => g.voucher_id), ...gateOuts.map((o) => o.voucher_id)]
+    : [
+        ...gateIns.filter((g) => OPEN_GATE_IN.includes(g.status)).map((g) => g.voucher_id),
+        ...gateOuts.filter((o) => OPEN_GATE_OUT.includes(o.status)).map((o) => o.voucher_id),
+      ];
   const [vcById, rcByTx, members] = await Promise.all([
-    byIds(client, 'vouchers', 'id', [...gateIns.map((g) => g.voucher_id), ...gateOuts.map((o) => o.voucher_id)]),
-    byIds(client, 'payment_receipts', 'transaction_id', txs.map((t) => t.id)),
+    byIds(client, 'vouchers', 'id', missing(voucherOf, r.vouchers)),
+    payments ? byIds(client, 'payment_receipts', 'transaction_id', missing(txs.map((t) => t.id), r.receipts, 'transaction_id')) : NONE,
     byIds(client, 'work_order_members', 'work_order_id', works.map((w) => w.id), 'work_order_id, member_name, grade_name, hourly_rate'),
   ]);
-  const vouchers = merge(vcWin, vcById);
-  const receipts = merge(rcWin, rcByTx);
+  const vouchers = merge(r.vouchers, vcById);
+  const receipts = merge(r.receipts, rcByTx);
 
   // Đợt 4: dòng chi phí, lần in, yêu cầu hóa đơn
   const [fees, prints, groups] = await Promise.all([
     byIds(client, 'fee_lines', 'owner_id', [...vouchers.map((v) => v.id), ...prepaids.map((p) => p.id)]),
-    byIds(client, 'receipt_prints', 'receipt_id', receipts.map((r) => r.id)),
-    byIds(client, 'invoice_groups', 'receipt_id', receipts.map((r) => r.id)),
+    byIds(client, 'receipt_prints', 'receipt_id', receipts.map((x) => x.id)),
+    byIds(client, 'invoice_groups', 'receipt_id', receipts.map((x) => x.id)),
   ]);
 
   // Đợt 5: lượt thuộc từng yêu cầu hóa đơn
   const groupItems = await byIds(client, 'invoice_group_items', 'group_id', groups.map((g) => g.id), 'group_id, deduction_id');
 
-  return { containers, gateIns, gateOuts, bookings, prepaids, vouchers, txs, receipts, deductions, prints, groups, groupItems, fees, tickets, works, members, history, lists, items, feedbacks };
+  return {
+    containers, gateIns, gateOuts, bookings, prepaids, vouchers, txs, receipts, deductions, prints, groups, groupItems, fees, tickets,
+    works, members, history, lists, items, feedbacks: r.feedbacks,
+  };
 }
 
-// range (ISO) có → tải hồ sơ trong khoảng đó thay cho cửa sổ làm việc — báo cáo lọc xa hơn (N7)
+// HỒ SƠ CONTAINER tải khi bấm mở (DEC-178): mã HV- / NT- (lượt lưu bãi), CV- (cấp vỏ), XT- (xuất tàu) → đủ mọi bước của lượt đó.
+// base: dữ liệu đang có (danh mục, người dùng) — trả về state chỉ gồm hồ sơ này để ghép vào (dossierSource.ts)
+export async function loadDossierState(client: SupabaseClient, base: DepotState, code: string): Promise<DepotState> {
+  const eq = (table: string, col: string, val: string) => all((a, b) => client.from(table).select('*').eq(col, val).range(a, b));
+  const [outsByCode, itemsByCode] = await Promise.all([eq('gate_out_orders', 'code', code), eq('vessel_list_items', 'dossier_code', code)]);
+  const itemCont = itemsByCode[0]?.container_id ? await byIds(client, 'containers', 'id', [itemsByCode[0].container_id]) : [];
+  const visit: string = outsByCode[0]?.dossier_code || itemCont[0]?.dossier_code || code;
+  const [contByVisit, gateIns, outsByVisit, lists] = await Promise.all([
+    eq('containers', 'dossier_code', visit),
+    eq('gate_in_orders', 'code', visit),
+    eq('gate_out_orders', 'dossier_code', visit),
+    byIds(client, 'vessel_lists', 'id', itemsByCode.map((i) => i.list_id)),
+  ]);
+  const gateOuts = merge(outsByCode, outsByVisit);
+  const tickets = await byIds(client, 'k80_tickets', 'dossier_code', [visit, ...gateOuts.map((o) => o.code)]);
+  const raw = await expand(
+    client,
+    {
+      containers: merge(contByVisit, itemCont), gateIns, gateOuts, bookings: [], prepaids: [], vouchers: [], txs: [], receipts: [], deductions: [],
+      tickets, lists, feedbacks: [],
+    },
+    true
+  );
+  return buildState(base, raw);
+}
+
 export async function loadWorkingState(client: SupabaseClient, me: StaffSession, range?: { from: string; to: string }): Promise<DepotState> {
   const base = await loadCatalogState(client, me);
-  const raw = await fetchRaw(client, range?.from ?? windowStart(), range?.to ?? FAR);
+  const raw = await fetchRaw(client, range?.from ?? windowStart(), range?.to ?? FAR, seesPayments(me));
   return buildState(base, raw);
 }
 
@@ -389,7 +451,7 @@ export function createWorkingSync(client: SupabaseClient, me: StaffSession): Wor
 
   const full = async () => {
     cursor = await serverNow(); // lấy mốc TRƯỚC khi tải → không sót thay đổi xảy ra trong lúc tải
-    raw = await fetchRaw(client, windowStart(), FAR);
+    raw = await fetchRaw(client, windowStart(), FAR, seesPayments(me));
     return build(raw);
   };
 

@@ -9,7 +9,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { loadStaffSession, signIn } from '../src/services/remote/session';
-import { createWorkingSync, loadWorkingState } from '../src/services/remote/loadWorking';
+import { createWorkingSync, loadDossierState, loadWorkingState } from '../src/services/remote/loadWorking';
 import { toAuthPassword, usernameToEmail } from '../src/services/authPassword';
 import { formatDateTime } from '../src/services/datetime';
 import { collectAllPages, gateInSheet, queryGateInReport, queryRepairOutput, repairOutputSheets } from '../src/services/reports';
@@ -32,6 +32,7 @@ describe.skipIf(!run)('Thử tải: 200.000 lượt vào – ra + 200.000 lượ
   const letters = Array.from({ length: 3 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
   const block = `BLOCK-LD${letters}`;
   let client: SupabaseClient;
+  let counter: typeof fetch = fetch; // fetch đếm số byte tải về
   let bytes = 0;
   const byPath = new Map<string, number>(); // KB theo bảng / RPC — tìm chỗ tải nặng
   let sampleNo = '';
@@ -46,17 +47,20 @@ describe.skipIf(!run)('Thử tải: 200.000 lượt vào – ra + 200.000 lượ
     }
   };
 
-  // Tài khoản admin / 123456 để đăng nhập trình duyệt (tạo 1 lần, chạy lại không lỗi)
-  const ensureLogin = async (): Promise<string> => {
-    const email = usernameToEmail(LOGIN.username);
-    const found = await admin.from('staff').select('id').eq('username', LOGIN.username).maybeSingle();
+  // Tài khoản đăng nhập trình duyệt (tạo 1 lần, chạy lại không lỗi): admin / 123456 và Xe nâng xn.load / 123456 (đo vai trò hiện trường)
+  const ensureUser = async (username: string, code: string, fullName: string, role: string): Promise<string> => {
+    const found = await admin.from('staff').select('id').eq('username', username).maybeSingle();
     if (found.data) return found.data.id;
-    const created = await admin.auth.admin.createUser({ email, password: toAuthPassword(LOGIN.password), email_confirm: true });
+    const created = await admin.auth.admin.createUser({ email: usernameToEmail(username), password: toAuthPassword(LOGIN.password), email_confirm: true });
     if (created.error) throw new Error(created.error.message);
     const id = created.data.user!.id;
-    await admin.from('staff').insert({ id, staff_code: 'NV001', username: LOGIN.username, full_name: 'Quản trị hệ thống', must_change_password: false });
-    await admin.from('staff_roles').insert({ staff_id: id, role: 'ADMIN' });
+    await admin.from('staff').insert({ id, staff_code: code, username, full_name: fullName, must_change_password: false });
+    await admin.from('staff_roles').insert({ staff_id: id, role });
     return id;
+  };
+  const ensureLogin = async (): Promise<string> => {
+    await ensureUser('xn.load', 'NV002', 'Xe nâng thử tải', 'FORKLIFT');
+    return ensureUser(LOGIN.username, 'NV001', 'Quản trị hệ thống', 'ADMIN');
   };
 
   beforeAll(async () => {
@@ -128,7 +132,7 @@ describe.skipIf(!run)('Thử tải: 200.000 lượt vào – ra + 200.000 lượ
     }
     if (!sampleNo) sampleNo = (await admin.from('containers').select('container_no').like('container_no', 'L%').limit(1).single()).data!.container_no;
 
-    const counted: typeof fetch = async (input, init) => {
+    counter = async (input, init) => {
       const res = await fetch(input, init);
       const size = (await res.clone().arrayBuffer()).byteLength;
       bytes += size;
@@ -136,7 +140,7 @@ describe.skipIf(!run)('Thử tải: 200.000 lượt vào – ra + 200.000 lượ
       byPath.set(path, (byPath.get(path) || 0) + size);
       return res;
     };
-    client = createClient(URL!, ANON!, { auth: { persistSession: false }, global: { fetch: counted } });
+    client = createClient(URL!, ANON!, { auth: { persistSession: false }, global: { fetch: counter } });
     await signIn(client, LOGIN.username, LOGIN.password);
   }, 7_200_000);
 
@@ -154,11 +158,28 @@ describe.skipIf(!run)('Thử tải: 200.000 lượt vào – ra + 200.000 lượ
   it('Mở app + đồng bộ', async () => {
     const me = (await loadStaffSession(client))!;
     const sync = createWorkingSync(client, me);
-    const s = await measure('Mở app (tải đủ: tồn bãi + 7 ngày)', () => sync.full());
-    console.log(`[LOAD]   → ${s.containers.length} cont, ${s.workOrders.length} phiếu sửa chữa trong dữ liệu`);
+    const s = await measure('Mở app — Admin (tồn bãi + việc hôm nay)', () => sync.full());
+    console.log(`[LOAD]   → ${s.containers.length} cont, ${s.workOrders.length} phiếu sửa chữa, ${s.paymentReceipts.length} phiếu thu trong dữ liệu`);
     await measure('Đồng bộ (không có thay đổi)', () => sync.refresh());
     expect(s.containers.filter((c) => c.status === 'IN_YARD').length).toBeGreaterThanOrEqual(Math.min(IN_YARD, TOTAL));
+
+    // Vai trò hiện trường: không tải phiếu thu / giao dịch (DEC-178)
+    const field = createClient(URL!, ANON!, { auth: { persistSession: false }, global: { fetch: counter } });
+    await signIn(field, 'xn.load', LOGIN.password);
+    const fs = await measure('Mở app — Xe nâng', async () => createWorkingSync(field, (await loadStaffSession(field))!).full());
+    console.log(`[LOAD]   → ${fs.containers.length} cont, ${fs.paymentReceipts.length} phiếu thu, ${fs.vouchers.length} chứng từ trong dữ liệu`);
+    expect(fs.paymentReceipts).toHaveLength(0);
   }, 1_800_000);
+
+  it('Mở hồ sơ container (tải khi bấm mở)', async () => {
+    const me = (await loadStaffSession(client))!;
+    const base = await createWorkingSync(client, me).full();
+    const code = (await admin.from('containers').select('dossier_code').eq('container_no', sampleNo).single()).data!.dossier_code;
+    const d = await measure(`Mở hồ sơ ${code}`, () => loadDossierState(client, base, code));
+    expect(d.containers.some((c) => c.masterDossierCode === code)).toBe(true);
+    expect(d.gateInOrders.some((g) => g.masterDossierCode === code)).toBe(true);
+    expect(d.workOrders.some((w) => w.masterDossierCode === code)).toBe(true);
+  }, 300_000);
 
   it('Tra số container trong toàn bộ lịch sử', async () => {
     const exact = await measure(`Tìm đúng số ${sampleNo}`, () => client.from('containers').select('*').eq('container_no', sampleNo));

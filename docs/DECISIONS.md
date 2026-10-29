@@ -1537,6 +1537,7 @@ Quy ước trạng thái:
   - Hồ sơ container tải khi bấm mở.
   - **Ảnh chỉ lưu đường dẫn**; mở app **và mở hồ sơ** đều không tải ảnh — chỉ hiện nút **XEM ẢNH (n)**, bấm mới xin link + tải ảnh (`PhotoGallery` trong `shared.tsx`, `src/services/remote/photoLink.ts` gom link 1 lượt / kho, nhớ 50 phút). **Không làm ảnh thu nhỏ**: mỗi ảnh vẫn 1 file < 200 KB (DEC-176).
   - **Đã làm (2026-10-29):** ảnh theo yêu cầu ở Hồ sơ container (cửa Gate in + sửa chữa), chi tiết Văn phòng Hạ vỏ, chi tiết Giám định.
+  - **Đã làm (2026-10-29) — mở app:** cửa sổ làm việc **7 ngày → từ 00:00 hôm nay** (`workingWindowStart`; lọc trước hôm nay → tải theo khoảng); bỏ tải trùng (đợt sau chỉ tải phần chưa có); vai trò không có RECEIPT_VIEW / PAYMENT_CONFIRM (`seesPayments`) không tải phiếu thu / giao dịch / phiếu trả trước, chứng từ chỉ của hồ sơ đang làm dở; **hồ sơ container tải đủ khi bấm mở** (`loadDossierState` + `dossierSource.ts`, ghép theo id). Chưa làm: chỉ lấy cột cần (select theo cột) — đo lại sau khi chạy thử thật.
   - **Báo cáo tính ở database** (lọc, phân trang, tổng, Excel tải theo đợt) → **bỏ giới hạn 3 tháng** (thay DEC-157 phần giới hạn).
 - **Tìm số container (mọi ô tìm):** tìm theo **7 số seri** và tìm **chính xác**; khi đang gõ hiện **gợi ý các cont có seri bắt đầu bằng các số đã gõ** (VD gõ `12345` → `MSKU1234567`, `TCLU1234501`).
 - Mục tiêu: mở app hiện trường < 2 giây / < 0,3 MB; Văn phòng < 4 giây / < 2 MB; báo cáo trang đầu < 2 giây; tìm số cont < 0,5 giây; mở hồ sơ < 1 giây.

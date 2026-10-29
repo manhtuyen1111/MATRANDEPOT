@@ -1326,22 +1326,26 @@ describe('DEC-147: W-SURVEY (LÊN KỆ) + giám định bổ sung trên kệ', (
   });
 });
 
-// N7 (DEC-157, DEC-158): báo cáo chế độ database lọc ngoài cửa sổ làm việc (7 ngày) → tải riêng theo khoảng lọc, tối đa 3 tháng
+// N7 (DEC-157, DEC-178): báo cáo chế độ database lọc ngoài cửa sổ làm việc (từ 00:00 hôm nay) → tải riêng theo khoảng lọc, tối đa 3 tháng
 import { assertRemoteRange, needsRangeLoad, setReportLoader, stateForRange } from '../src/services/remote/reportSource';
 import { formatDateTime as fmtDt } from '../src/services/datetime';
 
 describe('N7: nguồn dữ liệu báo cáo theo khoảng lọc', () => {
   const daysAgo = (n: number) => fmtDt(new Date(Date.now() - n * 86_400_000));
 
-  it('Demo hoặc lọc trong 7 ngày → không tải riêng, dùng state hiện tại', async () => {
+  it('Demo hoặc lọc trong hôm nay → không tải riêng, dùng state hiện tại (DEC-178: cửa sổ làm việc = từ 00:00 hôm nay)', async () => {
     const state = createInitialState();
+    const midnight = new Date();
+    midnight.setHours(0, 0, 0, 0);
     expect(needsRangeLoad({ dateFrom: daysAgo(200), dateTo: daysAgo(150) }, new Date(), false)).toBe(false);
-    expect(needsRangeLoad({ dateFrom: daysAgo(3), dateTo: daysAgo(0) }, new Date(), true)).toBe(false);
+    expect(needsRangeLoad({ dateFrom: fmtDt(midnight), dateTo: daysAgo(0) }, new Date(), true)).toBe(false);
+    expect(needsRangeLoad({ dateFrom: fmtDt(new Date(midnight.getTime() - 1000)), dateTo: daysAgo(0) }, new Date(), true)).toBe(true);
+    expect(needsRangeLoad({ dateFrom: daysAgo(3), dateTo: daysAgo(0) }, new Date(), true)).toBe(true);
     expect(needsRangeLoad({ dateFrom: daysAgo(30), dateTo: daysAgo(0) }, new Date(), true)).toBe(true);
     expect(await stateForRange(state, { dateFrom: daysAgo(200), dateTo: daysAgo(150) })).toBe(state);
   });
 
-  it('Database lọc cũ hơn 7 ngày → tải đúng khoảng, giữ người dùng hiện tại', async () => {
+  it('Database lọc trước hôm nay → tải đúng khoảng, giữ người dùng hiện tại', async () => {
     const state = createInitialState();
     const loaded = { ...createInitialState(), currentUser: { ...state.currentUser, id: 'khac' } };
     let asked: { from: string; to: string } | null = null;
@@ -1630,5 +1634,54 @@ describe('DEC-175 vượt giờ sửa chữa', () => {
     expect(sum.columns.slice(-4)).toEqual(['LƯƠNG SẢN PHẨM', 'GIỜ VƯỢT GIỜ', 'SẢN PHẨM VƯỢT GIỜ', 'TỔNG TIỀN SẢN PHẨM (VND)']);
     expect(sum.rows[0].slice(-4)).toEqual([2500000, 50, 150000, 2650000]);
     expect(sum.rows[1].slice(-4)).toEqual([2500000, 50, 150000, 2650000]);
+  });
+});
+
+// DEC-178: mở app tải theo vai trò; hồ sơ container tải khi bấm mở rồi ghép vào dữ liệu đang có
+import { dossierLoaderActive, loadDossier, mergeDossier, setDossierLoader } from '../src/services/remote/dossierSource';
+import { seesPayments, workingWindowStart } from '../src/services/remote/loadWorking';
+import { createDemoState } from '../src/services/demoData';
+
+describe('DEC-178: tải theo vai trò + hồ sơ tải khi bấm mở', () => {
+  it('Chỉ vai trò thu tiền / xem phiếu thu mới tải phiếu thu, giao dịch; hiện trường thì không', () => {
+    const s = createDemoState();
+    const role = (r: string) => s.staffUsers.find((u) => u.roles.includes(r as never))!;
+    expect(seesPayments(role('OFFICE'))).toBe(true);
+    expect(seesPayments(role('ACCOUNTANT'))).toBe(true);
+    expect(seesPayments(role('ADMIN'))).toBe(true);
+    for (const r of ['INSPECTOR', 'FORKLIFT', 'CLEANING', 'REPAIR_STAFF', 'QUOTATION']) expect(seesPayments(role(r))).toBe(false);
+  });
+
+  it('Cửa sổ làm việc bắt đầu 00:00 hôm nay', () => {
+    const d = workingWindowStart(new Date(2026, 9, 29, 15, 30));
+    expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()]).toEqual([2026, 9, 29, 0, 0]);
+  });
+
+  it('Ghép hồ sơ: thêm dòng chưa có, dòng vừa tải ghi đè dòng cũ cùng id, không mất dữ liệu khác', () => {
+    const s = createDemoState();
+    const [a, b] = s.containers;
+    const extra = { ...s, containers: [{ ...a, officeNote: 'MỚI TẢI' }, { ...b, id: 'cont-chi-co-trong-ho-so' }], workOrders: [] };
+    const merged = mergeDossier(s, extra);
+    expect(merged.containers).toHaveLength(s.containers.length + 1);
+    expect(merged.containers.find((c) => c.id === a.id)!.officeNote).toBe('MỚI TẢI');
+    expect(merged.workOrders).toBe(s.workOrders);
+    expect(merged.currentUser).toBe(s.currentUser);
+    expect(mergeDossier(s, null)).toBe(s);
+  });
+
+  it('Demo không tải hồ sơ riêng; database gọi đúng mã hồ sơ, lỗi được báo lại', async () => {
+    const s = createInitialState();
+    expect(dossierLoaderActive()).toBe(false);
+    expect(await loadDossier(s, 'HV-1')).toBeNull();
+    let asked = '';
+    setDossierLoader(async (_st, code) => { asked = code; return s; });
+    try {
+      expect(await loadDossier(s, 'CV-2')).toBe(s);
+      expect(asked).toBe('CV-2');
+      setDossierLoader(async () => { throw new Error('Không tải được dữ liệu: mất mạng'); });
+      await expect(loadDossier(s, 'HV-1')).rejects.toThrow('mất mạng');
+    } finally {
+      setDossierLoader(null);
+    }
   });
 });
