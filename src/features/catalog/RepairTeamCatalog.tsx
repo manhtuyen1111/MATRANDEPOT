@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { addRepairTeamsByCount, assignRepairStaff, setRepairGradeActive, setRepairTeamActive, setRepairTeamMemberActive, upsertRepairGrade } from '../../services/api';
+import { addRepairTeamsByCount, assignRepairStaff, setRepairGradeActive, setRepairTeamActive, setRepairTeamMemberActive, updateRepairOvertime, upsertRepairGrade } from '../../services/api';
 import { repairStaffAssignment, repairTeamsToCreate } from '../../services/depotOperations';
-import { Award, Plus, Users, Wrench } from 'lucide-react';
+import { Award, Clock, Plus, Users, Wrench } from 'lucide-react';
 import { DepotState, formatVnd } from '../../services/depotStore';
 import type { RepairGrade, RepairTeam, StaffUser } from '../../types/depot';
 
@@ -14,7 +14,7 @@ type Run = (fn: () => DepotState, message: string) => boolean;
 // DANH MỤC CHUNG — SỬA CHỮA (DEC-042, DEC-173). Chỉ ADMIN cấu hình, vai trò khác xem.
 //   NHÂN VIÊN SỬA CHỮA: user có vai trò Sửa chữa — bắt buộc cấu hình TỔ + BẬC THỢ (giờ công bậc thợ tự lấy theo bậc)
 //   TỔ SỬA CHỮA: tạo theo số lượng (TỔ SỬA CHỮA 1, 2, 3…)
-//   BẬC THỢ: tên + giờ công bậc thợ (đơn giá tiền / 1 giờ)
+//   BẬC THỢ: tên + giờ công bậc thợ (đơn giá tiền / 1 giờ); VƯỢT GIỜ: mốc giờ công + đơn giá vượt giờ (DEC-175)
 export const RepairTeamCatalog: React.FC<{ state: DepotState; onUpdateState: (next: DepotState) => void }> = ({ state, onUpdateState }) => {
   const isAdmin = hasRolePermission(state.currentUser, ['ADMIN']);
   const [tab, setTab] = useState<Tab>('STAFF');
@@ -344,7 +344,41 @@ const GradeTab: React.FC<{ state: DepotState; isAdmin: boolean; run: Run }> = ({
       <DetailDrawer open={Boolean(editing)} title={editing ? `Bậc thợ ${editing.name}` : ''} onClose={() => setEditing(null)}>
         {editing && <GradeDetail key={editing.id} grade={editing} state={state} isAdmin={isAdmin} run={run} usedBy={used(editing.id)} />}
       </DetailDrawer>
+      <OvertimeCard key={`${state.repairOvertime.thresholdHours}|${state.repairOvertime.hourlyRate}`} state={state} isAdmin={isAdmin} run={run} />
     </>
+  );
+};
+
+// VƯỢT GIỜ (DEC-175) — báo cáo SẢN LƯỢNG SỬA CHỮA: giờ công trong khoảng lọc trên mốc → SẢN PHẨM VƯỢT GIỜ = giờ vượt × đơn giá
+const OvertimeCard: React.FC<{ state: DepotState; isAdmin: boolean; run: Run }> = ({ state, isAdmin, run }) => {
+  const [hours, setHours] = useState(String(state.repairOvertime.thresholdHours));
+  const [rate, setRate] = useState(String(state.repairOvertime.hourlyRate));
+  return (
+    <SectionCard title="Vượt giờ" icon={<Clock className="h-4 w-4 text-ink-muted" />}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          run(() => updateRepairOvertime(state, { thresholdHours: Number(hours), hourlyRate: Number(rate) }), 'Đã lưu cấu hình vượt giờ.');
+        }}
+        className="flex flex-col gap-2 sm:flex-row sm:items-end"
+      >
+        <label>
+          <span className={labelCls}>Mốc giờ công (giờ) *</span>
+          <input type="number" min={1} step="any" value={hours} onChange={(e) => setHours(e.target.value)} disabled={!isAdmin} className={`${inputCls} font-mono`} />
+        </label>
+        <label>
+          <span className={labelCls}>Đơn giá vượt giờ (đ / giờ) *</span>
+          <input type="number" min={1} value={rate} onChange={(e) => setRate(e.target.value)} disabled={!isAdmin} className={`${inputCls} font-mono`} />
+        </label>
+        {isAdmin && (
+          <button type="submit" disabled={!(Number(hours) > 0) || !(Number(rate) > 0)} className={primaryBtn}>Lưu</button>
+        )}
+      </form>
+      <p className="mt-2 text-xs text-ink-muted">
+        Báo cáo Sản lượng sửa chữa: giờ công của nhân viên trong khoảng lọc vượt {state.repairOvertime.thresholdHours} giờ → phần vượt là GIỜ VƯỢT GIỜ,
+        SẢN PHẨM VƯỢT GIỜ = {formatVnd(state.repairOvertime.hourlyRate)} × GIỜ VƯỢT GIỜ.
+      </p>
+    </SectionCard>
   );
 };
 
