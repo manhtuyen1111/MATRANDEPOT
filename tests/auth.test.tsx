@@ -14,6 +14,7 @@ import {
 import { friendlyAuthError } from '../src/services/remote/session';
 import { ChangePasswordScreen, LoginScreen } from '../src/features/auth/LoginScreen';
 import { App } from '../src/app/App';
+import { AccountMenu } from '../src/components/AccountMenu';
 import { createInitialState } from '../src/services/depotStore';
 
 const noopAsync = async () => {};
@@ -84,12 +85,27 @@ describe('Màn đăng nhập / đổi mật khẩu (giao diện)', () => {
     const html = renderToString(
       <App initialState={createInitialState()} remote={{ fullName: 'Lê Văn Tuấn', username: 'tuan.lv', onSignOut: () => {}, onChangePassword: () => {} }} />
     );
-    expect(html).toContain('data-testid="session-user"');
-    expect(html).toContain('data-testid="sign-out"');
+    // Header 1 dòng: Góp ý + icon Quản trị hệ thống; Tải lại / Đổi mật khẩu / Đăng xuất nằm trong icon
+    expect(html).toContain('data-testid="account-menu"');
+    expect(html).toContain('data-testid="feedback-button"');
+    expect(html).not.toContain('data-testid="sign-out"');
     expect(html).not.toContain('data-testid="remote-notice"');
     expect(html).not.toContain('Nạp dữ liệu test');
-    const demo = renderToString(<App initialState={createInitialState()} />);
-    expect(demo).toContain('Nạp dữ liệu test');
-    expect(demo).not.toContain('data-testid="sign-out"');
+    const s = createInitialState();
+    const remote = { fullName: 'Lê Văn Tuấn', username: 'tuan.lv', onSignOut: () => {}, onChangePassword: () => {}, onReload: () => {} };
+    const menu = renderToString(<AccountMenu currentUser={s.currentUser} remote={remote} defaultOpen />).replace(/<!-- -->/g, '');
+    expect(menu).toContain('Thông tin nhân viên');
+    expect(menu).toContain('data-testid="session-user"');
+    expect(menu).toContain('Lê Văn Tuấn');
+    expect(menu).toContain('data-testid="reload-data"');
+    expect(menu).toContain('Đổi mật khẩu');
+    expect(menu).toContain('data-testid="sign-out"');
+    expect(menu).not.toContain('Nạp dữ liệu test');
+    const demoMenu = renderToString(
+      <AccountMenu currentUser={s.currentUser} demo={{ users: s.staffUsers, onSelectUser: () => {}, onClearData: () => {}, onLoadTestData: () => {} }} defaultOpen />
+    );
+    expect(demoMenu).toContain('Nạp dữ liệu test');
+    expect(demoMenu).toContain('Người dùng (Demo)');
+    expect(demoMenu).not.toContain('data-testid="sign-out"');
   });
 });

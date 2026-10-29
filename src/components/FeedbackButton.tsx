@@ -133,9 +133,9 @@ export const FeedbackButton: React.FC<{
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1 rounded-md border border-line-strong bg-navy-50 px-2 py-1 font-semibold text-navy-700 hover:bg-navy-50" data-testid="feedback-button">
-        <MessageSquarePlus className="h-3.5 w-3.5" />
-        Góp ý
+      <button type="button" onClick={() => setOpen(true)} aria-label="Góp ý" title="Góp ý" className="inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-line-strong bg-navy-50 px-2 font-semibold text-navy-700 hover:bg-navy-50" data-testid="feedback-button">
+        <MessageSquarePlus className="h-4 w-4" />
+        <span className="hidden sm:inline">Góp ý</span>
       </button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/40 p-3" role="dialog" aria-modal="true" aria-label="Góp ý">
