@@ -1088,17 +1088,24 @@ describe('DEC-166: màn Danh mục → Phân loại đóng hàng', () => {
   });
 });
 
-describe('DEC-179: menu Báo cáo theo bộ phận', () => {
-  it('Admin thấy tiêu đề bộ phận + đủ mục; Sửa chữa chỉ thấy báo cáo Sửa chữa; màn mới có bộ lọc + Tra cứu', async () => {
+describe('DEC-179 + DEC-180: menu Báo cáo chỉ có bộ phận, báo cáo con là tab', () => {
+  it('Menu chỉ có bộ phận (không có báo cáo con); trang bộ phận hiện đúng tab theo quyền; màn mới có bộ lọc + Tra cứu', async () => {
     const { App } = await import('../src/app/App');
+    const { DepartmentReportPage } = await import('../src/features/reports/ReportsWorkspace');
     const demo = createDemoState();
     const admin = renderToString(<App initialState={as(demo, 'usr-admin')} />).replace(/<!-- -->/g, '');
-    for (const t of ['Giám định', 'Văn phòng', 'Vệ sinh', 'Xe nâng', 'Sửa chữa', 'Xuất vỏ', 'Nhập vỏ', 'Sản lượng sửa chữa', 'Tổng hợp']) expect(admin).toContain(t);
-    const repair = renderToString(<App initialState={as(demo, 'usr-repair')} />).replace(/<!-- -->/g, '');
-    expect(repair).toContain('Sản lượng sửa chữa');
-    expect(repair).not.toContain('Xuất vỏ');
-    for (const [section, title] of [['BC_GD_CHI_TIET', 'Báo cáo Giám định — Chi tiết'], ['BC_VS_CHI_TIET', 'Báo cáo Vệ sinh — Chi tiết'], ['BC_XN_CHI_TIET', 'Báo cáo Xe nâng — Chi tiết']] as const) {
-      const html = renderToString(<ReportsWorkspace state={demo} section={section} onOpenDossier={noop} />).replace(/<!-- -->/g, '');
+    for (const t of ['Giám định', 'Văn phòng', 'Vệ sinh', 'Xe nâng', 'Sửa chữa']) expect(admin).toContain(t);
+    for (const t of ['Xuất vỏ', 'Nhập vỏ', 'Sản lượng sửa chữa', 'Tổng hợp']) expect(admin).not.toContain(`>${t}<`);
+    const page = (dept: Parameters<typeof DepartmentReportPage>[0]['dept'], user: string) =>
+      renderToString(<DepartmentReportPage dept={dept} state={as(demo, user)} onOpenDossier={noop} />).replace(/<!-- -->/g, '');
+    const vp = page('BC_BP_VAN_PHONG', 'usr-office');
+    for (const t of ['HẠ VỎ', 'CẤP VỎ', 'XUẤT VỎ', 'NHẬP VỎ', 'TỔNG HỢP']) expect(vp).toContain(`>${t}<`);
+    const sc = page('BC_BP_SUA_CHUA', 'usr-repair');
+    expect(sc).toContain('>CHI TIẾT<');
+    expect(sc).toContain('>SẢN LƯỢNG SỬA CHỮA<');
+    expect(page('BC_BP_VAN_PHONG', 'usr-repair')).toContain('chưa được xem báo cáo');
+    for (const [dept, title] of [['BC_BP_GIAM_DINH', 'Báo cáo Giám định — Chi tiết'], ['BC_BP_VE_SINH', 'Báo cáo Vệ sinh — Chi tiết'], ['BC_BP_XE_NANG', 'Báo cáo Xe nâng — Chi tiết']] as const) {
+      const html = page(dept, 'usr-admin');
       expect(html).toContain(title);
       expect(html).toContain('Tra cứu');
       expect(html).toContain('aria-label="Lọc nhanh thời gian"');

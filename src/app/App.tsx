@@ -30,7 +30,7 @@ import { AccountMenu } from '../components/AccountMenu';
 import { ScreenLoading } from '../components/LoadingScreens';
 import type { VesselFieldMode } from '../features/vessel/VesselFieldMobile';
 import type { CatalogTab } from '../features/catalog/MasterCatalogWorkspace';
-import type { ReportSection } from '../features/reports/ReportsWorkspace';
+import type { ReportDept } from '../features/reports/ReportsWorkspace';
 
 // Màn hình tải khi mở lần đầu (tách file) → mở app nhanh hơn; màn đã mở lần sau hiện ngay
 // Sau khi app mở xong và rảnh → tải sẵn các màn còn lại (chạy ngầm, lần lượt) → bấm menu là mở ngay
@@ -65,7 +65,7 @@ const VesselFieldMobile = named(() => import('../features/vessel/VesselFieldMobi
 const YardShiftWorkspace = named(() => import('../features/forklift/YardShiftWorkspace'), 'YardShiftWorkspace');
 const YardFeature = named(() => import('../features/yard/YardFeature'), 'YardFeature');
 const MasterCatalogWorkspace = named(() => import('../features/catalog/MasterCatalogWorkspace'), 'MasterCatalogWorkspace');
-const ReportsWorkspace = named(() => import('../features/reports/ReportsWorkspace'), 'ReportsWorkspace');
+const DepartmentReportPage = named(() => import('../features/reports/ReportsWorkspace'), 'DepartmentReportPage');
 const ReceiptsWorkspace = named(() => import('../features/receipts/ReceiptsWorkspace'), 'ReceiptsWorkspace');
 const DocumentReturnWorkspace = named(() => import('../features/office/DocumentReturnWorkspace'), 'DocumentReturnWorkspace');
 const RepairTeamCatalog = named(() => import('../features/catalog/RepairTeamCatalog'), 'RepairTeamCatalog');
@@ -80,7 +80,6 @@ interface MenuItem {
   id: WorkspaceMenuId;
   label: string;
   mobile?: boolean; // Tác nghiệp hiện trường dùng trên điện thoại (DEC-012)
-  dept?: string; // DEC-179: tiêu đề bộ phận trong menu Báo cáo (dòng nhỏ phía trên các mục cùng bộ phận)
 }
 interface MenuGroup {
   key: string;
@@ -132,17 +131,12 @@ const MENU: MenuGroup[] = [
     label: 'Báo cáo',
     icon: ChartColumn,
     items: [
-      // DEC-179: báo cáo theo bộ phận — bộ phận nào xem báo cáo của bộ phận đó (MENU_ACCESS)
-      { id: 'BC_GD_CHI_TIET', label: 'Chi tiết', dept: 'Giám định' },
-      { id: 'BC_HA_VO', label: 'Hạ vỏ', dept: 'Văn phòng' },
-      { id: 'BC_CAP_VO', label: 'Cấp vỏ', dept: 'Văn phòng' },
-      { id: 'BC_XUAT_TAU', label: 'Xuất vỏ', dept: 'Văn phòng' }, // DEC-040: XUẤT VỎ = XUẤT TÀU
-      { id: 'BC_NHAP_TAU', label: 'Nhập vỏ', dept: 'Văn phòng' }, // NHẬP VỎ = NHẬP TÀU
-      { id: 'BC_VS_CHI_TIET', label: 'Chi tiết', dept: 'Vệ sinh' },
-      { id: 'BC_XN_CHI_TIET', label: 'Chi tiết', dept: 'Xe nâng' },
-      { id: 'BC_SUA_CHUA', label: 'Chi tiết', dept: 'Sửa chữa' },
-      { id: 'BC_SC_SAN_LUONG', label: 'Sản lượng sửa chữa', dept: 'Sửa chữa' },
-      { id: 'BC_TONG_HOP', label: 'Tổng hợp' },
+      // DEC-179, DEC-180: menu chỉ có bộ phận — báo cáo con là tab trong trang bộ phận (DepartmentReportPage)
+      { id: 'BC_BP_GIAM_DINH', label: 'Giám định' },
+      { id: 'BC_BP_VAN_PHONG', label: 'Văn phòng' },
+      { id: 'BC_BP_VE_SINH', label: 'Vệ sinh' },
+      { id: 'BC_BP_XE_NANG', label: 'Xe nâng' },
+      { id: 'BC_BP_SUA_CHUA', label: 'Sửa chữa' },
       { id: 'BC_GOP_Y', label: 'Góp ý' }, // DEC-120: chỉ Admin
     ],
   },
@@ -174,9 +168,7 @@ const CATALOG_TABS: Partial<Record<WorkspaceMenuId, CatalogTab>> = {
   DM_CONTAINER: 'CONTAINER',
   DM_BIEU_GIA: 'BIEU_GIA',
 };
-const REPORT_MENUS: ReportSection[] = [
-  'BC_GD_CHI_TIET', 'BC_HA_VO', 'BC_CAP_VO', 'BC_NHAP_TAU', 'BC_XUAT_TAU', 'BC_VS_CHI_TIET', 'BC_XN_CHI_TIET', 'BC_SUA_CHUA', 'BC_SC_SAN_LUONG', 'BC_TONG_HOP',
-];
+const REPORT_DEPT_MENUS: ReportDept[] = ['BC_BP_GIAM_DINH', 'BC_BP_VAN_PHONG', 'BC_BP_VE_SINH', 'BC_BP_XE_NANG', 'BC_BP_SUA_CHUA'];
 
 const UI_PREFS_KEY = 'matran_depot_ui_prefs_v1';
 function readPrefs(): { collapsedGroups: string[]; railMode: boolean } {
@@ -249,8 +241,7 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // DEC-120: danh sách MENU / TÍNH NĂNG để chọn khi góp ý (menu người dùng được thấy) và để Admin lọc báo cáo (mọi menu)
-  const itemName = (i: MenuItem) => (i.dept ? `${i.dept} – ${i.label}` : i.label);
-  const toOptions = (groups: MenuGroup[]) => groups.flatMap((g) => g.items.map((i) => ({ id: i.id, label: `${g.label} → ${itemName(i)}`, group: g.label, item: itemName(i) })));
+  const toOptions = (groups: MenuGroup[]) => groups.flatMap((g) => g.items.map((i) => ({ id: i.id, label: `${g.label} → ${i.label}`, group: g.label, item: i.label })));
   const allMenuOptions = toOptions(MENU);
 
   const handleUpdateState = (next: DepotState) => {
@@ -384,12 +375,10 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
             </button>
             {!collapsed && (
               <ul className="ml-[18px] mt-0.5 space-y-0.5 border-l border-line pl-3">
-                {g.items.map((item, idx) => {
+                {g.items.map((item) => {
                   const active = activeMenu === item.id;
-                  const deptHead = item.dept && item.dept !== g.items[idx - 1]?.dept ? item.dept : null;
                   return (
                     <li key={item.id}>
-                      {deptHead && <p className="px-2.5 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-wide text-ink-muted">{deptHead}</p>}
                       <button
                         type="button"
                         onClick={() => selectMenu(item.id)}
@@ -484,7 +473,6 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
             </button>
             <p className="truncate text-xs text-ink-muted">
               {activeGroup && activeGroup.items.length > 1 && <span>{activeGroup.label} / </span>}
-              {activeItem?.dept && <span>{activeItem.dept} / </span>}
               <span className="font-bold text-ink">{activeItem?.label}</span>
             </p>
             {activeItem?.mobile && (
@@ -551,8 +539,8 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
             />
           )}
           {activeMenu === 'XN_DAO_CHUYEN' && <YardShiftWorkspace state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
-          {REPORT_MENUS.includes(activeMenu as ReportSection) && (
-            <ReportsWorkspace state={state} section={activeMenu as ReportSection} onOpenDossier={setActiveDossierCode} onOpenReceipt={openReceipt} />
+          {REPORT_DEPT_MENUS.includes(activeMenu as ReportDept) && (
+            <DepartmentReportPage key={activeMenu} dept={activeMenu as ReportDept} state={state} onOpenDossier={setActiveDossierCode} onOpenReceipt={openReceipt} />
           )}
           {activeMenu === 'BC_GOP_Y' && <FeedbackReport state={state} onUpdateState={handleUpdateState} menuOptions={allMenuOptions} />}
           {activeMenu === 'DM_SUA_CHUA' && <RepairTeamCatalog state={state} onUpdateState={handleUpdateState} />}

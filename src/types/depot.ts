@@ -85,6 +85,12 @@ export type WorkspaceMenuId =
   | 'BC_GD_CHI_TIET' // DEC-179: Giám định — Chi tiết
   | 'BC_VS_CHI_TIET' // DEC-179: Vệ sinh — Chi tiết
   | 'BC_XN_CHI_TIET' // DEC-179: Xe nâng — Chi tiết
+  // DEC-180: menu Báo cáo chỉ có bộ phận — báo cáo con là tab trong trang bộ phận (mã BC_… ở trên = quyền từng tab)
+  | 'BC_BP_GIAM_DINH'
+  | 'BC_BP_VAN_PHONG'
+  | 'BC_BP_VE_SINH'
+  | 'BC_BP_XE_NANG'
+  | 'BC_BP_SUA_CHUA'
   | 'BC_GOP_Y'; // DEC-120
 
 export type GateInType = 'CUSTOMER_RETURN' | 'VESSEL_IMPORT';
