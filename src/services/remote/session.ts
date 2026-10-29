@@ -6,6 +6,23 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AppRole, StaffUser } from '../../types/depot';
 import { toAuthPassword, usernameToEmail, validateLoginInput, validateNewPassword } from '../authPassword';
 
+// DEC-191: thông tin chi tiết nhân viên (cột bảng staff — RLS chỉ Admin + chính nhân viên)
+export const STAFF_PROFILE_COLUMNS = 'department, gender, id_number, birth_year, hometown';
+export interface StaffProfileRow {
+  department: AppRole | null;
+  gender: 'NAM' | 'NU' | null;
+  id_number: string | null;
+  birth_year: number | null;
+  hometown: string | null;
+}
+export const mapStaffProfile = (s: StaffProfileRow): Pick<StaffUser, 'department' | 'gender' | 'idNumber' | 'birthYear' | 'hometown'> => ({
+  department: s.department || undefined,
+  gender: s.gender || undefined,
+  idNumber: s.id_number || undefined,
+  birthYear: s.birth_year || undefined,
+  hometown: s.hometown || undefined,
+});
+
 export interface StaffSession extends StaffUser {
   username: string;
   mustChangePassword: boolean;
@@ -37,7 +54,7 @@ export async function loadStaffSession(client: SupabaseClient): Promise<StaffSes
   if (!auth.user) return null;
   const { data, error } = await client
     .from('staff')
-    .select('id, staff_code, username, full_name, email, is_active, must_change_password, staff_roles(role)')
+    .select(`id, staff_code, username, full_name, email, is_active, must_change_password, staff_roles(role), ${STAFF_PROFILE_COLUMNS}`)
     .eq('id', auth.user.id)
     .maybeSingle();
   if (error) throw new Error(friendlyAuthError(error.message));
@@ -54,6 +71,7 @@ export async function loadStaffSession(client: SupabaseClient): Promise<StaffSes
     roles: ((data.staff_roles as { role: AppRole }[] | null) || []).map((r) => r.role),
     isActive: data.is_active,
     mustChangePassword: data.must_change_password,
+    ...mapStaffProfile(data as StaffProfileRow), // DEC-191: thông tin chi tiết của chính mình
   };
 }
 

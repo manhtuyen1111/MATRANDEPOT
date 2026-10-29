@@ -175,16 +175,16 @@ const CATALOG_TABS: Partial<Record<WorkspaceMenuId, CatalogTab>> = {
 const REPORT_DEPT_MENUS: ReportDept[] = ['BC_BP_GIAM_DINH', 'BC_BP_VAN_PHONG', 'BC_BP_VE_SINH', 'BC_BP_XE_NANG', 'BC_BP_SUA_CHUA'];
 
 const UI_PREFS_KEY = 'matran_depot_ui_prefs_v1';
-function readPrefs(): { collapsedGroups: string[]; railMode: boolean } {
+function readPrefs(): { railMode: boolean } {
   try {
     const raw = localStorage.getItem(UI_PREFS_KEY);
-    if (raw) return { collapsedGroups: [], railMode: false, ...JSON.parse(raw) };
+    if (raw) return { railMode: Boolean(JSON.parse(raw).railMode) };
   } catch {
     // bỏ qua nếu trình duyệt chặn localStorage
   }
-  return { collapsedGroups: [], railMode: false };
+  return { railMode: false };
 }
-function writePrefs(p: { collapsedGroups: string[]; railMode: boolean }) {
+function writePrefs(p: { railMode: boolean }) {
   try {
     localStorage.setItem(UI_PREFS_KEY, JSON.stringify(p));
   } catch {
@@ -265,6 +265,12 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
     };
   }, [seesDbHealth]);
   const [prefs, setPrefs] = useState(readPrefs);
+  // DEC-190: nhóm menu đang mở (chỉ 1) — mặc định nhóm chứa màn đang mở; đổi màn (kể cả mở từ link) thì mở đúng nhóm đó
+  const [openGroup, setOpenGroup] = useState<string | null>(() => MENU.find((g) => g.items.some((i) => i.id === activeMenu))?.key ?? null);
+  useEffect(() => {
+    const key = MENU.find((g) => g.items.some((i) => i.id === activeMenu))?.key;
+    if (key) setOpenGroup(key);
+  }, [activeMenu]);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // DEC-120: danh sách MENU / TÍNH NĂNG để chọn khi góp ý (menu người dùng được thấy) và để Admin lọc báo cáo (mọi menu)
@@ -316,14 +322,8 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
   // Việc hiện trường (mục mobile) đang chờ → nổi bật màu cam để bộ phận thấy ngay
   const urgent = (id: WorkspaceMenuId) => Boolean(MOBILE_MENU_IDS.has(id) && (badges[id] || 0) > 0);
 
-  const toggleGroup = (key: string) => {
-    const collapsedGroups = prefs.collapsedGroups.includes(key)
-      ? prefs.collapsedGroups.filter((k) => k !== key)
-      : [...prefs.collapsedGroups, key];
-    const next = { ...prefs, collapsedGroups };
-    setPrefs(next);
-    writePrefs(next);
-  };
+  // DEC-190: menu chỉ mở 1 bộ phận một lúc — mở bộ phận khác thì bộ phận trước tự thu gọn; bấm lại thì thu gọn
+  const toggleGroup = (key: string) => setOpenGroup((cur) => (cur === key ? null : key));
   const toggleRail = () => {
     const next = { ...prefs, railMode: !prefs.railMode };
     setPrefs(next);
@@ -343,7 +343,7 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
         const Icon = g.icon;
         const containsActive = g.items.some((i) => i.id === activeMenu);
         const single = g.key === 'TON_VO';
-        const collapsed = prefs.collapsedGroups.includes(g.key) && !containsActive;
+        const collapsed = openGroup !== g.key;
         const groupBadge = g.items.reduce((s, i) => s + (badges[i.id] || 0), 0);
         const groupUrgent = g.items.some((i) => urgent(i.id));
 
@@ -401,8 +401,8 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
               {collapsed && groupBadge > 0 && <span className={`font-mono text-[11px] ${groupUrgent ? "rounded bg-amber-500 px-1.5 font-bold text-white" : "text-ink-muted"}`}>{groupBadge}</span>}
               <ChevronDown className={`h-3.5 w-3.5 text-ink-muted transition-transform ${collapsed ? '-rotate-90' : ''}`} />
             </button>
-            {!collapsed && (
-              <ul className="ml-[18px] mt-0.5 space-y-0.5 border-l border-line pl-3">
+            {/* DEC-190: nhóm thu gọn vẫn giữ trong trang nhưng ẩn (hidden) — chỉ 1 nhóm hiện */}
+              <ul hidden={collapsed} className="ml-[18px] mt-0.5 space-y-0.5 border-l border-line pl-3">
                 {g.items.map((item) => {
                   const active = activeMenu === item.id;
                   return (
@@ -448,7 +448,6 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
                   );
                 })}
               </ul>
-            )}
           </div>
         );
       })}

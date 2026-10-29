@@ -341,15 +341,25 @@ export const setRepairTeamMemberActive = wrap(ops.setRepairTeamMemberActive, ([s
 // ---------------------------------------------------------------------------
 // NHÂN VIÊN (Admin) — tạo tài khoản qua Edge Function (cần tên đăng nhập); sửa vai trò / khóa qua RPC
 // ---------------------------------------------------------------------------
-export const addStaffUser = (state: DepotState, input: { fullName: string; email: string; roles: Parameters<typeof ops.addStaffUser>[1]['roles']; username?: string }) => {
+export const addStaffUser = (state: DepotState, input: Parameters<typeof ops.addStaffUser>[1] & { username?: string }) => {
   const next = ops.addStaffUser(state, input);
   if (isRemoteMode()) {
-    enqueue(async () => {
-      await callEdgeFunction('admin-create-staff', { username: input.username || '', full_name: input.fullName, email: input.email || null, roles: input.roles });
+    enqueue(async (c) => {
+      const res = await callEdgeFunction<{ staff?: { id: string } }>('admin-create-staff', { username: input.username || '', full_name: input.fullName, email: input.email || null, roles: input.roles });
+      // DEC-191: phòng ban gán ngay khi tạo (thông tin chi tiết khác cập nhật sau)
+      if (input.department && res.staff?.id) {
+        await rpc(c, 'admin_update_staff_profile', { p_staff_id: res.staff.id, p_department: input.department, p_gender: null, p_id_number: null, p_birth_year: null, p_hometown: null });
+      }
     });
   }
   return next;
 };
+// DEC-191: thông tin chi tiết nhân viên (chỉ Admin)
+export const updateStaffProfile = wrap(ops.updateStaffProfile, ([, i]) => async (c) => {
+  await rpc(c, 'admin_update_staff_profile', {
+    p_staff_id: i.userId, p_department: nul(i.department), p_gender: nul(i.gender), p_id_number: nul(i.idNumber), p_birth_year: nul(i.birthYear), p_hometown: nul(i.hometown),
+  });
+});
 export const updateStaffUser = wrap(ops.updateStaffUser, ([s, i], next) => {
   const u = next.staffUsers.find((x) => x.id === i.userId) || s.staffUsers.find((x) => x.id === i.userId);
   return async (c) => {

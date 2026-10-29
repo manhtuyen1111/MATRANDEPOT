@@ -17,7 +17,7 @@ insert into public.db_health_settings (id) values (1) on conflict do nothing;
 alter table public.db_health_settings enable row level security;
 revoke all on public.db_health_settings from anon, authenticated; -- chỉ đọc / ghi qua RPC bên dưới
 
-create or replace function public.assert_admin() returns public.staff
+create or replace function public.assert_db_admin() returns public.staff
 language plpgsql stable security definer set search_path = public as $$
 declare
   me public.staff := public.current_staff();
@@ -46,7 +46,7 @@ declare
   v_parts jsonb;
   v_next text := to_char(date_trunc('month', now()) + interval '1 month', 'YYYY_MM');
 begin
-  perform public.assert_admin();
+  perform public.assert_db_admin();
   select * into s from public.db_health_settings where id = 1;
 
   select jsonb_build_object(
@@ -132,7 +132,7 @@ end $$;
 create or replace function public.set_db_health_limits(p_db_mb int, p_storage_mb int) returns void
 language plpgsql security definer set search_path = public as $$
 declare
-  me public.staff := public.assert_admin();
+  me public.staff := public.assert_db_admin();
 begin
   if coalesce(p_db_mb, 0) <= 0 or coalesce(p_storage_mb, 0) <= 0 then
     raise exception 'Giới hạn dung lượng phải lớn hơn 0 MB.';
@@ -142,7 +142,7 @@ begin
   perform public.write_audit('DB_HEALTH_LIMITS', 'CATALOG', 'DATABASE', format('Giới hạn dung lượng: database %s MB, kho ảnh %s MB', p_db_mb, p_storage_mb));
 end $$;
 
-revoke execute on function public.assert_admin() from public, anon, authenticated;
+revoke execute on function public.assert_db_admin() from public, anon, authenticated;
 revoke execute on function public.db_health() from public, anon, authenticated;
 grant execute on function public.db_health() to authenticated;
 revoke execute on function public.set_db_health_limits(int, int) from public, anon, authenticated;

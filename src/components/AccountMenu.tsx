@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Database, KeyRound, LogOut, RefreshCw, ShieldCheck, UserCheck } from 'lucide-react';
-import { ROLE_LABELS, StaffUser } from '../types/depot';
+import { Database, IdCard, KeyRound, LogOut, RefreshCw, ShieldCheck, UserCheck, X } from 'lucide-react';
+import { ROLE_LABELS, STAFF_GENDER_LABELS, StaffUser } from '../types/depot';
 
 // Icon QUẢN TRỊ HỆ THỐNG góc phải header: bấm mở danh mục THÔNG TIN NHÂN VIÊN + thao tác tài khoản
 // (Tải lại, Đổi mật khẩu, Đăng xuất) — gọn 1 dòng cho màn tác nghiệp mobile.
@@ -17,6 +17,7 @@ const itemCls = 'flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-left
 
 export const AccountMenu: React.FC<AccountMenuProps> = ({ currentUser, remote, demo, defaultOpen = false }) => {
   const [open, setOpen] = useState(defaultOpen);
+  const [showProfile, setShowProfile] = useState(false); // DEC-191: Thông tin chi tiết của chính mình
   const act = (fn: () => void) => () => {
     setOpen(false);
     fn();
@@ -68,6 +69,10 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ currentUser, remote, d
               {roles && <p className="mt-0.5 text-xs text-ink-muted">{roles}</p>}
             </div>
             <div className="mt-1 space-y-0.5">
+              <button type="button" role="menuitem" onClick={act(() => setShowProfile(true))} className={itemCls} data-testid="my-profile">
+                <IdCard className="h-4 w-4 text-ink-muted" />
+                Thông tin chi tiết
+              </button>
               {remote?.onReload && (
                 <button type="button" role="menuitem" onClick={act(remote.onReload)} className={itemCls} data-testid="reload-data">
                   <RefreshCw className="h-4 w-4 text-ink-muted" />
@@ -102,6 +107,41 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ currentUser, remote, d
           </div>
         </>
       )}
+      {showProfile && <MyProfile user={currentUser} username={remote?.username} onClose={() => setShowProfile(false)} />}
+    </div>
+  );
+};
+
+// DEC-191: THÔNG TIN CHI TIẾT của chính nhân viên — chỉ xem; ô trống ghi "Chưa cập nhật" (Admin cập nhật / xác minh)
+export const MyProfile: React.FC<{ user: StaffUser; username?: string; onClose: () => void }> = ({ user, username, onClose }) => {
+  const rows: [string, string | undefined][] = [
+    ['Mã nhân viên', user.staffCode],
+    ['Họ và tên', user.fullName],
+    ['Tên đăng nhập', username],
+    ['Giới tính', user.gender ? STAFF_GENDER_LABELS[user.gender] : undefined],
+    ['CCCD', user.idNumber],
+    ['Năm sinh', user.birthYear ? String(user.birthYear) : undefined],
+    ['Quê quán', user.hometown],
+    ['Phòng ban', user.department ? ROLE_LABELS[user.department] : undefined],
+    ['Vai trò', user.roles.map((r) => ROLE_LABELS[r]).join(', ') || undefined],
+  ];
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Thông tin chi tiết nhân viên" onClick={onClose}>
+      <div className="my-8 w-full max-w-md rounded-lg bg-white p-5 text-xs shadow-xl" onClick={(e) => e.stopPropagation()} data-testid="my-profile-panel">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-ink"><IdCard className="h-4 w-4" />Thông tin chi tiết</h2>
+          <button type="button" onClick={onClose} aria-label="Đóng" className="rounded-md border border-line p-1 text-ink-muted hover:bg-canvas"><X className="h-4 w-4" /></button>
+        </div>
+        <dl className="divide-y divide-line rounded-md border border-line">
+          {rows.filter(([, v], i) => i !== 2 || v).map(([label, value]) => (
+            <div key={label} className="grid grid-cols-[120px_1fr] gap-2 px-3 py-2">
+              <dt className="text-ink-muted">{label}</dt>
+              <dd className={value ? 'font-semibold text-ink' : 'italic text-amber-700'}>{value || 'Chưa cập nhật'}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-3 text-[11px] text-ink-muted">Thông tin sai hoặc còn thiếu: báo Admin cập nhật. Thông tin này chỉ bạn và Admin xem được.</p>
+      </div>
     </div>
   );
 };

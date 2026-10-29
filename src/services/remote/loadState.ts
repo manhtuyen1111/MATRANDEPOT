@@ -6,6 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AppRole, DepotFeeCatalogItem, Partner, RepairTeam, StaffUser, StuffingClassItem, YardBlock } from '../../types/depot';
 import { createCleanState, type DepotState } from '../depotStore';
 import type { StaffSession } from './session';
+import { mapStaffProfile, STAFF_PROFILE_COLUMNS, type StaffProfileRow } from './session';
 
 async function rows<T>(query: PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
   const { data, error } = await query;
@@ -33,8 +34,9 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
       client.from('company_profile').select('name, short_name, address, phone, email, tax_code, bank_account')
     ),
     // Admin đọc được toàn bộ nhân viên (RLS); người khác chỉ thấy chính mình
-    rows<{ id: string; staff_code: string; username: string; full_name: string; email: string | null; is_active: boolean; staff_roles: { role: AppRole }[] }>(
-      client.from('staff').select('id, staff_code, username, full_name, email, is_active, staff_roles(role)').order('staff_code')
+    // DEC-191: + thông tin chi tiết (RLS: Admin đọc mọi người, nhân viên chỉ đọc của mình)
+    rows<{ id: string; staff_code: string; username: string; full_name: string; email: string | null; is_active: boolean; staff_roles: { role: AppRole }[] } & StaffProfileRow>(
+      client.from('staff').select(`id, staff_code, username, full_name, email, is_active, staff_roles(role), ${STAFF_PROFILE_COLUMNS}`).order('staff_code')
     ),
     // DEC-166: Phân loại đóng hàng theo hãng tàu (cả mã ngừng dùng — màn Danh mục hiện để mở lại)
     rows<{ id: string; shipping_line_code: string; code: string; description: string | null; is_active: boolean }>(
@@ -54,7 +56,7 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
     ...base,
     currentUser,
     staffUsers: staff.length
-      ? staff.map((s) => ({ id: s.id, staffCode: s.staff_code, fullName: s.full_name, email: s.email || `${s.username}@matrandepot.local`, roles: (s.staff_roles || []).map((r) => r.role), isActive: s.is_active }))
+      ? staff.map((s) => ({ id: s.id, staffCode: s.staff_code, fullName: s.full_name, email: s.email || `${s.username}@matrandepot.local`, roles: (s.staff_roles || []).map((r) => r.role), isActive: s.is_active, ...mapStaffProfile(s) }))
       : [currentUser],
     partners: partners.map((p): Partner => ({ id: p.id, code: p.code, name: p.name, isShippingLine: p.is_shipping_line, isCustomer: p.is_customer, allowTts: p.allow_tts, isPriority: p.is_priority })),
     containerSizes: sizes.map((s) => s.code),

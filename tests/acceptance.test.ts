@@ -2056,3 +2056,41 @@ describe('DEC-189: sức khỏe database', () => {
     for (const bad of ['password', 'mật khẩu', 'secret', 'api key', 'khóa bí mật', 'token']) expect(text).not.toContain(bad);
   });
 });
+
+// DEC-191: thông tin chi tiết nhân viên — chỉ Admin sửa; phòng ban độc lập với vai trò; CCCD 12 số, không trùng
+import { staffProfileMissing, updateStaffProfile } from '../src/services/depotOperations';
+import { addStaffUser as addStaff } from '../src/services/depotOperations';
+
+describe('DEC-191: thông tin chi tiết nhân viên', () => {
+  const admin = as(createInitialState(), 'usr-admin');
+  const target = admin.staffUsers.find((u) => u.id === 'usr-forklift')!;
+
+  it('tạo nhân viên chỉ cần họ tên + vai trò (phòng ban tùy chọn); thông tin chi tiết để trống = chưa cập nhật', () => {
+    const s = addStaff(admin, { fullName: 'Nguyễn Văn Mới', email: 'moi@matran.vn', roles: ['FORKLIFT'], department: 'CLEANING' });
+    const u = s.staffUsers[s.staffUsers.length - 1];
+    expect(u.department).toBe('CLEANING'); // phòng ban độc lập với vai trò (Xe nâng)
+    expect(u.roles).toEqual(['FORKLIFT']);
+    expect(staffProfileMissing(u)).toEqual(['Giới tính', 'CCCD', 'Năm sinh', 'Quê quán']);
+  });
+
+  it('Admin cập nhật đủ thông tin; nhật ký không ghi số CCCD', () => {
+    const s = updateStaffProfile(admin, { userId: target.id, department: 'FORKLIFT', gender: 'NAM', idNumber: '031 095 012 345', birthYear: 1995, hometown: 'Hải Phòng' });
+    const u = s.staffUsers.find((x) => x.id === target.id)!;
+    expect(u).toMatchObject({ department: 'FORKLIFT', gender: 'NAM', idNumber: '031095012345', birthYear: 1995, hometown: 'Hải Phòng' });
+    expect(staffProfileMissing(u)).toEqual([]);
+    expect(s.auditLogs[0].summary).not.toContain('031095012345');
+    // để trống lại = chưa cập nhật
+    const cleared = updateStaffProfile(s, { userId: target.id, idNumber: '', hometown: ' ' });
+    expect(staffProfileMissing(cleared.staffUsers.find((x) => x.id === target.id)!)).toContain('CCCD');
+  });
+
+  it('từ chối: không phải Admin, CCCD sai / trùng, năm sinh sai, phòng ban sai', () => {
+    expect(() => updateStaffProfile(as(admin, 'usr-office'), { userId: target.id, gender: 'NU' })).toThrow(/ADMIN/);
+    expect(() => updateStaffProfile(admin, { userId: target.id, idNumber: '12345' })).toThrow(/12 chữ số/);
+    const withId = updateStaffProfile(admin, { userId: 'usr-office', idNumber: '031095012345' });
+    expect(() => updateStaffProfile(withId, { userId: target.id, idNumber: '031095012345' })).toThrow(/đã có ở nhân viên khác/);
+    expect(() => updateStaffProfile(admin, { userId: target.id, birthYear: 1900 })).toThrow(/Năm sinh không hợp lệ/);
+    expect(() => updateStaffProfile(admin, { userId: target.id, birthYear: new Date().getFullYear() })).toThrow(/Năm sinh không hợp lệ/);
+    expect(() => updateStaffProfile(admin, { userId: target.id, department: 'X' as never })).toThrow(/Phòng ban/);
+  });
+});

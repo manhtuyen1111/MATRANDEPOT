@@ -1527,6 +1527,39 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-191 — User - Role dạng tab; thông tin chi tiết nhân viên
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi).
+- **Danh mục chung → User - Role** chia tab như trang Báo cáo bộ phận: **DANH SÁCH NHÂN VIÊN** (mặc định) | **VAI TRÒ & QUYỀN** (bảng vai trò → màn hình, giữ như cũ).
+- **Danh sách nhân viên:**
+  - bộ lọc (tìm Mã NV / họ tên / tên đăng nhập, Phòng ban) + nút **THÊM NHÂN VIÊN** cùng hàng;
+  - bảng 1 dòng / nhân viên: Mã NV | Họ và tên | Phòng ban | Vai trò | Tên đăng nhập | Thông tin chi tiết (Đủ / Thiếu n mục) | Trạng thái; có phân trang;
+  - bấm dòng → cửa sổ trượt phải: sửa thông tin chi tiết, phòng ban, vai trò, khóa / mở khóa, đặt lại mật khẩu.
+- **Thông tin chi tiết:**
+  - Mã nhân viên (hệ thống cấp), Họ và tên, Giới tính (Nam / Nữ), CCCD (12 số, không trùng), Năm sinh (1940 → năm nay − 15), Quê quán, **Phòng ban** (1 phòng, chọn trong các vai trò hiện có).
+  - **Phòng ban độc lập với vai trò** (người dùng chọn): role là phân quyền (nhiều), phòng ban chỉ là thông tin hồ sơ.
+- **Tạo nhân viên chỉ cần Họ và tên** (+ vai trò để có quyền; tên đăng nhập tự tạo theo DEC-143; phòng ban tùy chọn). Thông tin chi tiết để trống = "Chưa cập nhật" — yêu cầu cập nhật / xác minh làm sau.
+- **Ai xem:** Admin (mọi người) + **chính nhân viên** (của mình) — người khác chỉ thấy mã + tên (`staff_directory`). Chỉ Admin sửa. Nhật ký không ghi số CCCD.
+- **Header — icon khiên → Thông tin chi tiết:** nhân viên **chỉ xem** hồ sơ của mình (ô trống ghi "Chưa cập nhật", sai / thiếu báo Admin).
+- Code:
+  - `updateStaffProfile`, `staffProfileMissing` (`depotOperations.ts`);
+  - `UserRoleCatalog.tsx` (tab), `MyProfile` (`AccountMenu.tsx`).
+- Database: migration `20261114000001_staff_profile.sql`:
+  - cột `staff.gender / id_number / birth_year / hometown / department`, CCCD duy nhất;
+  - RPC `admin_update_staff_profile`;
+  - pgTAP `0017` (13 kiểm tra).
+- **Kèm sửa lỗi DEC-189:**
+  - bản đầu migration `20261113000001` ghi đè hàm dùng chung `assert_admin()`, làm các thao tác Admin khác báo nhầm câu "chỉ Admin xem được sức khỏe database" (quyền vẫn đúng);
+  - nay `20261113000001` dùng hàm riêng `assert_db_admin()`, và `20261114000001` khôi phục `assert_admin()` đúng bản gốc.
+
+### DEC-190 — Menu: chỉ mở 1 bộ phận một lúc
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng).
+- Menu bên trái: bấm mở bộ phận khác → bộ phận đang mở **tự thu gọn**; chỉ 1 bộ phận mở tại một thời điểm. Bấm lại tiêu đề bộ phận đang mở → thu gọn.
+- Mở màn từ nơi khác (link phiếu thu, hồ sơ…) → menu tự mở đúng bộ phận chứa màn đó.
+- Không còn ghi nhớ nhóm thu gọn trong trình duyệt (bỏ `collapsedGroups`); thanh menu thu nhỏ (rail) giữ nguyên.
+- Code: `openGroup` / `toggleGroup` (`App.tsx`); nhóm thu gọn ẩn bằng `hidden`.
+
 ### DEC-189 — Danh mục chung → Database: theo dõi sức khỏe database (chỉ Admin)
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi).
@@ -1877,6 +1910,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-189 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-191 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
