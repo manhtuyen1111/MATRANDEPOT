@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-191 (2026-10-29): **User - Role dạng tab** (DANH SÁCH NHÂN VIÊN | VAI TRÒ & QUYỀN); thông tin chi tiết nhân viên (giới tính, CCCD, năm sinh, quê quán, phòng ban — độc lập vai trò), chỉ Admin + chính nhân viên xem; icon khiên → Thông tin chi tiết (chỉ xem). **Migration mới `20261114000001_staff_profile.sql`** (pgTAP 304/304 local). Sửa lỗi DEC-189 ghi đè `assert_admin()`.
 - DEC-190 (2026-10-29): Menu **chỉ mở 1 bộ phận một lúc** — mở bộ phận khác thì bộ phận trước tự thu gọn.
 - DEC-189 (2026-10-29): **Danh mục chung → Database** (chỉ Admin) — dashboard sức khỏe database: dung lượng / kho ảnh / kết nối / phản hồi / truy vấn chậm / bộ nhớ đệm / bảng lớn / tác vụ định kỳ / partition; cảnh báo vàng 70% đỏ 85%, số đếm đỏ trên menu; giới hạn dung lượng Admin nhập. **Migration mới `20261113000001_db_health.sql`** (pgTAP 291/291 local).
 - DEC-188 (2026-10-29): Lịch sử hồ sơ thêm cột **TRẠNG THÁI** bên phải Nhân viên — chỉ icon: tích xanh hoàn thành, đồng hồ cát đang chờ.
