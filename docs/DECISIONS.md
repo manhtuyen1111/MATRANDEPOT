@@ -1527,6 +1527,19 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-179 — Báo cáo tách theo bộ phận; bộ phận xem báo cáo của mình
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi).
+- Menu **Báo cáo** chia theo bộ phận (dòng tiêu đề nhỏ trong menu, `MenuItem.dept` ở `App.tsx`):
+  - **Giám định** → Chi tiết (mới): mọi lượt giám định Hạ vỏ + Nhập tàu — Mã hồ sơ | Số cont | Size | Type | Hãng tàu | Tác nghiệp | Trạng thái | Ghi chú hư hỏng | Đóng hàng | AGE | Giám định | Thời gian | Ảnh (bấm XEM ẢNH). Lọc thời gian giám định, số cont, hãng tàu, tác nghiệp, trạng thái.
+  - **Văn phòng** → Hạ vỏ, Cấp vỏ, **Xuất vỏ** (= Xuất tàu, DEC-040), **Nhập vỏ** (= Nhập tàu).
+  - **Vệ sinh** → Chi tiết (mới): phiếu vệ sinh — Mã hồ sơ | Số cont | Size | Type | Hãng tàu | Tác nghiệp | Hạng mục vệ sinh | Trạng thái | Người làm | Hoàn tất lúc. Lọc thời gian (hoàn tất, chưa xong thì lúc tạo), số cont, hãng tàu, trạng thái.
+  - **Xe nâng** → Chi tiết (mới): lịch sử vị trí — Mã hồ sơ | Số cont | Size | Type | Hãng tàu | Loại (Hạ bãi / Đảo chuyển / Lấy ra cấp vỏ – xuất tàu / Cập nhật vị trí) | Vị trí cũ | Vị trí mới | Người lái | Thời gian | Ghi chú. Lọc thời gian, số cont, loại (lịch sử vị trí không nối được bảng container trong database → không lọc hãng tàu, cột hãng vẫn hiện).
+  - **Sửa chữa** → Chi tiết, Sản lượng sửa chữa (trước là 2 tab của 1 mục).
+  - **Tổng hợp** (Văn phòng / Quản lý) và **Góp ý** (Admin) giữ riêng ở cuối.
+- **Quyền** (`MENU_ACCESS`): bộ phận nào xem báo cáo của bộ phận đó (Giám định / Vệ sinh / Xe nâng / Sửa chữa); Văn phòng / Quản lý (+ Admin) xem tất cả. Sửa chữa xem được Sản lượng (gồm lương sản phẩm của cả bộ phận).
+- Cả 3 báo cáo mới phân trang ở database như DEC-178 bước 4b (`usePagedReport`, Excel theo đợt, tối đa 1 năm / lần); migration `20261110000001_department_reports.sql` (chỉ mục `gate_in_orders.field_at`, `location_history.performed_at` / `action`).
+
 ### DEC-178 — Dữ liệu lớn: RLS 1 lần / truy vấn, tải theo nhu cầu, báo cáo tính ở database
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng — sau thử tải 200.000 lượt vào – ra + 200.000 lượt sửa chữa, 2.000 cont tồn trên Supabase local).
@@ -1709,6 +1722,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-178 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-179 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

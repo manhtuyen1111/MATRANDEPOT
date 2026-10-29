@@ -20,6 +20,7 @@ Thiết kế: `docs/DATABASE_SCHEMA.md`. **Agent chỉ viết file. Người dù
 | 11 | `20261107000001` | DEC-176: kho `repair-photos` (< 200 KB / ảnh), `work_orders.photo_paths`, RPC `complete_repair_with_photos` (1–30 ảnh); **tắt tự xóa ảnh** (`expired_photo_paths` trả rỗng — thay DEC-159); pgTAP `0011_repair_photos.test.sql` (10 kiểm tra) | **pgTAP 231/231 + chạy thật 5/5 local 2026-10-29** — đã `db push` lên `matran-test` |
 | 12 | `20261108000001` | DEC-178: RLS bọc `(select …)` cho mọi policy `public` (gọi hàm quyền 1 lần / truy vấn — sửa lỗi quá 8 giây khi dữ liệu lớn), chỉ mục cột lọc khi mở app; pgTAP `0012_rls_initplan.test.sql` | **pgTAP 239/239 local 2026-10-29** — đã `db push` lên `matran-test` 2026-10-29 |
 | 13 | `20261109000001` | DEC-178 bước 4b: cột sinh `report_at` + `container_serial` (gate_in_orders / gate_out_orders / work_orders; containers chỉ `container_serial`) + chỉ mục — báo cáo phân trang ở database; chỉ mục giao dịch theo chứng từ; pgTAP `0013_report_paging.test.sql` (10 kiểm tra) | **pgTAP 249/249 + chạy thật 5/5 local 2026-10-29** — đã `db push` lên `matran-test` 2026-10-29 |
+| 14 | `20261110000001` | DEC-179: chỉ mục báo cáo theo bộ phận — `gate_in_orders.field_at` (Giám định), `location_history.performed_at` / `action` (Xe nâng); pgTAP `0014_department_reports.test.sql` | **pgTAP 252/252 + chạy thật 5/5 local 2026-10-29** — chờ bạn `db push --linked` |
 | — | — | Chuyển kho > 36 tháng | Làm khi có dữ liệu đủ 3 năm (2029) |
 | — | — | Nhận báo có ngân hàng (callback) | Chờ Q-032 chọn ngân hàng; hiện Văn phòng xác nhận tay |
 
