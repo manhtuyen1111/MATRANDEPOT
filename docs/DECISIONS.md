@@ -1537,7 +1537,7 @@ Quy ước trạng thái:
 - **Thư mục ảnh** (Supabase không nhận chữ có dấu trong đường dẫn → viết không dấu): ảnh sửa chữa `repair-photos/ANH-SUA-CHUA/<năm>/<tháng>/<ngày>/<mã tổ>/<số cont>/<số cont>-<giờphútgiây>-<n>.jpg`; ảnh Gate in `door-photos/ANH-GATE-IN/<năm>/<tháng>/<ngày>/<mã hồ sơ>-….jpg` (ảnh cũ giữ đường dẫn cũ).
 - **Ảnh không tự xóa** (cả Gate in và Sửa chữa): `expired_photo_paths()` trả rỗng → Edge Function `purge-expired-photos` không xóa gì. **Quản trị tải về backup rồi tự xóa** trên Supabase.
 - Lưu nhanh: bấm Xác nhận → màn đổi ngay (DEC-160); ảnh tải lên ngầm song song 4 ảnh / lượt, xong mới gọi RPC (hoàn tất + gắn ảnh trong 1 giao dịch). Hồ sơ container — bước Sửa chữa hiện ảnh (bấm phóng to).
-- Database: migration `20261107000001_repair_photos.sql` (bucket `repair-photos`, `work_orders.photo_paths`, RPC `complete_repair_with_photos` gọi lại `complete_repair_task` — không sửa hàm cũ); pgTAP `0011_repair_photos.test.sql`.
+- Database: migration `20261107000001_repair_photos.sql` (bucket `repair-photos`, `work_orders.photo_paths`, RPC `complete_repair_with_photos` gọi lại `complete_repair_task` — không sửa hàm cũ); pgTAP `0011_repair_photos.test.sql`; test chạy thật `tests/remote.repair.local.test.ts`. Đã chạy thử Supabase local 2026-10-29: pgTAP **231/231**, chạy thật 5/5.
 
 ### DEC-175 — Báo cáo SẢN LƯỢNG SỬA CHỮA: VƯỢT GIỜ
 

@@ -256,7 +256,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - Màn chụp kiểu iPhone `src/components/PhotoCamera.tsx`; nén `src/services/photo.ts` (< 200 KB). Thư mục: `ANH-SUA-CHUA/năm/tháng/ngày/tổ/số cont` (kho `repair-photos`), Gate in `ANH-GATE-IN/năm/tháng/ngày` (kho `door-photos`).
 - **Ảnh không tự xóa nữa** (thay DEC-159) — quản trị tải backup rồi xóa tay. Dung lượng tăng ~3 GB / tháng → cần Supabase Pro (100 GB) khi chạy thật.
 - **Migration mới `20261107000001_repair_photos.sql`** (sau `20261106000001`). db push **trước** khi merge — chưa push thì Sửa chữa hoàn tất bị lỗi (RPC mới chưa có).
-- Kiểm thử: `tsc` PASS, vitest **194 pass / 3 bỏ qua**, `vite build` PASS. **pgTAP 0010 + 0011 chưa chạy** (không bật Docker). **Chưa thử camera trên điện thoại thật** (zoom .5 / đèn phụ thuộc máy + trình duyệt — iPhone Safari có thể không có đèn / .5).
+- Kiểm thử: `tsc` PASS, vitest **194 pass / 6 bỏ qua** (6 = test chạy thật, cần Supabase local), `vite build` PASS. **Supabase local 2026-10-29: pgTAP 231/231** (sửa test 0005 số 7 theo quy tắc không tự xóa ảnh), **chạy thật 5/5** (N1, N2–N6, mới `remote.repair.local.test.ts`: tải ảnh thật → hoàn tất → link ảnh mở được, kho chặn ≥ 200 KB, ảnh Gate in vào ANH-GATE-IN). **Chưa thử camera trên điện thoại thật** (zoom .5 / đèn phụ thuộc máy + trình duyệt — iPhone Safari có thể không có đèn / .5).
 - Bản Demo: ảnh lưu trong localStorage (~5 MB) → chụp nhiều ảnh có thể không giữ được sau khi tải lại trang (chỉ Demo).
 
 **▶ 2026-10-29 — DEC-175 VƯỢT GIỜ SỬA CHỮA (nhánh `agent/claude/repair-overtime`, chưa push):**
