@@ -1527,6 +1527,15 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-184 — Lịch sử hồ sơ: cột BỘ PHẬN; ĐANG CHỜ mỗi việc 1 dòng
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng). Sửa DEC-181 / DEC-183.
+- Cột **TÁC NGHIỆP đổi thành BỘ PHẬN**, chỉ ghi tên bộ phận làm việc đó: Giám định / Văn phòng / Vệ sinh / Xe nâng / Báo giá / Sửa chữa.
+  - Thanh toán, GATE IN OK, trả chứng từ, lập / duyệt danh sách tàu, cấp vỏ, hủy lệnh → **Văn phòng**.
+  - Tên tác nghiệp cụ thể (VD "Xe nâng — Đảo chuyển", "Thanh toán — Hạ vỏ") ghi ở đầu dòng chi tiết và khi rê chuột vào ô bộ phận.
+- **ĐANG CHỜ**: mỗi việc chờ là **1 dòng riêng** cuối bảng — icon đồng hồ (nhấp nháy) | bộ phận phụ trách | nhãn ĐANG CHỜ | nội dung chờ.
+- Code: `dept` / `DossierPending` trong `src/services/dossierHistory.ts`.
+
 ### DEC-183 — Lịch sử hồ sơ: mỗi tác nghiệp 1 dòng, chi tiết ẩn (nút mắt)
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng). Bổ sung DEC-181.
@@ -1767,6 +1776,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-183 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-184 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
