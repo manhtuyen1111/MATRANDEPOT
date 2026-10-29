@@ -109,13 +109,14 @@ export function queryGateOutReport(
 ): PagedResult<GateOutOrder> {
   const range = requireFilter(filter);
   const no = filter.containerNo?.trim().toUpperCase();
+  const contByDossier = filter.shippingLineCode || filter.size ? new Map(state.containers.map((c) => [c.masterDossierCode, c])) : undefined;
   const rows = state.gateOutOrders
     .filter((o) => types.includes(o.gateOutType))
     .filter((o) => matchContainerNo(o.containerNo, no))
     .filter((o) => inRange(o.confirmedAt || o.createdAt, range))
     .filter((o) => {
       if (!filter.shippingLineCode && !filter.size) return true;
-      const c = state.containers.find((x) => x.masterDossierCode === o.masterDossierCode);
+      const c = contByDossier?.get(o.masterDossierCode);
       if (filter.shippingLineCode && c?.shippingLineCode !== filter.shippingLineCode) return false;
       if (filter.size && c?.size !== filter.size) return false;
       return true;
@@ -338,12 +339,10 @@ export function queryRepairReport(state: DepotState, filter: RepairReportFilter,
   const range = toRange(filter);
   const no = filter.containerNo?.trim().toUpperCase();
   if (!range && !no) throw new Error('Nhập số container hoặc chọn khoảng thời gian trước khi tra cứu.');
+  const contByDossier = new Map(state.containers.map((c) => [c.masterDossierCode, c]));
   const rows = state.workOrders
     .filter((w) => w.category === 'REPAIR')
-    .map((workOrder) => ({
-      workOrder,
-      container: state.containers.find((c) => c.masterDossierCode === workOrder.masterDossierCode),
-    }))
+    .map((workOrder) => ({ workOrder, container: contByDossier.get(workOrder.masterDossierCode) }))
     .filter(({ workOrder: w }) => matchContainerNo(w.containerNo, no))
     .filter(({ workOrder: w }) => inRange(w.completedAt || w.createdAt, range))
     .filter(({ workOrder: w }) => !filter.teamCode || w.repairTeamCode === filter.teamCode)
