@@ -1527,6 +1527,16 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-183 — Lịch sử hồ sơ: mỗi tác nghiệp 1 dòng, chi tiết ẩn (nút mắt)
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng). Bổ sung DEC-181.
+- Bảng LỊCH SỬ HỒ SƠ: **mỗi tác nghiệp đúng 1 dòng** (không xuống dòng).
+- Cột CHI TIẾT **luôn ở trạng thái ẩn** (icon mắt gạch). Bấm mắt → mở dòng chi tiết ngay bên dưới (nội dung, vị trí, link phiếu thu, ảnh); bấm lại để ẩn.
+- Nút **MỞ TOÀN BỘ CHI TIẾT** / **ẨN TOÀN BỘ CHI TIẾT** cạnh tiêu đề "Lịch sử hồ sơ".
+- Ảnh cửa cont (DEC-182) trong hồ sơ hiện ngay khi mở chi tiết dòng Giám định (không cần bấm XEM ẢNH). Mở hồ sơ chưa mở chi tiết thì không tải ảnh nào.
+- Bản in A4 / PDF HỒ SƠ CONTAINER luôn in **đủ chi tiết** (không có nút mắt).
+- Code: `HistoryTable` trong `MasterDossierModal.tsx`.
+
 ### DEC-182 — Ảnh cửa cont Giám định hiện luôn, không cần bấm XEM ẢNH
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng). **Sửa DEC-178** cho riêng ảnh cửa cont.
@@ -1757,6 +1767,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-182 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-183 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
