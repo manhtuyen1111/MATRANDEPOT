@@ -19,7 +19,8 @@ import { YardShiftWorkspace } from '../src/features/forklift/YardShiftWorkspace'
 import { InvoiceGroupDetail, MasterUsagePanel, ReceiptsWorkspace } from '../src/features/receipts/ReceiptsWorkspace';
 import { ReportsWorkspace } from '../src/features/reports/ReportsWorkspace';
 import { MasterCatalogWorkspace } from '../src/features/catalog/MasterCatalogWorkspace';
-import { MasterDossierModal } from '../src/components/MasterDossierModal';
+import { HistoryTable, MasterDossierModal } from '../src/components/MasterDossierModal';
+import { dossierHistory, resolveDossier } from '../src/services/dossierHistory';
 import { InspectorHaVoMobile } from '../src/features/inspector/InspectorHaVoMobile';
 import { RepairTeamCatalog } from '../src/features/catalog/RepairTeamCatalog';
 import { UserRoleCatalog } from '../src/features/catalog/UserRoleCatalog';
@@ -179,9 +180,19 @@ describe('DEC-051: hồ sơ container link về Phiếu thu', () => {
     expect(plain.match(/Thanh toán — Hạ vỏ/g)).toHaveLength(1);
     expect(plain).toContain('TẠO MỚI');
     expect(plain).toContain('Chờ xe nâng hạ vỏ');
-    expect(withLink).toContain("font-mono text-navy-700 hover:underline");
-    expect(withLink).toContain(`Phiếu thu ${ptNo}`);
-    const noLink = renderToString(<MasterDossierModal masterDossierCode={gi.masterDossierCode} state={s} onClose={noop} />);
+    // DEC-183: chi tiết luôn ẩn (nút mắt), mỗi tác nghiệp 1 dòng; có nút MỞ TOÀN BỘ CHI TIẾT
+    expect(plain).toContain('MỞ TOÀN BỘ CHI TIẾT');
+    expect(plain).toContain('aria-label="Xem chi tiết"');
+    expect(plain).not.toContain('data-testid="dossier-detail"');
+    expect(plain).not.toContain(`Phiếu thu ${ptNo}`);
+    // Mở chi tiết (bản in A4 luôn mở hết): link phiếu thu khi có quyền, chỉ chữ khi không
+    const history = dossierHistory(s, resolveDossier(s, gi.masterDossierCode)!);
+    const opened = renderToString(<HistoryTable history={history} onOpenReceipt={noop} printMode />);
+    expect(opened).toContain('data-testid="dossier-detail"');
+    expect(opened).toContain("font-mono text-navy-700 hover:underline");
+    expect(opened).toContain(`Phiếu thu ${ptNo}`);
+    expect(opened).not.toContain('MỞ TOÀN BỘ CHI TIẾT');
+    const noLink = renderToString(<HistoryTable history={history} printMode />);
     expect(noLink).toContain(ptNo);
     expect(noLink).not.toContain("font-mono text-navy-700 hover:underline");
   });
@@ -1059,7 +1070,10 @@ describe('DEC-057: mã QR tác nghiệp THẬT + quét bằng camera', () => {
   it('DEC-176 + DEC-178: hồ sơ container có ảnh sửa chữa nhưng KHÔNG tải ảnh — chỉ nút XEM ẢNH (n)', () => {
     const demo = createDemoState();
     const wo = demo.workOrders.find((w) => w.category === 'REPAIR' && w.workStatus === 'COMPLETED' && w.repairPhotos?.length)!;
-    const html = renderToString(<MasterDossierModal state={demo} masterDossierCode={wo.masterDossierCode} onClose={noop} />).replace(/<!-- -->/g, '');
+    // DEC-183: mở hồ sơ chưa mở chi tiết → không có ảnh nào
+    const closed = renderToString(<MasterDossierModal state={demo} masterDossierCode={wo.masterDossierCode} onClose={noop} />);
+    expect(closed).not.toContain('<img');
+    const html = renderToString(<HistoryTable history={dossierHistory(demo, resolveDossier(demo, wo.masterDossierCode)!)} printMode />).replace(/<!-- -->/g, '');
     expect(html).toContain('data-testid="repair-photo-list"');
     expect(html).toContain(`XEM ẢNH (${wo.repairPhotos!.length})`);
     expect(html).not.toContain('Ảnh hoàn thành sửa chữa 1');
