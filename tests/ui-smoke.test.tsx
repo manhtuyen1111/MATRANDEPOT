@@ -1140,3 +1140,27 @@ describe('DEC-179 + DEC-180: menu Báo cáo chỉ có bộ phận, báo cáo con
     }
   });
 });
+
+describe('DEC-185: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ', () => {
+  const strip = (h: string) => h.replace(/<!-- -->/g, '');
+  it('Trả chứng từ có nút ĐỔI CONTAINER; cửa sổ đổi có 2 lý do + cont thay thế; Xe nâng thấy nhãn hạ lại / hạ khu sửa chữa', async () => {
+    const { SwapContainerModal } = await import('../src/features/office/SwapContainerModal');
+    const { swapCandidates, swapGateOutContainer } = await import('../src/services/depotOperations');
+    const demo = as(createDemoState(), 'usr-office');
+    const order = demo.gateOutOrders.find((o) => o.status === 'GATE_OUT_OK' && !o.documentsReturnedAt)!;
+    expect(strip(renderToString(<DocumentReturnWorkspace state={demo} onUpdateState={noop} />))).toContain('ĐỔI CONTAINER');
+
+    const modal = strip(renderToString(<SwapContainerModal state={demo} gateOutOrderId={order.id} onClose={noop} onDone={noop} />));
+    expect(modal).toContain('1. Khách kén vỏ, yêu cầu đổi cont khác');
+    expect(modal).toContain('2. Container phát sinh hư hỏng, không đủ điều kiện cấp khách');
+    const fresh = swapCandidates(demo, order.id)[0];
+    expect(modal).toContain(fresh.containerNo);
+
+    const s = swapGateOutContainer(demo, { gateOutOrderId: order.id, reason: 'DAMAGE', newContainerNo: fresh.containerNo });
+    // Xe nâng — Chờ hạ vỏ: cont trả về có nhãn tác nghiệp ĐỔI CONT (danh sách chờ mặc định thu gọn → kiểm tra dòng danh sách)
+    const back = s.containers.find((c) => c.masterDossierCode === order.masterDossierCode && c.containerNo === order.containerNo)!;
+    expect(getFieldQueue(s, 'XN_CHO_HA_VO').some((c) => c.id === back.id)).toBe(true);
+    const row = strip(renderToString(<QueueListRow state={s} container={back} extra="HẠ KHU SỬA CHỮA (cont hư)" onClick={noop} />));
+    expect(row).toContain('ĐỔI CONT');
+  });
+});

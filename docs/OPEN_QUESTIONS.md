@@ -25,7 +25,7 @@ Cập nhật lần cuối: 2026-10-22.
 
 - [x] Q-010: Một booking cấp nhiều container; chỉ nhập số booking, hệ thống tự đếm (DEC-017, DEC-034).
 - [x] Q-011: Văn phòng / Quản lý chọn container để cấp (DEC-027, DEC-033).
-- [ ] Q-012: Đổi container đã lập lệnh và đã thu phí xử lý thế nào? (Hiện: chỉ hủy được khi chưa thanh toán — OPEN-008.)
+- [ ] Q-012: Đổi container đã lập lệnh và đã thu phí xử lý thế nào? (Hiện: chỉ hủy được khi chưa thanh toán — OPEN-008.) **Một phần đã giải quyết (DEC-185):** cont đã cấp ra, chờ trả chứng từ → ĐỔI CONTAINER cùng hãng / size / type, giữ chứng từ + phiếu thu. Còn mở: đổi khác size / type (chênh phí), đổi khi lệnh chưa cấp ra mà đã thu tiền.
 - [x] Q-013: Hệ thống chặn lập lệnh lần 2 cho container đã lập lệnh (DEC-006). Ở chế độ Supabase cần ràng buộc database.
 
 ## 4. Gate Out — Xuất container khỏi bãi

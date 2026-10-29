@@ -204,7 +204,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
   const tickets = state.k80Tickets.filter((t) => t.masterDossierCode === visitCode);
   const containerNo = container?.containerNo || gateIn?.containerNo || outMatch?.containerNo;
   const cleaningItems = container?.cleaningItems || gateIn?.cleaningItems || [];
-  const activeOut = outOrders.find((o) => o.status !== 'CANCELLED');
+  const activeOut = outOrders.find((o) => o.status !== 'CANCELLED' && o.masterDossierCode === visitCode); // DEC-185: bỏ lệnh đã đổi sang cont khác
   const history = dossierHistory(state, dossier);
 
   // Nội dung hồ sơ — dùng chung cho màn hình và bản in A4 (bản in mở toàn bộ chi tiết)
@@ -222,6 +222,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
                 {exportHits.map(({ item }) => <span key={item.id} className="rounded bg-white/15 px-1.5 py-0.5">XUẤT TÀU {item.dossierCode}</span>)}
                 {container && <span className="rounded bg-amber-400 px-1.5 py-0.5 font-sans font-bold text-ink">{CONTAINER_STATUS[container.status]}</span>}
                 {container?.isOnHold && <span className="rounded bg-rose-500 px-1.5 py-0.5 font-sans font-bold">ĐANG KHÓA: {container.holdReason}</span>}
+                {container?.releaseDamage && <span className="rounded bg-rose-500 px-1.5 py-0.5 font-sans font-bold">PHÁT SINH CẤP VỎ</span>}
               </p>
             </div>
             <button type="button" onClick={onClose} aria-label="Đóng hồ sơ" className="no-print rounded-md border border-white/30 p-1.5 text-white hover:bg-white/10">

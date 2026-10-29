@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ScanField } from '../../components/Qr';
 import { completeCleaningTask, completeRepairTask, executeGateOut, updateContainerLocation } from '../../services/api';
 import { Camera, CheckCircle2, ChevronDown, ChevronUp, MapPin, QrCode, Search, X } from 'lucide-react';
-import { ContainerRecord } from '../../types/depot';
+import { ContainerRecord, SWAP_REASON_LABELS } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import { REPAIR_PHOTO_MAX, REPAIR_PHOTO_MIN } from '../../services/depotOperations';
 import { PhotoCamera } from '../../components/PhotoCamera';
@@ -304,6 +304,13 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                   HẠ KỆ GIÁM ĐỊNH — không hạ về bay
                 </div>
               )}
+              {/* DEC-185: cont trả về sau ĐỔI CONTAINER — hạ lại, chọn vị trí mới; hư hỏng → hạ khu sửa chữa */}
+              {mode === 'XN_CHO_HA_VO' && scanned.swapReturn && (
+                <div className={`rounded px-2 py-1.5 text-center text-base font-black ${scanned.swapReturn.reason === 'DAMAGE' ? 'bg-danger-fg text-white' : 'bg-amber-400 text-ink'}`} data-testid="swap-return">
+                  ĐỔI CONTAINER — {scanned.swapReturn.reason === 'DAMAGE' ? 'HẠ KHU SỬA CHỮA' : 'HẠ LẠI, CHỌN VỊ TRÍ MỚI'}
+                  <span className="block text-xs font-semibold">{SWAP_REASON_LABELS[scanned.swapReturn.reason]}{scanned.swapReturn.note ? ` — ${scanned.swapReturn.note}` : ''}</span>
+                </div>
+              )}
             </div>
           )}
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
@@ -462,9 +469,11 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                       mode === 'XN_CHO_CAP_VO'
                         ? `${c.allocatedTruckNo || '-'} • ${c.allocatedDriverPhone || '-'}`
                         : isRepair
-                        ? `${repairWoOf(c)?.laborHours ?? c.quotationLaborHours ?? '-'} giờ công`
+                        ? `${c.releaseDamage ? 'PHÁT SINH CẤP VỎ • ' : ''}${repairWoOf(c)?.laborHours ?? c.quotationLaborHours ?? '-'} giờ công` // DEC-185
                         : mode === 'XN_CHO_HA_VO' && c.forkliftShiftTask === 'HA_KE_GIAM_DINH'
                         ? 'HẠ KỆ GIÁM ĐỊNH'
+                        : mode === 'XN_CHO_HA_VO' && c.swapReturn
+                        ? c.swapReturn.reason === 'DAMAGE' ? 'HẠ KHU SỬA CHỮA (cont hư)' : 'HẠ LẠI (khách kén vỏ)'
                         : undefined
                     }
                     onClick={() => lookup(c.activeQrCode)}

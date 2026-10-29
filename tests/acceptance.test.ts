@@ -1891,3 +1891,100 @@ describe('DEC-181: lịch sử hồ sơ container', () => {
     expect(resolveDossier(s, 'HV-000000-999')).toBeNull();
   });
 });
+
+// DEC-185: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ — giữ lệnh CV-, chứng từ, phiếu thu, QR; cont cũ Xe nâng hạ lại
+import { releaseBlocker, swapGateOutContainer } from '../src/services/depotOperations';
+
+describe('DEC-185: đổi container khi chờ trả chứng từ cấp vỏ', () => {
+  const demo = createDemoState();
+  const order = demo.gateOutOrders.find((o) => o.status === 'GATE_OUT_OK' && !o.documentsReturnedAt)!;
+  const old = demo.containers.find((c) => c.masterDossierCode === order.masterDossierCode && c.containerNo === order.containerNo)!;
+  const fresh = demo.containers.find(
+    (c) => c.status === 'IN_YARD' && !releaseBlocker(c) && c.size === old.size && c.type === old.type && c.shippingLineCode === old.shippingLineCode
+  )!;
+  // Ô trống: block thường, đủ Bay / Row / Tier (tìm từ ô cuối)
+  const yard = demo.yardBlocks.find((b) => !b.isInspectionRack)!;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const freeSlot = (() => {
+    for (let bay = yard.maxBay; bay >= 1; bay--)
+      for (let row = yard.maxRow; row >= 1; row--)
+        for (let tier = yard.maxTier; tier >= 1; tier--)
+          if (!demo.containers.some((c) => c.status !== 'GATED_OUT' && c.currentBlock === yard.blockCode && c.currentBay === pad(bay) && c.currentRow === pad(row) && c.currentTier === pad(tier)))
+            return { blockCode: yard.blockCode, bay: pad(bay), row: pad(row), tier: pad(tier) };
+    throw new Error('Hết ô trống');
+  })();
+  const office = as(demo, 'usr-office');
+  const swap = (reason: 'KEN_VO' | 'DAMAGE', note?: string) =>
+    swapGateOutContainer(office, { gateOutOrderId: order.id, reason, newContainerNo: fresh.containerNo, note });
+
+  it('Khách kén vỏ: lệnh CV- chuyển sang cont mới, giữ chứng từ / phiếu thu / QR; cont cũ chờ hạ lại, hạ xong cấp được khách khác', () => {
+    let s = swap('KEN_VO');
+    const o = s.gateOutOrders.find((x) => x.id === order.id)!;
+    expect(o.gateOutCode).toBe(order.gateOutCode);
+    expect(o.containerNo).toBe(fresh.containerNo);
+    expect(o.status).toBe('PENDING_FORKLIFT');
+    expect(o.swaps).toHaveLength(1);
+    const v = s.vouchers.find((x) => x.id === order.voucherId)!;
+    expect(v.containerNo).toBe(fresh.containerNo);
+    expect(v.status).toBe(demo.vouchers.find((x) => x.id === order.voucherId)!.status);
+    expect(s.paymentReceipts.filter((r) => r.voucherId === order.voucherId).every((r) => r.containerNo === fresh.containerNo)).toBe(true);
+    expect(s.k80Tickets.find((t) => t.outDossierCode === order.gateOutCode)!.containerNo).toBe(fresh.containerNo);
+
+    const back = s.containers.find((c) => c.id === old.id)!;
+    expect(back.status).toBe('WAITING_PLACEMENT');
+    expect(back.conditionClass).toBe(old.conditionClass);
+    expect(back.gateInAt).toBe(old.gateInAt); // giữ ngày hạ gốc
+    expect(back.swapReturn?.reason).toBe('KEN_VO');
+    expect(s.containers.find((c) => c.id === fresh.id)!.status).toBe('ALLOCATED');
+
+    // Xe nâng cấp cont mới bằng QR phiếu K80 đang cầm (QR-CV- giữ nguyên)
+    s = executeGateOut(as(s, 'usr-forklift'), { scannedQrCode: `QR-${order.gateOutCode}` });
+    expect(s.containers.find((c) => c.id === fresh.id)!.status).toBe('GATED_OUT');
+    // Xe nâng hạ lại cont cũ → tồn bãi, đủ điều kiện cấp khách khác
+    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: old.containerNo, ...freeSlot, reason: '' });
+    const placed = s.containers.find((c) => c.id === old.id)!;
+    expect(placed.status).toBe('IN_YARD');
+    expect(placed.swapReturn).toBeUndefined();
+    expect(releaseBlocker(placed)).toBeNull();
+    expect(s.locationHistory[0].actionType).toBe('SWAP_RETURN');
+
+    // Hồ sơ: cont cũ có dòng Đổi container (SỬA) + Xe nâng hạ lại; cont mới có dòng cấp thay
+    const oldRows = dossierHistory(s, resolveDossier(s, old.masterDossierCode)!).rows;
+    expect(oldRows.find((r) => r.operation === 'Văn phòng — Đổi container')?.action).toBe('SỬA');
+    expect(oldRows.some((r) => r.operation === 'Xe nâng — Hạ lại (đổi container)')).toBe(true);
+    const newRows = dossierHistory(s, resolveDossier(s, order.gateOutCode)!).rows;
+    expect(newRows.find((r) => r.operation === 'Văn phòng — Đổi container')?.detail).toContain(old.containerNo);
+  });
+
+  it('Phát sinh hư hỏng: cont cũ chuyển DAMAGE + PHÁT SINH CẤP VỎ; Xe nâng hạ xong → Chờ báo giá', () => {
+    let s = swap('DAMAGE', 'Thủng sàn');
+    const back = s.containers.find((c) => c.id === old.id)!;
+    expect(back.conditionClass).toBe('DAMAGE');
+    expect(back.releaseDamage).toBe(true);
+    expect(back.needsQuotation).toBe(false); // chưa hạ → chưa vào Báo giá
+    s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: old.containerNo, ...freeSlot, reason: '' });
+    const placed = s.containers.find((c) => c.id === old.id)!;
+    expect(placed.needsQuotation).toBe(true);
+    expect(placed.releaseDamage).toBe(true);
+    expect(s.workOrders.find((w) => w.masterDossierCode === old.masterDossierCode && w.category === 'INSPECTION' && w.workStatus === 'OPEN')?.items).toEqual(['Thủng sàn']);
+    expect(dossierHistory(s, resolveDossier(s, old.masterDossierCode)!).pending.some((p) => p.dept === 'Báo giá')).toBe(true);
+  });
+
+  it('Từ chối: sai quyền, chưa cấp ra / đã trả chứng từ, cont thay thế khác size-type hoặc đang khóa, trùng cont', () => {
+    expect(() => swapGateOutContainer(as(demo, 'usr-forklift'), { gateOutOrderId: order.id, reason: 'KEN_VO', newContainerNo: fresh.containerNo })).toThrow(/Không đủ quyền/);
+    const pendingOrder = demo.gateOutOrders.find((o) => o.status === 'PENDING_FORKLIFT');
+    if (pendingOrder) {
+      expect(() => swapGateOutContainer(office, { gateOutOrderId: pendingOrder.id, reason: 'KEN_VO', newContainerNo: fresh.containerNo })).toThrow(/chờ trả chứng từ/);
+    }
+    const returned = { ...office, gateOutOrders: office.gateOutOrders.map((o) => (o.id === order.id ? { ...o, documentsReturnedAt: '2026-10-29T00:00:00.000Z' } : o)) };
+    expect(() => swapGateOutContainer(returned, { gateOutOrderId: order.id, reason: 'KEN_VO', newContainerNo: fresh.containerNo })).toThrow(/chờ trả chứng từ/);
+    const other = demo.containers.find((c) => c.status === 'IN_YARD' && !releaseBlocker(c) && (c.size !== old.size || c.type !== old.type));
+    if (other) {
+      expect(() => swapGateOutContainer(office, { gateOutOrderId: order.id, reason: 'KEN_VO', newContainerNo: other.containerNo })).toThrow(/cùng hãng tàu \/ size \/ type/);
+    }
+    const held = toggleContainerHold(office, { containerNo: fresh.containerNo, hold: true, reason: 'Giữ cont' });
+    expect(() => swapGateOutContainer(held, { gateOutOrderId: order.id, reason: 'KEN_VO', newContainerNo: fresh.containerNo })).toThrow(/chưa đủ điều kiện CẤP VỎ/);
+    expect(() => swapGateOutContainer(office, { gateOutOrderId: order.id, reason: 'KEN_VO', newContainerNo: old.containerNo })).toThrow(/Không tìm thấy container thay thế/);
+    expect(() => swapGateOutContainer(office, { gateOutOrderId: order.id, reason: 'X' as never, newContainerNo: fresh.containerNo })).toThrow(/lý do/);
+  });
+});

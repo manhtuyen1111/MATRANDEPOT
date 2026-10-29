@@ -639,12 +639,13 @@ export function vesselStepSummary(state: DepotState, step: VesselFieldStep, list
 //   NT- → NHẬP TÀU (+ tên tàu); trong danh sách xuất tàu → XUẤT TÀU (+ tên tàu);
 //   đã lập lệnh cấp → CẤP VỎ; còn lại → HẠ VỎ.
 // ---------------------------------------------------------------------------
-export type ContainerOperationCode = 'HA_VO' | 'CAP_VO' | 'NHAP_TAU' | 'XUAT_TAU';
+export type ContainerOperationCode = 'HA_VO' | 'CAP_VO' | 'NHAP_TAU' | 'XUAT_TAU' | 'DOI_CONT';
 export const CONTAINER_OPERATION_LABELS: Record<ContainerOperationCode, string> = {
   HA_VO: 'HẠ VỎ',
   CAP_VO: 'CẤP VỎ',
   NHAP_TAU: 'NHẬP TÀU',
   XUAT_TAU: 'XUẤT TÀU',
+  DOI_CONT: 'ĐỔI CONT', // DEC-185: cont trả về sau ĐỔI CONTAINER — Xe nâng hạ lại
 };
 
 export interface ContainerOperation {
@@ -661,6 +662,9 @@ export function containerOperation(state: DepotState, c: ContainerRecord): Conta
     const list = lists.find((l) => l.items.some((i) => i.id === c.vesselExportItemId));
     const item = list?.items.find((i) => i.id === c.vesselExportItemId);
     return { code: 'XUAT_TAU', label: CONTAINER_OPERATION_LABELS.XUAT_TAU, dossierCode: item?.dossierCode || c.masterDossierCode, vesselName: list?.vesselName, truckNo: item?.truckNo };
+  }
+  if (c.swapReturn) {
+    return { code: 'DOI_CONT', label: CONTAINER_OPERATION_LABELS.DOI_CONT, dossierCode: c.swapReturn.gateOutCode };
   }
   if (c.status === 'ALLOCATED' && c.outDossierCode) {
     return { code: 'CAP_VO', label: CONTAINER_OPERATION_LABELS.CAP_VO, dossierCode: c.outDossierCode };

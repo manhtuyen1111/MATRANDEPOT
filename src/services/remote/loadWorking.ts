@@ -10,8 +10,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   ContainerRecord, FeeLineItem, FeedbackItem, GateInOrder, GateOutOrder, InvoiceGroup, K80InternalTicket, LocationHistoryItem,
   MasterPrepaidReceipt, MasterReceiptDeduction, PaymentReceipt, PaymentTransaction, PaymentVoucher, ReleaseBooking,
-  ServiceWorkOrder, StaffUser, VesselList, VesselListItem,
+  ServiceWorkOrder, StaffUser, SwapReason, VesselList, VesselListItem,
 } from '../../types/depot';
+import { SWAP_REASON_LABELS } from '../../types/depot';
 import type { DepotState } from '../depotStore';
 import type { StaffSession } from './session';
 import { loadCatalogState } from './loadState';
@@ -205,7 +206,9 @@ export async function loadDossierState(client: SupabaseClient, base: DepotState,
     eq('gate_out_orders', 'dossier_code', visit),
     byIds(client, 'vessel_lists', 'id', itemsByCode.map((i) => i.list_id)),
   ]);
-  const gateOuts = merge(outsByCode, outsByVisit);
+  // DEC-185: lệnh đã ĐỔI CONTAINER khỏi lượt này (chỉ mục gate_out_orders_swaps)
+  const outsSwapped = await all((a, b) => client.from('gate_out_orders').select('*').contains('swaps', [{ fromMasterDossierCode: visit }]).range(a, b));
+  const gateOuts = merge(outsByCode, outsByVisit, outsSwapped);
   const tickets = await byIds(client, 'k80_tickets', 'dossier_code', [visit, ...gateOuts.map((o) => o.code)]);
   const raw = await expand(
     client,
@@ -260,6 +263,7 @@ function buildState(base: DepotState, raw: RawData): DepotState {
       allocatedBookingNo: go?.booking_no, allocatedTruckNo: go?.truck_no, allocatedDriverPhone: opt(go?.driver_phone), allocatedAt: go?.created_at,
       outDossierCode: opt(c.out_dossier_code), officeNote: opt(c.office_note), officeNoteUpdatedBy: opt(c.office_note_by_name), officeNoteUpdatedAt: opt(c.office_note_at),
       vesselExportItemId: opt(c.vessel_export_item_id), gateInAt: c.gate_in_at, gateOutAt: opt(c.gate_out_at),
+      swapReturn: opt(c.swap_return), releaseDamage: c.release_damage || undefined, // DEC-185
     };
   };
 
@@ -285,6 +289,7 @@ function buildState(base: DepotState, raw: RawData): DepotState {
     chkPaymentSettled: o.chk_payment_settled, chkDocumentsCompleted: o.chk_documents_completed, status: o.status, createdBy: opt(o.created_by_name),
     confirmedBy: opt(o.confirmed_by_name), confirmedAt: opt(o.confirmed_at), cancelReason: opt(o.cancel_reason), cancelledAt: opt(o.cancelled_at),
     documentsReturnedAt: opt(o.documents_returned_at), documentsReturnedBy: opt(o.documents_returned_by_name), createdAt: o.created_at,
+    swaps: o.swaps?.length ? o.swaps : undefined, // DEC-185
   } as GateOutOrder);
 
   const mapBooking = (b: Row): ReleaseBooking => {
@@ -294,9 +299,15 @@ function buildState(base: DepotState, raw: RawData): DepotState {
       receiverName: b.receiver_name, size: b.size, type: b.type, requestedQty: opt(b.requested_qty),
       allocatedContainers: orders.filter((o) => ['PAYMENT_PENDING', 'PENDING_FORKLIFT'].includes(o.status)).map((o) => o.container_no),
       gatedOutContainers: orders.filter((o) => o.status === 'GATE_OUT_OK').map((o) => o.container_no),
-      releasedContainers: orders.filter((o) => o.status === 'CANCELLED').map((o) => ({
-        containerNo: o.container_no, outDossierCode: o.code, reason: o.cancel_reason || '', releasedBy: o.cancelled_by_name || '', releasedAt: o.cancelled_at || o.created_at,
-      })),
+      releasedContainers: [
+        ...orders.filter((o) => o.status === 'CANCELLED').map((o) => ({
+          containerNo: o.container_no, outDossierCode: o.code, reason: o.cancel_reason || '', releasedBy: o.cancelled_by_name || '', releasedAt: o.cancelled_at || o.created_at,
+        })),
+        // DEC-185: cont bị ĐỔI CONTAINER khỏi lệnh
+        ...orders.flatMap((o) => (o.swaps || []).map((s: Row) => ({
+          containerNo: s.fromContainerNo, outDossierCode: o.code, reason: `ĐỔI CONTAINER: ${SWAP_REASON_LABELS[s.reason as SwapReason] || s.reason}`, releasedBy: s.swappedBy, releasedAt: s.swappedAt,
+        }))),
+      ],
       status: b.status, createdAt: b.created_at,
     };
   };

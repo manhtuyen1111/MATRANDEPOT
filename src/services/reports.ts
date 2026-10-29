@@ -846,9 +846,10 @@ export const LOCATION_ACTION_LABELS: Record<LocationHistoryItem['actionType'], s
   SHIFT_REPAIR: 'Chuyển sửa chữa',
   SHIFT_INSPECTION_RACK: 'Hạ kệ giám định',
   GATE_OUT_CLEAR: 'Lấy ra (cấp vỏ / xuất tàu)',
+  SWAP_RETURN: 'Hạ lại (đổi container)', // DEC-185
 };
 // Loại tác nghiệp có trong database (bộ lọc Xe nâng)
-export const FORKLIFT_ACTIONS: LocationHistoryItem['actionType'][] = ['INITIAL_BLOCK', 'YARD_SHIFT', 'GATE_OUT_CLEAR', 'DETAIL_SLOT_UPDATE'];
+export const FORKLIFT_ACTIONS: LocationHistoryItem['actionType'][] = ['INITIAL_BLOCK', 'YARD_SHIFT', 'GATE_OUT_CLEAR', 'DETAIL_SLOT_UPDATE', 'SWAP_RETURN'];
 
 // XE NÂNG — CHI TIẾT: lịch sử vị trí (hạ bãi / đảo chuyển / lấy ra / cập nhật ô), theo thời gian thực hiện
 export function queryForkliftReport(state: DepotState, filter: ForkliftReportFilter, page = 1, pageSize = REPORT_PAGE_SIZE): PagedResult<ForkliftReportRow> {

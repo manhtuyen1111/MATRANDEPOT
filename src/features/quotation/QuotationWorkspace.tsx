@@ -8,6 +8,7 @@ import { formatDateTime, fileStamp } from '../../services/datetime';
 import { yardStockSheet } from '../../services/reports';
 import { linkCls,
   ContainerNo,
+  ReleaseDamageTag,
   DetailDrawer,
   ExportExcelButton,
   Feedback,
@@ -220,7 +221,7 @@ export const QuotationWorkspace: React.FC<{
                   <td className="whitespace-nowrap px-2 py-2.5 font-mono text-navy-700">
                     <button type="button" onClick={(e) => { e.stopPropagation(); onOpenDossier?.(c.masterDossierCode); }} className={linkCls}>{c.masterDossierCode}</button>
                   </td>
-                  <td className="whitespace-nowrap px-2 py-2.5"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.officeNote || c.holdReason} className="text-sm" /></td>
+                  <td className="whitespace-nowrap px-2 py-2.5"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.officeNote || c.holdReason} className="text-sm" /><ReleaseDamageTag show={c.releaseDamage} /></td>
                   <td className="px-2 py-2.5 text-center">{c.size}</td>
                   <td className="px-2 py-2.5 text-center">{c.type}</td>
                   <td className="whitespace-nowrap px-2 py-2.5">{c.shippingLineCode}</td>
@@ -250,7 +251,7 @@ export const QuotationWorkspace: React.FC<{
       <DetailDrawer
         open={Boolean(selected)}
         onClose={() => setSelectedId('')}
-        title={selected ? <span className="flex items-center gap-2">Báo giá <ContainerNo no={selected.containerNo} className="text-base" /></span> : ''}
+        title={selected ? <span className="flex items-center gap-2">Báo giá <ContainerNo no={selected.containerNo} className="text-base" /><ReleaseDamageTag show={selected.releaseDamage} /></span> : ''}
       >
         {selected && (
           <div className="space-y-3">
