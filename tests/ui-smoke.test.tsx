@@ -53,6 +53,9 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('Có việc đang chờ');
     // DEC-078: biểu tượng mobile nằm trong cột cố định → thẳng hàng
     expect(html.match(/flex w-6 shrink-0 justify-center"><span title="Tác nghiệp mobile"/g)?.length).toBe(10);
+    // DEC-190: chỉ mở 1 bộ phận một lúc — các nhóm khác thu gọn (danh sách ẩn)
+    expect(html.match(/aria-expanded="true"/g)).toHaveLength(1);
+    expect(html.match(/<ul hidden=""/g)!.length).toBeGreaterThanOrEqual(5); // các bộ phận còn lại đều thu gọn
   });
 
   it('Tồn vỏ hiển thị biểu tượng khóa và dấu - cho container chưa có vị trí', () => {
