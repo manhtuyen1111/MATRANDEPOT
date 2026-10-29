@@ -1,7 +1,7 @@
 // ============================================================================
 // CHẾ ĐỘ DATABASE — tải DỮ LIỆU ĐANG LÀM VIỆC (DEC-155, DEC-158): mọi thứ đang mở / trong bãi + 7 ngày gần nhất,
-// chuyển về đúng kiểu DepotState mà giao diện đang dùng. Chỉ tải dữ liệu dạng bảng; ảnh chỉ ký link, trình duyệt
-// tải ảnh khi mở hồ sơ. Mở app tải đủ 1 lần, sau đó chỉ lấy phần thay đổi (createWorkingSync).
+// chuyển về đúng kiểu DepotState mà giao diện đang dùng. Chỉ tải dữ liệu dạng bảng; ảnh chỉ giữ đường dẫn,
+// bấm XEM ẢNH mới xin link + tải ảnh (DEC-178). Mở app tải đủ 1 lần, sau đó chỉ lấy phần thay đổi (createWorkingSync).
 // Báo cáo lọc ngoài 7 ngày → tải riêng theo khoảng lọc (tối đa 3 tháng, reportSource.ts — N7).
 // ============================================================================
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -18,8 +18,6 @@ import { loadCatalogState } from './loadState';
 export const WORKING_DAYS = 7; // DEC-158 (đo N8: 90 ngày = 206 giây / 171 MB — không dùng được)
 const FAR = '9999-12-31T23:59:59Z';
 const OVERLAP_MS = 60_000; // lấy chồng 1 phút khi đồng bộ (giao dịch ghi chậm) — trùng thì ghép theo id
-const PHOTO_LINK_SECONDS = 3600;
-const PHOTO_RESIGN_MS = 50 * 60_000;
 const windowStart = () => new Date(Date.now() - WORKING_DAYS * 86400000).toISOString();
 const PAGE = 1000;
 const CHUNK = 150;
@@ -153,38 +151,17 @@ async function fetchRaw(client: SupabaseClient, since: string, until: string): P
   return { containers, gateIns, gateOuts, bookings, prepaids, vouchers, txs, receipts, deductions, prints, groups, groupItems, fees, tickets, works, members, history, lists, items, feedbacks };
 }
 
-// Ảnh cửa container: kho riêng tư → link xem tạm. Chỉ ký link cho đường dẫn mới / sắp hết hạn (không tải ảnh).
-type PhotoCache = Map<string, { url: string; at: number }>;
-async function signPhotos(client: SupabaseClient, raw: RawData, cache: PhotoCache): Promise<(p: string | null) => string> {
-  const now = Date.now();
-  const need = (list: (string | null | undefined)[]) =>
-    Array.from(new Set(list))
-      .filter((p): p is string => Boolean(p) && !/^(https?:|data:)/.test(p!))
-      .filter((p) => {
-        const c = cache.get(p);
-        return !c || now - c.at > PHOTO_RESIGN_MS;
-      });
-  const sign = async (bucket: string, paths: string[]) => {
-    for (let i = 0; i < paths.length; i += 100) {
-      const { data } = await client.storage.from(bucket).createSignedUrls(paths.slice(i, i + 100), PHOTO_LINK_SECONDS);
-      for (const x of data || []) if (x.path && x.signedUrl) cache.set(x.path, { url: x.signedUrl, at: now });
-    }
-  };
-  await Promise.all([
-    sign('door-photos', need([...raw.gateIns.map((g) => g.door_photo_path), ...raw.items.map((i) => i.door_photo_path)])),
-    sign('repair-photos', need(raw.works.flatMap((w) => (w.photo_paths as string[] | null) || []))), // DEC-176
-  ]);
-  return (p) => (p ? cache.get(p)?.url || p : '');
-}
-
 // range (ISO) có → tải hồ sơ trong khoảng đó thay cho cửa sổ làm việc — báo cáo lọc xa hơn (N7)
 export async function loadWorkingState(client: SupabaseClient, me: StaffSession, range?: { from: string; to: string }): Promise<DepotState> {
   const base = await loadCatalogState(client, me);
   const raw = await fetchRaw(client, range?.from ?? windowStart(), range?.to ?? FAR);
-  return buildState(base, raw, await signPhotos(client, raw, new Map()));
+  return buildState(base, raw);
 }
 
-function buildState(base: DepotState, raw: RawData, photo: (p: string | null) => string): DepotState {
+// Ảnh: chỉ giữ ĐƯỜNG DẪN trong kho — bấm XEM ẢNH mới xin link (photoLink.ts — DEC-178)
+const photo = (p: string | null): string => p || '';
+
+function buildState(base: DepotState, raw: RawData): DepotState {
   const { containers, gateIns, gateOuts, bookings, prepaids, vouchers, txs, receipts, deductions, prints, groups, groupItems, fees, tickets, works, members, history, lists, items, feedbacks } = raw;
 
   // --- Ghép ---
@@ -397,21 +374,17 @@ export interface WorkingSync {
 export function createWorkingSync(client: SupabaseClient, me: StaffSession): WorkingSync {
   let raw: RawData | null = null;
   let cursor = '';
-  const photos: PhotoCache = new Map();
   const serverNow = async (): Promise<string> => {
     const { data, error } = await client.rpc('server_now');
     if (error) throw new Error(`Không tải được dữ liệu: ${error.message}`);
     return String(data);
   };
-  // Danh mục và ký link ảnh chạy song song
+  // Danh mục giữ lại giữa các lần đồng bộ
   let catalog: DepotState | null = null;
   const build = async (r: RawData, reloadCatalog = true) => {
-    const [base, photo] = await Promise.all([
-      reloadCatalog || !catalog ? loadCatalogState(client, me) : Promise.resolve(catalog),
-      signPhotos(client, r, photos),
-    ]);
+    const base = reloadCatalog || !catalog ? await loadCatalogState(client, me) : catalog;
     catalog = base;
-    return buildState(base, r, photo);
+    return buildState(base, r);
   };
 
   const full = async () => {

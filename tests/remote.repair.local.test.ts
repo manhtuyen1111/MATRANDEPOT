@@ -8,6 +8,7 @@ import { setRemoteSink, type RemoteOp } from '../src/services/remote/sync';
 import { loadStaffSession, signIn } from '../src/services/remote/session';
 import { createWorkingSync, type WorkingSync } from '../src/services/remote/loadWorking';
 import { toAuthPassword, usernameToEmail } from '../src/services/authPassword';
+import { photoUrl, setPhotoClient } from '../src/services/remote/photoLink';
 import type { DepotState } from '../src/services/depotStore';
 
 const ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env || {};
@@ -67,7 +68,10 @@ describe.skipIf(!run)('DEC-176 — ảnh hoàn thành sửa chữa chạy thật
     setRemoteSink((op) => queue.push(op));
   }, 30000);
 
-  afterAll(() => setRemoteSink(null));
+  afterAll(() => {
+    setRemoteSink(null);
+    setPhotoClient(null);
+  });
 
   it('tải 3 ảnh → hoàn tất → hồ sơ có 3 link ảnh xem được, đúng thư mục ANH-SUA-CHUA/năm/tháng/ngày/tổ/số cont', async () => {
     let s = await flush();
@@ -77,7 +81,10 @@ describe.skipIf(!run)('DEC-176 — ảnh hoàn thành sửa chữa chạy thật
     const wo = s.workOrders.find((w) => w.containerNo === containerNo && w.category === 'REPAIR')!;
     expect(wo.workStatus).toBe('COMPLETED');
     expect(wo.repairPhotos).toHaveLength(3);
-    const res = await fetch(wo.repairPhotos![0]);
+    // DEC-178: dữ liệu chỉ giữ đường dẫn — bấm XEM ẢNH mới xin link
+    expect(wo.repairPhotos![0]).toMatch(/^ANH-SUA-CHUA\//);
+    setPhotoClient(client);
+    const res = await fetch(await photoUrl(wo.repairPhotos![0]));
     expect(res.status).toBe(200);
     expect((await res.arrayBuffer()).byteLength).toBe(150_000);
     const { data } = await admin.from('work_orders').select('photo_paths').eq('container_no', containerNo).eq('category', 'REPAIR').single();

@@ -5,6 +5,7 @@ import { changePassword, loadStaffSession, signIn, signOut, type StaffSession } 
 import { createWorkingSync, loadWorkingState, type WorkingSync } from '../services/remote/loadWorking';
 import { clearIdMap, friendlyError, isOffline, setRemoteSink, takeCatalogTouched, type RemoteOp } from '../services/remote/sync';
 import { setReportLoader } from '../services/remote/reportSource';
+import { setPhotoClient } from '../services/remote/photoLink';
 import type { DepotState } from '../services/depotStore';
 import { App } from './App';
 import { AppLoading, SavingIndicator, StatusPill } from '../components/LoadingScreens';
@@ -115,6 +116,12 @@ export const RemoteApp: React.FC = () => {
       return loadWorkingState(client, me, range);
     });
     return () => setReportLoader(null);
+  }, [client]);
+
+  // Ảnh: bấm XEM ẢNH mới xin link (DEC-178)
+  useEffect(() => {
+    setPhotoClient(client);
+    return () => setPhotoClient(null);
   }, [client]);
 
   useEffect(() => {

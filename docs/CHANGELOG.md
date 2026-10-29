@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-178 (2026-10-29): **ảnh chỉ tải khi bấm XEM ẢNH (n)** — mở app / mở hồ sơ không xin link, không tải ảnh (`PhotoGallery`, `photoLink.ts`).
 - DEC-178 (2026-10-29): thử tải 200.000 lượt (`tests/load.local.test.ts`) → sửa lỗi đăng nhập quá 8 giây: RLS gọi hàm quyền 1 lần / truy vấn + chỉ mục. **Migration mới `20261108000001_rls_initplan_indexes.sql`** (pgTAP 239/239 local). Chốt nguyên tắc tải theo nhu cầu, báo cáo tính ở database, tìm số cont theo 7 số seri.
 - DEC-177 (2026-10-29): Header 1 dòng cho màn tác nghiệp mobile — Tải lại / Đổi mật khẩu / Đăng xuất gộp vào icon **Quản trị hệ thống** (mở danh mục THÔNG TIN NHÂN VIÊN …); nút Góp ý thu gọn icon, cùng dòng tên màn (VD Giám định / Hạ vỏ).
 - DEC-176 (2026-10-29): Chờ sửa chữa bỏ quét QR → **tìm theo số container**; **CHỤP ẢNH HOÀN THÀNH SỬA CHỮA** (1–30 ảnh, màn chụp kiểu iPhone: chụp liên tục, .5 / 1× / 2× / 3×, đèn), mỗi ảnh < 200 KB; thư mục ảnh theo ngày (ANH-GATE-IN / ANH-SUA-CHUA); **ảnh không tự xóa** (thay DEC-159). **Migration mới `20261107000001_repair_photos.sql`**.

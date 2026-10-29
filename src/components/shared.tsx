@@ -6,6 +6,7 @@ import {
   Clock,
   CreditCard,
   FileText,
+  Image as ImageIcon,
   Lock,
   MapPin,
   Plus,
@@ -26,6 +27,7 @@ import {
 import { DepotState, formatVnd } from '../services/depotStore';
 import { can } from '../services/permissions';
 import { isSupabaseConfigured } from '../lib/env';
+import { cachedPhotoUrl, photoUrl } from '../services/remote/photoLink';
 import { DATETIME_PLACEHOLDER, formatDateTime, maskDateTimeInput, parseDateTime, QUICK_RANGE_OPTIONS, quickRange, QuickRangeKey } from '../services/datetime';
 import { PAGE_SIZE_OPTIONS, SheetData, toXlsxBuffer, XLSX_MIME } from '../services/reports';
 import { blockDimensions, formatLocation, SLOT_DIMENSION_LABELS, SlotDimension } from '../services/core';
@@ -816,9 +818,46 @@ const LENS_SIZE = 160;
 const LENS_ZOOM = 3;
 const ZOOM_STEPS = [1, 1.5, 2, 3, 4];
 
-export const PhotoZoom: React.FC<{ src: string; alt: string; className: string }> = ({ src, alt, className }) => {
+// Ảnh trong kho chỉ lưu đường dẫn → xin link xem khi ảnh được hiện (DEC-178); ảnh data / http dùng thẳng
+function usePhotoSrc(src: string): string {
+  const [url, setUrl] = React.useState(() => cachedPhotoUrl(src) || '');
+  React.useEffect(() => {
+    let alive = true;
+    void photoUrl(src).then((u) => alive && setUrl(u));
+    return () => {
+      alive = false;
+    };
+  }, [src]);
+  return url;
+}
+
+// NÚT XEM ẢNH (DEC-178): mở hồ sơ / chi tiết KHÔNG tải ảnh — chỉ bấm XEM ẢNH mới xin link + tải ảnh
+export const PhotoGallery: React.FC<{ photos: (string | undefined)[]; alt: string; className: string; testId?: string }> = ({ photos, alt, className, testId }) => {
+  const [shown, setShown] = React.useState(false);
+  const list = photos.filter((p): p is string => Boolean(p));
+  if (!list.length) return null;
+  if (!shown) {
+    return (
+      <button type="button" onClick={(e) => { e.stopPropagation(); setShown(true); }} className="inline-flex items-center gap-1.5 rounded-md border border-line-strong bg-white px-2.5 py-1.5 text-xs font-bold text-navy-700 hover:bg-navy-50" data-testid={testId}>
+        <ImageIcon className="h-4 w-4" />
+        XEM ẢNH ({list.length})
+      </button>
+    );
+  }
+  return (
+    <div className="flex flex-wrap gap-1.5" data-testid={testId}>
+      {list.map((p, i) => (
+        <PhotoZoom key={p} src={p} alt={list.length > 1 ? `${alt} ${i + 1}` : alt} className={className} />
+      ))}
+    </div>
+  );
+};
+
+export const PhotoZoom: React.FC<{ src: string; alt: string; className: string }> = ({ src: path, alt, className }) => {
   const [lens, setLens] = React.useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [open, setOpen] = React.useState(false);
+  const src = usePhotoSrc(path);
+  if (!src) return <span className={`flex items-center justify-center rounded-md border border-line bg-canvas text-[10px] text-ink-muted ${className}`}>Đang tải ảnh…</span>;
   return (
     <>
       <button
@@ -836,7 +875,7 @@ export const PhotoZoom: React.FC<{ src: string; alt: string; className: string }
         aria-label={`${alt} — bấm để phóng to`}
         title="Rê chuột để soi kính lúp, bấm để xem toàn màn hình"
       >
-        <img src={src} alt={alt} className="h-full w-full rounded-md border border-line object-cover" />
+        <img src={src} alt={alt} loading="lazy" className="h-full w-full rounded-md border border-line object-cover" />
         <span className="absolute bottom-1 right-1 rounded bg-navy-900/70 p-1 text-white">
           <ZoomIn className="h-3.5 w-3.5" />
         </span>

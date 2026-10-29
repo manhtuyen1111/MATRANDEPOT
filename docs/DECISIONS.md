@@ -1535,9 +1535,10 @@ Quy ước trạng thái:
   - Mở app chỉ tải **chữ** của Tồn vỏ + việc đang chờ; chỉ lấy cột màn hình cần; tải theo vai trò (hiện trường chỉ hàng chờ của mình).
   - **Bỏ tải sẵn lịch sử 7 ngày.** Màn hiện trường **không cần** xem việc đã xong gần đây — cần thì tìm số cont ở Tồn vỏ / tra cứu → mở hồ sơ. (Tab Đã xong / Tất cả của màn tàu thuộc danh sách tàu đang mở — giữ.)
   - Hồ sơ container tải khi bấm mở.
-  - **Ảnh chỉ lưu đường dẫn**; mở app không xin link ảnh; mở hồ sơ mới xin link ảnh của cont đó, ảnh hiện dần khi cuộn tới.
+  - **Ảnh chỉ lưu đường dẫn**; mở app **và mở hồ sơ** đều không tải ảnh — chỉ hiện nút **XEM ẢNH (n)**, bấm mới xin link + tải ảnh (`PhotoGallery` trong `shared.tsx`, `src/services/remote/photoLink.ts` gom link 1 lượt / kho, nhớ 50 phút). **Không làm ảnh thu nhỏ**: mỗi ảnh vẫn 1 file < 200 KB (DEC-176).
+  - **Đã làm (2026-10-29):** ảnh theo yêu cầu ở Hồ sơ container (cửa Gate in + sửa chữa), chi tiết Văn phòng Hạ vỏ, chi tiết Giám định.
   - **Báo cáo tính ở database** (lọc, phân trang, tổng, Excel tải theo đợt) → **bỏ giới hạn 3 tháng** (thay DEC-157 phần giới hạn).
-- **Tìm số container (mọi ô tìm):** tìm theo **7 số seri** và tìm **chính xác**; hiển thị gợi ý gần đúng khi đang gõ (chi tiết gợi ý: chờ người dùng xác nhận).
+- **Tìm số container (mọi ô tìm):** tìm theo **7 số seri** và tìm **chính xác**; khi đang gõ hiện **gợi ý các cont có seri bắt đầu bằng các số đã gõ** (VD gõ `12345` → `MSKU1234567`, `TCLU1234501`).
 - Mục tiêu: mở app hiện trường < 2 giây / < 0,3 MB; Văn phòng < 4 giây / < 2 MB; báo cáo trang đầu < 2 giây; tìm số cont < 0,5 giây; mở hồ sơ < 1 giây.
 
 ### DEC-177 — Header 1 dòng: icon QUẢN TRỊ HỆ THỐNG gộp tài khoản; Góp ý cùng dòng tên màn
