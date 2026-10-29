@@ -309,6 +309,10 @@ export const setRepairGradeActive = wrap(ops.setRepairGradeActive, ([s, i]) => {
     await rpc(c, 'catalog_upsert_repair_grade', { p_name: g?.name || '', p_hourly_rate: g?.hourlyRate || 0, p_active: i.isActive, p_id: i.id });
   };
 });
+// DEC-175: vượt giờ sửa chữa
+export const updateRepairOvertime = wrap(ops.updateRepairOvertime, ([, i]) => async (c) => {
+  await rpc(c, 'catalog_update_repair_overtime', { p_threshold_hours: i.thresholdHours, p_hourly_rate: i.hourlyRate });
+});
 export const assignRepairStaff = wrap(ops.assignRepairStaff, ([, i]) => async (c) => {
   await rpc(c, 'catalog_assign_repair_staff', { p_staff_id: i.staffUserId, p_team_id: i.teamId, p_grade_id: i.gradeId });
 });
