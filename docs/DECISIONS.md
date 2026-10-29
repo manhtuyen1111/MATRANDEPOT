@@ -1527,6 +1527,18 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-175 — Báo cáo SẢN LƯỢNG SỬA CHỮA: VƯỢT GIỜ
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng). **Sửa DEC-174** phần Tổng tiền sản phẩm.
+- Thêm 3 cột (giữ đúng chữ người dùng gửi), đặt giữa **Nhân công bậc thợ (đ / giờ)** và **Tổng tiền sản phẩm (VND)**:
+  - **LƯƠNG SẢN PHẨM** = Tổng tiền sản phẩm cũ (tổng giờ chia × đơn giá bậc thợ đã chốt từng cont — DEC-174).
+  - **GIỜ VƯỢT GIỜ** = giờ công của nhân viên **trong khoảng đang lọc** trên mốc (ban đầu **200 giờ**) → phần vượt; đúng bằng mốc = 0.
+  - **SẢN PHẨM VƯỢT GIỜ** = đơn giá vượt giờ (ban đầu **3.000 đ / giờ**) × GIỜ VƯỢT GIỜ.
+  - **TỔNG TIỀN SẢN PHẨM (VND)** = LƯƠNG SẢN PHẨM + SẢN PHẨM VƯỢT GIỜ.
+- Người dùng chọn (trả lời câu hỏi): mốc tính **theo khoảng đang lọc** (không chia theo tháng); mốc + đơn giá **Admin sửa ở Danh mục chung → Sửa chữa → BẬC THỢ** (khối **Vượt giờ**), dùng giá trị hiện tại khi xem báo cáo (không chốt theo kỳ).
+- Tính theo từng dòng báo cáo (tổ + nhân viên). Nhân viên chưa có bậc thợ vẫn tính sản phẩm vượt giờ. Cửa sổ chi tiết + sheet Excel CHI TIẾT (từng cont) ghi **Lương sản phẩm**; vượt giờ chỉ ở bảng / sheet tổng hợp.
+- Code: `updateRepairOvertime` (`depotOperations.ts`), `queryRepairOutput` / `repairOutputSheets` (`reports.ts`). Database: migration `20261106000001_repair_overtime.sql` (bảng 1 dòng `repair_overtime_settings`, RPC `catalog_update_repair_overtime`); pgTAP `0010_repair_overtime.test.sql`.
+
 ### DEC-174 — Đơn giá bậc thợ CHỐT lúc sửa xong (đơn giá cũ tính theo giá cũ)
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). **Sửa DEC-173** phần Thành tiền.
@@ -1660,6 +1672,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-174 đã xác nhận (cập nhật 2026-10-28).
+- Quyết định nghiệp vụ: DEC-001 → DEC-175 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
