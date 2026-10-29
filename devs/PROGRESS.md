@@ -3,11 +3,11 @@
 > Agent cập nhật file này sau mỗi việc (skill `matran-docs-sync`). Bạn chỉ cần đọc mục A, B và F.
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
-Cập nhật lần cuối: 2026-10-29 tối (DEC-181 hồ sơ container dạng LỊCH SỬ HỒ SƠ; bàn giao cuối phiên — DEC-175 → DEC-191, nhánh `agent/claude/perf-large-data` **đã push, chờ PR**) — Claude Code
+Cập nhật lần cuối: 2026-10-29 khuya (bàn giao cuối phiên — DEC-181 → DEC-191: hồ sơ lịch sử, đổi container, Database, menu, nhân viên; nhánh `agent/claude/perf-large-data` **đã push, chờ PR**) — Claude Code
 Trạng thái chung (cập nhật 2026-10-27): **GĐ 4 Database ĐANG LÀM** trên nhánh **`agent/claude/p4-database`** (DEC-149 → DEC-153, đã push): Supabase Singapore; thiết kế `docs/DATABASE_SCHEMA.md` đã duyệt; **toàn bộ migration (5 bước + app_support + đồng bộ) + Edge Function xong, chạy thử trên Supabase local (Docker) — pgTAP 180/180, Edge Function 16/16**; **nối app với database N1 → N8 xong phần code** (docs/APP_DB_INTEGRATION.md): đăng nhập, ghi qua hàng chờ RPC, báo cáo theo khoảng lọc (DEC-157), dữ liệu làm việc 7 ngày + chỉ tải phần thay đổi + báo mất mạng (DEC-158), ảnh giữ 2 tháng (DEC-159), Nhập tàu không chụp ảnh (DEC-156) — chạy thật toàn luồng trên local pass; **tiếp theo: bạn thử tay toàn bộ trên database → reset → import tồn vỏ ban đầu (Q-044)**. Bản Demo trước database lưu ở tag `demo-truoc-database-2026-10-26` / nhánh `backup/demo-truoc-database`. — Trước đó: nhánh **`agent/claude/ui-design-v2`** (chứa toàn bộ `agent/claude/p4-prep-xlsx` + DEC-142 → **DEC-148**), **đã push đầy đủ lên GitHub 2026-10-26**, chưa merge vào `main`. Ngày 26/10 (tối): **giao diện mới v2** navy + Be Vietnam Pro, chuẩn ở `docs/DESIGN_SYSTEM.md` (145); bảng chi tiết tàu không gộp cột (146); **W-SURVEY (LÊN KỆ)** + giám định bổ sung trên kệ (147); **dữ liệu test** MSK / 10 khách / công ty MATRAN / biểu giá mới + danh sách lớn (148); hoàn tác đăng nhập Demo, quy tắc tài khoản để GĐ 4 (143, 144). Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110); **xuất hóa đơn từ phiếu thu**: mã bảo mật 12 ký tự, trang khách `#/hoa-don`, trạng thái CHƯA / YÊU CẦU / ĐÃ XHD, **thêm lại vai trò Kế toán**, người thu tiền luôn là nhân viên (111 → 114); **Đảo chuyển mobile 2 dòng**, bỏ ghi chú tác nghiệp (115, 116); **ô nhập mobile chữ 16px** (không tự phóng to vỡ khung — 116); **mọi mã có hồ sơ đều là link, cùng kiểu Mã hồ sơ** (117, 118). Ngày 26/10: **bỏ mã CT-** (số chứng từ = mã hồ sơ — 119); **Góp ý** (nút góc phải + Báo cáo → Góp ý chỉ Admin — 120, 123); phiếu thu trả trước **một mã PT-TTR-** (bỏ PTT- — 124), cột Mã hồ sơ chỉ tóm tắt (121, 122), **hóa đơn theo từng lượt, khách tự gộp** (130); **chọn vị trí từng bước** (125); báo cáo Hạ / Cấp vỏ có Thanh toán + Mã phiếu thu, bỏ ký hiệu (126, 127); Tồn vỏ Phân loại / AGE / Tiến độ, **mỗi cont 1 dòng**, Excel khớp màn hình (128, 129, 132); **Xuất tàu tự khóa + ghi chú, duyệt tàu khi chưa đủ** (131). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
-**Điểm dừng 2026-10-29 (tối):** nhánh **`agent/claude/perf-large-data`** (đã push — chứa DEC-175 → DEC-191, gồm cả `repair-photos` + `header-account-menu`; **1 PR duy nhất**). `matran-test` đã db push tới `20261109000001`; **còn `20261110000001`** (DEC-179, chỉ chỉ mục) **+ `20261111000001`, `20261112000001`** (DEC-185 / 186 đổi container) **+ `20261113000001`** (DEC-189 sức khỏe database) **+ `20261114000001`** (DEC-191 nhân viên). **Đọc mục I.5 → "▶ BÀN GIAO CUỐI PHIÊN 2026-10-29 (TỐI)" trước khi làm việc tiếp theo.**
-Kiểm thử mới nhất (2026-10-29 tối): `tsc` + `vite build` PASS • vitest **210 pass / 14 bỏ qua** (bỏ qua = test cần Supabase local / bật cờ thử tải) • Supabase local: pgTAP **252/252**, chạy thật **5/5**, thử tải 50.000 lượt (mục I.5) • chưa thử camera điện thoại thật, chưa thử giao diện mới trên trình duyệt.
+**Điểm dừng 2026-10-29 (khuya):** nhánh **`agent/claude/perf-large-data`** (đã push — chứa DEC-175 → DEC-191; **1 PR duy nhất**). `matran-test` đã db push tới `20261112000001`; **còn `20261113000001`** (DEC-189 sức khỏe database) **+ `20261114000001`** (DEC-191 nhân viên). **Đọc mục I.5 → "▶ BÀN GIAO CUỐI PHIÊN 2026-10-29 (KHUYA)" trước khi làm việc tiếp theo.**
+Kiểm thử mới nhất (2026-10-29 khuya): `tsc` + `vite build` PASS • vitest **230 pass / 14 bỏ qua** • pgTAP **304/304** (local). Trước đó (tối): vitest **210 pass / 14 bỏ qua** (bỏ qua = test cần Supabase local / bật cờ thử tải) • Supabase local: pgTAP **252/252**, chạy thật **5/5**, thử tải 50.000 lượt (mục I.5) • chưa thử camera điện thoại thật, chưa thử giao diện mới trên trình duyệt.
 Kiểm thử cũ (2026-10-27): `npm test` **163 pass, 3 bỏ qua** (test chạy thật cần Supabase local — chạy riêng: pass) • `npm run build` **PASS** • pgTAP 180/180, Edge Function 16/16 (local) • đo tốc độ 45.000 lượt: mở app 6,8 giây, đồng bộ ~2 KB • chưa thử tay trên trình duyệt ở chế độ database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
@@ -251,6 +251,74 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-24 — Claude Code: P7-25 (DEC-096) đồng bộ ô trạng thái Đảo chuyển.
 
 ### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-29 — đọc trước — mới nhất)
+
+**▶ BÀN GIAO CUỐI PHIÊN 2026-10-29 (KHUYA) — DEC-181 → DEC-191 — ĐỌC ĐẦU TIÊN (bổ sung khối "TỐI" bên dưới):**
+- **Code:** nhánh **`agent/claude/perf-large-data`** đã push (HEAD mới nhất trên GitHub) — chứa DEC-175 → **DEC-191**. Vẫn **1 PR duy nhất** → `main` (chưa merge; `main` vẫn ở PR #47).
+- **Database `matran-test`:** người dùng đã db push, báo "Remote database is up to date" sau DEC-188 → đã có tới **`20261112000001`** (đổi container). **Còn 2 file:**
+  - `20261113000001_db_health.sql` (DEC-189 sức khỏe database — **bản đã sửa** dùng `assert_db_admin`);
+  - `20261114000001_staff_profile.sql` (DEC-191 nhân viên + khôi phục `assert_admin` gốc).
+  - Nếu bạn đã lỡ push bản đầu của `20261113000001` thì `20261114000001` tự sửa lại — không cần làm gì thêm.
+- **Bạn làm theo thứ tự:**
+  1. `cd C:\Users\HP\Desktop\MATRAN-DEPOT` → `git pull` (đang ở nhánh `agent/claude/perf-large-data`).
+  2. `npx supabase db push --linked --dry-run` → thấy 2 file trên → `npx supabase db push --linked` → `npx supabase migration list --linked` (cột Remote đủ tới `20261114000001`).
+  3. GitHub tạo PR → Merge → chờ Vercel **Ready** → **Ctrl + F5**.
+- **Đã làm phiên này (chưa ai thử trên trình duyệt):**
+  - **Hồ sơ container** (DEC-181, 183, 184, 187, 188):
+    - đầu trang giữ thông tin container;
+    - bảng **LỊCH SỬ HỒ SƠ**: Thời gian | Bộ phận | Tác nghiệp | Nội dung (TẠO MỚI / SỬA / XÓA) | Chi tiết (nút mắt, ẩn mặc định; MỞ / ẨN TOÀN BỘ CHI TIẾT) | Nhân viên | Trạng thái (✓ xanh / đồng hồ cát);
+    - cũ trên – mới dưới; mỗi việc chờ 1 dòng ĐANG CHỜ;
+    - dựng từ dữ liệu tác nghiệp (`dossierHistory.ts`), không đọc nhật ký audit.
+  - **Ảnh cửa cont Giám định hiện luôn** (DEC-182) ở chi tiết Giám định / Văn phòng Hạ vỏ và khi mở chi tiết dòng Giám định trong hồ sơ.
+  - **ĐỔI CONTAINER** (DEC-185, 186):
+    - Văn phòng → Trả chứng từ cấp vỏ, khi cont đã OUT, chưa trả chứng từ;
+    - 2 lý do: kén vỏ / phát sinh hư hỏng; chọn cont thay thế cùng hãng / size / type;
+    - **giữ mã CV- + chứng từ + phiếu thu + QR K80**;
+    - Xe nâng phải **hạ cont cũ trước** (nhãn ĐỔI CONT ở Chờ hạ vỏ + Chờ cấp vỏ) rồi mới cấp cont mới;
+    - hư hỏng → DAMAGE + nhãn **PHÁT SINH CẤP VỎ** → Chờ báo giá.
+  - **Danh mục chung → Database** (DEC-189, chỉ Admin): dashboard sức khỏe database; cảnh báo vàng 70% / đỏ 85%; số đỏ trên menu (kiểm tra mỗi 15 phút); giới hạn dung lượng Admin nhập (mặc định gói Pro 8 GB / 100 GB).
+  - **Menu chỉ mở 1 bộ phận một lúc** (DEC-190).
+  - **User - Role dạng tab** (DEC-191): DANH SÁCH NHÂN VIÊN | VAI TRÒ & QUYỀN.
+    - Thông tin chi tiết: giới tính, CCCD 12 số, năm sinh, quê quán, phòng ban — **độc lập vai trò**.
+    - Chỉ Admin sửa; Admin + chính nhân viên xem.
+    - Icon khiên → **Thông tin chi tiết** (chỉ xem).
+- **Cần thử trên app thật:**
+  1. Hồ sơ container: mở cont có sửa chữa / đảo chuyển / cấp vỏ → cột Bộ phận / Tác nghiệp / Trạng thái, nút mắt, MỞ TOÀN BỘ CHI TIẾT, dòng ĐANG CHỜ, in A4 / PDF.
+  2. Đổi container đủ 2 lý do:
+     - cấp cont → Xe nâng OUT → Trả chứng từ → ĐỔI CONTAINER;
+     - Xe nâng cấp cont mới trước → **phải bị chặn**;
+     - hạ cont cũ → cấp cont mới → Trả chứng từ in đúng cont mới;
+     - lý do hư hỏng → cont cũ vào Chờ báo giá có nhãn PHÁT SINH CẤP VỎ.
+  3. Admin → Danh mục chung → Database:
+     - số liệu hợp lý;
+     - nếu `matran-test` là gói Free → sửa giới hạn 500 / 1024 MB → xem cảnh báo + số đỏ trên menu.
+  4. User - Role:
+     - thêm nhân viên chỉ nhập họ tên + vai trò;
+     - bấm dòng → nhập CCCD / năm sinh…;
+     - đăng nhập nhân viên đó → icon khiên → Thông tin chi tiết.
+  5. Menu: mở bộ phận khác → bộ phận trước tự thu gọn.
+- **Kiểm thử:** vitest **230 pass / 14 bỏ qua** • build PASS • pgTAP **304/304** (Supabase local, đã tắt + xóa dữ liệu).
+- **Việc tiếp theo đề xuất:**
+  1. Góp ý sau đợt thử trên.
+  2. Quy trình **nhân viên tự cập nhật + Admin xác minh** thông tin chi tiết (DEC-191 để sau).
+  3. Đổi container khác size / type, hoặc đổi khi lệnh **chưa cấp ra mà đã thu tiền** (Q-012 còn mở — cần quy trình chênh lệch / hoàn tiền OPEN-008).
+  4. Lịch sử hồ sơ đầy đủ SỬA / XÓA (sửa thông tin Văn phòng, sửa vị trí, mở khóa, hủy chứng từ) → cần đọc nhật ký audit + mở quyền đọc theo hồ sơ (migration).
+  5. Việc còn từ khối "TỐI": Phiếu thu phân trang ở database; mở app chỉ lấy cột cần; Q-044 import tồn vỏ.
+- **LƯU Ý NGHIỆP VỤ MỚI (agent):**
+  - Lịch sử hồ sơ chỉ dựng trong `dossierHistory` (thêm bước mới → thêm dòng + mục chờ + `task` ở đây; đổi container dùng `SWAP_TASK`).
+  - Đổi container:
+    - lệnh CV- **chuyển sang cont mới** (`masterDossierCode` đổi); lượt cũ tìm lệnh qua `swaps[].fromMasterDossierCode` (`resolveDossier`, `loadDossierState` + chỉ mục GIN);
+    - chặn cấp bằng `swapPlacementBlocker` (service + `execute_gate_out`).
+  - Database: số liệu chỉ từ RPC `db_health`, **không bao giờ** trả mật khẩu / khóa / chuỗi kết nối / câu truy vấn; ngưỡng ở `dbHealth.ts`.
+  - Nhân viên:
+    - CCCD … nằm trong bảng `staff` (RLS `staff_self_or_admin`) — **không** đưa vào `staff_directory`, **không** ghi CCCD vào nhật ký;
+    - phòng ban ≠ vai trò.
+- **LƯU Ý KỸ THUẬT (agent):**
+  - **Không ghi đè hàm dùng chung** (`assert_admin`, `assert_permission`…) trong migration mới — DEC-189 đã lỡ ghi đè `assert_admin` (sai câu báo cho mọi thao tác Admin), pgTAP không bắt vì chỉ so "%chỉ Admin%". Tạo hàm riêng; test câu báo đầy đủ.
+  - `alter type … add value` (enum `SWAP_RETURN`) chạy được trong migration; pgTAP cùng giao dịch có `now()` không đổi → đừng dựa `order by performed_at` để lấy "dòng mới nhất".
+  - App là con của RemoteApp → effect của App chạy **trước** khi RemoteApp đăng ký client → kiểm tra trễ (`setTimeout`) như cảnh báo Database.
+  - Smoke test menu đếm 10 biểu tượng mobile → nhóm thu gọn vẫn render (ẩn bằng `hidden`), đừng bỏ khỏi DOM.
+  - Heredoc dài trong Bash hay vỡ ("unexpected EOF") → viết script Python ra scratchpad rồi chạy.
+- **LƯU Ý LÀM VIỆC VỚI NGƯỜI DÙNG (bổ sung):** "cập nhật gihub" = push nhánh hiện tại (người dùng luôn đồng ý push sau mỗi việc nhưng vẫn hỏi trước theo AGENTS). Người dùng đưa yêu cầu dần từng lớp trên cùng một màn (hồ sơ: bảng → ẩn chi tiết → cột bộ phận → tác nghiệp → trạng thái) → giữ code dễ thêm cột. Có đánh đổi về dữ liệu / database thì hỏi bằng lựa chọn có đề xuất trước khi làm.
 
 **▶ BÀN GIAO CUỐI PHIÊN 2026-10-29 (TỐI) — ĐỌC ĐẦU TIÊN (thay khối "2026-10-29" bên dưới):**
 - **Code:** nhánh **`agent/claude/perf-large-data`** đã push (HEAD mới nhất trên GitHub). Chứa **toàn bộ** DEC-175 (vượt giờ), DEC-176 (ảnh sửa chữa), DEC-177 (header 1 dòng), DEC-178 (dữ liệu lớn), DEC-179 + DEC-180 (báo cáo theo bộ phận). Hai nhánh `agent/claude/repair-photos`, `agent/claude/header-account-menu` là phần con — **không tạo PR riêng**. `main` vẫn ở PR #47.
