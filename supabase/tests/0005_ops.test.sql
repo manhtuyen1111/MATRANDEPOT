@@ -28,7 +28,8 @@ select is(public.purge_request_log(), 1, 'Chỉ xóa bản ghi quá 7 ngày');
 insert into public.gate_in_orders (code, door_photo_path, photo_expires_at, condition_class, stuffing_class, cleaning_items, manufacture_year, field_by, field_by_name)
 values ('HV-OLD-001', '2024/10/HV-OLD-001.jpg', current_date - 1, 'AV', 'E', array['KHÔNG VỆ SINH'], 2019, '00000000-0000-0000-0000-0000000000a1', 'x'),
        ('HV-NEW-001', '2026/10/HV-NEW-001.jpg', current_date + 30, 'AV', 'E', array['KHÔNG VỆ SINH'], 2019, '00000000-0000-0000-0000-0000000000a1', 'x');
-select is((select array_agg(path) from public.expired_photo_paths()), array['2024/10/HV-OLD-001.jpg'], 'Chỉ liệt kê ảnh quá hạn');
+-- DEC-176 (thay DEC-159): ảnh không tự xóa → ảnh quá hạn cũ cũng không bị liệt kê để xóa
+select is((select array_agg(path) from public.expired_photo_paths()), null, 'Không liệt kê ảnh nào để tự xóa (DEC-176)');
 select is(public.mark_photos_purged(array['2024/10/HV-OLD-001.jpg']), 1, 'Đánh dấu đã xóa ảnh');
 select is((select door_photo_path from public.gate_in_orders where code = 'HV-OLD-001'), null, 'Hồ sơ vẫn giữ, chỉ bỏ đường dẫn ảnh');
 
