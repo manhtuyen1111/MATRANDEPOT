@@ -1527,6 +1527,17 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-186 — Đổi container: Chờ cấp vỏ nhãn ĐỔI CONT; phải hạ cont cũ trước khi cấp cont mới
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng). Bổ sung DEC-185 — trường hợp cont đã lên xe, phát sinh vấn đề phải đổi.
+- Xe nâng — **Chờ cấp vỏ**: cont cấp thay mang nhãn tác nghiệp **ĐỔI CONT** (như cont chờ hạ lại ở Chờ hạ vỏ).
+- **Bắt buộc Xe nâng xác nhận HẠ cont cần đổi** ở Chờ hạ vỏ trước. Chưa hạ thì **không cấp được** cont mới:
+  - thông báo "Phải HẠ container … (đổi cont) ở Xe nâng — Chờ hạ vỏ trước khi cấp …";
+  - danh sách ghi "CHỜ HẠ CONT CŨ TRƯỚC";
+  - khung quét hiện cảnh báo đỏ;
+  - hồ sơ ĐANG CHỜ ghi "Chờ xe nâng hạ … rồi cấp vỏ …".
+- Code: `swapPlacementBlocker` (`depotOperations.ts`, kiểm trong `executeGateOut`). Database: migration `20261112000001_gate_out_swap_placement.sql` (`execute_gate_out` thêm bước kiểm tra), pgTAP `0015` (27 kiểm tra).
+
 ### DEC-185 — ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi). Giải quyết một phần Q-012 (đổi cont sau khi đã thu phí, cùng hãng / size / type → không cần hoàn tiền).
@@ -1814,6 +1825,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-185 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-186 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
