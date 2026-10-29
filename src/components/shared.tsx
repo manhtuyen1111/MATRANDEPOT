@@ -135,6 +135,17 @@ export const LocationText: React.FC<{
   );
 };
 
+// Vị trí lưu dạng chữ BLOCK-… (lịch sử vị trí, hồ sơ) → icon định vị thay chữ "BLOCK-" (DEC-136)
+export const LocText: React.FC<{ text?: string }> = ({ text }) =>
+  text && /^BLOCK-/i.test(text) ? (
+    <span className="inline-flex items-center gap-0.5 whitespace-nowrap" title={text}>
+      <BlockIcon />
+      {text.replace(/^BLOCK-/i, '')}
+    </span>
+  ) : (
+    <>{text || '-'}</>
+  );
+
 export const CellText: React.FC<{ text?: string | null; max?: number; className?: string }> = ({ text, max = CELL_MAX.MEDIUM, className = '' }) => {
   const s = (text || '').trim();
   if (!s) return <>-</>;

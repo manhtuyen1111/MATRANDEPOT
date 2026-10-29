@@ -1828,3 +1828,62 @@ describe('DEC-179: báo cáo theo bộ phận', () => {
     expect(queryInspectionReport(s, all).total).toBe(0);
   });
 });
+
+// DEC-181: HỒ SƠ CONTAINER — LỊCH SỬ HỒ SƠ dựng từ dữ liệu tác nghiệp, cũ trên – mới dưới, việc chưa làm ở dòng ĐANG CHỜ
+import { dossierHistory, resolveDossier } from '../src/services/dossierHistory';
+
+describe('DEC-181: lịch sử hồ sơ container', () => {
+  const demo = createDemoState();
+  const historyOf = (s: DepotState, code: string) => dossierHistory(s, resolveDossier(s, code)!);
+
+  it('cont sửa chữa: đủ bước theo thứ tự thời gian (cũ trên, mới dưới), ảnh sửa chữa giữ đường dẫn', () => {
+    const wo = demo.workOrders.find((w) => w.category === 'REPAIR' && w.workStatus === 'COMPLETED' && w.repairPhotos?.length)!;
+    const { rows } = historyOf(demo, wo.masterDossierCode);
+    const ats = rows.map((r) => r.at);
+    expect([...ats].sort()).toEqual(ats);
+    const ops = rows.map((r) => r.operation);
+    for (const op of ['Giám định — Hạ vỏ', 'Văn phòng — Hạ vỏ', 'Báo giá — Xác nhận chờ sửa chữa', 'Sửa chữa']) expect(ops).toContain(op);
+    expect(ops.indexOf('Giám định — Hạ vỏ')).toBeLessThan(ops.indexOf('Sửa chữa'));
+    const repair = rows.find((r) => r.operation === 'Sửa chữa')!;
+    expect(repair.action).toBe('TẠO MỚI');
+    expect(repair.staff).toBe(wo.completedBy);
+    expect(repair.photos).toEqual(wo.repairPhotos);
+  });
+
+  it('đảo chuyển = SỬA (vị trí cũ → mới); hạ vỏ = TẠO MỚI', () => {
+    const shift = demo.locationHistory.find((l) => l.actionType === 'YARD_SHIFT')!;
+    const { rows } = historyOf(demo, shift.masterDossierCode);
+    const row = rows.find((r) => r.operation === 'Xe nâng — Đảo chuyển')!;
+    expect(row.action).toBe('SỬA');
+    expect(row.location).toEqual({ from: shift.fromLocation, to: shift.toLocation });
+    expect(rows.find((r) => r.operation === 'Xe nâng — Hạ vỏ')?.action).toBe('TẠO MỚI');
+  });
+
+  it('hủy lệnh cấp = XÓA, nằm sau dòng lập lệnh; mở bằng mã CV- vẫn ra hồ sơ lượt lưu bãi', () => {
+    const c = demo.containers.find((x) => x.status === 'ALLOCATED')!;
+    const order = demo.gateOutOrders.find((o) => o.masterDossierCode === c.masterDossierCode && o.status !== 'CANCELLED')!;
+    const s = releaseAllocatedContainer(as(demo, 'usr-office'), { containerNo: c.containerNo, reason: 'Khách đổi lịch' });
+    const d = resolveDossier(s, order.gateOutCode)!;
+    expect(d.visitCode).toBe(c.masterDossierCode);
+    const { rows, pending } = dossierHistory(s, d);
+    const ops = rows.map((r) => r.operation);
+    const cancel = rows.find((r) => r.operation === 'Văn phòng — Hủy lệnh cấp')!;
+    expect(cancel.action).toBe('XÓA');
+    expect(cancel.detail).toContain('Khách đổi lịch');
+    expect(ops.indexOf('Văn phòng — Cấp vỏ')).toBeLessThan(ops.indexOf('Văn phòng — Hủy lệnh cấp'));
+    expect(pending.some((p) => p.includes(order.gateOutCode))).toBe(false);
+  });
+
+  it('bước chưa làm vào ĐANG CHỜ, không thành dòng lịch sử; mã không tồn tại → không có hồ sơ', () => {
+    let s = recordGateInFieldStep(as(createInitialState(), 'usr-inspector'), {
+      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MAERSK', doorPhotoUrl: 'data:x', conditionClass: 'AV', stuffingClass: 'E',
+      cleaningItems: ['WW'], manufactureYear: 2019,
+    });
+    const code = s.gateInOrders[0].masterDossierCode;
+    const h = historyOf(s, code);
+    expect(h.rows.map((r) => r.operation)).toEqual(['Giám định — Hạ vỏ']);
+    expect(h.rows[0].photos).toEqual(['data:x']);
+    expect(h.pending).toEqual(['Chờ Văn phòng bổ sung thông tin hạ vỏ']);
+    expect(resolveDossier(s, 'HV-000000-999')).toBeNull();
+  });
+});

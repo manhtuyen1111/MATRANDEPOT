@@ -170,12 +170,15 @@ describe('DEC-051: hồ sơ container link về Phiếu thu', () => {
     const ptNo = s.paymentReceipts[0].receiptNo;
 
     const withLink = renderToString(<MasterDossierModal masterDossierCode={gi.masterDossierCode} state={s} onClose={noop} onOpenReceipt={noop} />);
-    // DEC-058: thứ tự bộ phận; thanh toán 1 mục riêng ngay dưới Văn phòng; xác nhận HOÀN THÀNH
-    const order = ['Giám định — Hạ vỏ', 'Văn phòng — Hạ vỏ', 'Thanh toán — Hạ vỏ', 'Xe nâng — Hạ vỏ', 'Văn phòng — Trả chứng từ Hạ vỏ'].map((x) => withLink.indexOf(x));
+    // DEC-181: LỊCH SỬ HỒ SƠ — bảng THỜI GIAN / TÁC NGHIỆP / NỘI DUNG / CHI TIẾT / NHÂN VIÊN, cũ trên mới dưới; việc chưa làm ở dòng ĐANG CHỜ
+    const plain = withLink.replace(/<!-- -->/g, '');
+    for (const col of ['Thời gian', 'Tác nghiệp', 'Nội dung', 'Chi tiết', 'Nhân viên']) expect(plain).toContain(col);
+    const order = ['Giám định — Hạ vỏ', 'Văn phòng — Hạ vỏ', 'Thanh toán — Hạ vỏ', 'Văn phòng — GATE IN OK', 'ĐANG CHỜ'].map((x) => plain.indexOf(x));
     expect(order.every((i) => i > 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
-    expect(withLink.match(/Thanh toán — Hạ vỏ/g)).toHaveLength(1);
-    expect(withLink).toContain('Hoàn thành');
+    expect(plain.match(/Thanh toán — Hạ vỏ/g)).toHaveLength(1);
+    expect(plain).toContain('TẠO MỚI');
+    expect(plain).toContain('Chờ xe nâng hạ vỏ');
     expect(withLink).toContain("font-mono text-navy-700 hover:underline");
     expect(withLink).toContain(`Phiếu thu ${ptNo}`);
     const noLink = renderToString(<MasterDossierModal masterDossierCode={gi.masterDossierCode} state={s} onClose={noop} />);
@@ -281,7 +284,7 @@ describe('DEC-069: màn Nhập tàu / Xuất tàu', () => {
     expect(xn).toContain('Bộ phận Xe nâng');
 
     const xtCode = both.vesselLists[0].items[0].dossierCode!;
-    expect(strip(renderToString(<MasterDossierModal masterDossierCode={xtCode} state={both} onClose={noop} />))).toContain('Tác nghiệp XUẤT TÀU');
+    expect(strip(renderToString(<MasterDossierModal masterDossierCode={xtCode} state={both} onClose={noop} />))).toContain('Văn phòng — Lập danh sách xuất tàu');
 
     const ntList = both.vesselLists.find((l) => l.mode === 'NHAP_TAU')!;
     const inspected = inspectVesselImportItem(as(both, 'usr-inspector'), {
@@ -290,10 +293,10 @@ describe('DEC-069: màn Nhập tàu / Xuất tàu', () => {
     });
     const ntCode = inspected.vesselLists.find((l) => l.id === ntList.id)!.items[0].dossierCode!;
     const ntHtml = strip(renderToString(<MasterDossierModal masterDossierCode={ntCode} state={inspected} onClose={noop} />));
-    expect(ntHtml).toContain('Tác nghiệp NHẬP TÀU');
+    expect(ntHtml).toContain('Văn phòng — Lập danh sách nhập tàu');
     expect(ntHtml).toContain('Giám định — Nhập tàu');
     expect(ntHtml).toContain('Vệ sinh');
-    expect(ntHtml).toContain('Văn phòng — Duyệt nhập tàu');
+    expect(ntHtml).toContain('Chờ duyệt nhập tàu');
   });
 });
 

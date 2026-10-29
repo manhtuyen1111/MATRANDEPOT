@@ -1527,6 +1527,21 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-181 — Hồ sơ container: LỊCH SỬ HỒ SƠ dạng bảng
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi). **Sửa DEC-058** phần thân hồ sơ (bỏ các khối bộ phận có ô ✓ HOÀN THÀNH bên phải; Thanh toán không còn là khối riêng mà là 1 dòng lịch sử).
+- **Đầu trang giữ nguyên** thông tin cơ bản container (DEC-058): số cont chữ lớn, mã HV- / NT- / CV- / XT-, trạng thái, khóa, size / type, hãng tàu, trạng thái • đóng hàng, AGE, vị trí, khách hàng / tàu, vệ sinh, gate in; ghi chú văn phòng.
+- Bên dưới là bảng **LỊCH SỬ HỒ SƠ**: **THỜI GIAN | TÁC NGHIỆP | NỘI DUNG | CHI TIẾT | NHÂN VIÊN**.
+  - NỘI DUNG: **TẠO MỚI / SỬA / XÓA**.
+  - Sắp **cũ trên, mới dưới**.
+- **Nguồn dữ liệu (người dùng chọn): dựng từ dữ liệu tác nghiệp**, không đọc nhật ký audit, không cần migration. Hàm `resolveDossier` / `dossierHistory` (`src/services/dossierHistory.ts`); giao diện chỉ hiển thị.
+  - TẠO MỚI: Giám định, Văn phòng, Thanh toán (có link phiếu thu), GATE IN OK, Vệ sinh, Xe nâng hạ vỏ / hạ kệ, Báo giá (cập nhật + xác nhận), Sửa chữa (ảnh XEM ẢNH — DEC-178), trả chứng từ, lập / duyệt danh sách tàu, cấp vỏ, xuất tàu.
+  - SỬA: giám định trên kệ (W-SURVEY → kết quả), đảo chuyển / cập nhật vị trí (vị trí cũ → mới), ghi chú văn phòng, khóa container.
+  - XÓA: hủy lệnh cấp, đóng báo giá / sửa chữa khi cấp vỏ DAMAGE.
+  - Giới hạn đã biết: chỉ ghi được những gì dữ liệu tác nghiệp có lưu thời gian. Văn phòng sửa thông tin hạ vỏ, sửa vị trí hành chính (CR-02), mở khóa và hủy chứng từ chưa lưu giờ / người → không có dòng. Ghi chú / khóa chỉ có lần gần nhất. Muốn đủ cần đọc nhật ký audit — phải thêm migration và mở quyền đọc (hiện chỉ Quản lý / Admin).
+- Việc chưa làm (chờ Văn phòng, chờ thanh toán / chuyển khoản, chờ vệ sinh, chờ xe nâng, chờ báo giá, chờ sửa chữa, chờ trả chứng từ, chờ duyệt tàu…) gom vào **1 dòng ĐANG CHỜ** nền vàng cuối bảng.
+- Bản in A4 HỒ SƠ CONTAINER (DEC-161) dùng cùng bảng; không cắt đôi dòng khi sang trang.
+
 ### DEC-180 — Menu Báo cáo chỉ có bộ phận; báo cáo con là tab trong trang bộ phận
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng). **Sửa DEC-179** phần menu.
@@ -1730,6 +1745,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-180 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-181 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

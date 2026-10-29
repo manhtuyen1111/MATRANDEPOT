@@ -25,7 +25,6 @@ import { quickRange, fileStamp } from '../../services/datetime';
 import { CONTAINER_SEARCH_HINT } from '../../services/containerSearch';
 import { usePagedReport } from '../../components/usePagedReport';
 import {
-  BlockIcon,
   CELL_MAX,
   CellText,
   DateRangeFilter,
@@ -34,6 +33,7 @@ import {
   inputCls,
   labelCls,
   linkCls,
+  LocText,
   Pager,
   PhotoGallery,
   primaryBtn,
@@ -50,17 +50,6 @@ interface Props {
   state: DepotState;
   onOpenDossier: (code: string) => void;
 }
-
-// Vị trí lưu dạng chữ BLOCK-… → icon định vị thay chữ "BLOCK-" (DEC-136)
-const LocText: React.FC<{ text?: string }> = ({ text }) =>
-  text && /^BLOCK-/i.test(text) ? (
-    <span className="inline-flex items-center gap-0.5 whitespace-nowrap" title={text}>
-      <BlockIcon />
-      {text.replace(/^BLOCK-/i, '')}
-    </span>
-  ) : (
-    <>{text || '-'}</>
-  );
 
 // Khung chung: bộ lọc + nút Tra cứu / Excel + bảng kết quả + phân trang
 const ReportFrame: React.FC<{
