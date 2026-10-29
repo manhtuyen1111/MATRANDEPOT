@@ -8,6 +8,7 @@ import { setReportLoader } from '../services/remote/reportSource';
 import { setPhotoClient } from '../services/remote/photoLink';
 import { setDossierLoader } from '../services/remote/dossierSource';
 import { setReportPager } from '../services/remote/reportPaging';
+import { setDbHealthClient } from '../services/remote/dbHealthSource';
 import type { DepotState } from '../services/depotStore';
 import { App } from './App';
 import { AppLoading, SavingIndicator, StatusPill } from '../components/LoadingScreens';
@@ -123,6 +124,7 @@ export const RemoteApp: React.FC = () => {
   // Ảnh: bấm XEM ẢNH mới xin link; hồ sơ container tải đủ khi bấm mở (DEC-178)
   useEffect(() => {
     setPhotoClient(client);
+    setDbHealthClient(client); // DEC-189: sức khỏe database (Admin)
     setDossierLoader((state, code) => loadDossierState(client, state, code));
     // Báo cáo Hạ vỏ / Cấp vỏ / Sửa chữa: database trả từng trang (DEC-178 bước 4b)
     setReportPager({
@@ -131,6 +133,7 @@ export const RemoteApp: React.FC = () => {
     });
     return () => {
       setPhotoClient(null);
+      setDbHealthClient(null);
       setDossierLoader(null);
       setReportPager(null);
     };

@@ -79,6 +79,7 @@ export type WorkspaceMenuId =
   | 'DM_PHAN_LOAI' // DEC-166: Phân loại đóng hàng
   | 'DM_CONG_TY'
   | 'DM_USER'
+  | 'DM_DATABASE' // DEC-189: sức khỏe database (chỉ Admin)
   | 'BC_HA_VO'
   | 'BC_SUA_CHUA'
   | 'BC_SC_SAN_LUONG' // DEC-179: Sửa chữa — Sản lượng (tách khỏi tab)

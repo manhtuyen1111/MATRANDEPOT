@@ -1999,3 +1999,60 @@ describe('DEC-185: đổi container khi chờ trả chứng từ cấp vỏ', ()
     expect(() => swapGateOutContainer(office, { gateOutOrderId: order.id, reason: 'X' as never, newContainerNo: fresh.containerNo })).toThrow(/lý do/);
   });
 });
+
+// DEC-189: Danh mục chung → Database — sức khỏe database (chỉ Admin); ngưỡng vàng 70% / đỏ 85%
+import { evaluateDbHealth, healthAlertCount, validateDbLimits, type DbHealthSnapshot } from '../src/services/dbHealth';
+
+describe('DEC-189: sức khỏe database', () => {
+  const MB = 1024 * 1024;
+  // Số liệu mẫu CHỈ dùng trong test (không đưa vào dữ liệu Demo)
+  const snap = (over: Partial<DbHealthSnapshot> = {}): DbHealthSnapshot => ({
+    checkedAt: '2026-10-29T03:00:00.000Z',
+    database: { sizeBytes: 100 * MB, version: '15.8', startedAt: '2026-10-01T00:00:00.000Z', cacheHitPct: 99.9, deadlocks: 0, xidAge: 1000, lastActivityAt: null },
+    connections: { total: 10, active: 2, idleInTx: 0, waitingLock: 0, slowQueries: 0, longestQuerySec: 0, max: 60 },
+    storage: [{ bucket: 'door-photos', files: 100, bytes: 20 * MB }],
+    tables: [{ name: 'containers', bytes: 5 * MB, rows: 50_000, deadRows: 100, vacuumedAt: null }],
+    cron: [{ name: 'matran-purge-request-log', schedule: '30 18 * * *', active: true, lastStatus: 'succeeded', lastStartAt: null, failed7d: 0 }],
+    partitions: [{ table: 'audit_logs', nextMonthReady: true, defaultRows: 0 }],
+    limits: { dbMb: 1000, storageMb: 1000, updatedBy: null, updatedAt: null },
+    ...over,
+  });
+  const level = (s: DbHealthSnapshot, key: string, latency?: number) => evaluateDbHealth(s, latency).find((c) => c.key === key)!.level;
+
+  it('bình thường → không cảnh báo', () => {
+    expect(healthAlertCount(evaluateDbHealth(snap(), 200))).toBe(0);
+  });
+
+  it('dung lượng / kết nối: vàng từ 70%, đỏ từ 85%', () => {
+    const db = (mb: number) => snap({ database: { ...snap().database, sizeBytes: mb * MB } });
+    expect(level(db(690), 'db-size')).toBe('ok');
+    expect(level(db(700), 'db-size')).toBe('warn');
+    expect(level(db(850), 'db-size')).toBe('danger');
+    expect(level(snap({ storage: [{ bucket: 'door-photos', files: 1, bytes: 900 * MB }] }), 'storage-size')).toBe('danger');
+    expect(level(snap({ connections: { ...snap().connections, total: 45 } }), 'connections')).toBe('warn');
+  });
+
+  it('tác vụ lỗi → đỏ; truy vấn chậm, partition chưa tạo, phản hồi chậm → cảnh báo', () => {
+    expect(level(snap({ cron: [{ ...snap().cron[0], lastStatus: 'failed', failed7d: 1 }] }), 'cron')).toBe('danger');
+    expect(level(snap({ connections: { ...snap().connections, slowQueries: 1, longestQuerySec: 90 } }), 'slow-queries')).toBe('warn');
+    expect(level(snap({ connections: { ...snap().connections, slowQueries: 1, longestQuerySec: 400 } }), 'slow-queries')).toBe('danger');
+    expect(level(snap({ partitions: [{ table: 'audit_logs', nextMonthReady: false, defaultRows: 0 }] }), 'partitions')).toBe('warn');
+    expect(level(snap(), 'latency', 1500)).toBe('warn');
+    expect(level(snap(), 'latency', 3500)).toBe('danger');
+    expect(level(snap({ tables: [{ name: 'containers', bytes: 1, rows: 40_000, deadRows: 20_000, vacuumedAt: null }] }), 'dead-rows')).toBe('warn');
+  });
+
+  it('chỉ Admin mở được menu Database; giới hạn dung lượng phải > 0', () => {
+    expect(canOpenMenu(as(createInitialState(), 'usr-admin').currentUser, 'DM_DATABASE')).toBe(true);
+    for (const id of ['usr-office', 'usr-inspector', 'usr-forklift', 'usr-acc']) {
+      expect(canOpenMenu(as(createInitialState(), id).currentUser, 'DM_DATABASE')).toBe(false);
+    }
+    expect(() => validateDbLimits(0, 100)).toThrow(/lớn hơn 0/);
+    expect(() => validateDbLimits(8192, 102400)).not.toThrow();
+  });
+
+  it('số liệu không chứa thông tin đăng nhập / khóa', () => {
+    const text = evaluateDbHealth(snap(), 100).map((c) => `${c.label} ${c.value} ${c.threshold} ${c.advice || ''}`).join(' ').toLowerCase();
+    for (const bad of ['password', 'mật khẩu', 'secret', 'api key', 'khóa bí mật', 'token']) expect(text).not.toContain(bad);
+  });
+});
