@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Eye, EyeOff, FileDown, FileText, Printer, ReceiptText, X } from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff, Hourglass, FileDown, FileText, Printer, ReceiptText, X } from 'lucide-react';
 import { ContainerStatus, K80InternalTicket, VesselList, VesselListItem } from '../types/depot';
 import { DepotState } from '../services/depotStore';
 import { formatLocation } from '../services/core';
@@ -76,6 +76,10 @@ const HistoryDetail: React.FC<{ row: DossierHistoryRow; onOpenReceipt?: (key: st
   </div>
 );
 
+// Cột TRẠNG THÁI (DEC-188): chỉ icon — tích xanh = hoàn thành, đồng hồ cát = đang chờ
+const DoneIcon: React.FC = () => <CheckCircle2 className="inline h-5 w-5 text-emerald-600" aria-label="Hoàn thành" data-testid="status-done" />;
+const WaitIcon: React.FC = () => <Hourglass className="inline h-5 w-5 animate-pulse text-amber-500" aria-label="Đang chờ" data-testid="status-wait" />;
+
 // Tác nghiệp ĐỔI CONT nổi bật (DEC-187)
 const TaskText: React.FC<{ task: string }> = ({ task }) =>
   task.startsWith(SWAP_TASK.SWAP) ? <span className="rounded bg-danger-fg px-1.5 py-0.5 text-[10px] font-bold text-white">{task}</span> : <>{task}</>;
@@ -118,6 +122,7 @@ export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (
               <th className="px-2.5 py-2">Nội dung</th>
               <th className="px-2.5 py-2 text-center">Chi tiết</th>
               <th className="px-2.5 py-2">Nhân viên</th>
+              <th className="px-2.5 py-2 text-center">Trạng thái</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -144,10 +149,11 @@ export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (
                     )}
                   </td>
                   <td className="px-2.5 py-2"><CellText text={r.staff} max={CELL_MAX.MEDIUM} /></td>
+                  <td className="px-2.5 py-2 text-center"><DoneIcon /></td>
                 </tr>
                 {isOpen(r.id) && (
                   <tr className="bg-canvas/60" data-testid="dossier-detail">
-                    <td colSpan={6} className="whitespace-normal px-2.5 py-2 pl-6">
+                    <td colSpan={7} className="whitespace-normal px-2.5 py-2 pl-6">
                       <HistoryDetail row={r} onOpenReceipt={onOpenReceipt} />
                     </td>
                   </tr>
@@ -155,20 +161,19 @@ export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (
               </React.Fragment>
             ))}
             {history.rows.length === 0 && (
-              <tr><td colSpan={6} className="px-2.5 py-3 text-center text-ink-muted">Chưa có tác nghiệp.</td></tr>
+              <tr><td colSpan={7} className="px-2.5 py-3 text-center text-ink-muted">Chưa có tác nghiệp.</td></tr>
             )}
-            {/* ĐANG CHỜ (DEC-184): mỗi việc chờ 1 dòng — icon đồng hồ, bộ phận phụ trách, nội dung chờ */}
+            {/* ĐANG CHỜ (DEC-184): mỗi việc chờ 1 dòng — bộ phận phụ trách, nội dung chờ; icon chờ ở cột Trạng thái (DEC-188) */}
             {history.pending.map((p, i) => (
               <tr key={`p${i}`} className="bg-amber-50/70" data-testid="dossier-pending">
-                <td className="px-2.5 py-2 text-amber-600">
-                  <Clock className="h-4 w-4 animate-pulse" aria-label="Đang chờ" />
-                </td>
+                <td className="px-2.5 py-2 text-amber-700">-</td>
                 <td className="px-2.5 py-2 font-semibold text-amber-900">{p.dept}</td>
                 <td className="px-2.5 py-2 text-amber-900"><TaskText task={p.task} /></td>
                 <td className="px-2.5 py-2">
                   <span className="rounded border border-amber-400 bg-white px-1.5 py-0.5 text-[10px] font-bold text-amber-700">ĐANG CHỜ</span>
                 </td>
                 <td colSpan={2} className="px-2.5 py-2 font-semibold text-amber-900">{p.label}</td>
+                <td className="px-2.5 py-2 text-center"><WaitIcon /></td>
               </tr>
             ))}
           </tbody>

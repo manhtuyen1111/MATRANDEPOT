@@ -183,6 +183,10 @@ describe('DEC-051: hồ sơ container link về Phiếu thu', () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(plain.split(cell('Văn phòng', 'Thanh toán Hạ vỏ'))).toHaveLength(2);
     expect(plain).toContain('>Tác nghiệp<');
+    // DEC-188: cột TRẠNG THÁI bên phải Nhân viên — tích xanh mỗi dòng đã làm, đồng hồ cát mỗi dòng chờ
+    expect(plain.indexOf('>Nhân viên<')).toBeLessThan(plain.indexOf('>Trạng thái<'));
+    expect(plain.match(/data-testid="status-done"/g)!.length).toBe(plain.match(/<tr><td class="px-2.5 py-2 font-mono">/g)!.length);
+    expect(plain.match(/data-testid="status-wait"/g)!.length).toBe(plain.match(/data-testid="dossier-pending"/g)!.length);
     expect(plain).toContain('TẠO MỚI');
     expect(plain).toContain('Chờ xe nâng hạ vỏ');
     // DEC-183: chi tiết luôn ẩn (nút mắt), mỗi tác nghiệp 1 dòng; có nút MỞ TOÀN BỘ CHI TIẾT
