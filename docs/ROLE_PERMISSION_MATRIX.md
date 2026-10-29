@@ -53,6 +53,7 @@ Nguồn duy nhất trong code: `src/services/permissions.ts` (`PERMISSIONS`, `ME
 | Báo cáo **Vệ sinh → Chi tiết** | CLEANING, OFFICE, MANAGER | DEC-179 |
 | Báo cáo **Xe nâng → Chi tiết** | FORKLIFT, OFFICE, MANAGER | DEC-179 |
 | Báo cáo **Sửa chữa → Chi tiết / Sản lượng sửa chữa** (gồm lương sản phẩm của cả bộ phận) | REPAIR_STAFF, OFFICE, MANAGER | DEC-179 |
+| Menu Báo cáo → mục bộ phận (`BC_BP_GIAM_DINH` / `VAN_PHONG` / `VE_SINH` / `XE_NANG` / `SUA_CHUA`); tab báo cáo con theo quyền từng báo cáo ở trên (Tổng hợp là tab của Văn phòng: OFFICE, MANAGER) | như báo cáo của bộ phận | DEC-180 |
 | Giả lập ngân hàng (chỉ Demo) | OFFICE, MANAGER | DEC-039 |
 | Cấu hình Danh mục chung (kể cả tổ sửa chữa, công ty, phân loại đóng hàng, hãng ưu tiên — menu `DM_PHAN_LOAI` xem: khối Văn phòng) | ADMIN | DEC-028, DEC-042, DEC-062, DEC-166 |
 | In / in lại phiếu thu (đếm số lần in) | OFFICE, MANAGER | DEC-063 |

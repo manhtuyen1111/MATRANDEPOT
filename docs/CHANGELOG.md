@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-180 (2026-10-29): menu **Báo cáo chỉ có bộ phận** (Giám định / Văn phòng / Vệ sinh / Xe nâng / Sửa chữa + Góp ý cho Admin); báo cáo con là tab trong trang bộ phận; Tổng hợp chuyển vào Văn phòng.
 - DEC-179 (2026-10-29): **Báo cáo tách theo bộ phận** — Giám định (Chi tiết — mới), Văn phòng (Hạ vỏ / Cấp vỏ / Xuất vỏ / Nhập vỏ), Vệ sinh (Chi tiết — mới), Xe nâng (Chi tiết — mới), Sửa chữa (Chi tiết / Sản lượng); bộ phận xem báo cáo của mình. **Migration mới `20261110000001_department_reports.sql`** (pgTAP 252/252 local).
 - DEC-178 bước 4b (2026-10-29): **báo cáo Hạ vỏ / Cấp vỏ / Sửa chữa phân trang ở database** — mỗi trang ~0,1 giây với mọi khoảng lọc, bỏ giới hạn 3 tháng (tối đa 1 năm / lần), Excel lấy theo đợt; Sản lượng sửa chữa chỉ tải phiếu sửa xong. **Migration mới `20261109000001_report_paging.sql`** (pgTAP 249/249 local). Sửa: báo cáo Sửa chữa / Sản lượng bản database thiếu phiếu của cont hạ trước khoảng lọc.
 - DEC-178 (2026-10-29): **tìm số container theo 7 số seri** ở mọi ô tìm — đủ 7 số là chính xác, đang gõ thì gợi ý cont có seri bắt đầu bằng các số đã gõ (`containerSearch.ts`).

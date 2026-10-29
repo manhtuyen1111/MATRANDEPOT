@@ -1786,6 +1786,12 @@ describe('DEC-179: báo cáo theo bộ phận', () => {
     }
     for (const r of ['OFFICE', 'MANAGER', 'ADMIN']) for (const m of ALL) expect(canOpenMenu(role(r), m), `${r} ${m}`).toBe(true);
     expect(canOpenMenu(role('INSPECTOR'), 'BC_TONG_HOP')).toBe(false);
+    // DEC-180: mục bộ phận trong menu
+    const DEPT: Record<string, string> = { INSPECTOR: 'BC_BP_GIAM_DINH', CLEANING: 'BC_BP_VE_SINH', FORKLIFT: 'BC_BP_XE_NANG', REPAIR_STAFF: 'BC_BP_SUA_CHUA' };
+    const DEPTS = ['BC_BP_GIAM_DINH', 'BC_BP_VAN_PHONG', 'BC_BP_VE_SINH', 'BC_BP_XE_NANG', 'BC_BP_SUA_CHUA'] as const;
+    for (const [r, d] of Object.entries(DEPT)) for (const m of DEPTS) expect(canOpenMenu(role(r), m), `${r} ${m}`).toBe(m === d);
+    for (const r of ['OFFICE', 'MANAGER', 'ADMIN']) for (const m of DEPTS) expect(canOpenMenu(role(r), m)).toBe(true);
+    expect(canOpenMenu(role('ACCOUNTANT'), 'BC_BP_VAN_PHONG')).toBe(false);
   });
 
   const all = { dateFrom: '01/01/2000 00:00:00', dateTo: '31/12/2000 23:59:59' };

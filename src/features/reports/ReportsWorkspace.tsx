@@ -16,7 +16,7 @@ import {
 
 } from '../../services/reports';
 import { queryRepairReport, RepairReportFilter, RepairReportRow, repairReportSheet } from '../../services/reports';
-import { can } from '../../services/permissions';
+import { can, canOpenMenu } from '../../services/permissions';
 import { quickRange, fileStamp } from '../../services/datetime';
 import { VesselReport } from './VesselReport';
 import { RepairOutputReport } from './RepairOutputReport';
@@ -91,6 +91,66 @@ const GATE_OUT_STATUS: Record<GateOutOrder['status'], string> = {
   CANCELLED: 'Đã hủy',
 };
 
+
+// ---------------------------------------------------------------------------
+// TRANG BÁO CÁO CỦA BỘ PHẬN (DEC-180): menu Báo cáo chỉ có bộ phận; báo cáo con là tab bên trong.
+// Tab chỉ hiện khi người dùng xem được báo cáo đó (MENU_ACCESS theo mã báo cáo — DEC-179).
+// ---------------------------------------------------------------------------
+export type ReportDept = 'BC_BP_GIAM_DINH' | 'BC_BP_VAN_PHONG' | 'BC_BP_VE_SINH' | 'BC_BP_XE_NANG' | 'BC_BP_SUA_CHUA';
+
+export const DEPT_REPORTS: Record<ReportDept, { title: string; tabs: { section: ReportSection; label: string }[] }> = {
+  BC_BP_GIAM_DINH: { title: 'Báo cáo Giám định', tabs: [{ section: 'BC_GD_CHI_TIET', label: 'CHI TIẾT' }] },
+  BC_BP_VAN_PHONG: {
+    title: 'Báo cáo Văn phòng',
+    tabs: [
+      { section: 'BC_HA_VO', label: 'HẠ VỎ' },
+      { section: 'BC_CAP_VO', label: 'CẤP VỎ' },
+      { section: 'BC_XUAT_TAU', label: 'XUẤT VỎ' }, // DEC-040: XUẤT VỎ = XUẤT TÀU
+      { section: 'BC_NHAP_TAU', label: 'NHẬP VỎ' },
+      { section: 'BC_TONG_HOP', label: 'TỔNG HỢP' },
+    ],
+  },
+  BC_BP_VE_SINH: { title: 'Báo cáo Vệ sinh', tabs: [{ section: 'BC_VS_CHI_TIET', label: 'CHI TIẾT' }] },
+  BC_BP_XE_NANG: { title: 'Báo cáo Xe nâng', tabs: [{ section: 'BC_XN_CHI_TIET', label: 'CHI TIẾT' }] },
+  BC_BP_SUA_CHUA: {
+    title: 'Báo cáo Sửa chữa',
+    tabs: [
+      { section: 'BC_SUA_CHUA', label: 'CHI TIẾT' },
+      { section: 'BC_SC_SAN_LUONG', label: 'SẢN LƯỢNG SỬA CHỮA' },
+    ],
+  },
+};
+
+export const DepartmentReportPage: React.FC<{
+  dept: ReportDept;
+  state: DepotState;
+  onOpenDossier: (code: string) => void;
+  onOpenReceipt?: (key: string) => void;
+}> = ({ dept, state, onOpenDossier, onOpenReceipt }) => {
+  const tabs = DEPT_REPORTS[dept].tabs.filter((t) => canOpenMenu(state.currentUser, t.section));
+  const [active, setActive] = useState<ReportSection | null>(tabs[0]?.section ?? null);
+  const current = tabs.find((t) => t.section === active) ? active : tabs[0]?.section;
+  if (!current) return <p className="p-8 text-center text-xs text-ink-muted">Bạn chưa được xem báo cáo của bộ phận này.</p>;
+  return (
+    <div className="space-y-4">
+      <div className="inline-flex flex-wrap overflow-hidden rounded-lg border border-line bg-white text-xs font-bold" role="tablist" aria-label={DEPT_REPORTS[dept].title}>
+        {tabs.map((t) => (
+          <button
+            key={t.section}
+            type="button"
+            role="tab"
+            aria-selected={current === t.section}
+            onClick={() => setActive(t.section)}
+            className={`px-4 py-2 ${current === t.section ? 'bg-navy-900 text-white' : 'text-ink-muted hover:bg-canvas'}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <ReportsWorkspace key={current} state={state} section={current} onOpenDossier={onOpenDossier} onOpenReceipt={onOpenReceipt} />
+    </div>
+  );
+};
 
 export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossier, onOpenReceipt }) => {
   // key theo section để reset bộ lọc khi đổi báo cáo

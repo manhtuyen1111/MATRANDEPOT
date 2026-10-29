@@ -1527,10 +1527,18 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-180 — Menu Báo cáo chỉ có bộ phận; báo cáo con là tab trong trang bộ phận
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng). **Sửa DEC-179** phần menu.
+- Menu **Báo cáo** chỉ còn 5 mục bộ phận: **Giám định, Văn phòng, Vệ sinh, Xe nâng, Sửa chữa** (+ **Góp ý** chỉ Admin thấy). Không hiện báo cáo con trên thanh menu.
+- Bấm bộ phận → trang báo cáo của bộ phận (`DepartmentReportPage` trong `ReportsWorkspace.tsx`), báo cáo con là **tab**:
+  - Giám định: CHI TIẾT · Văn phòng: HẠ VỎ, CẤP VỎ, XUẤT VỎ, NHẬP VỎ, **TỔNG HỢP** (chuyển từ menu vào Văn phòng) · Vệ sinh: CHI TIẾT · Xe nâng: CHI TIẾT · Sửa chữa: CHI TIẾT, SẢN LƯỢNG SỬA CHỮA.
+- Quyền: mục bộ phận `BC_BP_*` trong `MENU_ACCESS`; tab chỉ hiện khi xem được báo cáo đó (mã báo cáo DEC-179 — VD Tổng hợp chỉ Văn phòng / Quản lý).
+
 ### DEC-179 — Báo cáo tách theo bộ phận; bộ phận xem báo cáo của mình
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi).
-- Menu **Báo cáo** chia theo bộ phận (dòng tiêu đề nhỏ trong menu, `MenuItem.dept` ở `App.tsx`):
+- Menu **Báo cáo** chia theo bộ phận (**DEC-180:** menu chỉ còn bộ phận, báo cáo con thành tab trong trang bộ phận):
   - **Giám định** → Chi tiết (mới): mọi lượt giám định Hạ vỏ + Nhập tàu — Mã hồ sơ | Số cont | Size | Type | Hãng tàu | Tác nghiệp | Trạng thái | Ghi chú hư hỏng | Đóng hàng | AGE | Giám định | Thời gian | Ảnh (bấm XEM ẢNH). Lọc thời gian giám định, số cont, hãng tàu, tác nghiệp, trạng thái.
   - **Văn phòng** → Hạ vỏ, Cấp vỏ, **Xuất vỏ** (= Xuất tàu, DEC-040), **Nhập vỏ** (= Nhập tàu).
   - **Vệ sinh** → Chi tiết (mới): phiếu vệ sinh — Mã hồ sơ | Số cont | Size | Type | Hãng tàu | Tác nghiệp | Hạng mục vệ sinh | Trạng thái | Người làm | Hoàn tất lúc. Lọc thời gian (hoàn tất, chưa xong thì lúc tạo), số cont, hãng tàu, trạng thái.
@@ -1722,6 +1730,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-179 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-180 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
