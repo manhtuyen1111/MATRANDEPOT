@@ -493,7 +493,8 @@ export function createWorkingSync(client: SupabaseClient, me: StaffSession): Wor
 // migration 20261109000001); chỉ tải thêm chứng từ / giao dịch / phiếu thu / container / thợ của các dòng trên trang.
 // Dòng báo cáo vẫn dựng bằng hàm trong reports.ts (cùng kết quả với bản Demo).
 // ============================================================================
-export type ServerReportKind = 'HA_VO' | 'CAP_VO' | 'SUA_CHUA';
+// DEC-179: thêm báo cáo bộ phận Giám định / Vệ sinh / Xe nâng — CHI TIẾT
+export type ServerReportKind = 'HA_VO' | 'CAP_VO' | 'SUA_CHUA' | 'GIAM_DINH' | 'VE_SINH' | 'XE_NANG';
 export interface ServerReportFilter {
   from?: string; // ISO
   to?: string;
@@ -502,7 +503,20 @@ export interface ServerReportFilter {
   size?: string;
   teamCode?: string;
   status?: string;
+  operation?: string; // Giám định: CUSTOMER_RETURN / VESSEL_IMPORT
+  condition?: string; // Giám định: AV / DAMAGE / W-SURVEY
+  action?: string; // Xe nâng: loại tác nghiệp (location_action)
 }
+
+// Bảng + cột thời gian của từng báo cáo (giống reports.ts)
+const REPORT_SOURCE: Record<ServerReportKind, { table: string; at: string }> = {
+  HA_VO: { table: 'gate_in_orders', at: 'report_at' },
+  CAP_VO: { table: 'gate_out_orders', at: 'report_at' },
+  SUA_CHUA: { table: 'work_orders', at: 'report_at' },
+  GIAM_DINH: { table: 'gate_in_orders', at: 'field_at' },
+  VE_SINH: { table: 'work_orders', at: 'report_at' },
+  XE_NANG: { table: 'location_history', at: 'performed_at' },
+};
 
 const emptyRaw = (): RawData => ({
   containers: [], gateIns: [], gateOuts: [], bookings: [], prepaids: [], vouchers: [], txs: [], receipts: [], deductions: [], prints: [],
@@ -510,41 +524,49 @@ const emptyRaw = (): RawData => ({
 });
 
 function reportQuery(client: SupabaseClient, kind: ServerReportKind, f: ServerReportFilter, withCount: boolean) {
-  const table = kind === 'HA_VO' ? 'gate_in_orders' : kind === 'CAP_VO' ? 'gate_out_orders' : 'work_orders';
-  // Hãng tàu / size của Cấp vỏ, Sửa chữa nằm ở container → lọc qua bảng container
-  const viaCont = kind !== 'HA_VO' && Boolean(f.shippingLineCode || (kind === 'CAP_VO' && f.size));
+  const { table, at } = REPORT_SOURCE[kind];
+  const gateIn = kind === 'HA_VO' || kind === 'GIAM_DINH';
+  // Hãng tàu / size của Cấp vỏ, Sửa chữa, Vệ sinh nằm ở container → lọc qua bảng container (lịch sử vị trí không lọc hãng)
+  const viaCont = !gateIn && kind !== 'XE_NANG' && Boolean(f.shippingLineCode || (kind === 'CAP_VO' && f.size));
   let q: any = client.from(table).select(viaCont ? '*, c:containers!container_id!inner(id)' : '*', withCount ? { count: 'exact' } : undefined);
   if (kind === 'HA_VO') q = q.eq('gate_in_type', 'CUSTOMER_RETURN');
   if (kind === 'CAP_VO') q = q.eq('gate_out_type', 'EMPTY_RELEASE');
   if (kind === 'SUA_CHUA') q = q.eq('category', 'REPAIR');
-  if (f.from) q = q.gte('report_at', f.from);
-  if (f.to) q = q.lte('report_at', f.to);
+  if (kind === 'VE_SINH') q = q.eq('category', 'CLEANING');
+  if (f.from) q = q.gte(at, f.from);
+  if (f.to) q = q.lte(at, f.to);
   const no = normalizeContainerQuery(f.containerNo);
-  if (no) q = /^\d+$/.test(no) ? q.like('container_serial', `${no}%`) : q.like('container_no', `${no}%`);
-  if (kind === 'HA_VO') {
+  // Lịch sử vị trí không có cột 7 số seri → bỏ qua 4 chữ hãng bằng '____'
+  if (no && kind === 'XE_NANG') q = q.like('container_no', /^\d+$/.test(no) ? `____${no}%` : `${no}%`);
+  else if (no) q = /^\d+$/.test(no) ? q.like('container_serial', `${no}%`) : q.like('container_no', `${no}%`);
+  if (kind === 'GIAM_DINH') {
+    if (f.operation) q = q.eq('gate_in_type', f.operation);
+    if (f.condition) q = q.eq('condition_class', f.condition);
+  }
+  if (kind === 'XE_NANG' && f.action) q = q.eq('action', f.action);
+  if (gateIn) {
     if (f.shippingLineCode) q = q.eq('shipping_line_code', f.shippingLineCode);
     if (f.size) q = q.eq('size', f.size);
-  } else {
+  } else if (viaCont) {
     if (f.shippingLineCode) q = q.eq('c.shipping_line_code', f.shippingLineCode);
     if (kind === 'CAP_VO' && f.size) q = q.eq('c.size', f.size);
   }
-  if (kind === 'SUA_CHUA') {
-    if (f.teamCode) q = q.eq('repair_team_code', f.teamCode);
-    if (f.status && f.status !== 'ALL') q = q.eq('work_status', f.status);
-  }
-  return q.order('report_at', { ascending: false }).order('id');
+  if (kind === 'SUA_CHUA' && f.teamCode) q = q.eq('repair_team_code', f.teamCode);
+  if ((kind === 'SUA_CHUA' || kind === 'VE_SINH') && f.status && f.status !== 'ALL') q = q.eq('work_status', f.status);
+  return q.order(at, { ascending: false }).order('id');
 }
 
 // Hồ sơ đi kèm các dòng báo cáo: container, chứng từ → giao dịch → phiếu thu (vai trò xem thu tiền), thợ sửa chữa
 async function reportRelated(client: SupabaseClient, kind: ServerReportKind, rows: Row[], payments: boolean): Promise<RawData> {
   const raw = emptyRaw();
-  if (kind === 'HA_VO') raw.gateIns = rows;
+  if (kind === 'HA_VO' || kind === 'GIAM_DINH') raw.gateIns = rows;
   if (kind === 'CAP_VO') raw.gateOuts = rows;
-  if (kind === 'SUA_CHUA') raw.works = rows;
+  if (kind === 'SUA_CHUA' || kind === 'VE_SINH') raw.works = rows;
+  if (kind === 'XE_NANG') raw.history = rows;
   const [containers, members, vouchers] = await Promise.all([
-    kind === 'HA_VO' ? NONE : byIds(client, 'containers', 'id', rows.map((r) => r.container_id)),
+    kind === 'HA_VO' || kind === 'GIAM_DINH' ? NONE : byIds(client, 'containers', 'id', rows.map((r) => r.container_id)),
     kind === 'SUA_CHUA' ? byIds(client, 'work_order_members', 'work_order_id', rows.map((r) => r.id), 'work_order_id, member_name, grade_name, hourly_rate') : NONE,
-    kind === 'SUA_CHUA' ? NONE : byIds(client, 'vouchers', 'id', rows.map((r) => r.voucher_id)),
+    kind === 'HA_VO' || kind === 'CAP_VO' ? byIds(client, 'vouchers', 'id', rows.map((r) => r.voucher_id)) : NONE,
   ]);
   Object.assign(raw, { containers, members, vouchers });
   if (payments && vouchers.length) {

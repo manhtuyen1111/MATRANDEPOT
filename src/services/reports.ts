@@ -3,6 +3,7 @@ import {
   GateInOrder,
   GateOutOrder,
   GateOutType,
+  LocationHistoryItem,
   PaymentTransaction,
   PaymentReceipt,
   PaymentTransactionStatus,
@@ -746,6 +747,129 @@ export function feedbackSheet(rows: FeedbackItem[]): SheetData {
     columns: ['MÃ GÓP Ý', 'THỜI GIAN', 'NGƯỜI GÓP Ý', 'MENU / TÍNH NĂNG', 'NỘI DUNG', 'TRẠNG THÁI', 'PHẢN HỒI', 'PHẢN HỒI LÚC', 'NGƯỜI PHẢN HỒI'],
     rows: rows.map((f) => [
       f.code, fmt(f.createdAt), f.createdBy, f.menuLabel, f.content, FEEDBACK_STATUS_LABELS[f.status], f.response || '', fmt(f.respondedAt), f.respondedBy || '',
+    ]),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// BÁO CÁO THEO BỘ PHẬN (DEC-179): GIÁM ĐỊNH / VỆ SINH / XE NÂNG — CHI TIẾT
+// ---------------------------------------------------------------------------
+export const INSPECTION_OPERATION_LABELS: Record<GateInOrder['gateInType'], string> = { CUSTOMER_RETURN: 'Hạ vỏ', VESSEL_IMPORT: 'Nhập tàu' };
+// Tác nghiệp của lượt lưu bãi theo mã hồ sơ (NT- = Nhập tàu, còn lại Hạ vỏ)
+export const visitOperationLabel = (dossierCode: string) => (dossierCode.startsWith('NT-') ? 'Nhập tàu' : 'Hạ vỏ');
+
+export interface InspectionReportFilter extends DateRange {
+  containerNo?: string;
+  shippingLineCode?: string;
+  operation?: GateInOrder['gateInType'] | '';
+  condition?: string; // AV / DAMAGE / W-SURVEY
+}
+
+// GIÁM ĐỊNH — CHI TIẾT: mọi lượt giám định (Hạ vỏ + Nhập tàu), theo thời gian giám định
+export function queryInspectionReport(state: DepotState, filter: InspectionReportFilter, page = 1, pageSize = REPORT_PAGE_SIZE): PagedResult<GateInOrder> {
+  const range = requireFilter(filter);
+  const rows = state.gateInOrders
+    .filter((o) => matchContainerNo(o.containerNo, filter.containerNo))
+    .filter((o) => inRange(o.fieldRecordedAt, range))
+    .filter((o) => !filter.shippingLineCode || o.shippingLineCode === filter.shippingLineCode)
+    .filter((o) => !filter.operation || o.gateInType === filter.operation)
+    .filter((o) => !filter.condition || o.conditionClass === filter.condition)
+    .sort((a, b) => b.fieldRecordedAt.localeCompare(a.fieldRecordedAt));
+  return paginate(rows, page, pageSize);
+}
+
+export function inspectionSheet(rows: GateInOrder[]): SheetData {
+  return {
+    name: 'GIÁM ĐỊNH',
+    columns: [
+      'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', // DEC-139
+      'TÁC NGHIỆP', 'TRẠNG THÁI', 'GHI CHÚ HƯ HỎNG', 'PHÂN LOẠI ĐÓNG HÀNG', 'AGE', 'TÌNH TRẠNG VỆ SINH', 'GIÁM ĐỊNH', 'THỜI GIAN GIÁM ĐỊNH',
+    ],
+    rows: rows.map((o) => [
+      o.masterDossierCode, o.containerNo || '', o.size || '', o.type || '', o.shippingLineCode || '',
+      INSPECTION_OPERATION_LABELS[o.gateInType], o.conditionClass, o.damageRemarks.join('; '), o.stuffingClass || '', o.manufactureYear || '',
+      o.cleaningItems.join(' + '), o.fieldStaffName, fmt(o.fieldRecordedAt),
+    ]),
+  };
+}
+
+export interface CleaningReportFilter extends DateRange {
+  containerNo?: string;
+  shippingLineCode?: string;
+  status?: ServiceWorkOrder['workStatus'] | 'ALL';
+}
+export interface CleaningReportRow {
+  workOrder: ServiceWorkOrder;
+  container?: ContainerRecord;
+}
+export const CLEANING_STATUS_LABELS: Record<string, string> = { OPEN: 'Chờ vệ sinh', IN_PROGRESS: 'Đang vệ sinh', COMPLETED: 'Đã vệ sinh', CANCELLED: 'Đã hủy', REWORK_REQUIRED: 'Làm lại' };
+
+// VỆ SINH — CHI TIẾT: phiếu vệ sinh, theo thời điểm hoàn tất (chưa xong thì lúc tạo)
+export function queryCleaningReport(state: DepotState, filter: CleaningReportFilter, page = 1, pageSize = REPORT_PAGE_SIZE): PagedResult<CleaningReportRow> {
+  const range = requireFilter(filter);
+  const contByDossier = new Map(state.containers.map((c) => [c.masterDossierCode, c]));
+  const rows = state.workOrders
+    .filter((w) => w.category === 'CLEANING')
+    .map((workOrder) => ({ workOrder, container: contByDossier.get(workOrder.masterDossierCode) }))
+    .filter(({ workOrder: w }) => matchContainerNo(w.containerNo, filter.containerNo))
+    .filter(({ workOrder: w }) => inRange(w.completedAt || w.createdAt, range))
+    .filter(({ container }) => !filter.shippingLineCode || container?.shippingLineCode === filter.shippingLineCode)
+    .filter(({ workOrder: w }) => !filter.status || filter.status === 'ALL' || w.workStatus === filter.status)
+    .sort((a, b) => (b.workOrder.completedAt || b.workOrder.createdAt).localeCompare(a.workOrder.completedAt || a.workOrder.createdAt));
+  return paginate(rows, page, pageSize);
+}
+
+export function cleaningSheet(rows: CleaningReportRow[]): SheetData {
+  return {
+    name: 'VỆ SINH',
+    columns: ['MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'TÁC NGHIỆP', 'HẠNG MỤC VỆ SINH', 'TRẠNG THÁI', 'NGƯỜI LÀM', 'HOÀN TẤT LÚC'],
+    rows: rows.map(({ workOrder: w, container: c }) => [
+      w.masterDossierCode, w.containerNo, c?.size || '', c?.type || '', c?.shippingLineCode || '',
+      visitOperationLabel(w.masterDossierCode), w.items.join(' + '), CLEANING_STATUS_LABELS[w.workStatus] || w.workStatus, w.completedBy || '', fmt(w.completedAt),
+    ]),
+  };
+}
+
+export interface ForkliftReportFilter extends DateRange {
+  containerNo?: string;
+  action?: LocationHistoryItem['actionType'] | '';
+}
+export interface ForkliftReportRow {
+  item: LocationHistoryItem;
+  container?: ContainerRecord;
+}
+export const LOCATION_ACTION_LABELS: Record<LocationHistoryItem['actionType'], string> = {
+  INITIAL_BLOCK: 'Hạ bãi',
+  DETAIL_SLOT_UPDATE: 'Cập nhật vị trí',
+  YARD_MOVE: 'Di chuyển',
+  YARD_SHIFT: 'Đảo chuyển',
+  SHIFT_REPAIR: 'Chuyển sửa chữa',
+  SHIFT_INSPECTION_RACK: 'Hạ kệ giám định',
+  GATE_OUT_CLEAR: 'Lấy ra (cấp vỏ / xuất tàu)',
+};
+// Loại tác nghiệp có trong database (bộ lọc Xe nâng)
+export const FORKLIFT_ACTIONS: LocationHistoryItem['actionType'][] = ['INITIAL_BLOCK', 'YARD_SHIFT', 'GATE_OUT_CLEAR', 'DETAIL_SLOT_UPDATE'];
+
+// XE NÂNG — CHI TIẾT: lịch sử vị trí (hạ bãi / đảo chuyển / lấy ra / cập nhật ô), theo thời gian thực hiện
+export function queryForkliftReport(state: DepotState, filter: ForkliftReportFilter, page = 1, pageSize = REPORT_PAGE_SIZE): PagedResult<ForkliftReportRow> {
+  const range = requireFilter(filter);
+  const contByDossier = new Map(state.containers.map((c) => [c.masterDossierCode, c]));
+  const rows = state.locationHistory
+    .filter((h) => matchContainerNo(h.containerNo, filter.containerNo))
+    .filter((h) => inRange(h.performedAt, range))
+    .filter((h) => !filter.action || h.actionType === filter.action)
+    .map((item) => ({ item, container: contByDossier.get(item.masterDossierCode) }))
+    .sort((a, b) => b.item.performedAt.localeCompare(a.item.performedAt));
+  return paginate(rows, page, pageSize);
+}
+
+export function forkliftSheet(rows: ForkliftReportRow[]): SheetData {
+  return {
+    name: 'XE NÂNG',
+    columns: ['MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'LOẠI', 'VỊ TRÍ CŨ', 'VỊ TRÍ MỚI', 'NGƯỜI LÁI', 'THỜI GIAN', 'GHI CHÚ'],
+    rows: rows.map(({ item: h, container: c }) => [
+      h.masterDossierCode, h.containerNo, c?.size || '', c?.type || '', c?.shippingLineCode || '',
+      LOCATION_ACTION_LABELS[h.actionType] || h.actionType, h.fromLocation, h.toLocation, h.performedBy, fmt(h.performedAt), h.reason || '',
     ]),
   };
 }

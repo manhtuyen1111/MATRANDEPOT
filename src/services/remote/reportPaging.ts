@@ -1,5 +1,5 @@
 // ============================================================================
-// BÁO CÁO PHÂN TRANG Ở DATABASE (DEC-178 bước 4b) — Hạ vỏ, Cấp vỏ, Sửa chữa (chi tiết).
+// BÁO CÁO PHÂN TRANG Ở DATABASE (DEC-178 bước 4b) — Hạ vỏ, Cấp vỏ, Sửa chữa; DEC-179: Giám định / Vệ sinh / Xe nâng (chi tiết).
 // Demo: báo cáo chạy trên state sẵn có (không đăng ký pager).
 // Database: mỗi lần đổi bộ lọc / trang → database trả 1 trang + tổng số dòng (loadReportPage); Excel lấy toàn bộ theo đợt.
 // Không còn giới hạn 3 tháng — mỗi lần tối đa MAX_RANGE_DAYS (1 năm) như bản Demo.
@@ -32,6 +32,9 @@ export interface ScreenReportFilter {
   size?: string;
   teamCode?: string;
   status?: string;
+  operation?: string; // DEC-179
+  condition?: string;
+  action?: string;
 }
 
 export function toServerFilter(f: ScreenReportFilter): ServerReportFilter {
@@ -48,6 +51,7 @@ export function toServerFilter(f: ScreenReportFilter): ServerReportFilter {
   return {
     from: from?.toISOString(), to: to?.toISOString(), containerNo: f.containerNo?.trim() || undefined,
     shippingLineCode: f.shippingLineCode || undefined, size: f.size || undefined, teamCode: f.teamCode || undefined, status: f.status || undefined,
+    operation: f.operation || undefined, condition: f.condition || undefined, action: f.action || undefined,
   };
 }
 

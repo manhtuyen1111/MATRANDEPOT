@@ -122,6 +122,10 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
       <UserRoleCatalog state={base} onUpdateState={noop} />,
       <ReportsWorkspace state={base} section="BC_HA_VO" onOpenDossier={noop} />,
       <ReportsWorkspace state={base} section="BC_SUA_CHUA" onOpenDossier={noop} />,
+      <ReportsWorkspace state={base} section="BC_SC_SAN_LUONG" onOpenDossier={noop} />,
+      <ReportsWorkspace state={base} section="BC_GD_CHI_TIET" onOpenDossier={noop} />,
+      <ReportsWorkspace state={base} section="BC_VS_CHI_TIET" onOpenDossier={noop} />,
+      <ReportsWorkspace state={base} section="BC_XN_CHI_TIET" onOpenDossier={noop} />,
       <MasterDossierModal masterDossierCode="HV-261019-001" state={base} onClose={noop} />,
       <MasterDossierModal masterDossierCode="CV-261018-001" state={base} onClose={noop} />,
       ...(['VS_CHO_VE_SINH', 'XN_CHO_HA_VO', 'XN_CHO_CAP_VO', 'BG_CHO_BAO_GIA', 'SC_CHO_SUA_CHUA'] as FieldQueueMode[]).map((m) => (
@@ -1081,5 +1085,23 @@ describe('DEC-166: màn Danh mục → Phân loại đóng hàng', () => {
     const office = renderToString(<StuffingClassCatalog state={as(s, 'usr-office')} onUpdateState={noop} />);
     expect(office).not.toContain('Thêm phân loại đóng hàng');
     expect(office).not.toContain('Ngừng dùng</button>');
+  });
+});
+
+describe('DEC-179: menu Báo cáo theo bộ phận', () => {
+  it('Admin thấy tiêu đề bộ phận + đủ mục; Sửa chữa chỉ thấy báo cáo Sửa chữa; màn mới có bộ lọc + Tra cứu', async () => {
+    const { App } = await import('../src/app/App');
+    const demo = createDemoState();
+    const admin = renderToString(<App initialState={as(demo, 'usr-admin')} />).replace(/<!-- -->/g, '');
+    for (const t of ['Giám định', 'Văn phòng', 'Vệ sinh', 'Xe nâng', 'Sửa chữa', 'Xuất vỏ', 'Nhập vỏ', 'Sản lượng sửa chữa', 'Tổng hợp']) expect(admin).toContain(t);
+    const repair = renderToString(<App initialState={as(demo, 'usr-repair')} />).replace(/<!-- -->/g, '');
+    expect(repair).toContain('Sản lượng sửa chữa');
+    expect(repair).not.toContain('Xuất vỏ');
+    for (const [section, title] of [['BC_GD_CHI_TIET', 'Báo cáo Giám định — Chi tiết'], ['BC_VS_CHI_TIET', 'Báo cáo Vệ sinh — Chi tiết'], ['BC_XN_CHI_TIET', 'Báo cáo Xe nâng — Chi tiết']] as const) {
+      const html = renderToString(<ReportsWorkspace state={demo} section={section} onOpenDossier={noop} />).replace(/<!-- -->/g, '');
+      expect(html).toContain(title);
+      expect(html).toContain('Tra cứu');
+      expect(html).toContain('aria-label="Lọc nhanh thời gian"');
+    }
   });
 });

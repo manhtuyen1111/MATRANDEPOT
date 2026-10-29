@@ -535,7 +535,8 @@ describe('DEC-045 USER - PHÂN QUYỀN & Báo cáo Hạ vỏ', () => {
     expect(canOpenMenu(u('usr-cleaning'), 'DM_BIEU_GIA')).toBe(false);
     expect(canOpenMenu(u('usr-repair'), 'SC_CHO_SUA_CHUA')).toBe(true);
     expect(canOpenMenu(u('usr-repair'), 'BG_CHO_BAO_GIA')).toBe(false);
-    expect(canOpenMenu(u('usr-repair'), 'BC_SUA_CHUA')).toBe(false);
+    expect(canOpenMenu(u('usr-repair'), 'BC_SUA_CHUA')).toBe(true); // DEC-179: bộ phận xem báo cáo của mình
+    expect(canOpenMenu(u('usr-repair'), 'BC_HA_VO')).toBe(false);
     expect(canOpenMenu(u('usr-office'), 'DM_USER')).toBe(false);
     expect(canOpenMenu(u('usr-admin'), 'DM_USER')).toBe(true);
   });
@@ -1760,5 +1761,64 @@ describe('DEC-178 bước 4b: báo cáo phân trang ở database', () => {
     } finally {
       setReportPager(null);
     }
+  });
+});
+
+// DEC-179: báo cáo theo bộ phận — bộ phận nào xem báo cáo của bộ phận đó; Văn phòng / Quản lý / Admin xem tất cả
+import { queryCleaningReport, queryForkliftReport, queryInspectionReport, cleaningSheet, forkliftSheet, inspectionSheet } from '../src/services/reports';
+
+describe('DEC-179: báo cáo theo bộ phận', () => {
+  const s = createDemoState();
+  const role = (r: string) => ({ ...s.currentUser, id: `thu-${r}`, roles: [r as never], isActive: true }); // người dùng thử chỉ 1 vai trò
+  const OWN: Record<string, string[]> = {
+    INSPECTOR: ['BC_GD_CHI_TIET'],
+    CLEANING: ['BC_VS_CHI_TIET'],
+    FORKLIFT: ['BC_XN_CHI_TIET'],
+    REPAIR_STAFF: ['BC_SUA_CHUA', 'BC_SC_SAN_LUONG'],
+  };
+  const ALL = ['BC_GD_CHI_TIET', 'BC_HA_VO', 'BC_CAP_VO', 'BC_XUAT_TAU', 'BC_NHAP_TAU', 'BC_VS_CHI_TIET', 'BC_XN_CHI_TIET', 'BC_SUA_CHUA', 'BC_SC_SAN_LUONG'] as const;
+
+  it('Mỗi bộ phận hiện trường chỉ xem báo cáo của mình; Văn phòng / Quản lý / Admin xem tất cả', () => {
+    for (const [r, own] of Object.entries(OWN)) {
+      const u = role(r);
+      expect(u, r).toBeTruthy();
+      for (const m of ALL) expect(canOpenMenu(u, m), `${r} ${m}`).toBe(own.includes(m));
+    }
+    for (const r of ['OFFICE', 'MANAGER', 'ADMIN']) for (const m of ALL) expect(canOpenMenu(role(r), m), `${r} ${m}`).toBe(true);
+    expect(canOpenMenu(role('INSPECTOR'), 'BC_TONG_HOP')).toBe(false);
+  });
+
+  const all = { dateFrom: '01/01/2000 00:00:00', dateTo: '31/12/2000 23:59:59' };
+  const wide = (iso: string) => ({ dateFrom: fmtDt(new Date(new Date(iso).getTime() - 86_400_000)), dateTo: fmtDt(new Date(new Date(iso).getTime() + 86_400_000)) });
+
+  it('Giám định — Chi tiết: lọc tác nghiệp / trạng thái / số cont; Excel đủ cột', () => {
+    const o = s.gateInOrders.find((g) => g.containerNo)!;
+    const f = { ...wide(o.fieldRecordedAt), containerNo: containerSerial(o.containerNo) };
+    expect(queryInspectionReport(s, f).rows.map((x) => x.id)).toContain(o.id);
+    expect(queryInspectionReport(s, { ...f, operation: o.gateInType === 'CUSTOMER_RETURN' ? 'VESSEL_IMPORT' : 'CUSTOMER_RETURN' }).rows.map((x) => x.id)).not.toContain(o.id);
+    expect(queryInspectionReport(s, { ...f, condition: o.conditionClass === 'AV' ? 'DAMAGE' : 'AV' }).rows.map((x) => x.id)).not.toContain(o.id);
+    const sheet = inspectionSheet([o]);
+    expect(sheet.columns.slice(0, 5)).toEqual(['MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU']);
+    expect(sheet.rows[0]).toHaveLength(sheet.columns.length);
+  });
+
+  it('Vệ sinh / Xe nâng — Chi tiết: có dữ liệu Demo, Excel đủ cột, lọc trạng thái / loại', () => {
+    const w = s.workOrders.find((x) => x.category === 'CLEANING')!;
+    const cl = queryCleaningReport(s, wide(w.completedAt || w.createdAt), 1, 100);
+    expect(cl.rows.some((r) => r.workOrder.id === w.id)).toBe(true);
+    expect(queryCleaningReport(s, { ...wide(w.completedAt || w.createdAt), status: w.workStatus === 'OPEN' ? 'COMPLETED' : 'OPEN' }, 1, 100).rows.some((r) => r.workOrder.id === w.id)).toBe(false);
+    expect(cleaningSheet(cl.rows).rows[0]).toHaveLength(cleaningSheet(cl.rows).columns.length);
+    const h = s.locationHistory[0];
+    const fk = queryForkliftReport(s, wide(h.performedAt), 1, 100);
+    expect(fk.rows.some((r) => r.item.id === h.id)).toBe(true);
+    expect(queryForkliftReport(s, { ...wide(h.performedAt), action: h.actionType === 'YARD_SHIFT' ? 'INITIAL_BLOCK' : 'YARD_SHIFT' }, 1, 100).rows.some((r) => r.item.id === h.id)).toBe(false);
+    expect(forkliftSheet(fk.rows).rows[0]).toHaveLength(forkliftSheet(fk.rows).columns.length);
+  });
+
+  it('Từ chối: không chọn thời gian lẫn số cont; khoảng ngoài dữ liệu thì rỗng', () => {
+    expect(() => queryInspectionReport(s, {})).toThrow('Nhập số container hoặc chọn khoảng thời gian');
+    expect(() => queryCleaningReport(s, {})).toThrow('Nhập số container hoặc chọn khoảng thời gian');
+    expect(() => queryForkliftReport(s, {})).toThrow('Nhập số container hoặc chọn khoảng thời gian');
+    expect(queryInspectionReport(s, all).total).toBe(0);
   });
 });

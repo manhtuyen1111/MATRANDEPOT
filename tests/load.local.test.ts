@@ -270,4 +270,19 @@ describe.skipIf(!run)('Thử tải: 200.000 lượt vào – ra + 200.000 lượ
       }
     }
   }, 1_800_000);
+
+  // DEC-179: báo cáo theo bộ phận — truy vấn database chạy được với mọi bộ lọc, trang khớp hàm báo cáo
+  it('Báo cáo bộ phận Giám định / Vệ sinh / Xe nâng (database)', async () => {
+    const me = (await loadStaffSession(client))!;
+    const base = await createWorkingSync(client, me).full();
+    const f = { from: new Date(Date.now() - 30 * DAY).toISOString(), to: new Date().toISOString() };
+    const gd = await measure('Giám định 30 ngày — trang 1', () => loadReportPage(client, base, 'GIAM_DINH', f, 1, 50));
+    expect(gd.total).toBeGreaterThan(0);
+    expect((await loadReportPage(client, base, 'GIAM_DINH', { ...f, operation: 'CUSTOMER_RETURN', condition: 'AV', containerNo: sampleNo.slice(4, 8) }, 1, 50)).total).toBeGreaterThanOrEqual(0);
+    expect((await loadReportPage(client, base, 'GIAM_DINH', { ...f, operation: 'VESSEL_IMPORT' }, 1, 50)).total).toBe(0);
+    await measure('Vệ sinh 30 ngày — trang 1', () => loadReportPage(client, base, 'VE_SINH', { ...f, status: 'COMPLETED', shippingLineCode: 'MSK' }, 1, 50));
+    await measure('Xe nâng 30 ngày — trang 1', () => loadReportPage(client, base, 'XE_NANG', { ...f, action: 'YARD_SHIFT', containerNo: sampleNo.slice(4, 9) }, 1, 50));
+    const xn = await loadReportPage(client, base, 'XE_NANG', f, 1, 50);
+    expect(xn.total).toBeGreaterThanOrEqual(0);
+  }, 300_000);
 });
