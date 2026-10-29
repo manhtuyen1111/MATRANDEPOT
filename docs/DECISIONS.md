@@ -1527,6 +1527,37 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-189 — Danh mục chung → Database: theo dõi sức khỏe database (chỉ Admin)
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi).
+- Menu **Danh mục chung → Database**, **chỉ Admin** (`MENU_ACCESS DM_DATABASE: []`; RPC kiểm tra Admin lần nữa).
+- Dashboard gọn: trạng thái chung + nút Làm mới → khối **Cảnh báo** (mỗi mục 1 dòng, đỏ trước) → 4 ô số liệu (Database, Kho ảnh, Kết nối, Phản hồi) có thanh % → bảng **Chỉ số sức khỏe** → **Bảng dữ liệu lớn nhất** (15) → **Kho ảnh** → **Tác vụ định kỳ** → **Giới hạn dung lượng**. Mọi bảng 1 dòng / thông tin (`data-table`, `whitespace-nowrap`, `CellText`).
+- **Chỉ số theo dõi:**
+  - **Dung lượng:** dung lượng database; kho ảnh (theo kho, số ảnh).
+  - **Kết nối & truy vấn:** kết nối đang mở / tối đa; truy vấn chạy > 60 giây; kết nối chờ khóa / treo trong giao dịch.
+  - **Hiệu năng:** thời gian phản hồi đo từ máy đang mở; tỉ lệ đọc từ bộ nhớ đệm.
+  - **Bảo trì:** dòng chờ dọn (bảng ≥ 10.000 dòng); tác vụ định kỳ pg_cron (lần chạy gần nhất, lỗi 7 ngày); partition tháng sau của nhật ký / lịch sử vị trí; tuổi giao dịch (chống tràn bộ đếm).
+  - **Thông tin chung:** phiên bản PostgreSQL, chạy từ lúc, lần ghi dữ liệu gần nhất.
+- **Không** có tên đăng nhập, mật khẩu, khóa, chuỗi kết nối, tên người dùng database, nội dung câu truy vấn.
+- **Ngưỡng (người dùng chọn):**
+  - Vàng ≥ 70%, Đỏ ≥ 85% cho dung lượng database / kho ảnh / kết nối.
+  - Phản hồi: vàng ≥ 1 giây, đỏ ≥ 3 giây.
+  - Bộ nhớ đệm: vàng < 99%, đỏ < 95%.
+  - Truy vấn chậm: vàng khi có, đỏ khi > 5 phút.
+  - Tác vụ định kỳ: đỏ khi lỗi, vàng khi tắt.
+  - Tuổi giao dịch: vàng ≥ 1 tỉ, đỏ ≥ 1,5 tỉ.
+- **Giới hạn dung lượng do Admin nhập** (người dùng chọn), mặc định gói Pro 8 GB database / 100 GB kho file; đổi gói thì sửa số, không sửa code.
+- **Cảnh báo trước:** số đếm **đỏ** trên menu Danh mục chung → Database (số mục vàng + đỏ) — kiểm tra khi Admin mở app và mỗi 15 phút; trong màn: khối Cảnh báo trên cùng kèm việc cần làm.
+- Demo (không có database): màn hiện thông báo, không số liệu giả.
+- Code:
+  - `src/services/dbHealth.ts` (ngưỡng, `evaluateDbHealth`);
+  - `src/services/remote/dbHealthSource.ts`;
+  - `src/features/catalog/DatabaseHealthWorkspace.tsx`.
+- Database: migration `20261113000001_db_health.sql`:
+  - bảng `db_health_settings`;
+  - RPC `db_health`, `set_db_health_limits`, `assert_admin`;
+  - pgTAP `0016` (12 kiểm tra).
+
 ### DEC-188 — Lịch sử hồ sơ: cột TRẠNG THÁI (chỉ icon) bên phải Nhân viên
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng).
@@ -1846,6 +1877,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-188 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-189 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
