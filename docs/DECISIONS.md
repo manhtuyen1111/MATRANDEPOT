@@ -1527,6 +1527,20 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-187 — Lịch sử hồ sơ: thêm cột TÁC NGHIỆP bên phải BỘ PHẬN; ĐỔI CONT ghi rõ
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng). Bổ sung DEC-184.
+- Bảng LỊCH SỬ HỒ SƠ: **THỜI GIAN | BỘ PHẬN | TÁC NGHIỆP | NỘI DUNG | CHI TIẾT | NHÂN VIÊN**. TÁC NGHIỆP là việc bên trong bộ phận, VD:
+  - Văn phòng: Hạ vỏ, Thanh toán Hạ vỏ, GATE IN OK, Trả chứng từ Cấp vỏ;
+  - Xe nâng: Hạ vỏ, Đảo chuyển, Cấp vỏ;
+  - Vệ sinh / Sửa chữa: tên bộ phận.
+- Dòng ĐANG CHỜ cũng có cột Tác nghiệp.
+- **Đổi container ghi rõ tác nghiệp ĐỔI CONT** (nhãn đỏ), không ghi Trả chứng từ / Cấp vỏ / Hạ vỏ thường:
+  - Văn phòng — **ĐỔI CONT**;
+  - Xe nâng hạ cont cũ — **ĐỔI CONT — Hạ lại**;
+  - Xe nâng cấp cont mới — **ĐỔI CONT — Cấp vỏ** (cả dòng chờ).
+- Dòng chi tiết bỏ tên tác nghiệp ở đầu (đã có cột). Code: `task` / `SWAP_TASK` (`dossierHistory.ts`), `TaskText` (`MasterDossierModal.tsx`).
+
 ### DEC-186 — Đổi container: Chờ cấp vỏ nhãn ĐỔI CONT; phải hạ cont cũ trước khi cấp cont mới
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng). Bổ sung DEC-185 — trường hợp cont đã lên xe, phát sinh vấn đề phải đổi.
@@ -1825,6 +1839,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-186 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-187 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
