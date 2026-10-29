@@ -156,8 +156,12 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .dossier-a4 .dossier-step {
+  /* DEC-181: không cắt đôi 1 dòng LỊCH SỬ HỒ SƠ khi sang trang; lặp tiêu đề cột */
+  .dossier-a4 .dossier-history tr {
     break-inside: avoid;
+  }
+  .dossier-a4 .dossier-history thead {
+    display: table-header-group;
   }
 }
 
