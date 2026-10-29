@@ -1527,6 +1527,44 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-185 — ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi). Giải quyết một phần Q-012 (đổi cont sau khi đã thu phí, cùng hãng / size / type → không cần hoàn tiền).
+- **Khi nào:** cont đã cấp ra (Xe nâng OUT), đang ở **Văn phòng → Trả chứng từ → Đang chờ TRẢ CHỨNG TỪ CẤP VỎ**. Nút **ĐỔI CONTAINER** (Văn phòng / Quản lý — quyền RELEASE_ORDER).
+- **Bắt buộc chọn 1 trong 2 lý do:**
+  1. **Khách kén vỏ, yêu cầu đổi cont khác:**
+     - Xe nâng nhận yêu cầu **hạ lại**, đủ thông tin đổi container + lý do.
+     - Xe nâng **chọn vị trí mới**.
+     - Hạ xong cont tồn bãi, **cấp được cho khách khác**.
+  2. **Container phát sinh hư hỏng, không đủ điều kiện cấp khách:**
+     - Cùng quy trình trên; cont chuyển **DAMAGE**, mang nhãn **PHÁT SINH CẤP VỎ**.
+     - Xe nâng được nhắc "HẠ KHU SỬA CHỮA" (không chặn block — người dùng chọn Xe nâng tự chọn).
+     - Hạ xong → **Chờ báo giá** → cập nhật tình trạng, giờ công → Sửa chữa như luồng thường. Nhãn giữ cho cả lượt lưu bãi.
+     - Ghi chú hư hỏng **không bắt buộc**.
+- **Cont thay thế chọn ngay** trong cửa sổ Đổi container:
+  - danh sách cont sẵn sàng **cùng hãng tàu / size / type** với booking (`swapCandidates`), đủ điều kiện cấp vỏ;
+  - khác size / type thì không đổi được (chênh phí → OPEN-008).
+- **Giữ nguyên mã CV-, chứng từ, phiếu thu, QR phiếu K80** (người dùng chọn):
+  - lệnh chuyển sang cont mới, quay về Xe nâng — Chờ cấp vỏ;
+  - lái xe dùng luôn phiếu đang cầm (quét `QR-CV-…` ra cont mới);
+  - Trả chứng từ in đúng cont mới; không thu thêm, không hoàn tiền.
+- **Ngày hạ gốc giữ nguyên**: cont cũ quay lại cùng hồ sơ HV-, Date in / lưu bãi tính tiếp.
+- **Lịch sử hồ sơ:**
+  - cont cũ có dòng Văn phòng — Đổi container (SỬA, lý do → cont mới) + Xe nâng — Hạ lại (đổi container);
+  - cont mới có dòng Văn phòng — Đổi container (TẠO MỚI, cấp thay cont cũ);
+  - ĐANG CHỜ: "Chờ xe nâng hạ lại".
+- **Xe nâng — Chờ hạ vỏ:**
+  - nhãn tác nghiệp **ĐỔI CONT**;
+  - khung quét hiện "ĐỔI CONTAINER — HẠ LẠI, CHỌN VỊ TRÍ MỚI" hoặc "— HẠ KHU SỬA CHỮA" + lý do;
+  - lịch sử vị trí loại mới **Hạ lại (đổi container)** (`SWAP_RETURN`).
+- Code:
+  - `swapGateOutContainer`, `swapCandidates`, `canSwapGateOut`, `placeSwapReturn` (`depotOperations.ts`);
+  - `SwapContainerModal.tsx`.
+- Database: migration `20261111000001_gate_out_swap.sql`:
+  - RPC `swap_gate_out_container`; `update_container_location` thêm nhánh hạ lại;
+  - cột `containers.swap_return` / `release_damage`, `gate_out_orders.swaps`; enum `SWAP_RETURN`;
+  - pgTAP `0015`.
+
 ### DEC-184 — Lịch sử hồ sơ: cột BỘ PHẬN; ĐANG CHỜ mỗi việc 1 dòng
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng). Sửa DEC-181 / DEC-183.
@@ -1776,6 +1814,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-184 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-185 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

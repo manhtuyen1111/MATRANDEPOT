@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-185 (2026-10-29): **ĐỔI CONTAINER** ở Trả chứng từ cấp vỏ — 2 lý do (khách kén vỏ / phát sinh hư hỏng), chọn cont thay thế ngay, giữ mã CV- + chứng từ + phiếu thu + QR; cont cũ Xe nâng hạ lại (hư hỏng → DAMAGE + nhãn PHÁT SINH CẤP VỎ → Chờ báo giá). **Migration mới `20261111000001_gate_out_swap.sql`** (pgTAP 278/278 local).
 - DEC-184 (2026-10-29): Lịch sử hồ sơ — cột **BỘ PHẬN** thay Tác nghiệp (tác nghiệp cụ thể ở dòng chi tiết); **ĐANG CHỜ mỗi việc 1 dòng** + icon đồng hồ + bộ phận phụ trách.
 - DEC-183 (2026-10-29): Lịch sử hồ sơ — **mỗi tác nghiệp 1 dòng**, chi tiết luôn ẩn (nút mắt mở từng dòng) + nút **MỞ / ẨN TOÀN BỘ CHI TIẾT**; bản in A4 in đủ chi tiết.
 - DEC-182 (2026-10-29): **ảnh cửa cont Giám định hiện luôn** khi mở hồ sơ container / chi tiết Giám định – Hạ vỏ / chi tiết Văn phòng – Hạ vỏ (bỏ nút XEM ẢNH ở đây); ảnh sửa chữa và cột ảnh báo cáo vẫn bấm XEM ẢNH.
