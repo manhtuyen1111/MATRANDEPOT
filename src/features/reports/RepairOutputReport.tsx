@@ -8,6 +8,7 @@ import { linkCls, DateRangeFilter, DetailDrawer, ExportExcelButton, Feedback, fo
 
 // BÁO CÁO SẢN LƯỢNG SỬA CHỮA (DEC-170): giờ công từng nhân viên theo bộ lọc thời gian / tổ / nhân viên.
 // Giờ công 1 cont chia đều cho số nhân viên tác nghiệp cont đó (quy tắc ở queryRepairOutput — services/reports.ts).
+// DEC-175: Lương sản phẩm + Sản phẩm vượt giờ (giờ công trong khoảng lọc vượt mốc ở Danh mục) = Tổng tiền sản phẩm.
 export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) => void }> = ({ state: live, onOpenDossier }) => {
   const report = useReportState(live);
   const state = report.data;
@@ -74,7 +75,7 @@ export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (c
         ) : !rows || rows.length === 0 ? (
           <p className="p-8 text-center text-xs text-ink-muted">Không có dữ liệu phù hợp.</p>
         ) : (
-          <table className="data-table w-full min-w-[640px] whitespace-nowrap text-left text-xs">
+          <table className="data-table w-full min-w-[960px] whitespace-nowrap text-left text-xs">
             <thead className="border-b border-line bg-canvas text-[11px] uppercase text-ink-muted">
               <tr>
                 <th className="px-3 py-2">#</th>
@@ -84,6 +85,9 @@ export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (c
                 <th className="px-3 py-2 text-right">Số cont</th>
                 <th className="px-3 py-2 text-right">Giờ công</th>
                 <th className="px-3 py-2 text-right">Nhân công bậc thợ (đ / giờ)</th>
+                <th className="px-3 py-2 text-right">Lương sản phẩm</th>
+                <th className="px-3 py-2 text-right">Giờ vượt giờ</th>
+                <th className="px-3 py-2 text-right">Sản phẩm vượt giờ</th>
                 <th className="px-3 py-2 text-right">Tổng tiền sản phẩm (VND)</th>
               </tr>
             </thead>
@@ -96,7 +100,10 @@ export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (c
                   <td className="px-3 py-2">{r.gradeName || <span className="text-amber-700">Chưa có bậc</span>}</td>
                   <td className="px-3 py-2 text-right font-mono">{r.containers}</td>
                   <td className="px-3 py-2 text-right font-mono font-bold">{r.hours}</td>
-                  <td className="px-3 py-2 text-right font-mono">{r.hourlyRate !== undefined ? formatVnd(r.hourlyRate) : r.amount !== undefined ? 'Nhiều mức' : '-'}</td>
+                  <td className="px-3 py-2 text-right font-mono">{r.hourlyRate !== undefined ? formatVnd(r.hourlyRate) : r.productWage !== undefined ? 'Nhiều mức' : '-'}</td>
+                  <td className="px-3 py-2 text-right font-mono">{r.productWage !== undefined ? formatVnd(r.productWage) : '-'}</td>
+                  <td className="px-3 py-2 text-right font-mono">{r.overtimeHours || '-'}</td>
+                  <td className="px-3 py-2 text-right font-mono">{r.overtimeAmount ? formatVnd(r.overtimeAmount) : '-'}</td>
                   <td className="px-3 py-2 text-right font-mono font-bold">{r.amount !== undefined ? formatVnd(r.amount) : '-'}</td>
                 </tr>
               ))}
@@ -107,6 +114,9 @@ export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (c
                 <td className="px-3 py-2 text-right font-mono">{rows.reduce((s, r) => s + r.containers, 0)}</td>
                 <td className="px-3 py-2 text-right font-mono">{totalHours}</td>
                 <td />
+                <td className="px-3 py-2 text-right font-mono">{formatVnd(rows.reduce((s, r) => s + (r.productWage || 0), 0))}</td>
+                <td className="px-3 py-2 text-right font-mono">{Math.round(rows.reduce((s, r) => s + r.overtimeHours, 0) * 100) / 100}</td>
+                <td className="px-3 py-2 text-right font-mono">{formatVnd(rows.reduce((s, r) => s + r.overtimeAmount, 0))}</td>
                 <td className="px-3 py-2 text-right font-mono">{formatVnd(rows.reduce((s, r) => s + (r.amount || 0), 0))}</td>
               </tr>
             </tfoot>
@@ -127,7 +137,7 @@ export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (c
                 <th className="px-2 py-1.5 text-right">Giờ công chia</th>
                 <th className="px-2 py-1.5">Bậc thợ</th>
                 <th className="px-2 py-1.5 text-right">Nhân công bậc thợ (đ / giờ)</th>
-                <th className="px-2 py-1.5 text-right">Tổng tiền sản phẩm (VND)</th>
+                <th className="px-2 py-1.5 text-right">Lương sản phẩm</th>
                 <th className="px-2 py-1.5">Hoàn tất</th>
               </tr>
             </thead>

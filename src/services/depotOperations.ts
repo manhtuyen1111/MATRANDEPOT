@@ -883,10 +883,14 @@ export function confirmQuotationToRepair(state: DepotState, input: { containerNo
 // ============================================================================
 // 9. BỘ PHẬN SỬA CHỮA — CHỜ SỬA CHỮA: hoàn tất -> AV
 // ============================================================================
+// DEC-176: ảnh HOÀN THÀNH SỬA CHỮA — tối thiểu 1, tối đa 30 ảnh / cont
+export const REPAIR_PHOTO_MIN = 1;
+export const REPAIR_PHOTO_MAX = 30;
+
 export function completeRepairTask(
   state: DepotState,
   // DEC-043: bắt buộc chọn TỔ SỬA CHỮA và ít nhất 1 thành viên đang hoạt động của tổ
-  input: { containerNo?: string; scannedQrCode?: string; notes?: string; teamId: string; memberIds: string[] }
+  input: { containerNo?: string; scannedQrCode?: string; notes?: string; teamId: string; memberIds: string[]; photos: string[] }
 ): DepotState {
   assertPermission(state, 'REPAIR', 'chỉ Bộ phận Sửa chữa được xác nhận hoàn tất sửa chữa.');
   const container =
@@ -901,6 +905,9 @@ export function completeRepairTask(
   if (members.length !== new Set(input.memberIds).size) {
     throw new Error('Có nhân viên không thuộc tổ đã chọn hoặc đã ngưng hoạt động.');
   }
+  const photos = (input.photos || []).filter(Boolean);
+  if (photos.length < REPAIR_PHOTO_MIN) throw new Error('Vui lòng CHỤP ẢNH HOÀN THÀNH SỬA CHỮA (ít nhất 1 ảnh).');
+  if (photos.length > REPAIR_PHOTO_MAX) throw new Error(`Tối đa ${REPAIR_PHOTO_MAX} ảnh hoàn thành sửa chữa / container.`);
   const memberNames = members.map((m) => m.fullName);
   const now = nowIso();
   const next = updateContainerById(state, container.id, {
@@ -928,6 +935,7 @@ export function completeRepairTask(
                 const g = (state.repairGrades || []).find((x) => x.id === m.gradeId);
                 return { name: m.fullName, gradeName: g?.name, hourlyRate: g?.hourlyRate };
               }),
+              repairPhotos: photos,
             }
           : w
       ),
@@ -2001,6 +2009,21 @@ export function setRepairGradeActive(state: DepotState, input: { id: string; isA
     'CATALOG',
     g.code,
     `[Admin Danh mục chung] ${input.isActive ? 'Kích hoạt' : 'Ngưng'} BẬC THỢ ${g.name}`
+  );
+}
+
+// DEC-175: VƯỢT GIỜ — mốc giờ công + đơn giá vượt giờ (đ / giờ), dùng ở báo cáo SẢN LƯỢNG SỬA CHỮA. Chỉ ADMIN.
+export function updateRepairOvertime(state: DepotState, input: { thresholdHours: number; hourlyRate: number }): DepotState {
+  assertAdmin(state);
+  if (!Number.isFinite(input.thresholdHours) || input.thresholdHours <= 0) throw new Error('MỐC GIỜ CÔNG phải lớn hơn 0.');
+  if (!Number.isFinite(input.hourlyRate) || input.hourlyRate <= 0) throw new Error('ĐƠN GIÁ VƯỢT GIỜ (đ / giờ) phải lớn hơn 0.');
+  const row = { thresholdHours: Math.round(input.thresholdHours * 100) / 100, hourlyRate: Math.round(input.hourlyRate) };
+  return appendAudit(
+    { ...state, repairOvertime: row },
+    'ADMIN_UPDATE_REPAIR_OVERTIME',
+    'CATALOG',
+    'REPAIR_OVERTIME',
+    `[Admin Danh mục chung] VƯỢT GIỜ: trên ${row.thresholdHours} giờ — ${row.hourlyRate.toLocaleString('vi-VN')}đ / giờ`
   );
 }
 

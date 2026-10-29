@@ -1030,6 +1030,32 @@ describe('DEC-057: mã QR tác nghiệp THẬT + quét bằng camera', () => {
     expect(field).toContain('Mở camera quét QR');
     expect(renderToString(<DocumentReturnWorkspace state={as(base, 'usr-office')} onUpdateState={noop} />)).toContain('Mở camera quét QR');
   });
+
+  it('DEC-176: Chờ sửa chữa không quét QR — tìm theo số container', () => {
+    const html = renderToString(<FieldQueueWorkspaces mode="SC_CHO_SUA_CHUA" state={as(base, 'usr-repair')} onUpdateState={noop} />);
+    expect(html).toContain('data-testid="repair-search"');
+    expect(html).toContain('Tìm theo số container');
+    expect(html).not.toContain('Mở camera quét QR');
+    expect(html).not.toContain('Quét mã QR trên phiếu EEIR');
+  });
+
+  it('DEC-176: màn chụp ảnh kiểu iPhone — nút chụp, số ảnh / tối đa, nút đèn, Xong', async () => {
+    const { PhotoCamera } = await import('../src/components/PhotoCamera');
+    const html = renderToString(<PhotoCamera title="Hoàn thành sửa chữa" count={3} max={30} onAdd={noop} onClose={noop} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('aria-label="Chụp ảnh"');
+    expect(html).toContain('3/30');
+    expect(html).toContain('Bật đèn');
+    expect(html).toContain('Xong');
+    expect(html).toContain('capture="environment"'); // dự phòng: camera của máy
+  });
+
+  it('DEC-176: hồ sơ container hiện ảnh hoàn thành sửa chữa', () => {
+    const demo = createDemoState();
+    const wo = demo.workOrders.find((w) => w.category === 'REPAIR' && w.workStatus === 'COMPLETED' && w.repairPhotos?.length)!;
+    const html = renderToString(<MasterDossierModal state={demo} masterDossierCode={wo.masterDossierCode} onClose={noop} />);
+    expect(html).toContain('data-testid="repair-photo-list"');
+    expect(html).toContain('Ảnh hoàn thành sửa chữa 1');
+  });
 });
 
 describe('DEC-166: màn Danh mục → Phân loại đóng hàng', () => {

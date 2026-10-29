@@ -12,7 +12,7 @@ import * as inv from './invoice';
 import * as fb from './feedback';
 import * as route from './driverRoute';
 import type { DepotState } from './depotStore';
-import { enqueue, isRemoteMode, mapId, realId, requestId, rpc, uploadDoorPhoto, type RemoteOp } from './remote/sync';
+import { enqueue, isRemoteMode, mapId, realId, requestId, rpc, uploadDoorPhoto, uploadRepairPhotos, type RemoteOp } from './remote/sync';
 import { callEdgeFunction } from './remote/edge';
 
 function wrap<A extends unknown[], R>(fn: (...args: A) => R, remote: (args: A, result: R) => RemoteOp): (...args: A) => R {
@@ -85,10 +85,17 @@ export const saveQuotationDraft = wrap(ops.saveQuotationDraft, ([, i]) => async 
 export const confirmQuotationToRepair = wrap(ops.confirmQuotationToRepair, ([, i]) => async (c) => {
   await rpc(c, 'confirm_quotation_to_repair', { p_container_no: i.containerNo });
 });
-export const completeRepairTask = wrap(ops.completeRepairTask, ([, i]) => async (c) => {
-  await rpc(c, 'complete_repair_task', {
-    p_request_id: requestId(), p_team_id: i.teamId, p_member_ids: i.memberIds, p_container_no: nul(i.containerNo), p_scanned_code: nul(i.scannedQrCode), p_notes: nul(i.notes),
-  });
+// DEC-176: tải ảnh HOÀN THÀNH SỬA CHỮA lên kho repair-photos trước, rồi hoàn tất + gắn đường dẫn ảnh trong 1 lời gọi
+export const completeRepairTask = wrap(ops.completeRepairTask, ([s, i]) => {
+  const teamCode = s.repairTeams.find((t) => t.id === i.teamId)?.code || 'TO';
+  const reqId = requestId();
+  return async (c) => {
+    const paths = await uploadRepairPhotos(c, i.photos, teamCode, i.containerNo || i.scannedQrCode || 'CONT');
+    await rpc(c, 'complete_repair_with_photos', {
+      p_request_id: reqId, p_team_id: i.teamId, p_member_ids: i.memberIds, p_photo_paths: paths,
+      p_container_no: nul(i.containerNo), p_scanned_code: nul(i.scannedQrCode), p_notes: nul(i.notes),
+    });
+  };
 });
 export const toggleContainerHold = wrap(ops.toggleContainerHold, ([, i]) => async (c) => {
   await rpc(c, 'toggle_container_hold', { p_container_no: i.containerNo, p_hold: i.hold, p_reason: i.reason });
@@ -308,6 +315,10 @@ export const setRepairGradeActive = wrap(ops.setRepairGradeActive, ([s, i]) => {
   return async (c) => {
     await rpc(c, 'catalog_upsert_repair_grade', { p_name: g?.name || '', p_hourly_rate: g?.hourlyRate || 0, p_active: i.isActive, p_id: i.id });
   };
+});
+// DEC-175: vượt giờ sửa chữa
+export const updateRepairOvertime = wrap(ops.updateRepairOvertime, ([, i]) => async (c) => {
+  await rpc(c, 'catalog_update_repair_overtime', { p_threshold_hours: i.thresholdHours, p_hourly_rate: i.hourlyRate });
 });
 export const assignRepairStaff = wrap(ops.assignRepairStaff, ([, i]) => async (c) => {
   await rpc(c, 'catalog_assign_repair_staff', { p_staff_id: i.staffUserId, p_team_id: i.teamId, p_grade_id: i.gradeId });

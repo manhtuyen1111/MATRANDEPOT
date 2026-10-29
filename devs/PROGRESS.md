@@ -3,11 +3,12 @@
 > Agent cập nhật file này sau mỗi việc (skill `matran-docs-sync`). Bạn chỉ cần đọc mục A, B và F.
 > Ký hiệu: ✅ Xong • 🔄 Đang làm • ⏸ Chờ bạn • ⏳ Chưa làm • ❌ Lỗi
 
-Cập nhật lần cuối: 2026-10-28 (cuối ngày, DEC-174, đã merge PR #46 + db push) — Claude Code
+Cập nhật lần cuối: 2026-10-29 (bàn giao cuối phiên — DEC-175 vượt giờ + DEC-176 ảnh sửa chữa, nhánh `agent/claude/repair-photos` **đã push, chờ PR**) — Claude Code
 Trạng thái chung (cập nhật 2026-10-27): **GĐ 4 Database ĐANG LÀM** trên nhánh **`agent/claude/p4-database`** (DEC-149 → DEC-153, đã push): Supabase Singapore; thiết kế `docs/DATABASE_SCHEMA.md` đã duyệt; **toàn bộ migration (5 bước + app_support + đồng bộ) + Edge Function xong, chạy thử trên Supabase local (Docker) — pgTAP 180/180, Edge Function 16/16**; **nối app với database N1 → N8 xong phần code** (docs/APP_DB_INTEGRATION.md): đăng nhập, ghi qua hàng chờ RPC, báo cáo theo khoảng lọc (DEC-157), dữ liệu làm việc 7 ngày + chỉ tải phần thay đổi + báo mất mạng (DEC-158), ảnh giữ 2 tháng (DEC-159), Nhập tàu không chụp ảnh (DEC-156) — chạy thật toàn luồng trên local pass; **tiếp theo: bạn thử tay toàn bộ trên database → reset → import tồn vỏ ban đầu (Q-044)**. Bản Demo trước database lưu ở tag `demo-truoc-database-2026-10-26` / nhánh `backup/demo-truoc-database`. — Trước đó: nhánh **`agent/claude/ui-design-v2`** (chứa toàn bộ `agent/claude/p4-prep-xlsx` + DEC-142 → **DEC-148**), **đã push đầy đủ lên GitHub 2026-10-26**, chưa merge vào `main`. Ngày 26/10 (tối): **giao diện mới v2** navy + Be Vietnam Pro, chuẩn ở `docs/DESIGN_SYSTEM.md` (145); bảng chi tiết tàu không gộp cột (146); **W-SURVEY (LÊN KỆ)** + giám định bổ sung trên kệ (147); **dữ liệu test** MSK / 10 khách / công ty MATRAN / biểu giá mới + danh sách lớn (148); hoàn tác đăng nhập Demo, quy tắc tài khoản để GĐ 4 (143, 144). Ngày 25/10: phiếu thu TT / TTR / TTS + mã `PT-TT-` / `PT-TTR-` (097 → 100, 103); Tồn vỏ cột Hình thức TT + MÃ PHIẾU THU có link (099, 104, 105); lọc nhanh thời gian (102); Phiếu thu bỏ chứng từ (107); **dữ liệu test đầy đủ + nút Nạp / Xóa dữ liệu** (106, 108); **Hạ kệ giám định** (109); **Xem trước chứng từ** (110); **xuất hóa đơn từ phiếu thu**: mã bảo mật 12 ký tự, trang khách `#/hoa-don`, trạng thái CHƯA / YÊU CẦU / ĐÃ XHD, **thêm lại vai trò Kế toán**, người thu tiền luôn là nhân viên (111 → 114); **Đảo chuyển mobile 2 dòng**, bỏ ghi chú tác nghiệp (115, 116); **ô nhập mobile chữ 16px** (không tự phóng to vỡ khung — 116); **mọi mã có hồ sơ đều là link, cùng kiểu Mã hồ sơ** (117, 118). Ngày 26/10: **bỏ mã CT-** (số chứng từ = mã hồ sơ — 119); **Góp ý** (nút góc phải + Báo cáo → Góp ý chỉ Admin — 120, 123); phiếu thu trả trước **một mã PT-TTR-** (bỏ PTT- — 124), cột Mã hồ sơ chỉ tóm tắt (121, 122), **hóa đơn theo từng lượt, khách tự gộp** (130); **chọn vị trí từng bước** (125); báo cáo Hạ / Cấp vỏ có Thanh toán + Mã phiếu thu, bỏ ký hiệu (126, 127); Tồn vỏ Phân loại / AGE / Tiến độ, **mỗi cont 1 dòng**, Excel khớp màn hình (128, 129, 132); **Xuất tàu tự khóa + ghi chú, duyệt tàu khi chưa đủ** (131). Ngày 24/10 (phiên 2): EEIR Nhập / Xuất tàu (081); form Giám định dùng chung (UI-02); **vị trí theo cấu hình Block, chỉ chặn trùng khi đủ 4 phần** (082, 087); nhãn + ô tác nghiệp ở Vệ sinh / Xe nâng, số cont thẳng cột (083, 085, 089); **Báo giá**: bảng như Tồn vỏ, 2 bước cập nhật → xác nhận, hàng loạt (084, 086, 088); **Đảo chuyển** gọn: ô trạng thái, vị trí thẳng cột, tiến độ, ghi chú (090 → 096); **khách hàng gõ tay + gợi ý** (093). Tư vấn database: `docs/DATABASE_PLATFORM_ADVICE.md`.
 
-**Điểm dừng 2026-10-27 (tối):** nhánh `agent/claude/p4-database` (HEAD `ca46c39`, đã push). **Đọc mục I.5 trước khi làm việc tiếp theo.** (Quyết định tạm hoãn GĐ 4 ngày 25/10 đã được mở lại bằng DEC-149.)
-Kiểm thử mới nhất (2026-10-27): `npm test` **163 pass, 3 bỏ qua** (test chạy thật cần Supabase local — chạy riêng: pass) • `npm run build` **PASS** • pgTAP 180/180, Edge Function 16/16 (local) • đo tốc độ 45.000 lượt: mở app 6,8 giây, đồng bộ ~2 KB • chưa thử tay trên trình duyệt ở chế độ database.
+**Điểm dừng 2026-10-29:** nhánh `agent/claude/repair-photos` (đã push, chứa DEC-175 + DEC-176, **2 migration mới** — db push trước khi merge). **Đọc mục I.5 → "▶ BÀN GIAO CUỐI PHIÊN 2026-10-29" trước khi làm việc tiếp theo.**
+Kiểm thử mới nhất (2026-10-29): `tsc` + `vite build` PASS • vitest **194 pass / 6 bỏ qua** • Supabase local: pgTAP **231/231**, chạy thật **5/5** • chưa thử camera điện thoại thật.
+Kiểm thử cũ (2026-10-27): `npm test` **163 pass, 3 bỏ qua** (test chạy thật cần Supabase local — chạy riêng: pass) • `npm run build` **PASS** • pgTAP 180/180, Edge Function 16/16 (local) • đo tốc độ 45.000 lượt: mở app 6,8 giây, đồng bộ ~2 KB • chưa thử tay trên trình duyệt ở chế độ database.
 
 ## A. CẦN BẠN QUYẾT ĐỊNH
 | # | Nội dung | Ảnh hưởng |
@@ -249,9 +250,52 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-24 — Claude Code: P7-24 (DEC-095) Đảo chuyển tiến độ + ghi chú.
 - 2026-10-24 — Claude Code: P7-25 (DEC-096) đồng bộ ô trạng thái Đảo chuyển.
 
-### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-28 — đọc trước — mới nhất)
+### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-29 — đọc trước — mới nhất)
 
-**▶ ĐIỂM DỪNG CUỐI NGÀY 2026-10-28 (đọc đầu tiên):**
+**▶ BÀN GIAO CUỐI PHIÊN 2026-10-29 (đọc đầu tiên):**
+- **Code:** nhánh `agent/claude/repair-photos` **đã push** — chứa toàn bộ DEC-175 (vượt giờ) + DEC-176 (ảnh sửa chữa). Nhánh `agent/claude/repair-overtime` là phần con, **không cần PR riêng** (chưa push). `main` vẫn ở PR #47.
+- **Bạn làm theo thứ tự (database trước, giao diện sau):**
+  1. `cd C:\Users\Admin\Desktop\MATRAN-DEPOT\MATRANDEPOT` → `git fetch` → `git checkout agent/claude/repair-photos` → `git pull`.
+  2. `npx supabase db push --linked --dry-run` — phải thấy **đúng 2 file**: `20261106000001_repair_overtime.sql`, `20261107000001_repair_photos.sql`.
+  3. `npx supabase db push --linked`.
+  4. GitHub: tạo PR `agent/claude/repair-photos` → `main` → Merge. Chờ Vercel **Ready** → **Ctrl + F5**.
+  5. Chưa db push mà đã merge → app lỗi tải danh mục (`repair_overtime_settings`) và Sửa chữa không hoàn tất được (`complete_repair_with_photos`).
+- **Cần thử trên app thật (chưa ai thử):**
+  1. **Điện thoại thật** — Sửa chữa → Chờ sửa chữa: gõ vài số cont → chọn → tổ → nhân viên → **CHỤP ẢNH HOÀN THÀNH SỬA CHỮA**: bấm chụp liên tục, nút **.5 / 1× / 2× / 3×**, chụm 2 ngón, **Đèn**, xóa 1 ảnh, Xong → Xác nhận hoàn tất. Ghi lại máy (iPhone / Android + trình duyệt) nếu thiếu nút .5 / đèn.
+  2. Hồ sơ container của cont vừa sửa → bước Sửa chữa có ảnh, bấm phóng to.
+  3. Supabase → Storage: `repair-photos/ANH-SUA-CHUA/2026/…/<tổ>/<số cont>/`; ảnh Giám định mới ở `door-photos/ANH-GATE-IN/2026/…` (ảnh cũ giữ đường dẫn cũ).
+  4. Danh mục chung → Sửa chữa → BẬC THỢ → khối **Vượt giờ** (200 giờ / 3.000 đ) → Báo cáo → Sửa chữa → SẢN LƯỢNG SỬA CHỮA: 3 cột mới + Tổng tiền; lọc **Tháng này** để xem vượt giờ theo tháng; Xuất Excel.
+- **Việc tiếp theo đề xuất:** việc từ góp ý sau đợt thử trên; Q-044 import tồn vỏ; chốt Supabase Pro (ảnh không tự xóa → dung lượng tăng ~3 GB / tháng); hướng dẫn quản trị **tải backup ảnh rồi xóa tay** (chưa viết — làm khi bạn cần).
+- **Docker / Supabase local:** máy này (`C:\Users\HP\Desktop\MATRAN-DEPOT`) vừa tải image + chạy local 2026-10-29, **còn bật** khi bàn giao (ổ C còn ~18 GB trước khi tải image). Không sửa database thì: `npx supabase stop` → tắt Docker Desktop → `wsl --shutdown` → (cần chỗ) xóa `%LOCALAPPDATA%\Docker\wsl\disk\docker_data.vhdx`.
+- **LƯU Ý NGHIỆP VỤ MỚI (agent):**
+  - Ảnh **không tự xóa** — không thêm lại lịch xóa / hạn ảnh. `expired_photo_paths()` cố ý trả rỗng; cột `photo_expires_at` còn nhưng không dùng.
+  - Ảnh mới chỉ chụp bằng `PhotoCamera`, nén bằng `src/services/photo.ts` (< 200 KB), đường dẫn bằng `gateInPhotoPath` / `repairPhotoPath` (**không dấu** — Supabase Storage không nhận chữ có dấu). Kho `repair-photos` chặn file ≥ 200 KB (204800 byte).
+  - Sửa chữa: `completeRepairTask` bắt buộc `photos` 1–30 (`REPAIR_PHOTO_MIN` / `REPAIR_PHOTO_MAX`); database gọi `complete_repair_with_photos` (bọc `complete_repair_task` — không sửa hàm cũ). Màn Chờ sửa chữa **không có ô quét QR** (các màn hiện trường khác vẫn quét).
+  - Vượt giờ tính **theo khoảng đang lọc**, theo từng dòng tổ + nhân viên; mốc / đơn giá dùng giá trị **hiện tại** (không chốt theo kỳ như đơn giá bậc thợ — người dùng chưa yêu cầu).
+- **LƯU Ý KỸ THUẬT (agent):**
+  - Máy này là `C:\Users\HP\…` (khác máy người dùng `C:\Users\Admin\…`). `node_modules` từng thiếu gói đã có trong lockfile → `npm install` (không đổi package.json / lockfile).
+  - Supabase local trên máy này: `npx supabase start -x edge-runtime,postgres-meta,studio,imgproxy,logflare,vector,mailpit,realtime,supavisor` (vẫn đủ Storage cho test ảnh). Test chạy thật: `MATRAN_LOCAL_SUPABASE_URL=http://127.0.0.1:54321` + `ANON_KEY` / `SERVICE_ROLE_KEY` từ `npx supabase status -o env`.
+  - Test chạy thật chạy **song song** → số cont thử phải khác tiền tố (`TSTU` ở N2–N6, `RPTU` ở test ảnh) — trùng mili giây đã làm fail 1 lần.
+  - Không có `gh` trên máy này → push rồi đưa link tạo PR.
+  - `sed -i` trên file CRLF đổi được nhưng Git báo "LF will be replaced by CRLF" — bình thường; kiểm `git diff --stat` sau mỗi lần sửa bằng lệnh.
+- **LƯU Ý LÀM VIỆC VỚI NGƯỜI DÙNG (bổ sung 2026-10-29):** người dùng trả lời câu hỏi bằng ý riêng ngoài các lựa chọn (VD "tối thiểu 1, tối đa 30"; "ảnh gate in không xóa, lưu theo năm/tháng/ngày") → làm đúng ý đó, kể cả khi nó **thay quy tắc cũ** (DEC-159) — ghi DEC mới + đánh dấu DEC cũ "ĐÃ THAY". Việc đụng database: hỏi trước (AskUserQuestion) các điểm hiểu 2 cách; người dùng muốn **chạy pgTAP trên Docker trước khi push**.
+
+**▶ 2026-10-29 — DEC-176 ẢNH HOÀN THÀNH SỬA CHỮA (nhánh `agent/claude/repair-photos`, tách từ `repair-overtime`):**
+- Chờ sửa chữa: bỏ quét QR → **Tìm theo số container**; chọn tổ → nhân viên → **CHỤP ẢNH HOÀN THÀNH SỬA CHỮA** (1–30 ảnh) → Xác nhận hoàn tất.
+- Màn chụp kiểu iPhone `src/components/PhotoCamera.tsx`; nén `src/services/photo.ts` (< 200 KB). Thư mục: `ANH-SUA-CHUA/năm/tháng/ngày/tổ/số cont` (kho `repair-photos`), Gate in `ANH-GATE-IN/năm/tháng/ngày` (kho `door-photos`).
+- **Ảnh không tự xóa nữa** (thay DEC-159) — quản trị tải backup rồi xóa tay. Dung lượng tăng ~3 GB / tháng → cần Supabase Pro (100 GB) khi chạy thật.
+- **Migration mới `20261107000001_repair_photos.sql`** (sau `20261106000001`). db push **trước** khi merge — chưa push thì Sửa chữa hoàn tất bị lỗi (RPC mới chưa có).
+- Kiểm thử: `tsc` PASS, vitest **194 pass / 6 bỏ qua** (6 = test chạy thật, cần Supabase local), `vite build` PASS. **Supabase local 2026-10-29: pgTAP 231/231** (sửa test 0005 số 7 theo quy tắc không tự xóa ảnh), **chạy thật 5/5** (N1, N2–N6, mới `remote.repair.local.test.ts`: tải ảnh thật → hoàn tất → link ảnh mở được, kho chặn ≥ 200 KB, ảnh Gate in vào ANH-GATE-IN). **Chưa thử camera trên điện thoại thật** (zoom .5 / đèn phụ thuộc máy + trình duyệt — iPhone Safari có thể không có đèn / .5).
+- Bản Demo: ảnh lưu trong localStorage (~5 MB) → chụp nhiều ảnh có thể không giữ được sau khi tải lại trang (chỉ Demo).
+
+**▶ 2026-10-29 — DEC-175 VƯỢT GIỜ SỬA CHỮA (nằm trong nhánh `agent/claude/repair-photos`):**
+- Báo cáo → Sửa chữa → SẢN LƯỢNG SỬA CHỮA thêm **Lương sản phẩm** (= Tổng tiền sản phẩm cũ) / **Giờ vượt giờ** (giờ công trong khoảng lọc trên 200) / **Sản phẩm vượt giờ** (3.000 × giờ vượt); **Tổng tiền sản phẩm (VND)** = Lương sản phẩm + Sản phẩm vượt giờ. Excel tổng hợp cùng thứ tự.
+- Mốc 200 giờ + đơn giá 3.000 đ: Admin sửa ở Danh mục chung → Sửa chữa → tab BẬC THỢ → khối **Vượt giờ**.
+- **Có migration mới `20261106000001_repair_overtime.sql`** → sau khi push: `db push --linked --dry-run` rồi `db push --linked` **trước** khi merge (chưa push thì app báo lỗi tải danh mục `repair_overtime_settings`).
+- Kiểm thử: `tsc` PASS, vitest PASS, `vite build` PASS. pgTAP 0010 pass (local 2026-10-29, tổng 231/231). Chưa thử trên trình duyệt.
+- Máy này `node_modules` thiếu `qrcode` / `qr-scanner` / `jspdf` / `html2canvas-pro` (đã có trong lockfile) → đã chạy `npm install` (package.json / lockfile không đổi).
+
+**▶ ĐIỂM DỪNG CUỐI NGÀY 2026-10-28:**
 - **ĐÃ XONG HẾT, ĐÃ LÊN TEST:** `main` = PR #46 (`2e39021`) — đủ **DEC-164 → DEC-174**. `matran-test` đã `db push` đủ migration tới **`20261105000001_repair_grades.sql`** (người dùng xác nhận). Vercel build từ `main`. Không còn nhánh / migration nào chờ.
 - **Ca mới (agent):** `git checkout main` → `git pull` → tách nhánh mới `agent/claude/<việc>` từ `main`. Kiểm thử: `npx tsc -b`, `npx vite build`, `npx vitest run` (**186 pass / 3 bỏ qua**). pgTAP local **213/213**.
 - **Người dùng cần thử trên app thật (chưa ai thử):**

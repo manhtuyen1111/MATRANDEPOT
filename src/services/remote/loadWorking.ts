@@ -157,16 +157,23 @@ async function fetchRaw(client: SupabaseClient, since: string, until: string): P
 type PhotoCache = Map<string, { url: string; at: number }>;
 async function signPhotos(client: SupabaseClient, raw: RawData, cache: PhotoCache): Promise<(p: string | null) => string> {
   const now = Date.now();
-  const paths = Array.from(new Set([...raw.gateIns.map((g) => g.door_photo_path), ...raw.items.map((i) => i.door_photo_path)]))
-    .filter((p): p is string => Boolean(p) && !/^(https?:|data:)/.test(p))
-    .filter((p) => {
-      const c = cache.get(p);
-      return !c || now - c.at > PHOTO_RESIGN_MS;
-    });
-  for (let i = 0; i < paths.length; i += 100) {
-    const { data } = await client.storage.from('door-photos').createSignedUrls(paths.slice(i, i + 100), PHOTO_LINK_SECONDS);
-    for (const x of data || []) if (x.path && x.signedUrl) cache.set(x.path, { url: x.signedUrl, at: now });
-  }
+  const need = (list: (string | null | undefined)[]) =>
+    Array.from(new Set(list))
+      .filter((p): p is string => Boolean(p) && !/^(https?:|data:)/.test(p!))
+      .filter((p) => {
+        const c = cache.get(p);
+        return !c || now - c.at > PHOTO_RESIGN_MS;
+      });
+  const sign = async (bucket: string, paths: string[]) => {
+    for (let i = 0; i < paths.length; i += 100) {
+      const { data } = await client.storage.from(bucket).createSignedUrls(paths.slice(i, i + 100), PHOTO_LINK_SECONDS);
+      for (const x of data || []) if (x.path && x.signedUrl) cache.set(x.path, { url: x.signedUrl, at: now });
+    }
+  };
+  await Promise.all([
+    sign('door-photos', need([...raw.gateIns.map((g) => g.door_photo_path), ...raw.items.map((i) => i.door_photo_path)])),
+    sign('repair-photos', need(raw.works.flatMap((w) => (w.photo_paths as string[] | null) || []))), // DEC-176
+  ]);
   return (p) => (p ? cache.get(p)?.url || p : '');
 }
 
@@ -317,6 +324,7 @@ function buildState(base: DepotState, raw: RawData, photo: (p: string | null) =>
     repairMemberRates: (membersByWork.get(w.id) || []).map((m) => ({
       name: m.member_name, gradeName: opt(m.grade_name), hourlyRate: m.hourly_rate === null || m.hourly_rate === undefined ? undefined : num(m.hourly_rate),
     })), // DEC-174
+    repairPhotos: w.photo_paths?.length ? (w.photo_paths as string[]).map((p) => photo(p)) : undefined, // DEC-176
   });
 
   const mapHistory = (h: Row): LocationHistoryItem => ({

@@ -385,9 +385,15 @@ export interface RepairOutputRow {
   containers: number;
   hours: number;
   jobs: RepairOutputJob[];
-  // DEC-173 / DEC-174: thành tiền = tổng (giờ chia × đơn giá chốt của từng cont); bậc / đơn giá chỉ hiện khi cả kỳ cùng 1 mức
+  // DEC-173 / DEC-174: bậc / đơn giá chỉ hiện khi cả kỳ cùng 1 mức
   gradeName?: string;
   hourlyRate?: number;
+  // DEC-175: LƯƠNG SẢN PHẨM = tổng (giờ chia × đơn giá chốt của từng cont);
+  // GIỜ VƯỢT GIỜ = giờ công trong khoảng lọc vượt mốc; SẢN PHẨM VƯỢT GIỜ = giờ vượt × đơn giá vượt giờ;
+  // TỔNG TIỀN SẢN PHẨM = LƯƠNG SẢN PHẨM + SẢN PHẨM VƯỢT GIỜ
+  productWage?: number;
+  overtimeHours: number;
+  overtimeAmount: number;
   amount?: number;
 }
 
@@ -416,7 +422,7 @@ export function queryRepairOutput(state: DepotState, filter: RepairOutputFilter)
         .filter((m) => !filter.memberName || m === filter.memberName)
         .forEach((m) => {
           const key = `${w.repairTeamName || ''}|${m}`;
-          const row = byMember.get(key) || { memberName: m, teamName: w.repairTeamName || '', containers: 0, hours: 0, jobs: [] };
+          const row = byMember.get(key) || { memberName: m, teamName: w.repairTeamName || '', containers: 0, hours: 0, jobs: [], overtimeHours: 0, overtimeAmount: 0 };
           row.containers += 1;
           row.hours += share;
           const fixed = (w.repairMemberRates || []).find((x) => x.name.trim() === m && x.hourlyRate !== undefined);
@@ -430,17 +436,25 @@ export function queryRepairOutput(state: DepotState, filter: RepairOutputFilter)
           byMember.set(key, row);
         });
     });
+  const overtime = state.repairOvertime;
   return Array.from(byMember.values())
     .map((r) => {
       const priced = r.jobs.filter((j) => j.amount !== undefined);
       const rates = new Set(priced.map((j) => j.hourlyRate));
       const grades = new Set(priced.map((j) => j.gradeName));
+      const hours = round2(r.hours);
+      const productWage = priced.length ? priced.reduce((s, j) => s + (j.amount || 0), 0) : undefined;
+      const overtimeHours = overtime ? round2(Math.max(0, hours - overtime.thresholdHours)) : 0;
+      const overtimeAmount = overtime ? Math.round(overtimeHours * overtime.hourlyRate) : 0;
       return {
         ...r,
-        hours: round2(r.hours),
+        hours,
         gradeName: grades.size === 1 ? [...grades][0] : grades.size > 1 ? 'Nhiều bậc' : undefined,
         hourlyRate: rates.size === 1 ? [...rates][0] : undefined,
-        amount: priced.length ? priced.reduce((s, j) => s + (j.amount || 0), 0) : undefined,
+        productWage,
+        overtimeHours,
+        overtimeAmount,
+        amount: productWage === undefined && !overtimeAmount ? undefined : (productWage || 0) + overtimeAmount,
       };
     })
     .map((r) => ({ ...r, jobs: r.jobs.sort((a, b) => (b.workOrder.completedAt || '').localeCompare(a.workOrder.completedAt || '')) }))
@@ -451,15 +465,20 @@ export function repairOutputSheets(rows: RepairOutputRow[]): SheetData[] {
   return [
     {
       name: 'SẢN LƯỢNG SỬA CHỮA',
-      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'BẬC THỢ', 'SỐ CONT', 'GIỜ CÔNG', 'NHÂN CÔNG BẬC THỢ (Đ/GIỜ)', 'TỔNG TIỀN SẢN PHẨM (VND)'],
+      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'BẬC THỢ', 'SỐ CONT', 'GIỜ CÔNG', 'NHÂN CÔNG BẬC THỢ (Đ/GIỜ)', 'LƯƠNG SẢN PHẨM', 'GIỜ VƯỢT GIỜ', 'SẢN PHẨM VƯỢT GIỜ', 'TỔNG TIỀN SẢN PHẨM (VND)'],
       rows: [
-        ...rows.map((r) => [r.teamName, r.memberName, r.gradeName || '', r.containers, r.hours, r.hourlyRate ?? '', r.amount ?? '']),
-        ['', 'TỔNG', '', rows.reduce((s, r) => s + r.containers, 0), round2(rows.reduce((s, r) => s + r.hours, 0)), '', rows.reduce((s, r) => s + (r.amount || 0), 0)],
+        ...rows.map((r) => [r.teamName, r.memberName, r.gradeName || '', r.containers, r.hours, r.hourlyRate ?? '', r.productWage ?? '', r.overtimeHours, r.overtimeAmount, r.amount ?? '']),
+        [
+          '', 'TỔNG', '', rows.reduce((s, r) => s + r.containers, 0), round2(rows.reduce((s, r) => s + r.hours, 0)), '',
+          rows.reduce((s, r) => s + (r.productWage || 0), 0), round2(rows.reduce((s, r) => s + r.overtimeHours, 0)),
+          rows.reduce((s, r) => s + r.overtimeAmount, 0), rows.reduce((s, r) => s + (r.amount || 0), 0),
+        ],
       ],
     },
     {
+      // Vượt giờ tính trên tổng giờ cả kỳ của nhân viên → sheet chi tiết từng cont chỉ có LƯƠNG SẢN PHẨM
       name: 'CHI TIẾT',
-      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'GIỜ CÔNG CONT', 'SỐ NGƯỜI', 'GIỜ CÔNG CHIA', 'BẬC THỢ', 'NHÂN CÔNG BẬC THỢ (Đ/GIỜ)', 'TỔNG TIỀN SẢN PHẨM (VND)', 'NGÀY HOÀN TẤT'],
+      columns: ['TỔ SỬA CHỮA', 'NHÂN VIÊN', 'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'GIỜ CÔNG CONT', 'SỐ NGƯỜI', 'GIỜ CÔNG CHIA', 'BẬC THỢ', 'NHÂN CÔNG BẬC THỢ (Đ/GIỜ)', 'LƯƠNG SẢN PHẨM', 'NGÀY HOÀN TẤT'],
       rows: rows.flatMap((r) =>
         r.jobs.map((j) => [
           r.teamName, r.memberName, j.workOrder.masterDossierCode, j.workOrder.containerNo, j.container?.size || '', j.container?.type || '',

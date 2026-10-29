@@ -12,7 +12,7 @@ Nguồn: bản Demo (mốc `demo-truoc-database-2026-10-26`), `docs/STATUS_CATAL
 | Người dùng | 50–70 nhân viên dùng cùng lúc (DEC-150) |
 | Tải | 10.000–15.000 container ra vào / tháng ≈ 500 lượt / ngày, cao điểm ~60 lượt / giờ |
 | Dữ liệu trực tuyến | 3 năm; quá hạn chuyển kho lưu trữ theo tháng (DEC-150) |
-| Ảnh | ~200 KB / ảnh, giữ 2 tháng (DEC-159) |
+| Ảnh | < 200 KB / ảnh, **không tự xóa** — quản trị tải backup rồi xóa tay (DEC-176, thay DEC-159). Gate in `door-photos/ANH-GATE-IN/năm/tháng/ngày`; Sửa chữa `repair-photos/ANH-SUA-CHUA/năm/tháng/ngày/tổ/số cont` |
 | Đăng nhập | Tên đăng nhập → email nội bộ; không khóa, không tự đăng xuất (DEC-151) |
 | Mất mạng | Không lưu tạm; báo lỗi, chờ có mạng (DEC-151) |
 

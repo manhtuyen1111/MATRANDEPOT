@@ -14,7 +14,7 @@ async function rows<T>(query: PromiseLike<{ data: T[] | null; error: { message: 
 }
 
 export async function loadCatalogState(client: SupabaseClient, me: StaffSession): Promise<DepotState> {
-  const [partners, sizes, types, blocks, fees, teams, company, staff, stuffing, grades] = await Promise.all([
+  const [partners, sizes, types, blocks, fees, teams, company, staff, stuffing, grades, overtime] = await Promise.all([
     rows<{ id: string; code: string; name: string; is_shipping_line: boolean; is_customer: boolean; allow_tts: boolean; is_priority: boolean }>(
       client.from('partners').select('id, code, name, is_shipping_line, is_customer, allow_tts, is_priority').eq('is_active', true).order('code')
     ),
@@ -44,6 +44,8 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
     rows<{ id: string; code: string; name: string; hourly_rate: number; is_active: boolean }>(
       client.from('repair_grades').select('id, code, name, hourly_rate, is_active').order('code')
     ),
+    // DEC-175: vượt giờ sửa chữa (1 dòng)
+    rows<{ threshold_hours: number; hourly_rate: number }>(client.from('repair_overtime_settings').select('threshold_hours, hourly_rate')),
   ]);
 
   const currentUser: StaffUser = { id: me.id, staffCode: me.staffCode, fullName: me.fullName, email: me.email, roles: me.roles, isActive: me.isActive };
@@ -71,6 +73,7 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
       members: (t.repair_team_members || []).map((m) => ({ id: m.id, fullName: m.full_name, isActive: m.is_active, staffUserId: m.staff_id || undefined, gradeId: m.grade_id || undefined })),
     })),
     repairGrades: grades.map((g) => ({ id: g.id, code: g.code, name: g.name, hourlyRate: Number(g.hourly_rate), isActive: g.is_active })),
+    repairOvertime: overtime[0] ? { thresholdHours: Number(overtime[0].threshold_hours), hourlyRate: Number(overtime[0].hourly_rate) } : base.repairOvertime,
     companyProfile: company[0]
       ? { name: company[0].name, shortName: company[0].short_name, address: company[0].address, phone: company[0].phone, email: company[0].email, taxCode: company[0].tax_code, bankAccount: company[0].bank_account }
       : base.companyProfile,

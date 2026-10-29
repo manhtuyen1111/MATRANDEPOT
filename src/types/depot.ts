@@ -547,6 +547,8 @@ export interface ServiceWorkOrder {
   repairMembers?: string[];
   // DEC-174: bậc thợ + đơn giá (đ / giờ) của từng nhân viên LÚC HOÀN TẤT sửa chữa — đổi đơn giá sau không ảnh hưởng
   repairMemberRates?: { name: string; gradeName?: string; hourlyRate?: number }[];
+  // DEC-176: ảnh HOÀN THÀNH SỬA CHỮA (1–30 ảnh, mỗi ảnh < 200 KB). Demo: ảnh nén dạng data:; database: link xem tạm của kho repair-photos
+  repairPhotos?: string[];
 }
 
 export interface BookingReleasedItem {
@@ -635,6 +637,12 @@ export interface RepairGrade {
   name: string;
   hourlyRate: number;
   isActive: boolean;
+}
+
+// DEC-175: VƯỢT GIỜ sửa chữa — giờ công trên mốc (theo khoảng lọc báo cáo) tính thêm đơn giá vượt giờ / giờ
+export interface RepairOvertimeSetting {
+  thresholdHours: number;
+  hourlyRate: number;
 }
 
 export interface RepairTeam {

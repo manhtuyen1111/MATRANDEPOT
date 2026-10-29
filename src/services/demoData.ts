@@ -37,6 +37,8 @@ const as = (state: DepotState, userId: string): DepotState => ({
 });
 
 const LINE = 'MSK';
+// Ảnh giữ chỗ (không phải ảnh thật) — hàm nghiệp vụ bắt buộc có ảnh cửa / ảnh hoàn thành sửa chữa (DEC-176)
+const PHOTO = 'data:image/jpeg;base64,AAA';
 // 10 khách hàng test (tên chung — người dùng chưa cung cấp tên thật); KH09, KH10 không cho TTS để thử chặn
 const CUSTOMERS = Array.from({ length: 10 }, (_, i) => {
   const no = String(i + 1).padStart(2, '0');
@@ -207,7 +209,7 @@ function bulkData(state: DepotState): DepotState {
     if (k % 3 === 0) return;
     s = saveQuotationDraft(as(s, 'usr-quotation'), { containerNo: m.no, quotationItems: ['Gò nắn vách', 'Sơn dặm'], laborHours: 1 + (k % 4) });
     s = confirmQuotationToRepair(as(s, 'usr-quotation'), { containerNo: m.no });
-    if (k % 3 === 2) s = completeRepairTask(as(s, 'usr-repair'), { containerNo: m.no, teamId: 'rt-1', memberIds: ['rtm-1', 'rtm-2'] });
+    if (k % 3 === 2) s = completeRepairTask(as(s, 'usr-repair'), { containerNo: m.no, teamId: 'rt-1', memberIds: ['rtm-1', 'rtm-2'], photos: [PHOTO] });
   });
 
   // W-SURVEY: một nửa đã giám định bổ sung trên kệ
@@ -348,7 +350,7 @@ export function createDemoState(): DepotState {
   s = confirmQuotationToRepair(as(s, 'usr-quotation'), { containerNo: 'MSKU1000066' });
   s = saveQuotationDraft(as(s, 'usr-quotation'), { containerNo: 'MSKU1000077', quotationItems: ['Nắn khung cửa', 'Thay gioăng'], laborHours: 3.5 });
   s = confirmQuotationToRepair(as(s, 'usr-quotation'), { containerNo: 'MSKU1000077' });
-  s = completeRepairTask(as(s, 'usr-repair'), { containerNo: 'MSKU1000077', teamId: 'rt-1', memberIds: ['rtm-1', 'rtm-2'] });
+  s = completeRepairTask(as(s, 'usr-repair'), { containerNo: 'MSKU1000077', teamId: 'rt-1', memberIds: ['rtm-1', 'rtm-2'], photos: [PHOTO] });
 
   // ── CẤP VỎ: 1 lượt đã xuất bãi (TT tiền mặt), 1 lượt TTS chờ Xe nâng
   s = createReleaseOrder(as(s, 'usr-office'), { bookingNo: 'BK-MSK-0001', customerName: KH(2), containerNo: 'MSKU2000011', truckNo: '15H-501.01', driverPhone: '0987 654 321', feeCatalogIds: FEES['40'] });
