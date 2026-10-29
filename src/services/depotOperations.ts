@@ -2004,6 +2004,21 @@ export function setRepairGradeActive(state: DepotState, input: { id: string; isA
   );
 }
 
+// DEC-175: VƯỢT GIỜ — mốc giờ công + đơn giá vượt giờ (đ / giờ), dùng ở báo cáo SẢN LƯỢNG SỬA CHỮA. Chỉ ADMIN.
+export function updateRepairOvertime(state: DepotState, input: { thresholdHours: number; hourlyRate: number }): DepotState {
+  assertAdmin(state);
+  if (!Number.isFinite(input.thresholdHours) || input.thresholdHours <= 0) throw new Error('MỐC GIỜ CÔNG phải lớn hơn 0.');
+  if (!Number.isFinite(input.hourlyRate) || input.hourlyRate <= 0) throw new Error('ĐƠN GIÁ VƯỢT GIỜ (đ / giờ) phải lớn hơn 0.');
+  const row = { thresholdHours: Math.round(input.thresholdHours * 100) / 100, hourlyRate: Math.round(input.hourlyRate) };
+  return appendAudit(
+    { ...state, repairOvertime: row },
+    'ADMIN_UPDATE_REPAIR_OVERTIME',
+    'CATALOG',
+    'REPAIR_OVERTIME',
+    `[Admin Danh mục chung] VƯỢT GIỜ: trên ${row.thresholdHours} giờ — ${row.hourlyRate.toLocaleString('vi-VN')}đ / giờ`
+  );
+}
+
 // DEC-173: DANH SÁCH NHÂN VIÊN SỬA CHỮA = user có vai trò Sửa chữa; mỗi người thuộc đúng 1 tổ + 1 bậc thợ (bắt buộc cả 2).
 export function repairStaffAssignment(state: DepotState, staffUserId: string): { team?: RepairTeam; member?: RepairTeamMember; grade?: RepairGrade } {
   for (const team of state.repairTeams) {

@@ -637,6 +637,12 @@ export interface RepairGrade {
   isActive: boolean;
 }
 
+// DEC-175: VƯỢT GIỜ sửa chữa — giờ công trên mốc (theo khoảng lọc báo cáo) tính thêm đơn giá vượt giờ / giờ
+export interface RepairOvertimeSetting {
+  thresholdHours: number;
+  hourlyRate: number;
+}
+
 export interface RepairTeam {
   id: string;
   code: string;

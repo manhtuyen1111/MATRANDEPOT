@@ -1570,3 +1570,50 @@ describe('DEC-174 đơn giá cũ tính theo giá cũ', () => {
     expect(r.gradeName).toBe('Nhiều bậc');
   });
 });
+
+// DEC-175: VƯỢT GIỜ — giờ công trong khoảng lọc trên mốc (mặc định 200) tính thêm đơn giá vượt giờ (mặc định 3.000 đ / giờ)
+import { updateRepairOvertime } from '../src/services/depotOperations';
+import { repairOutputSheets } from '../src/services/reports';
+describe('DEC-175 vượt giờ sửa chữa', () => {
+  const admin = as(createInitialState(), 'usr-admin');
+  const range = { dateFrom: '28/10/2026 00:00:00', dateTo: '28/10/2026 23:59:59' };
+  const job = (id: string, hours: number, members: string[], rate?: number) => ({
+    id, workOrderCode: `SC-${id}`, masterDossierCode: `HV-${id}`, containerNo: `TEST${id}`, category: 'REPAIR' as const, items: [], estimateCost: 0,
+    approvalStatus: 'APPROVED' as const, workStatus: 'COMPLETED' as const, assignedTo: '', createdAt: '2026-10-28T01:00:00.000Z',
+    completedAt: '2026-10-28T02:00:00.000Z', laborHours: hours, repairMembers: members,
+    repairMemberRates: rate === undefined ? undefined : members.map((name) => ({ name, gradeName: 'Bậc 1', hourlyRate: rate })),
+  });
+  it('mặc định 200 giờ / 3.000 đ; tổng tiền = lương sản phẩm + sản phẩm vượt giờ', () => {
+    expect(admin.repairOvertime).toEqual({ thresholdHours: 200, hourlyRate: 3000 });
+    const rows = queryRepairOutput({ ...admin, workOrders: [job('1', 150, ['An'], 10000), job('2', 100, ['An'], 10000), job('3', 120, ['Bình'], 10000)] }, range);
+    const an = rows.find((r) => r.memberName === 'An')!;
+    expect(an.hours).toBe(250);
+    expect(an.productWage).toBe(2500000);
+    expect(an.overtimeHours).toBe(50);
+    expect(an.overtimeAmount).toBe(150000);
+    expect(an.amount).toBe(2650000);
+    const binh = rows.find((r) => r.memberName === 'Bình')!;
+    expect([binh.overtimeHours, binh.overtimeAmount, binh.amount]).toEqual([0, 0, 1200000]);
+  });
+  it('đúng 200 giờ chưa vượt; chưa có bậc thợ vẫn tính sản phẩm vượt giờ', () => {
+    const rows = queryRepairOutput({ ...admin, workOrders: [job('1', 200, ['An'], 10000), job('2', 210, ['Cường'])] }, range);
+    expect(rows.find((r) => r.memberName === 'An')!.overtimeHours).toBe(0);
+    const c = rows.find((r) => r.memberName === 'Cường')!;
+    expect([c.productWage, c.overtimeHours, c.overtimeAmount, c.amount]).toEqual([undefined, 10, 30000, 30000]);
+  });
+  it('Admin đổi mốc / đơn giá → báo cáo tính theo cấu hình mới; người khác hoặc số sai bị từ chối', () => {
+    const s = updateRepairOvertime(admin, { thresholdHours: 100, hourlyRate: 5000 });
+    expect(s.auditLogs[0].actionCode).toBe('ADMIN_UPDATE_REPAIR_OVERTIME');
+    const an = queryRepairOutput({ ...s, workOrders: [job('1', 150, ['An'], 10000)] }, range)[0];
+    expect([an.overtimeHours, an.overtimeAmount, an.amount]).toEqual([50, 250000, 1750000]);
+    expect(() => updateRepairOvertime(as(admin, 'usr-office'), { thresholdHours: 100, hourlyRate: 5000 })).toThrow(/ADMIN/);
+    expect(() => updateRepairOvertime(admin, { thresholdHours: 0, hourlyRate: 5000 })).toThrow(/MỐC GIỜ CÔNG/);
+    expect(() => updateRepairOvertime(admin, { thresholdHours: 200, hourlyRate: -1 })).toThrow(/VƯỢT GIỜ/);
+  });
+  it('Excel tổng hợp có 3 cột mới trước TỔNG TIỀN SẢN PHẨM, dòng tổng cộng đúng', () => {
+    const [sum] = repairOutputSheets(queryRepairOutput({ ...admin, workOrders: [job('1', 250, ['An'], 10000)] }, range));
+    expect(sum.columns.slice(-4)).toEqual(['LƯƠNG SẢN PHẨM', 'GIỜ VƯỢT GIỜ', 'SẢN PHẨM VƯỢT GIỜ', 'TỔNG TIỀN SẢN PHẨM (VND)']);
+    expect(sum.rows[0].slice(-4)).toEqual([2500000, 50, 150000, 2650000]);
+    expect(sum.rows[1].slice(-4)).toEqual([2500000, 50, 150000, 2650000]);
+  });
+});
