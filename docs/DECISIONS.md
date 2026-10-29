@@ -1527,6 +1527,14 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-190 — Menu: chỉ mở 1 bộ phận một lúc
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng).
+- Menu bên trái: bấm mở bộ phận khác → bộ phận đang mở **tự thu gọn**; chỉ 1 bộ phận mở tại một thời điểm. Bấm lại tiêu đề bộ phận đang mở → thu gọn.
+- Mở màn từ nơi khác (link phiếu thu, hồ sơ…) → menu tự mở đúng bộ phận chứa màn đó.
+- Không còn ghi nhớ nhóm thu gọn trong trình duyệt (bỏ `collapsedGroups`); thanh menu thu nhỏ (rail) giữ nguyên.
+- Code: `openGroup` / `toggleGroup` (`App.tsx`); nhóm thu gọn ẩn bằng `hidden`.
+
 ### DEC-189 — Danh mục chung → Database: theo dõi sức khỏe database (chỉ Admin)
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi).
@@ -1877,6 +1885,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-189 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-190 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
