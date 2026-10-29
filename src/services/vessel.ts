@@ -667,6 +667,10 @@ export function containerOperation(state: DepotState, c: ContainerRecord): Conta
     return { code: 'DOI_CONT', label: CONTAINER_OPERATION_LABELS.DOI_CONT, dossierCode: c.swapReturn.gateOutCode };
   }
   if (c.status === 'ALLOCATED' && c.outDossierCode) {
+    // DEC-186: cont cấp thay sau ĐỔI CONTAINER → Chờ cấp vỏ cũng mang nhãn ĐỔI CONT
+    if (state.gateOutOrders.some((o) => o.gateOutCode === c.outDossierCode && o.swaps?.length)) {
+      return { code: 'DOI_CONT', label: CONTAINER_OPERATION_LABELS.DOI_CONT, dossierCode: c.outDossierCode };
+    }
     return { code: 'CAP_VO', label: CONTAINER_OPERATION_LABELS.CAP_VO, dossierCode: c.outDossierCode };
   }
   if (c.masterDossierCode.startsWith('NT-')) {

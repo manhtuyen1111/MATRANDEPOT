@@ -4,7 +4,7 @@ import { completeCleaningTask, completeRepairTask, executeGateOut, updateContain
 import { Camera, CheckCircle2, ChevronDown, ChevronUp, MapPin, QrCode, Search, X } from 'lucide-react';
 import { ContainerRecord, SWAP_REASON_LABELS } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
-import { REPAIR_PHOTO_MAX, REPAIR_PHOTO_MIN } from '../../services/depotOperations';
+import { REPAIR_PHOTO_MAX, REPAIR_PHOTO_MIN, swapPlacementBlocker } from '../../services/depotOperations';
 import { PhotoCamera } from '../../components/PhotoCamera';
 
 import { formatLocation } from '../../services/core';
@@ -198,6 +198,8 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
 
   const needsSlot = mode === 'XN_CHO_HA_VO';
   const isForklift = mode === 'XN_CHO_HA_VO' || mode === 'XN_CHO_CAP_VO';
+  // DEC-186: lệnh đã ĐỔI CONTAINER mà cont cũ chưa hạ → chưa cấp được (kiểm tra ở service, đây chỉ hiển thị lý do)
+  const swapWait = (c: ContainerRecord) => swapPlacementBlocker(state, state.gateOutOrders.find((o) => o.gateOutCode === c.outDossierCode));
   const isRepair = mode === 'SC_CHO_SUA_CHUA';
   const canConfirm =
     scanned && (!needsSlot || isSlotComplete(slot, state)) && (!isRepair || (selectedTeam && memberIds.length > 0 && photos.length >= REPAIR_PHOTO_MIN));
@@ -302,6 +304,12 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
               {mode === 'XN_CHO_HA_VO' && scanned.forkliftShiftTask === 'HA_KE_GIAM_DINH' && (
                 <div className="rounded bg-amber-400 px-2 py-1.5 text-center text-base font-black text-ink" data-testid="ha-ke-giam-dinh">
                   HẠ KỆ GIÁM ĐỊNH — không hạ về bay
+                </div>
+              )}
+              {/* DEC-186: cont cấp thay — phải hạ cont cũ (Chờ hạ vỏ) xong mới cấp được */}
+              {mode === 'XN_CHO_CAP_VO' && swapWait(scanned) && (
+                <div className="rounded bg-danger-fg px-2 py-1.5 text-center text-sm font-black text-white" data-testid="swap-wait">
+                  ĐỔI CONT — {swapWait(scanned)}
                 </div>
               )}
               {/* DEC-185: cont trả về sau ĐỔI CONTAINER — hạ lại, chọn vị trí mới; hư hỏng → hạ khu sửa chữa */}
@@ -467,7 +475,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                     label={isRepair ? 'CHỜ SỬA CHỮA' : undefined} // nhãn đầu dòng Chờ sửa chữa (không hiện HẠ VỎ)
                     extra={
                       mode === 'XN_CHO_CAP_VO'
-                        ? `${c.allocatedTruckNo || '-'} • ${c.allocatedDriverPhone || '-'}`
+                        ? swapWait(c) ? 'CHỜ HẠ CONT CŨ TRƯỚC' : `${c.allocatedTruckNo || '-'} • ${c.allocatedDriverPhone || '-'}`
                         : isRepair
                         ? `${c.releaseDamage ? 'PHÁT SINH CẤP VỎ • ' : ''}${repairWoOf(c)?.laborHours ?? c.quotationLaborHours ?? '-'} giờ công` // DEC-185
                         : mode === 'XN_CHO_HA_VO' && c.forkliftShiftTask === 'HA_KE_GIAM_DINH'

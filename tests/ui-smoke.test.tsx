@@ -1162,5 +1162,8 @@ describe('DEC-185: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ', ()
     expect(getFieldQueue(s, 'XN_CHO_HA_VO').some((c) => c.id === back.id)).toBe(true);
     const row = strip(renderToString(<QueueListRow state={s} container={back} extra="HẠ KHU SỬA CHỮA (cont hư)" onClick={noop} />));
     expect(row).toContain('ĐỔI CONT');
+    // DEC-186: Chờ cấp vỏ — cont cấp thay cũng mang nhãn ĐỔI CONT
+    const freshRow = strip(renderToString(<QueueListRow state={s} container={s.containers.find((c) => c.containerNo === fresh.containerNo && c.status === 'ALLOCATED')!} extra="CHỜ HẠ CONT CŨ TRƯỚC" onClick={noop} />));
+    expect(freshRow).toContain('ĐỔI CONT');
   });
 });

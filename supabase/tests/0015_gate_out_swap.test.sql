@@ -1,7 +1,7 @@
--- pgTAP — DEC-185: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ (swap_gate_out_container) + Xe nâng hạ lại (update_container_location).
+-- pgTAP — DEC-185 / DEC-186: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ (swap_gate_out_container) + Xe nâng hạ lại (update_container_location).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(27);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000a1', 'gd@matrandepot.local'),
@@ -93,8 +93,11 @@ select throws_like(format($$ select public.swap_gate_out_container(gen_random_uu
 
 -- Xe nâng cấp cont mới bằng QR phiếu đang cầm; hạ lại cont cũ → tồn bãi, cấp được khách khác
 select pg_temp.login('00000000-0000-0000-0000-0000000000a4');
-select lives_ok(format($$ select public.execute_gate_out(gen_random_uuid(), null, %L) $$, 'QR-' || :'cv1'), 'Xe nâng quét QR-CV- cũ → cấp cont mới');
+-- DEC-186: chưa hạ cont cũ thì không cấp được cont mới
+select throws_like(format($$ select public.execute_gate_out(gen_random_uuid(), null, %L) $$, 'QR-' || :'cv1'),
+  '%Phải HẠ container MSKU3000001%', 'Chưa hạ cont cũ → chặn cấp cont mới');
 select lives_ok($$ select public.update_container_location(gen_random_uuid(), 'BLOCK-B', null, null, null, '', 'MSKU3000001') $$, 'Xe nâng hạ lại cont cũ');
+select lives_ok(format($$ select public.execute_gate_out(gen_random_uuid(), null, %L) $$, 'QR-' || :'cv1'), 'Hạ xong → quét QR-CV- cũ cấp cont mới');
 select is((select count(*)::int from public.location_history where container_no = 'MSKU3000001' and action = 'SWAP_RETURN'), 1, 'Lịch sử vị trí: Hạ lại (đổi container)');
 select is((select public.release_blocker(c) from public.containers c where container_no = 'MSKU3000001' and status <> 'GATED_OUT'), null,
   'Kén vỏ: hạ xong cấp được khách khác');
