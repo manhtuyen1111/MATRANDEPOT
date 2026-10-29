@@ -7,15 +7,11 @@ import {
   ChevronDown,
   ClipboardCheck,
   Forklift,
-  KeyRound,
-  LogOut,
   Menu,
   PanelLeft,
-  RefreshCw,
   Settings2,
   Smartphone,
   SprayCan,
-  UserCheck,
   Wrench,
   X,
 } from 'lucide-react';
@@ -29,6 +25,7 @@ import { FieldQueueMode, FieldQueueWorkspaces, getFieldQueue } from '../features
 import { ticketsAwaitingReturn } from '../services/driverRoute';
 import { pendingRackInspections } from '../services/depotOperations';
 import { FeedbackButton } from '../components/FeedbackButton';
+import { AccountMenu } from '../components/AccountMenu';
 import { ScreenLoading } from '../components/LoadingScreens';
 import type { VesselFieldMode } from '../features/vessel/VesselFieldMobile';
 import type { CatalogTab } from '../features/catalog/MasterCatalogWorkspace';
@@ -449,76 +446,48 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-line bg-white px-4 py-2">
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setDrawerOpen(true)} aria-label="Mở menu" className="rounded-md border border-line p-1.5 text-ink-muted lg:hidden">
+        {/* Header 1 dòng: tên màn + Góp ý + icon QUẢN TRỊ HỆ THỐNG (gộp thông tin nhân viên, Tải lại, Đổi mật khẩu, Đăng xuất) */}
+        <header className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-line bg-white px-3 py-2 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <button type="button" onClick={() => setDrawerOpen(true)} aria-label="Mở menu" className="shrink-0 rounded-md border border-line p-1.5 text-ink-muted lg:hidden">
               <Menu className="h-4 w-4" />
             </button>
-            <p className="text-xs text-ink-muted">
+            <p className="truncate text-xs text-ink-muted">
               {activeGroup && activeGroup.items.length > 1 && <span>{activeGroup.label} / </span>}
               <span className="font-bold text-ink">{activeItem?.label}</span>
             </p>
             {activeItem?.mobile && (
-              <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
                 <Smartphone className="h-3 w-3" />
-                Mobile
+                <span className="hidden sm:inline">Mobile</span>
               </span>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            {/* DEC-120: Góp ý — mọi người dùng, góc trên bên phải */}
-            <FeedbackButton state={state} onUpdateState={handleUpdateState} menuOptions={feedbackMenuOptions} />
+          <div className="flex shrink-0 items-center gap-1.5 text-xs">
             {!isSupabaseConfigured && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">DEMO</span>}
-            {remote ? (
-              <>
-                <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-canvas px-2 py-1" data-testid="session-user">
-                  <UserCheck className="h-3.5 w-3.5 text-ink-muted" />
-                  <span className="font-medium text-ink">{remote.fullName}</span>
-                  <span className="font-mono text-ink-muted">{remote.username}</span>
-                </span>
-                {remote.onReload && (
-                  <button type="button" onClick={remote.onReload} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas" data-testid="reload-data">
-                    <RefreshCw className="h-3 w-3" />
-                    Tải lại
-                  </button>
-                )}
-                <button type="button" onClick={remote.onChangePassword} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas">
-                  <KeyRound className="h-3 w-3" />
-                  Đổi mật khẩu
-                </button>
-                <button type="button" onClick={remote.onSignOut} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas" data-testid="sign-out">
-                  <LogOut className="h-3 w-3" />
-                  Đăng xuất
-                </button>
-              </>
-            ) : (<>
-            <label className="flex items-center gap-1.5 rounded-md border border-line bg-canvas px-2 py-1">
-              <UserCheck className="h-3.5 w-3.5 text-ink-muted" />
-              <span className="sr-only">Người dùng (Demo)</span>
-              <select
-                value={state.currentUser.id}
-                onChange={(e) => {
-                  const found = state.staffUsers.find((u) => u.id === e.target.value);
-                  if (found) handleUpdateState({ ...state, currentUser: found });
-                }}
-                className="max-w-[220px] bg-transparent font-medium text-ink focus:outline-hidden"
-              >
-                {state.staffUsers.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.fullName} ({u.roles.map((r) => ROLE_LABELS[r]).join(', ')})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button type="button" onClick={() => { if (window.confirm('Xóa toàn bộ dữ liệu tác nghiệp (container, lệnh, phiếu thu…)? Danh mục và góp ý được giữ lại.')) handleUpdateState({ ...resetDepotState(), feedbacks: state.feedbacks || [] }); }} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas">
-              <RefreshCw className="h-3 w-3" />
-              Xóa dữ liệu
-            </button>
-            <button type="button" onClick={() => { if (window.confirm('Thay toàn bộ dữ liệu hiện tại bằng DỮ LIỆU TEST (đủ các trường hợp)?')) setState(resetDepotState(createDemoState)); }} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-ink-muted hover:bg-canvas">
-              <RefreshCw className="h-3 w-3" />
-              Nạp dữ liệu test
-            </button>
-            </>)}
+            {/* DEC-120: Góp ý — mọi người dùng */}
+            <FeedbackButton state={state} onUpdateState={handleUpdateState} menuOptions={feedbackMenuOptions} />
+            <AccountMenu
+              currentUser={state.currentUser}
+              remote={remote}
+              demo={
+                remote
+                  ? undefined
+                  : {
+                      users: state.staffUsers,
+                      onSelectUser: (id) => {
+                        const found = state.staffUsers.find((u) => u.id === id);
+                        if (found) handleUpdateState({ ...state, currentUser: found });
+                      },
+                      onClearData: () => {
+                        if (window.confirm('Xóa toàn bộ dữ liệu tác nghiệp (container, lệnh, phiếu thu…)? Danh mục và góp ý được giữ lại.')) handleUpdateState({ ...resetDepotState(), feedbacks: state.feedbacks || [] });
+                      },
+                      onLoadTestData: () => {
+                        if (window.confirm('Thay toàn bộ dữ liệu hiện tại bằng DỮ LIỆU TEST (đủ các trường hợp)?')) setState(resetDepotState(createDemoState));
+                      },
+                    }
+              }
+            />
           </div>
         </header>
 
