@@ -173,7 +173,9 @@ describe('DEC-051: hồ sơ container link về Phiếu thu', () => {
     const withLink = renderToString(<MasterDossierModal masterDossierCode={gi.masterDossierCode} state={s} onClose={noop} onOpenReceipt={noop} />);
     // DEC-181: LỊCH SỬ HỒ SƠ — bảng THỜI GIAN / TÁC NGHIỆP / NỘI DUNG / CHI TIẾT / NHÂN VIÊN, cũ trên mới dưới; việc chưa làm ở dòng ĐANG CHỜ
     const plain = withLink.replace(/<!-- -->/g, '');
-    for (const col of ['Thời gian', 'Tác nghiệp', 'Nội dung', 'Chi tiết', 'Nhân viên']) expect(plain).toContain(col);
+    for (const col of ['Thời gian', 'Bộ phận', 'Nội dung', 'Chi tiết', 'Nhân viên']) expect(plain).toContain(col);
+    // DEC-184: ĐANG CHỜ mỗi việc 1 dòng, có bộ phận phụ trách
+    expect(plain.match(/data-testid="dossier-pending"/g)!.length).toBeGreaterThan(1);
     const order = ['Giám định — Hạ vỏ', 'Văn phòng — Hạ vỏ', 'Thanh toán — Hạ vỏ', 'Văn phòng — GATE IN OK', 'ĐANG CHỜ'].map((x) => plain.indexOf(x));
     expect(order.every((i) => i > 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);

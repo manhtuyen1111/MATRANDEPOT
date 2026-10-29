@@ -55,6 +55,7 @@ const ACTION_TONE: Record<HistoryAction, string> = {
 
 const HistoryDetail: React.FC<{ row: DossierHistoryRow; onOpenReceipt?: (key: string) => void }> = ({ row, onOpenReceipt }) => (
   <div className="space-y-1">
+    <p className="font-bold text-ink">{row.operation}</p>
     {row.location && (
       <p className="inline-flex flex-wrap items-center gap-1 font-semibold">
         {row.location.from && <><LocText text={row.location.from} /> →</>}
@@ -76,7 +77,7 @@ const HistoryDetail: React.FC<{ row: DossierHistoryRow; onOpenReceipt?: (key: st
   </div>
 );
 
-// LỊCH SỬ HỒ SƠ (DEC-181, DEC-183): mỗi tác nghiệp đúng 1 dòng; CHI TIẾT luôn ẩn (nút mắt) — bấm mắt mở dòng chi tiết ngay bên dưới;
+// LỊCH SỬ HỒ SƠ (DEC-181, DEC-183, DEC-184): cột BỘ PHẬN (tác nghiệp cụ thể ở đầu dòng chi tiết); mỗi tác nghiệp đúng 1 dòng; CHI TIẾT luôn ẩn (nút mắt) — bấm mắt mở dòng chi tiết ngay bên dưới;
 // nút MỞ / ẨN TOÀN BỘ CHI TIẾT. Bản in A4 (printMode) luôn mở hết, không có nút.
 export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (key: string) => void; printMode?: boolean }> = ({ history, onOpenReceipt, printMode = false }) => {
   const [open, setOpen] = React.useState<Set<string>>(() => new Set());
@@ -109,7 +110,7 @@ export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (
           <thead className="bg-canvas text-[10px] font-bold uppercase text-ink-muted">
             <tr>
               <th className="px-2.5 py-2">Thời gian</th>
-              <th className="px-2.5 py-2">Tác nghiệp</th>
+              <th className="px-2.5 py-2">Bộ phận</th>
               <th className="px-2.5 py-2">Nội dung</th>
               <th className="px-2.5 py-2 text-center">Chi tiết</th>
               <th className="px-2.5 py-2">Nhân viên</th>
@@ -120,7 +121,7 @@ export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (
               <React.Fragment key={r.id}>
                 <tr>
                   <td className="px-2.5 py-2 font-mono">{formatViTime(r.at)}</td>
-                  <td className="px-2.5 py-2 font-semibold">{r.operation}</td>
+                  <td className="px-2.5 py-2 font-semibold" title={r.operation}>{r.dept}</td>
                   <td className="px-2.5 py-2">
                     <span className={`rounded border px-1.5 py-0.5 text-[10px] font-bold ${ACTION_TONE[r.action]}`}>{r.action}</span>
                   </td>
@@ -151,14 +152,19 @@ export const HistoryTable: React.FC<{ history: DossierHistory; onOpenReceipt?: (
             {history.rows.length === 0 && (
               <tr><td colSpan={5} className="px-2.5 py-3 text-center text-ink-muted">Chưa có tác nghiệp.</td></tr>
             )}
-            {history.pending.length > 0 && (
-              <tr className="bg-amber-50" data-testid="dossier-pending">
-                <td colSpan={2} className="px-2.5 py-2 font-bold text-amber-800">
-                  <span className="inline-flex items-center gap-1"><Clock className="h-4 w-4" />ĐANG CHỜ</span>
+            {/* ĐANG CHỜ (DEC-184): mỗi việc chờ 1 dòng — icon đồng hồ, bộ phận phụ trách, nội dung chờ */}
+            {history.pending.map((p, i) => (
+              <tr key={`p${i}`} className="bg-amber-50/70" data-testid="dossier-pending">
+                <td className="px-2.5 py-2 text-amber-600">
+                  <Clock className="h-4 w-4 animate-pulse" aria-label="Đang chờ" />
                 </td>
-                <td colSpan={3} className="whitespace-normal px-2.5 py-2 font-semibold text-amber-900">{history.pending.join(' • ')}</td>
+                <td className="px-2.5 py-2 font-semibold text-amber-900">{p.dept}</td>
+                <td className="px-2.5 py-2">
+                  <span className="rounded border border-amber-400 bg-white px-1.5 py-0.5 text-[10px] font-bold text-amber-700">ĐANG CHỜ</span>
+                </td>
+                <td colSpan={2} className="px-2.5 py-2 font-semibold text-amber-900">{p.label}</td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
       </div>
