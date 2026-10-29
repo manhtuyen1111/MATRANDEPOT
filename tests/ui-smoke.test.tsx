@@ -1174,3 +1174,12 @@ describe('DEC-185: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ', ()
     expect(freshRow).toContain('ĐỔI CONT');
   });
 });
+
+describe('DEC-189: Danh mục chung → Database', () => {
+  it('Demo (không có database): hiện thông báo, không số liệu giả', async () => {
+    const { DatabaseHealthWorkspace } = await import('../src/features/catalog/DatabaseHealthWorkspace');
+    const html = renderToString(<DatabaseHealthWorkspace />);
+    expect(html).toContain('data-testid="db-health-demo"');
+    expect(html).not.toContain('db-health-checks');
+  });
+});

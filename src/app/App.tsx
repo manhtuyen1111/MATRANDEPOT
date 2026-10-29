@@ -20,6 +20,8 @@ import { DepotState, loadDepotState, resetDepotState, saveDepotState } from '../
 import { createDemoState } from '../services/demoData';
 import { canOpenMenu } from '../services/permissions';
 import { dossierLoaderActive, loadDossier, mergeDossier } from '../services/remote/dossierSource';
+import { dbHealthActive, fetchDbHealth } from '../services/remote/dbHealthSource';
+import { evaluateDbHealth, healthAlertCount, HEALTH_REFRESH_MS } from '../services/dbHealth';
 import { isSupabaseConfigured } from '../lib/env';
 import { openVesselLists, VesselFieldStep, vesselStepSummary } from '../services/vessel';
 import { FieldQueueMode, FieldQueueWorkspaces, getFieldQueue } from '../features/field-queues/FieldQueueWorkspaces';
@@ -72,6 +74,7 @@ const RepairTeamCatalog = named(() => import('../features/catalog/RepairTeamCata
 const StuffingClassCatalog = named(() => import('../features/catalog/StuffingClassCatalog'), 'StuffingClassCatalog');
 const UserRoleCatalog = named(() => import('../features/catalog/UserRoleCatalog'), 'UserRoleCatalog');
 const CompanyCatalog = named(() => import('../features/catalog/CompanyCatalog'), 'CompanyCatalog');
+const DatabaseHealthWorkspace = named(() => import('../features/catalog/DatabaseHealthWorkspace'), 'DatabaseHealthWorkspace');
 const FeedbackReport = named(() => import('../features/reports/FeedbackReport'), 'FeedbackReport');
 const MasterDossierModal = named(() => import('../components/MasterDossierModal'), 'MasterDossierModal');
 const K80TicketModal = named(() => import('../components/K80TicketModal'), 'K80TicketModal');
@@ -154,6 +157,7 @@ const MENU: MenuGroup[] = [
       { id: 'DM_CONG_TY', label: 'Công ty' },
       { id: 'DM_SUA_CHUA', label: 'Sửa chữa' },
       { id: 'DM_USER', label: 'User - Role' }, // DEC-144: đổi tên menu (giữ lại)
+      { id: 'DM_DATABASE', label: 'Database' }, // DEC-189: sức khỏe database (chỉ Admin)
     ],
   },
 ];
@@ -237,6 +241,29 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
         setActiveMenu('VP_PHIEU_THU');
       }
     : undefined;
+  // DEC-189: cảnh báo sức khỏe database trên menu (chỉ Admin, chế độ database) — kiểm tra khi mở app + mỗi 15 phút
+  const [dbAlerts, setDbAlerts] = useState<number | undefined>(undefined);
+  const seesDbHealth = canOpenMenu(state.currentUser, 'DM_DATABASE');
+  useEffect(() => {
+    if (!seesDbHealth) {
+      setDbAlerts(undefined);
+      return;
+    }
+    let stopped = false;
+    const check = () => {
+      if (!dbHealthActive()) return; // Demo: không có database
+      fetchDbHealth()
+        .then((r) => !stopped && setDbAlerts(healthAlertCount(evaluateDbHealth(r.snapshot, r.latencyMs))))
+        .catch(() => {}); // lỗi mạng: giữ số cũ, màn Database báo lỗi chi tiết
+    };
+    const first = window.setTimeout(check, 3000); // đợi tải dữ liệu làm việc xong
+    const timer = window.setInterval(check, HEALTH_REFRESH_MS);
+    return () => {
+      stopped = true;
+      window.clearTimeout(first);
+      window.clearInterval(timer);
+    };
+  }, [seesDbHealth]);
   const [prefs, setPrefs] = useState(readPrefs);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -285,6 +312,7 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
   badges.GD_XUAT_TAU = badges.XN_XUAT_TAU = vesselTodo("XUAT_TAU", "XT_EXPORT");
   badges.VP_NHAP_TAU = openVesselLists(state, "NHAP_TAU").length;
   badges.VP_XUAT_TAU = openVesselLists(state, "XUAT_TAU").length;
+  if (dbAlerts !== undefined) badges.DM_DATABASE = dbAlerts; // DEC-189
   // Việc hiện trường (mục mobile) đang chờ → nổi bật màu cam để bộ phận thấy ngay
   const urgent = (id: WorkspaceMenuId) => Boolean(MOBILE_MENU_IDS.has(id) && (badges[id] || 0) > 0);
 
@@ -405,7 +433,9 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
                             <span
                               title={urgent(item.id) ? "Có việc đang chờ" : undefined}
                               className={`inline-flex items-center gap-1 rounded px-1.5 font-mono text-[10px] font-bold ${
-                                urgent(item.id) ? "bg-amber-500 text-white" : active ? "bg-white/20" : "bg-navy-50 text-ink"
+                                item.id === "DM_DATABASE" && badges[item.id]! > 0
+                                  ? "bg-danger-fg text-white" // DEC-189: database có cảnh báo
+                                  : urgent(item.id) ? "bg-amber-500 text-white" : active ? "bg-white/20" : "bg-navy-50 text-ink"
                               }`}
                             >
                               {urgent(item.id) && !active && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" aria-label="Có việc đang chờ" />}
@@ -547,6 +577,7 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
           {activeMenu === 'DM_PHAN_LOAI' && <StuffingClassCatalog state={state} onUpdateState={handleUpdateState} />}
           {activeMenu === 'DM_USER' && <UserRoleCatalog state={state} onUpdateState={handleUpdateState} />}
           {activeMenu === 'DM_CONG_TY' && <CompanyCatalog state={state} onUpdateState={handleUpdateState} />}
+          {activeMenu === 'DM_DATABASE' && <DatabaseHealthWorkspace onAlertCount={setDbAlerts} />}
           {CATALOG_TABS[activeMenu] &&<MasterCatalogWorkspace state={state} onUpdateState={handleUpdateState} tab={CATALOG_TABS[activeMenu]} />}
           </Suspense>
         </main>
