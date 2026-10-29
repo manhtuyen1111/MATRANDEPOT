@@ -247,12 +247,16 @@ describe('CR-03 & DEC-035: Vệ sinh trước Xe nâng hạ vỏ; quyền hoàn 
     expect(() => approveDamageQuotation(as(s, 'usr-inspector'), quote)).toThrow(/Không đủ quyền/);
     expect(() => approveDamageQuotation(as(s, 'usr-office'), quote)).toThrow(/Không đủ quyền/);
     s = approveDamageQuotation(as(s, 'usr-quotation'), quote);
-    const repair = { containerNo: 'MSKU1234567', teamId: 'rt-1', memberIds: ['rtm-1'] };
+    const repair = { containerNo: 'MSKU1234567', teamId: 'rt-1', memberIds: ['rtm-1'], photos: ['data:image/jpeg;base64,A1', 'data:image/jpeg;base64,A2'] };
     expect(() => completeRepairTask(as(s, 'usr-office'), repair)).toThrow(/Không đủ quyền/);
     expect(() => completeRepairTask(as(s, 'usr-repair'), { ...repair, teamId: '' })).toThrow(/TỔ SỬA CHỮA/);
     expect(() => completeRepairTask(as(s, 'usr-repair'), { ...repair, memberIds: [] })).toThrow(/ít nhất 1 nhân viên/);
     expect(() => completeRepairTask(as(s, 'usr-repair'), { ...repair, memberIds: ['rtm-x'] })).toThrow();
+    // DEC-176: bắt buộc 1–30 ảnh HOÀN THÀNH SỬA CHỮA
+    expect(() => completeRepairTask(as(s, 'usr-repair'), { ...repair, photos: [] })).toThrow(/CHỤP ẢNH HOÀN THÀNH SỬA CHỮA/);
+    expect(() => completeRepairTask(as(s, 'usr-repair'), { ...repair, photos: Array(31).fill('data:image/jpeg;base64,A') })).toThrow(/Tối đa 30/);
     s = completeRepairTask(as(s, 'usr-repair'), repair);
+    expect(s.workOrders.find((w) => w.containerNo === 'MSKU1234567' && w.category === 'REPAIR')!.repairPhotos).toEqual(repair.photos);
     const c = s.containers.find((x) => x.containerNo === 'MSKU1234567')!;
     expect(c.conditionClass).toBe('AV');
     expect(c.needsRepair).toBe(false);
@@ -1568,6 +1572,17 @@ describe('DEC-174 đơn giá cũ tính theo giá cũ', () => {
     expect(r.amount).toBe(260000);
     expect(r.hourlyRate).toBeUndefined(); // nhiều mức
     expect(r.gradeName).toBe('Nhiều bậc');
+  });
+});
+
+// DEC-176: thư mục ảnh theo ngày — ANH-GATE-IN/năm/tháng/ngày, ANH-SUA-CHUA/năm/tháng/ngày/tổ/số cont
+import { gateInPhotoPath, repairPhotoPath } from '../src/services/photo';
+describe('DEC-176 đường dẫn ảnh', () => {
+  const d = new Date(2026, 9, 29, 8, 5, 9);
+  it('ảnh sửa chữa theo ngày / tổ / số cont; ảnh Gate in theo ngày; không có chữ có dấu', () => {
+    expect(repairPhotoPath('TO-SC-01', 'MSKU1234567', 0, d)).toBe('ANH-SUA-CHUA/2026/10/29/TO-SC-01/MSKU1234567/MSKU1234567-080509-01.jpg');
+    expect(repairPhotoPath('Tổ sửa chữa 1', 'MSKU1234567', 11, d)).toBe('ANH-SUA-CHUA/2026/10/29/TO-SUA-CHUA-1/MSKU1234567/MSKU1234567-080509-12.jpg');
+    expect(gateInPhotoPath('HV-261029-0001', d)).toMatch(/^ANH-GATE-IN\/2026\/10\/29\/HV-261029-0001-[0-9a-f]{8}\.jpg$/);
   });
 });
 

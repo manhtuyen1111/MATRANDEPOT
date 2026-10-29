@@ -547,6 +547,8 @@ export interface ServiceWorkOrder {
   repairMembers?: string[];
   // DEC-174: bậc thợ + đơn giá (đ / giờ) của từng nhân viên LÚC HOÀN TẤT sửa chữa — đổi đơn giá sau không ảnh hưởng
   repairMemberRates?: { name: string; gradeName?: string; hourlyRate?: number }[];
+  // DEC-176: ảnh HOÀN THÀNH SỬA CHỮA (1–30 ảnh, mỗi ảnh < 200 KB). Demo: ảnh nén dạng data:; database: link xem tạm của kho repair-photos
+  repairPhotos?: string[];
 }
 
 export interface BookingReleasedItem {
