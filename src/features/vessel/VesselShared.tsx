@@ -93,6 +93,7 @@ const OP_TONE: Record<ContainerOperationCode, string> = {
   CAP_VO: 'bg-op-cap-vo text-white',
   NHAP_TAU: 'bg-op-nhap-tau text-white',
   XUAT_TAU: 'bg-op-xuat-tau text-ink',
+  DOI_CONT: 'bg-danger-fg text-white', // DEC-185
 };
 
 export const OperationBadge: React.FC<{ state: DepotState; container: ContainerRecord; large?: boolean; hideVessel?: boolean; block?: boolean; label?: string }> = ({ state, container, large, hideVessel, block, label }) => {

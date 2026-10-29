@@ -315,6 +315,9 @@ export interface ContainerRecord {
   officeNoteUpdatedBy?: string;
   officeNoteUpdatedAt?: string;
   vesselExportItemId?: string; // Đang nằm trong danh sách XUẤT TÀU (DEC-069)
+  // DEC-185: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ — chờ Xe nâng hạ lại (xóa khi hạ xong)
+  swapReturn?: { gateOutCode: string; reason: SwapReason; note?: string; toContainerNo: string; requestedBy: string; requestedAt: string };
+  releaseDamage?: boolean; // DEC-185: nhãn PHÁT SINH CẤP VỎ — hư hỏng phát hiện khi cấp vỏ (giữ cho cả lượt lưu bãi)
   gateInAt: string;
   gateOutAt?: string;
 }
@@ -326,7 +329,8 @@ export type LocationActionType =
   | 'YARD_SHIFT' // ĐẢO CHUYỂN (CR-01)
   | 'SHIFT_REPAIR'
   | 'SHIFT_INSPECTION_RACK'
-  | 'GATE_OUT_CLEAR';
+  | 'GATE_OUT_CLEAR'
+  | 'SWAP_RETURN'; // DEC-185: Xe nâng hạ lại cont bị ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ
 
 // Lịch sử TÁC NGHIỆP vị trí (Xe nâng). Thao tác SỬA VỊ TRÍ hành chính KHÔNG ghi vào đây (CR-02).
 export interface LocationHistoryItem {
@@ -588,6 +592,26 @@ export interface ReleaseBooking {
 }
 
 // Hồ sơ CẤP VỎ / XUẤT bãi
+// DEC-185: ĐỔI CONTAINER (Văn phòng, khi cont đã cấp ra, chưa trả chứng từ) — giữ mã CV-, chứng từ, phiếu thu
+export type SwapReason = 'KEN_VO' | 'DAMAGE';
+export const SWAP_REASON_LABELS: Record<SwapReason, string> = {
+  KEN_VO: 'Khách kén vỏ, yêu cầu đổi cont khác',
+  DAMAGE: 'Container phát sinh hư hỏng, không đủ điều kiện cấp khách',
+};
+export interface GateOutSwap {
+  fromContainerId: string;
+  fromContainerNo: string;
+  fromMasterDossierCode: string;
+  toContainerNo: string;
+  toMasterDossierCode: string;
+  reason: SwapReason;
+  note?: string;
+  gatedOutBy?: string; // Xe nâng đã cấp cont cũ (trước khi đổi)
+  gatedOutAt?: string;
+  swappedBy: string;
+  swappedAt: string;
+}
+
 export interface GateOutOrder {
   id: string;
   masterDossierCode: string; // Mã hồ sơ HẠ VỎ của lượt lưu bãi
@@ -616,6 +640,7 @@ export interface GateOutOrder {
   cancelledAt?: string;
   documentsReturnedAt?: string; // DEC-052
   documentsReturnedBy?: string;
+  swaps?: GateOutSwap[]; // DEC-185: các lần ĐỔI CONTAINER của lệnh
   createdAt: string;
 }
 

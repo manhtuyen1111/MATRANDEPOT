@@ -2,6 +2,7 @@
 // Dựng từ dữ liệu tác nghiệp sẵn có (không đọc nhật ký audit): mỗi bước đã làm = 1 dòng
 // THỜI GIAN | BỘ PHẬN | NỘI DUNG (TẠO MỚI / SỬA / XÓA) | CHI TIẾT | NHÂN VIÊN — cũ trên, mới dưới (DEC-184: cột Bộ phận).
 // Bước chưa làm: mỗi việc 1 dòng ĐANG CHỜ cuối bảng, kèm bộ phận phụ trách.
+import { SWAP_REASON_LABELS } from '../types/depot';
 import type { ContainerRecord, GateInOrder, GateOutOrder, LocationHistoryItem, PaymentVoucher, ServiceWorkOrder, VesselList, VesselListItem } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { formatVnd } from './depotStore';
@@ -54,7 +55,10 @@ export function resolveDossier(state: DepotState, code: string): DossierContext 
   const importHit = visitCode.startsWith('NT-') ? findVesselItemByCode(state, visitCode) : undefined;
   const gateIn = state.gateInOrders.find((o) => o.masterDossierCode === visitCode || o.orderCode === visitCode);
   const container = state.containers.find((c) => c.masterDossierCode === visitCode);
-  const outOrders = state.gateOutOrders.filter((o) => o.masterDossierCode === visitCode);
+  // DEC-185: kể cả lệnh đã ĐỔI CONTAINER khỏi lượt này (lệnh đã chuyển sang cont khác)
+  const outOrders = state.gateOutOrders.filter(
+    (o) => o.masterDossierCode === visitCode || (o.swaps || []).some((s) => s.fromMasterDossierCode === visitCode)
+  );
   if (!gateIn && !container && outOrders.length === 0 && !importHit) return null;
   const exportHits = (state.vesselLists || [])
     .filter((l) => l.mode === 'XUAT_TAU')
@@ -259,18 +263,21 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
   // Xe nâng: hạ vỏ / hạ kệ / đảo chuyển… (lấy ra khi cấp vỏ / xuất tàu đã có dòng riêng)
   for (const l of d.locations) {
     if (l.actionType === 'GATE_OUT_CLEAR') continue;
-    const first = l.actionType === 'INITIAL_BLOCK' || l.actionType === 'SHIFT_INSPECTION_RACK';
+    const first = l.actionType === 'INITIAL_BLOCK' || l.actionType === 'SHIFT_INSPECTION_RACK' || l.actionType === 'SWAP_RETURN';
     add({
       at: l.performedAt,
       operation: `Xe nâng — ${l.actionType === 'INITIAL_BLOCK' ? 'Hạ vỏ' : LOCATION_ACTION_LABELS[l.actionType]}`,
       action: first ? 'TẠO MỚI' : 'SỬA',
-      detail: l.reason && !first ? l.reason : '',
+      detail: l.reason && (!first || l.actionType === 'SWAP_RETURN') ? l.reason : '',
       staff: l.performedBy,
       location: { from: first ? undefined : l.fromLocation, to: l.toLocation },
     });
   }
   if (stillInYard && (gateIn?.officeVerifiedAt || importHit?.item.inspectedAt) && !d.locations.some((l) => l.actionType === 'INITIAL_BLOCK' || l.actionType === 'SHIFT_INSPECTION_RACK')) {
     pend('Xe nâng', 'Chờ xe nâng hạ vỏ');
+  }
+  if (container?.swapReturn) {
+    pend('Xe nâng', `Chờ xe nâng hạ lại (đổi container ${container.swapReturn.gateOutCode}${container.swapReturn.reason === 'DAMAGE' ? ' — hạ khu sửa chữa' : ''})`);
   }
 
   // Báo giá (DEC-086: cập nhật tình trạng + giờ công → xác nhận chờ sửa chữa) → Sửa chữa (DEC-176)
@@ -322,6 +329,8 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
       add({ at: inspectionWo.completedAt || '', operation: 'Báo giá', action: 'XÓA', detail: 'Đóng khi cấp vỏ DAMAGE', staff: inspectionWo.completedBy });
     } else if (stillInYard && !(gateIn?.toInspectionRack && !gateIn.rackInspectedAt)) pend('Báo giá', 'Chờ báo giá');
   }
+  // DEC-185: hư hỏng PHÁT SINH CẤP VỎ — lượt đã từng sửa chữa xong vẫn phải hiện chờ báo giá lần mới
+  if (container?.needsQuotation && !pending.some((p) => p.label === 'Chờ báo giá')) pend('Báo giá', 'Chờ báo giá (phát sinh cấp vỏ)');
 
   // Văn phòng — ghi chú Tồn vỏ / khóa container (chỉ lưu lần gần nhất — DEC-030, DEC-065)
   if (container?.officeNoteUpdatedAt && container.officeNote) {
@@ -352,6 +361,29 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
       detail: join([`Lệnh ${o.gateOutCode}`, `Booking ${o.bookingNo}`, `Khách hàng ${o.receiverRep || '-'}`, o.truckNo && `Số xe ${o.truckNo}`, o.driverPhone && `SĐT ${o.driverPhone}`]),
       staff: o.createdBy,
     });
+    // DEC-185: ĐỔI CONTAINER — lượt này là cont bị đổi đi (đã cấp ra rồi trả về) hoặc cont cấp thay
+    for (const s of o.swaps || []) {
+      if (s.fromMasterDossierCode === d.visitCode) {
+        add({ at: s.gatedOutAt || '', operation: 'Xe nâng — Cấp vỏ', action: 'TẠO MỚI', detail: join(['Đã OUT khỏi bãi', o.truckNo && `Số xe ${o.truckNo}`]), staff: s.gatedOutBy });
+        add({
+          at: s.swappedAt,
+          operation: 'Văn phòng — Đổi container',
+          action: 'SỬA',
+          detail: join([SWAP_REASON_LABELS[s.reason], s.note, `Lệnh ${o.gateOutCode} chuyển sang ${s.toContainerNo}`, s.reason === 'DAMAGE' && 'Chuyển DAMAGE — PHÁT SINH CẤP VỎ']),
+          staff: s.swappedBy,
+        });
+      }
+      if (s.toMasterDossierCode === d.visitCode) {
+        add({
+          at: s.swappedAt,
+          operation: 'Văn phòng — Đổi container',
+          action: 'TẠO MỚI',
+          detail: join([`Cấp thay cont ${s.fromContainerNo}`, SWAP_REASON_LABELS[s.reason], s.note]),
+          staff: s.swappedBy,
+        });
+      }
+    }
+    if (o.masterDossierCode !== d.visitCode) continue; // lệnh đã chuyển sang cont khác
     if (o.status === 'CANCELLED') {
       add({ at: o.cancelledAt || '', operation: 'Văn phòng — Hủy lệnh cấp', action: 'XÓA', detail: join([`Lệnh ${o.gateOutCode}`, o.cancelReason]) });
       continue;

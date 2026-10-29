@@ -18,6 +18,8 @@ import {
   RepairTeam,
   RepairTeamMember,
   ServiceWorkOrder,
+  SWAP_REASON_LABELS,
+  SwapReason,
   CONDITION_DEFERRED,
 } from '../types/depot';
 import { DepotState, hasRolePermission } from './depotStore';
@@ -601,6 +603,7 @@ export function updateContainerLocation(
     currentRow: slot.row,
     currentTier: slot.tier,
   });
+  if (container.swapReturn) return placeSwapReturn(state, container, slot, toLabel, input.reason);
 
   const next = updateContainerById(state, container.id, {
     status: 'IN_YARD',
@@ -634,6 +637,73 @@ export function updateContainerLocation(
     `[Hồ sơ ${container.masterDossierCode}] Xe nâng hạ vỏ ${container.containerNo} vào ${toLabel}`,
     container.masterDossierCode
   ), container.id);
+}
+
+// DEC-185: Xe nâng HẠ LẠI cont bị ĐỔI CONTAINER (vị trí mới do Xe nâng chọn).
+// Kén vỏ → tồn bãi, cấp được cho khách khác. Hư hỏng → CHỜ BÁO GIÁ (nhãn PHÁT SINH CẤP VỎ), rồi Sửa chữa như luồng thường.
+function placeSwapReturn(
+  state: DepotState,
+  container: ContainerRecord,
+  slot: { block: string; bay: string | null; row: string | null; tier: string | null },
+  toLabel: string,
+  reason: string
+): DepotState {
+  const swap = container.swapReturn!;
+  const isDamage = swap.reason === 'DAMAGE';
+  const now = nowIso();
+  let next = updateContainerById(state, container.id, {
+    status: 'IN_YARD',
+    currentBlock: slot.block,
+    currentBay: slot.bay,
+    currentRow: slot.row,
+    currentTier: slot.tier,
+    swapReturn: undefined,
+    needsQuotation: isDamage || container.needsQuotation,
+  });
+  next = {
+    ...next,
+    locationHistory: [
+      {
+        id: newId('loc'),
+        masterDossierCode: container.masterDossierCode,
+        containerNo: container.containerNo,
+        fromLocation: `Đổi container (${swap.gateOutCode})`,
+        toLocation: toLabel,
+        actionType: 'SWAP_RETURN',
+        reason: reason.trim() || SWAP_REASON_LABELS[swap.reason],
+        performedBy: state.currentUser.fullName,
+        performedAt: now,
+      },
+      ...next.locationHistory,
+    ],
+    workOrders: isDamage
+      ? [
+          {
+            id: newId('wo'),
+            masterDossierCode: container.masterDossierCode,
+            workOrderCode: `INSP-${container.masterDossierCode}-PS`,
+            containerNo: container.containerNo,
+            category: 'INSPECTION' as const,
+            sourceOrderCode: swap.gateOutCode,
+            items: container.damageRemarks.length ? [...container.damageRemarks] : ['Hư hỏng phát sinh khi cấp vỏ'],
+            estimateCost: 0,
+            approvalStatus: 'NOT_REQUIRED' as const,
+            workStatus: 'OPEN' as const,
+            assignedTo: 'Bộ phận Báo giá',
+            createdAt: now,
+          },
+          ...next.workOrders,
+        ]
+      : next.workOrders,
+  };
+  return appendAudit(
+    next,
+    'SWAP_RETURN_PLACEMENT',
+    'CONTAINER',
+    container.masterDossierCode,
+    `[Hồ sơ ${container.masterDossierCode}] Xe nâng hạ lại ${container.containerNo} (đổi container ${swap.gateOutCode}) vào ${toLabel}${isDamage ? ' → CHỜ BÁO GIÁ (PHÁT SINH CẤP VỎ)' : ''}`,
+    container.masterDossierCode
+  );
 }
 
 // ============================================================================
@@ -1307,6 +1377,149 @@ export function releaseAllocatedContainer(
     order.gateOutCode,
     `[Hồ sơ ${order.gateOutCode}] Hủy lệnh cấp ${container.containerNo} khỏi booking ${order.bookingNo}. Lý do: ${reason}`,
     container.masterDossierCode
+  );
+}
+
+// ============================================================================
+// DEC-185: ĐỔI CONTAINER — Văn phòng, khi cont đã cấp ra (Xe nâng OUT) và đang chờ TRẢ CHỨNG TỪ CẤP VỎ.
+//   Giữ nguyên lệnh CV-, chứng từ, phiếu thu, QR phiếu K80 → lệnh chuyển sang cont thay thế (Xe nâng cấp lại).
+//   Cont cũ quay về bãi (giữ hồ sơ HV- / ngày hạ gốc) → Xe nâng HẠ LẠI, chọn vị trí mới.
+//   KEN_VO: giữ trạng thái, hạ xong cấp được cho khách khác. DAMAGE: chuyển DAMAGE + PHÁT SINH CẤP VỎ, hạ xong → Chờ báo giá.
+// ============================================================================
+export function swapGateOutContainer(
+  state: DepotState,
+  input: { gateOutOrderId: string; reason: SwapReason; newContainerNo: string; note?: string }
+): DepotState {
+  assertPermission(state, 'RELEASE_ORDER', 'chỉ Văn phòng / Quản lý được đổi container.');
+  if (!SWAP_REASON_LABELS[input.reason]) throw new Error('Vui lòng chọn lý do ĐỔI CONTAINER.');
+  const order = state.gateOutOrders.find((o) => o.id === input.gateOutOrderId);
+  if (!order) throw new Error('Không tìm thấy hồ sơ CẤP VỎ.');
+  if (order.status !== 'GATE_OUT_OK' || order.documentsReturnedAt) {
+    throw new Error(`Hồ sơ ${order.gateOutCode}: chỉ ĐỔI CONTAINER khi cont đã cấp ra và đang chờ trả chứng từ.`);
+  }
+  const old = state.containers.find(
+    (c) => c.masterDossierCode === order.masterDossierCode && c.containerNo === order.containerNo && c.status === 'GATED_OUT'
+  );
+  if (!old) throw new Error(`Không tìm thấy lượt lưu bãi của container ${order.containerNo}.`);
+  if (findActiveContainer(state, old.containerNo)) {
+    throw new Error(`Container ${old.containerNo} đang có lượt lưu bãi khác — không đổi được.`);
+  }
+  const fresh = findActiveContainer(state, input.newContainerNo);
+  if (!fresh) throw new Error('Không tìm thấy container thay thế đang tồn bãi.');
+  if (fresh.containerNo === old.containerNo) throw new Error('Container thay thế phải khác container đang đổi.');
+  const blocker = releaseBlocker(fresh);
+  if (blocker) throw new Error(`Container ${fresh.containerNo} chưa đủ điều kiện CẤP VỎ: ${blocker}.`);
+  const booking = state.bookings.find((b) => b.bookingNo === order.bookingNo);
+  if (!booking) throw new Error(`Không tìm thấy booking ${order.bookingNo}.`);
+  if (fresh.size !== booking.size || fresh.type !== booking.type || fresh.shippingLineCode !== old.shippingLineCode) {
+    throw new Error(
+      `Container thay thế phải cùng hãng tàu / size / type với booking ${order.bookingNo} (${old.shippingLineCode} ${booking.size}${booking.type}).`
+    );
+  }
+  const note = input.note?.trim() || undefined;
+  const isDamage = input.reason === 'DAMAGE';
+  const actor = state.currentUser.fullName;
+  const now = nowIso();
+  const swap = {
+    fromContainerId: old.id,
+    fromContainerNo: old.containerNo,
+    fromMasterDossierCode: old.masterDossierCode,
+    toContainerNo: fresh.containerNo,
+    toMasterDossierCode: fresh.masterDossierCode,
+    reason: input.reason,
+    note,
+    gatedOutBy: order.confirmedBy,
+    gatedOutAt: order.confirmedAt,
+    swappedBy: actor,
+    swappedAt: now,
+  };
+
+  let next: DepotState = {
+    ...state,
+    gateOutOrders: state.gateOutOrders.map((o) =>
+      o.id === order.id
+        ? {
+            ...o,
+            containerNo: fresh.containerNo,
+            masterDossierCode: fresh.masterDossierCode,
+            status: 'PENDING_FORKLIFT' as const,
+            confirmedBy: undefined,
+            confirmedAt: undefined,
+            swaps: [...(o.swaps || []), swap],
+          }
+        : o
+    ),
+    vouchers: state.vouchers.map((v) =>
+      v.id === order.voucherId ? { ...v, containerNo: fresh.containerNo, masterDossierCode: fresh.masterDossierCode } : v
+    ),
+    paymentTransactions: state.paymentTransactions.map((t) =>
+      order.voucherId && t.voucherId === order.voucherId ? { ...t, containerNo: fresh.containerNo } : t
+    ),
+    paymentReceipts: state.paymentReceipts.map((r) =>
+      order.voucherId && r.voucherId === order.voucherId ? { ...r, containerNo: fresh.containerNo } : r
+    ),
+    k80Tickets: state.k80Tickets.map((t) =>
+      t.outDossierCode === order.gateOutCode
+        ? {
+            ...t,
+            masterDossierCode: fresh.masterDossierCode,
+            containerNo: fresh.containerNo,
+            size: fresh.size,
+            type: fresh.type,
+            conditionClass: fresh.conditionClass,
+            damageRemarks: fresh.damageRemarks,
+            stuffingClass: fresh.stuffingClass,
+            cleaningItems: fresh.cleaningItems,
+            manufactureYear: fresh.manufactureYear,
+            targetBlock: fresh.currentBlock || undefined,
+          }
+        : t
+    ),
+    bookings: state.bookings.map((b) =>
+      b.id === booking.id
+        ? {
+            ...b,
+            gatedOutContainers: b.gatedOutContainers.filter((no) => no !== old.containerNo),
+            allocatedContainers: [...b.allocatedContainers, fresh.containerNo],
+            releasedContainers: [
+              ...(b.releasedContainers || []),
+              { containerNo: old.containerNo, outDossierCode: order.gateOutCode, reason: `ĐỔI CONTAINER: ${SWAP_REASON_LABELS[input.reason]}`, releasedBy: actor, releasedAt: now },
+            ],
+            status: b.status === 'COMPLETED' ? ('OPEN' as const) : b.status,
+          }
+        : b
+    ),
+  };
+  // Cont cũ: về hàng chờ Xe nâng HẠ LẠI (giữ hồ sơ HV- + ngày hạ gốc)
+  next = updateContainerById(next, old.id, {
+    status: 'WAITING_PLACEMENT',
+    gateOutAt: undefined,
+    allocatedBookingNo: undefined,
+    allocatedTruckNo: undefined,
+    allocatedDriverPhone: undefined,
+    allocatedAt: undefined,
+    outDossierCode: undefined,
+    activeQrCode: `QR-${old.masterDossierCode}`,
+    swapReturn: { gateOutCode: order.gateOutCode, reason: input.reason, note, toContainerNo: fresh.containerNo, requestedBy: actor, requestedAt: now },
+    ...(isDamage ? { conditionClass: 'DAMAGE' as const, damageRemarks: note ? [note] : old.damageRemarks, releaseDamage: true } : {}),
+  });
+  // Cont thay thế: khóa phân bổ cho lệnh CV- (QR phiếu K80 giữ nguyên)
+  next = updateContainerById(next, fresh.id, {
+    status: 'ALLOCATED',
+    allocatedBookingNo: order.bookingNo,
+    allocatedTruckNo: order.truckNo,
+    allocatedDriverPhone: order.driverPhone,
+    allocatedAt: now,
+    outDossierCode: order.gateOutCode,
+    activeQrCode: `QR-${order.gateOutCode}`,
+  });
+  return appendAudit(
+    next,
+    'GATE_OUT_SWAP',
+    'GATE_OUT',
+    order.gateOutCode,
+    `[Hồ sơ ${order.gateOutCode}] ĐỔI CONTAINER ${old.containerNo} → ${fresh.containerNo}. Lý do: ${SWAP_REASON_LABELS[input.reason]}${note ? ` — ${note}` : ''}`,
+    old.masterDossierCode
   );
 }
 
