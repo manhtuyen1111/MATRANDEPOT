@@ -1409,6 +1409,16 @@ export function swapCandidates(state: DepotState, gateOutOrderId: string): Conta
     .sort((a, b) => a.containerNo.localeCompare(b.containerNo));
 }
 
+// DEC-186: lệnh đã ĐỔI CONTAINER — Xe nâng phải HẠ cont cũ (Chờ hạ vỏ) xong mới được cấp cont mới
+export function swapPlacementBlocker(state: DepotState, order: GateOutOrder | undefined): string | null {
+  const waiting = (order?.swaps || [])
+    .map((s) => state.containers.find((c) => c.id === s.fromContainerId))
+    .find((c) => c?.swapReturn && c.status === 'WAITING_PLACEMENT');
+  return waiting
+    ? `Phải HẠ container ${waiting.containerNo} (đổi cont) ở Xe nâng — Chờ hạ vỏ trước khi cấp ${order!.containerNo}.`
+    : null;
+}
+
 export function swapGateOutContainer(
   state: DepotState,
   input: { gateOutOrderId: string; reason: SwapReason; newContainerNo: string; note?: string }
@@ -1568,6 +1578,8 @@ export function executeGateOut(
   if (!order || !booking || booking.status === 'CANCELLED') {
     throw new Error('Điều kiện 1 thất bại: Không có lệnh cấp / booking hợp lệ (GOUT-002).');
   }
+  const swapBlocker = swapPlacementBlocker(state, order); // DEC-186
+  if (swapBlocker) throw new Error(swapBlocker);
   if (container.isOnHold) {
     throw new Error(`Điều kiện 2 thất bại: Container ${container.containerNo} đang bị KHÓA (${container.holdReason}).`);
   }

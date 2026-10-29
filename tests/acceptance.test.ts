@@ -1894,6 +1894,7 @@ describe('DEC-181: lịch sử hồ sơ container', () => {
 
 // DEC-185: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ — giữ lệnh CV-, chứng từ, phiếu thu, QR; cont cũ Xe nâng hạ lại
 import { releaseBlocker, swapGateOutContainer } from '../src/services/depotOperations';
+import { containerOperation } from '../src/services/vessel';
 
 describe('DEC-185: đổi container khi chờ trả chứng từ cấp vỏ', () => {
   const demo = createDemoState();
@@ -1937,16 +1938,22 @@ describe('DEC-185: đổi container khi chờ trả chứng từ cấp vỏ', ()
     expect(back.swapReturn?.reason).toBe('KEN_VO');
     expect(s.containers.find((c) => c.id === fresh.id)!.status).toBe('ALLOCATED');
 
-    // Xe nâng cấp cont mới bằng QR phiếu K80 đang cầm (QR-CV- giữ nguyên)
-    s = executeGateOut(as(s, 'usr-forklift'), { scannedQrCode: `QR-${order.gateOutCode}` });
-    expect(s.containers.find((c) => c.id === fresh.id)!.status).toBe('GATED_OUT');
+    // DEC-186: Chờ cấp vỏ hiện nhãn ĐỔI CONT; chưa hạ cont cũ thì KHÔNG cấp được cont mới
+    expect(containerOperation(s, s.containers.find((c) => c.id === fresh.id)!).code).toBe('DOI_CONT');
+    expect(() => executeGateOut(as(s, 'usr-forklift'), { scannedQrCode: `QR-${order.gateOutCode}` })).toThrow(
+      `Phải HẠ container ${old.containerNo} (đổi cont) ở Xe nâng — Chờ hạ vỏ trước khi cấp ${fresh.containerNo}.`
+    );
+    expect(dossierHistory(s, resolveDossier(s, order.gateOutCode)!).pending.some((p) => p.label.includes(`hạ ${old.containerNo}`))).toBe(true);
     // Xe nâng hạ lại cont cũ → tồn bãi, đủ điều kiện cấp khách khác
     s = updateContainerLocation(as(s, 'usr-forklift'), { containerNo: old.containerNo, ...freeSlot, reason: '' });
+    // Hạ xong → cấp cont mới bằng QR phiếu K80 đang cầm (QR-CV- giữ nguyên)
+    s = executeGateOut(as(s, 'usr-forklift'), { scannedQrCode: `QR-${order.gateOutCode}` });
+    expect(s.containers.find((c) => c.id === fresh.id)!.status).toBe('GATED_OUT');
     const placed = s.containers.find((c) => c.id === old.id)!;
     expect(placed.status).toBe('IN_YARD');
     expect(placed.swapReturn).toBeUndefined();
     expect(releaseBlocker(placed)).toBeNull();
-    expect(s.locationHistory[0].actionType).toBe('SWAP_RETURN');
+    expect(s.locationHistory.some((l) => l.containerNo === old.containerNo && l.actionType === 'SWAP_RETURN')).toBe(true);
 
     // Hồ sơ: cont cũ có dòng Đổi container (SỬA) + Xe nâng hạ lại; cont mới có dòng cấp thay
     const oldRows = dossierHistory(s, resolveDossier(s, old.masterDossierCode)!).rows;

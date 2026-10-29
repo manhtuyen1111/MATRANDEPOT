@@ -394,7 +394,10 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
       if (o.documentsReturnedAt) {
         add({ at: o.documentsReturnedAt, operation: 'Văn phòng — Trả chứng từ Cấp vỏ', action: 'TẠO MỚI', detail: 'Trả Phiếu EEIR (K80) + phiếu thu cho lái xe', staff: o.documentsReturnedBy });
       } else pend('Văn phòng', `Chờ lái xe quay về trả chứng từ cấp vỏ ${o.gateOutCode}`);
-    } else if (o.status === 'PENDING_FORKLIFT') pend('Xe nâng', `Chờ xe nâng cấp vỏ ${o.gateOutCode}`);
+    } else if (o.status === 'PENDING_FORKLIFT') {
+      const waitSwap = (o.swaps || []).map((s) => state.containers.find((c) => c.id === s.fromContainerId)).find((c) => c?.swapReturn);
+      pend('Xe nâng', waitSwap ? `Chờ xe nâng hạ ${waitSwap.containerNo} rồi cấp vỏ ${o.gateOutCode}` : `Chờ xe nâng cấp vỏ ${o.gateOutCode}`);
+    }
   }
 
   // ===================== XUẤT TÀU (DEC-069, DEC-131, DEC-169) =====================
