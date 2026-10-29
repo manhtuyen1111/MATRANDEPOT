@@ -80,6 +80,7 @@ interface MenuItem {
   id: WorkspaceMenuId;
   label: string;
   mobile?: boolean; // Tác nghiệp hiện trường dùng trên điện thoại (DEC-012)
+  dept?: string; // DEC-179: tiêu đề bộ phận trong menu Báo cáo (dòng nhỏ phía trên các mục cùng bộ phận)
 }
 interface MenuGroup {
   key: string;
@@ -131,11 +132,16 @@ const MENU: MenuGroup[] = [
     label: 'Báo cáo',
     icon: ChartColumn,
     items: [
-      { id: 'BC_HA_VO', label: 'Hạ vỏ' },
-      { id: 'BC_CAP_VO', label: 'Cấp vỏ' },
-      { id: 'BC_NHAP_TAU', label: 'Nhập tàu' },
-      { id: 'BC_XUAT_TAU', label: 'Xuất tàu' },
-      { id: 'BC_SUA_CHUA', label: 'Sửa chữa' },
+      // DEC-179: báo cáo theo bộ phận — bộ phận nào xem báo cáo của bộ phận đó (MENU_ACCESS)
+      { id: 'BC_GD_CHI_TIET', label: 'Chi tiết', dept: 'Giám định' },
+      { id: 'BC_HA_VO', label: 'Hạ vỏ', dept: 'Văn phòng' },
+      { id: 'BC_CAP_VO', label: 'Cấp vỏ', dept: 'Văn phòng' },
+      { id: 'BC_XUAT_TAU', label: 'Xuất vỏ', dept: 'Văn phòng' }, // DEC-040: XUẤT VỎ = XUẤT TÀU
+      { id: 'BC_NHAP_TAU', label: 'Nhập vỏ', dept: 'Văn phòng' }, // NHẬP VỎ = NHẬP TÀU
+      { id: 'BC_VS_CHI_TIET', label: 'Chi tiết', dept: 'Vệ sinh' },
+      { id: 'BC_XN_CHI_TIET', label: 'Chi tiết', dept: 'Xe nâng' },
+      { id: 'BC_SUA_CHUA', label: 'Chi tiết', dept: 'Sửa chữa' },
+      { id: 'BC_SC_SAN_LUONG', label: 'Sản lượng sửa chữa', dept: 'Sửa chữa' },
       { id: 'BC_TONG_HOP', label: 'Tổng hợp' },
       { id: 'BC_GOP_Y', label: 'Góp ý' }, // DEC-120: chỉ Admin
     ],
@@ -168,7 +174,9 @@ const CATALOG_TABS: Partial<Record<WorkspaceMenuId, CatalogTab>> = {
   DM_CONTAINER: 'CONTAINER',
   DM_BIEU_GIA: 'BIEU_GIA',
 };
-const REPORT_MENUS: ReportSection[] = ['BC_HA_VO', 'BC_CAP_VO', 'BC_NHAP_TAU', 'BC_XUAT_TAU', 'BC_SUA_CHUA', 'BC_TONG_HOP'];
+const REPORT_MENUS: ReportSection[] = [
+  'BC_GD_CHI_TIET', 'BC_HA_VO', 'BC_CAP_VO', 'BC_NHAP_TAU', 'BC_XUAT_TAU', 'BC_VS_CHI_TIET', 'BC_XN_CHI_TIET', 'BC_SUA_CHUA', 'BC_SC_SAN_LUONG', 'BC_TONG_HOP',
+];
 
 const UI_PREFS_KEY = 'matran_depot_ui_prefs_v1';
 function readPrefs(): { collapsedGroups: string[]; railMode: boolean } {
@@ -241,7 +249,8 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // DEC-120: danh sách MENU / TÍNH NĂNG để chọn khi góp ý (menu người dùng được thấy) và để Admin lọc báo cáo (mọi menu)
-  const toOptions = (groups: MenuGroup[]) => groups.flatMap((g) => g.items.map((i) => ({ id: i.id, label: `${g.label} → ${i.label}`, group: g.label, item: i.label })));
+  const itemName = (i: MenuItem) => (i.dept ? `${i.dept} – ${i.label}` : i.label);
+  const toOptions = (groups: MenuGroup[]) => groups.flatMap((g) => g.items.map((i) => ({ id: i.id, label: `${g.label} → ${itemName(i)}`, group: g.label, item: itemName(i) })));
   const allMenuOptions = toOptions(MENU);
 
   const handleUpdateState = (next: DepotState) => {
@@ -375,10 +384,12 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
             </button>
             {!collapsed && (
               <ul className="ml-[18px] mt-0.5 space-y-0.5 border-l border-line pl-3">
-                {g.items.map((item) => {
+                {g.items.map((item, idx) => {
                   const active = activeMenu === item.id;
+                  const deptHead = item.dept && item.dept !== g.items[idx - 1]?.dept ? item.dept : null;
                   return (
                     <li key={item.id}>
+                      {deptHead && <p className="px-2.5 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-wide text-ink-muted">{deptHead}</p>}
                       <button
                         type="button"
                         onClick={() => selectMenu(item.id)}
@@ -473,6 +484,7 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
             </button>
             <p className="truncate text-xs text-ink-muted">
               {activeGroup && activeGroup.items.length > 1 && <span>{activeGroup.label} / </span>}
+              {activeItem?.dept && <span>{activeItem.dept} / </span>}
               <span className="font-bold text-ink">{activeItem?.label}</span>
             </p>
             {activeItem?.mobile && (
