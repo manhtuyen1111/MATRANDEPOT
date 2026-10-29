@@ -1454,7 +1454,7 @@ Quy ước trạng thái:
 
 ### DEC-159 — Ảnh cửa container Hạ vỏ giữ 2 tháng
 
-- Trạng thái: CONFIRMED (2026-10-27, người dùng). **Sửa DEC-150** (24 tháng → 2 tháng).
+- Trạng thái: **ĐÃ THAY bởi DEC-176** (2026-10-29: ảnh không tự xóa). CONFIRMED (2026-10-27, người dùng). **Sửa DEC-150** (24 tháng → 2 tháng).
 - Ảnh chụp cửa cont khi Gate in (Hạ vỏ) lưu 2 tháng rồi tự xóa (lịch pg_cron + Edge Function `purge-expired-photos` đã có). Hồ sơ vẫn giữ, ghi "ảnh đã hết hạn lưu".
 - Sửa trực tiếp trong migration gốc (chưa apply lên database thật nào): `photo_expires_at = ngày chụp + 2 tháng`.
 
@@ -1526,6 +1526,18 @@ Quy ước trạng thái:
 ### DEC-171 — Nhãn đầu dòng danh sách CHỜ SỬA CHỮA
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
+
+### DEC-176 — Chờ sửa chữa: tìm theo số cont + CHỤP ẢNH HOÀN THÀNH SỬA CHỮA; ảnh không tự xóa
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi). **Thay DEC-159** (ảnh cửa giữ 2 tháng).
+- **Chờ sửa chữa không quét mã QR**: ô **Tìm theo số container** — gõ một phần số cont, danh sách chờ lọc ngay, bấm dòng để chọn (Enter khi chỉ còn 1 cont).
+- Trình tự: chọn **Tổ sửa chữa** → xác nhận **Nhân viên thực hiện** → **CHỤP ẢNH HOÀN THÀNH SỬA CHỮA** → Xác nhận hoàn tất. **Tối thiểu 1, tối đa 30 ảnh / cont** (kiểm ở `completeRepairTask` + RPC `complete_repair_with_photos`).
+- Màn chụp theo bố cục Camera iPhone (`src/components/PhotoCamera.tsx`): chụp liên tục (nén chạy ngầm, không chặn nút chụp), ống kính **.5 / 1× / 2× / 3×** + chụm 2 ngón, **đèn** (đèn liên tục — trình duyệt không điều khiển được đèn nháy lúc chụp), đếm n/30, ảnh vừa chụp góc trái, Xong góc phải. Máy không cho trình duyệt dùng camera → nút "Dùng camera của máy". Zoom xa .5 chỉ có khi máy / trình duyệt đưa ra camera góc siêu rộng hoặc zoom < 1 — không có thì ẩn nút.
+- **Mỗi ảnh < 200 KB**: nén trên máy (`compressToJpeg`, cạnh dài ≤ 1600 px, hạ chất lượng / kích thước tới khi < 200 KB); kho `repair-photos` chặn file ≥ 200 KB. Áp dụng cả ảnh cửa Gate in.
+- **Thư mục ảnh** (Supabase không nhận chữ có dấu trong đường dẫn → viết không dấu): ảnh sửa chữa `repair-photos/ANH-SUA-CHUA/<năm>/<tháng>/<ngày>/<mã tổ>/<số cont>/<số cont>-<giờphútgiây>-<n>.jpg`; ảnh Gate in `door-photos/ANH-GATE-IN/<năm>/<tháng>/<ngày>/<mã hồ sơ>-….jpg` (ảnh cũ giữ đường dẫn cũ).
+- **Ảnh không tự xóa** (cả Gate in và Sửa chữa): `expired_photo_paths()` trả rỗng → Edge Function `purge-expired-photos` không xóa gì. **Quản trị tải về backup rồi tự xóa** trên Supabase.
+- Lưu nhanh: bấm Xác nhận → màn đổi ngay (DEC-160); ảnh tải lên ngầm song song 4 ảnh / lượt, xong mới gọi RPC (hoàn tất + gắn ảnh trong 1 giao dịch). Hồ sơ container — bước Sửa chữa hiện ảnh (bấm phóng to).
+- Database: migration `20261107000001_repair_photos.sql` (bucket `repair-photos`, `work_orders.photo_paths`, RPC `complete_repair_with_photos` gọi lại `complete_repair_task` — không sửa hàm cũ); pgTAP `0011_repair_photos.test.sql`.
 
 ### DEC-175 — Báo cáo SẢN LƯỢNG SỬA CHỮA: VƯỢT GIỜ
 
@@ -1672,6 +1684,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-175 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-176 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

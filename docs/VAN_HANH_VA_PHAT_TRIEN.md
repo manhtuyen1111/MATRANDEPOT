@@ -37,7 +37,7 @@ mục nào đồng ý thì ghi thành DEC trong `docs/DECISIONS.md`.
 |---|---|---|
 | Lượt / ngày | ~350–500 (cao điểm ~80 / giờ) | Nhẹ với Postgres. Đã thử 45.000 dòng: vẫn nhanh |
 | Dòng dữ liệu mới | ~150.000–250.000 / tháng (hồ sơ, phí, phiếu, nhật ký) | ~2–3 triệu / năm → database ~2–4 GB / năm |
-| Ảnh cửa cont (giữ 2 tháng — DEC-159) | 500 ảnh × ~200 KB ≈ 100 MB / ngày → **~6 GB thường trực** | Vượt gói Free (1 GB) |
+| Ảnh cửa cont (DEC-159 cũ: giữ 2 tháng — **từ DEC-176 không tự xóa**: ~3 GB / tháng ảnh cửa + ảnh sửa chữa, quản trị tải backup rồi xóa tay để giữ dưới mức gói) | 500 ảnh × ~200 KB ≈ 100 MB / ngày → **~6 GB thường trực** | Vượt gói Free (1 GB) |
 | Người dùng đồng thời 25 | mỗi máy hỏi thay đổi 30 giây / lần | ~1 triệu lượt hỏi nhỏ / ngày — Supabase Pro chịu được; tốn băng thông nhỏ |
 | Tài khoản | 60 | Thoải mái (Pro: 100.000 tài khoản) |
 
