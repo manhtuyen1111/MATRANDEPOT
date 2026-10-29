@@ -81,6 +81,10 @@ export type WorkspaceMenuId =
   | 'DM_USER'
   | 'BC_HA_VO'
   | 'BC_SUA_CHUA'
+  | 'BC_SC_SAN_LUONG' // DEC-179: Sửa chữa — Sản lượng (tách khỏi tab)
+  | 'BC_GD_CHI_TIET' // DEC-179: Giám định — Chi tiết
+  | 'BC_VS_CHI_TIET' // DEC-179: Vệ sinh — Chi tiết
+  | 'BC_XN_CHI_TIET' // DEC-179: Xe nâng — Chi tiết
   | 'BC_GOP_Y'; // DEC-120
 
 export type GateInType = 'CUSTOMER_RETURN' | 'VESSEL_IMPORT';
