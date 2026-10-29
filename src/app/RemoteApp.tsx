@@ -2,9 +2,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { ChangePasswordScreen, LoginScreen } from '../features/auth/LoginScreen';
 import { changePassword, loadStaffSession, signIn, signOut, type StaffSession } from '../services/remote/session';
-import { createWorkingSync, loadWorkingState, type WorkingSync } from '../services/remote/loadWorking';
+import { createWorkingSync, loadDossierState, loadRepairOutputState, loadReportAll, loadReportPage, loadWorkingState, type WorkingSync } from '../services/remote/loadWorking';
 import { clearIdMap, friendlyError, isOffline, setRemoteSink, takeCatalogTouched, type RemoteOp } from '../services/remote/sync';
 import { setReportLoader } from '../services/remote/reportSource';
+import { setPhotoClient } from '../services/remote/photoLink';
+import { setDossierLoader } from '../services/remote/dossierSource';
+import { setReportPager } from '../services/remote/reportPaging';
 import type { DepotState } from '../services/depotStore';
 import { App } from './App';
 import { AppLoading, SavingIndicator, StatusPill } from '../components/LoadingScreens';
@@ -109,12 +112,28 @@ export const RemoteApp: React.FC = () => {
 
   // Báo cáo lọc ngoài 90 ngày → tải riêng theo khoảng lọc (N7)
   useEffect(() => {
-    setReportLoader(async (range) => {
+    setReportLoader(async (range, kind) => {
       const me = meRef.current;
       if (!me) throw new Error('Phiên đăng nhập đã hết, vui lòng đăng nhập lại.');
-      return loadWorkingState(client, me, range);
+      return kind === 'REPAIR_OUTPUT' ? loadRepairOutputState(client, me, range) : loadWorkingState(client, me, range);
     });
     return () => setReportLoader(null);
+  }, [client]);
+
+  // Ảnh: bấm XEM ẢNH mới xin link; hồ sơ container tải đủ khi bấm mở (DEC-178)
+  useEffect(() => {
+    setPhotoClient(client);
+    setDossierLoader((state, code) => loadDossierState(client, state, code));
+    // Báo cáo Hạ vỏ / Cấp vỏ / Sửa chữa: database trả từng trang (DEC-178 bước 4b)
+    setReportPager({
+      page: (state, kind, f, page, size) => loadReportPage(client, state, kind, f, page, size),
+      all: (state, kind, f, onProgress) => loadReportAll(client, state, kind, f, onProgress),
+    });
+    return () => {
+      setPhotoClient(null);
+      setDossierLoader(null);
+      setReportPager(null);
+    };
   }, [client]);
 
   useEffect(() => {

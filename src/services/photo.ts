@@ -23,6 +23,9 @@ export function repairPhotoPath(teamCode: string, containerNo: string, index: nu
   return `ANH-SUA-CHUA/${photoDateFolder(d)}/${safe(teamCode)}/${no}/${no}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}-${pad(index + 1)}.jpg`;
 }
 
+// Kho chứa ảnh theo đường dẫn (ảnh cửa cũ không có thư mục ANH-GATE-IN vẫn ở door-photos)
+export const photoBucket = (path: string) => (path.startsWith('ANH-SUA-CHUA/') ? 'repair-photos' : 'door-photos');
+
 const toBlob = (canvas: HTMLCanvasElement, q: number) => new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', q));
 
 // Vẽ nguồn ảnh (khung camera / ảnh) vào canvas cạnh dài ≤ 1600 rồi hạ chất lượng, thiếu thì thu nhỏ tiếp — đến khi < 200 KB.

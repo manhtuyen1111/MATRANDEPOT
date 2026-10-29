@@ -10,7 +10,7 @@ import { linkCls, DateRangeFilter, DetailDrawer, ExportExcelButton, Feedback, fo
 // Giờ công 1 cont chia đều cho số nhân viên tác nghiệp cont đó (quy tắc ở queryRepairOutput — services/reports.ts).
 // DEC-175: Lương sản phẩm + Sản phẩm vượt giờ (giờ công trong khoảng lọc vượt mốc ở Danh mục) = Tổng tiền sản phẩm.
 export const RepairOutputReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) => void }> = ({ state: live, onOpenDossier }) => {
-  const report = useReportState(live);
+  const report = useReportState(live, 'REPAIR_OUTPUT'); // DEC-178: chỉ tải phiếu sửa chữa đã xong trong khoảng
   const state = report.data;
   const [draft, setDraft] = useState<RepairOutputFilter>(() => ({ ...quickRange('TODAY'), teamCode: '', memberName: '' }));
   const [applied, setApplied] = useState<RepairOutputFilter | null>(null);

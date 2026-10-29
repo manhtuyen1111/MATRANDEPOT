@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { completeRackInspection, deleteGateInFieldRecord, recordGateInFieldStep } from '../../services/api';
 import { EMPTY_INSPECTION, InspectionFields, InspectionValue, inspectionRemarks, isInspectionComplete } from '../../components/InspectionFields';
-import { ContainerNo, LocationText, linkCls } from '../../components/shared';
+import { ContainerNo, LocationText, linkCls, PhotoGallery } from '../../components/shared';
 import {
   ArrowLeft,
   ArrowRight,
@@ -480,11 +480,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
               <p className="mb-1 text-xs font-semibold text-ink-muted">
                 Ảnh chụp cửa Container:
               </p>
-              <img
-                src={selectedOrder.doorPhotoUrl}
-                alt={`Ảnh cửa cont ${selectedOrder.orderCode}`}
-                className="h-48 w-full rounded-lg border border-line object-cover"
-              />
+              <PhotoGallery photos={[selectedOrder.doorPhotoUrl]} alt={`Ảnh cửa cont ${selectedOrder.orderCode}`} className="h-48 w-full" />
             </div>
 
             <div className="md:col-span-7 grid grid-cols-2 gap-2.5 text-xs">

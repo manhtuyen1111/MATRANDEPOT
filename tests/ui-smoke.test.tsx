@@ -1049,12 +1049,22 @@ describe('DEC-057: mã QR tác nghiệp THẬT + quét bằng camera', () => {
     expect(html).toContain('capture="environment"'); // dự phòng: camera của máy
   });
 
-  it('DEC-176: hồ sơ container hiện ảnh hoàn thành sửa chữa', () => {
+  it('DEC-176 + DEC-178: hồ sơ container có ảnh sửa chữa nhưng KHÔNG tải ảnh — chỉ nút XEM ẢNH (n)', () => {
     const demo = createDemoState();
     const wo = demo.workOrders.find((w) => w.category === 'REPAIR' && w.workStatus === 'COMPLETED' && w.repairPhotos?.length)!;
-    const html = renderToString(<MasterDossierModal state={demo} masterDossierCode={wo.masterDossierCode} onClose={noop} />);
+    const html = renderToString(<MasterDossierModal state={demo} masterDossierCode={wo.masterDossierCode} onClose={noop} />).replace(/<!-- -->/g, '');
     expect(html).toContain('data-testid="repair-photo-list"');
-    expect(html).toContain('Ảnh hoàn thành sửa chữa 1');
+    expect(html).toContain(`XEM ẢNH (${wo.repairPhotos!.length})`);
+    expect(html).not.toContain('Ảnh hoàn thành sửa chữa 1');
+    expect(html).not.toContain('<img');
+  });
+
+  it('DEC-178: PhotoGallery — chưa bấm thì không có ảnh; không có ảnh thì không hiện nút', async () => {
+    const { PhotoGallery } = await import('../src/components/shared');
+    const html = renderToString(<PhotoGallery photos={['ANH-GATE-IN/2026/10/29/HV-1.jpg']} alt="Ảnh cửa container" className="h-24 w-36" />).replace(/<!-- -->/g, '');
+    expect(html).toContain('XEM ẢNH (1)');
+    expect(html).not.toContain('<img');
+    expect(renderToString(<PhotoGallery photos={[undefined]} alt="Ảnh cửa container" className="h-24 w-36" />)).toBe('');
   });
 });
 

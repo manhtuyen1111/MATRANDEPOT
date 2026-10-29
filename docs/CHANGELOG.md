@@ -5,6 +5,11 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-178 bước 4b (2026-10-29): **báo cáo Hạ vỏ / Cấp vỏ / Sửa chữa phân trang ở database** — mỗi trang ~0,1 giây với mọi khoảng lọc, bỏ giới hạn 3 tháng (tối đa 1 năm / lần), Excel lấy theo đợt; Sản lượng sửa chữa chỉ tải phiếu sửa xong. **Migration mới `20261109000001_report_paging.sql`** (pgTAP 249/249 local). Sửa: báo cáo Sửa chữa / Sản lượng bản database thiếu phiếu của cont hạ trước khoảng lọc.
+- DEC-178 (2026-10-29): **tìm số container theo 7 số seri** ở mọi ô tìm — đủ 7 số là chính xác, đang gõ thì gợi ý cont có seri bắt đầu bằng các số đã gõ (`containerSearch.ts`).
+- DEC-178 (2026-10-29): **mở app gọn** — chỉ tải việc đang mở + việc hôm nay (trước: 7 ngày), bỏ tải trùng, hiện trường không tải phiếu thu / giao dịch; hồ sơ container tải khi bấm mở.
+- DEC-178 (2026-10-29): **ảnh chỉ tải khi bấm XEM ẢNH (n)** — mở app / mở hồ sơ không xin link, không tải ảnh (`PhotoGallery`, `photoLink.ts`).
+- DEC-178 (2026-10-29): thử tải 200.000 lượt (`tests/load.local.test.ts`) → sửa lỗi đăng nhập quá 8 giây: RLS gọi hàm quyền 1 lần / truy vấn + chỉ mục. **Migration mới `20261108000001_rls_initplan_indexes.sql`** (pgTAP 239/239 local). Chốt nguyên tắc tải theo nhu cầu, báo cáo tính ở database, tìm số cont theo 7 số seri.
 - DEC-177 (2026-10-29): Header 1 dòng cho màn tác nghiệp mobile — Tải lại / Đổi mật khẩu / Đăng xuất gộp vào icon **Quản trị hệ thống** (mở danh mục THÔNG TIN NHÂN VIÊN …); nút Góp ý thu gọn icon, cùng dòng tên màn (VD Giám định / Hạ vỏ).
 - DEC-176 (2026-10-29): Chờ sửa chữa bỏ quét QR → **tìm theo số container**; **CHỤP ẢNH HOÀN THÀNH SỬA CHỮA** (1–30 ảnh, màn chụp kiểu iPhone: chụp liên tục, .5 / 1× / 2× / 3×, đèn), mỗi ảnh < 200 KB; thư mục ảnh theo ngày (ANH-GATE-IN / ANH-SUA-CHUA); **ảnh không tự xóa** (thay DEC-159). **Migration mới `20261107000001_repair_photos.sql`**.
 - DEC-175 (2026-10-29): Báo cáo SẢN LƯỢNG SỬA CHỮA thêm **Lương sản phẩm / Giờ vượt giờ / Sản phẩm vượt giờ**; Tổng tiền sản phẩm = Lương sản phẩm + Sản phẩm vượt giờ (giờ công trong khoảng lọc trên 200 giờ × 3.000 đ / giờ — Admin sửa ở Danh mục chung → Sửa chữa → BẬC THỢ, khối Vượt giờ). **Migration mới `20261106000001_repair_overtime.sql`**.

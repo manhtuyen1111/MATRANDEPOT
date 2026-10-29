@@ -124,6 +124,8 @@ Ràng buộc quan trọng:
 | Bảng | Cột chính |
 |---|---|
 | `work_orders` | code, container_id, dossier_code, category, items text[], approval_status, work_status, assigned_to, labor_hours?, repair_team_id?, result_notes?, completed_by/at? |
+
+> DEC-178 (migration `20261109000001`): `gate_in_orders`, `gate_out_orders`, `work_orders` có cột sinh `report_at` (thời điểm lọc / sắp xếp báo cáo) và `container_serial` (7 số seri); `containers` có `container_serial`. Không ghi tay — Postgres tự tính.
 | `work_order_members` | work_order_id, member_id — thành viên tổ đã làm (DEC-043) |
 
 ### 3.6. Cấp vỏ

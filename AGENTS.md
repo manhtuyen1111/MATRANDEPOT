@@ -36,7 +36,7 @@ Code mâu thuẫn với DECISIONS → báo lại, không tự chọn bên nào.
 - **Thanh toán:** đi qua `src/services/payments.ts` (chứng từ → giao dịch → phiếu thu).
 - Mỗi lượt lưu bãi là một bản ghi container riêng; tìm container đang trong bãi bằng `findActiveContainer`, cập nhật bằng `updateContainerById` (không cập nhật theo số container).
 - Thành phần giao diện dùng chung ở `src/components/shared.tsx` (Chi phí, Thanh toán, Chọn vị trí, Phân trang, Thông báo) — tái sử dụng, không chép khối code.
-- Danh sách lớn / báo cáo: không tự tải toàn bộ; bắt buộc bộ lọc; có phân trang.
+- Danh sách lớn / báo cáo: không tự tải toàn bộ; bắt buộc bộ lọc; có phân trang. Chế độ database (DEC-178): báo cáo nhiều dòng dùng `usePagedReport` (database trả từng trang, Excel theo đợt — `reportPaging.ts`); ảnh chỉ tải khi bấm XEM ẢNH; hồ sơ container tải khi bấm mở (`dossierSource.ts`); tìm số cont chỉ qua `matchContainerNo` (`containerSearch.ts` — 7 số seri, gợi ý theo đầu seri). Thêm truy vấn mới → chạy bài thử tải `tests/load.local.test.ts` trên Supabase local.
 
 ## 5. Kiểm tra trước khi báo xong
 
@@ -91,7 +91,7 @@ Một việc chỉ "xong" khi:
 - **Khách hàng (DEC-093):** ô khách hàng ở Hạ vỏ / Cấp vỏ dùng `CustomerInput` (gõ tay + gợi ý Danh mục). Khách ngoài Danh mục lưu được nhưng chỉ thanh toán Tiền mặt / Chuyển khoản — không TTS / TTT (kiểm tra ở `settleVoucher`).
 - **Văn phòng làm phần thu tiền** (phiếu thu trả trước, xác nhận tiền mặt — DEC-047). **Kế toán** (thêm lại DEC-111) chỉ xem Phiếu thu + cập nhật ĐÃ XHD.
 - **Luồng DAMAGE:** Báo giá — **cập nhật tình trạng sửa chữa + giờ công, rồi xác nhận chờ sửa chữa** (2 bước, DEC-086) → Sửa chữa (tìm theo **số cont**, không quét QR; chọn tổ, mặc định chọn hết nhân viên; **chụp 1–30 ảnh hoàn thành** — DEC-176) → AV. Không có bước QC (DEC-049).
-- **Ảnh tác nghiệp (DEC-176):** chụp bằng `PhotoCamera` (`src/components/PhotoCamera.tsx`), nén bằng `src/services/photo.ts` — mỗi ảnh **< 200 KB**; đường dẫn kho theo ngày (`gateInPhotoPath` / `repairPhotoPath`, không dấu). **Ảnh không tự xóa** — không thêm lại lịch xóa ảnh.
+- **Ảnh tác nghiệp (DEC-176):** chụp bằng `PhotoCamera` (`src/components/PhotoCamera.tsx`), nén bằng `src/services/photo.ts` — mỗi ảnh **< 200 KB**; đường dẫn kho theo ngày (`gateInPhotoPath` / `repairPhotoPath`, không dấu). **Ảnh không tự xóa** — không thêm lại lịch xóa ảnh. **Xem ảnh theo yêu cầu (DEC-178):** dữ liệu chỉ giữ đường dẫn; hiển thị ảnh trong kho **chỉ** qua `PhotoGallery` (nút XEM ẢNH (n)) / `PhotoZoom` (`shared.tsx`) — không đặt `<img src>` thẳng đường dẫn kho, không tải ảnh khi mở app / mở hồ sơ.
 - Tóm tắt toàn bộ logic đã chốt: `devs/PROGRESS.md` mục C.
 - **Phiếu K80 = tờ hướng dẫn lái xe** (DEC-052): thông tin chung ở đầu (số cont, số xe, SĐT, thanh toán) → LỘ TRÌNH các bước đánh số có ô ☐ → mã QR. Lộ trình tính trong `src/services/driverRoute.ts` — thêm bộ phận mới vào luồng thì cập nhật `getDriverRoute`. Bước cuối luôn là **Văn phòng → Trả chứng từ** (in EEIR + phiếu thu).
 - **Thời gian (DEC-054):** mọi chỗ hiển thị / nhập / lọc / in / Excel đều theo **`dd/MM/yyyy HH:mm:ss`** (24 giờ). Chỉ dùng `formatDateTime` / `parseDateTime` (`src/services/datetime.ts`) và `DateTimeField` (`shared.tsx`). **Cấm** `toLocaleString`, `toLocaleTimeString`, `<input type="date">` trực tiếp.

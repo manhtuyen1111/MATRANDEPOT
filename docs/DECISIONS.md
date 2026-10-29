@@ -1527,6 +1527,24 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-178 — Dữ liệu lớn: RLS 1 lần / truy vấn, tải theo nhu cầu, báo cáo tính ở database
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng — sau thử tải 200.000 lượt vào – ra + 200.000 lượt sửa chữa, 2.000 cont tồn trên Supabase local).
+- **Lỗi phát hiện:** đăng nhập → "canceling statement due to statement timeout". RLS `using (public.is_active_staff())` gọi hàm cho từng dòng. **Đã sửa:** migration `20261108000001_rls_initplan_indexes.sql` bọc `(select …)` cho mọi policy `public` (quyền không đổi) + chỉ mục cho cột lọc khi mở app; pgTAP `0012_rls_initplan.test.sql` (chặn policy mới quên bọc). Giữ giới hạn 8 giây của database làm "chuông báo" truy vấn chậm.
+- **Nguyên tắc tải dữ liệu** (làm dần, đo bằng `tests/load.local.test.ts`):
+  - Mở app chỉ tải **chữ** của Tồn vỏ + việc đang chờ; chỉ lấy cột màn hình cần; tải theo vai trò (hiện trường chỉ hàng chờ của mình).
+  - **Bỏ tải sẵn lịch sử 7 ngày.** Màn hiện trường **không cần** xem việc đã xong gần đây — cần thì tìm số cont ở Tồn vỏ / tra cứu → mở hồ sơ. (Tab Đã xong / Tất cả của màn tàu thuộc danh sách tàu đang mở — giữ.)
+  - Hồ sơ container tải khi bấm mở.
+  - **Ảnh chỉ lưu đường dẫn**; mở app **và mở hồ sơ** đều không tải ảnh — chỉ hiện nút **XEM ẢNH (n)**, bấm mới xin link + tải ảnh (`PhotoGallery` trong `shared.tsx`, `src/services/remote/photoLink.ts` gom link 1 lượt / kho, nhớ 50 phút). **Không làm ảnh thu nhỏ**: mỗi ảnh vẫn 1 file < 200 KB (DEC-176).
+  - **Đã làm (2026-10-29):** ảnh theo yêu cầu ở Hồ sơ container (cửa Gate in + sửa chữa), chi tiết Văn phòng Hạ vỏ, chi tiết Giám định.
+  - **Đã làm (2026-10-29) — mở app:** cửa sổ làm việc **7 ngày → từ 00:00 hôm nay** (`workingWindowStart`; lọc trước hôm nay → tải theo khoảng); bỏ tải trùng (đợt sau chỉ tải phần chưa có); vai trò không có RECEIPT_VIEW / PAYMENT_CONFIRM (`seesPayments`) không tải phiếu thu / giao dịch / phiếu trả trước, chứng từ chỉ của hồ sơ đang làm dở; **hồ sơ container tải đủ khi bấm mở** (`loadDossierState` + `dossierSource.ts`, ghép theo id). Chưa làm: chỉ lấy cột cần (select theo cột) — đo lại sau khi chạy thử thật.
+  - **Báo cáo tính ở database** (lọc, phân trang, tổng, Excel tải theo đợt) → **bỏ giới hạn 3 tháng** (thay DEC-157 phần giới hạn).
+- **Tìm số container (mọi ô tìm):** tìm theo **7 số seri** và tìm **chính xác**; khi đang gõ hiện **gợi ý các cont có seri bắt đầu bằng các số đã gõ** (VD gõ `12345` → `MSKU1234567`, `TCLU1234501`). **Đã làm (2026-10-29):** một hàm chung `matchContainerNo` (`src/services/containerSearch.ts`) cho Sửa chữa, Đảo chuyển, Cấp vỏ (chọn cont), Báo giá, Văn phòng tàu, Nhập / Xuất tàu hiện trường, Tồn vỏ và báo cáo (Hạ vỏ / Cấp vỏ / Sửa chữa / tàu); gõ chữ → so đầu số cont; bỏ kiểu "chứa chuỗi" (gõ số giữa / đuôi seri không còn khớp). Ô tìm ghi "7 số seri / số cont".
+- **Kết quả đo 2026-10-29** (50.000 lượt, 2.000 cont tồn, Supabase local): mở app Admin 1,7 giây / 10,9 MB (trước 11,7 giây / 38,6 MB hoặc bị ngắt); Xe nâng 1,0 giây / 8,4 MB, 0 phiếu thu; đồng bộ 0,15 giây; mở hồ sơ 0,09 giây; tìm đúng số 14 ms, theo đầu seri 0,13 giây; Excel Hạ vỏ 3 tháng 68 giây → 0,2 giây; Sản lượng sửa chữa 3 tháng 38 giây → 0,3 giây (bỏ dò lồng nhau). **Còn nặng:** tải dữ liệu báo cáo theo khoảng (1 tháng 8 giây / 113 MB; 3 tháng 16–20 giây / 350 MB).
+- **Bước 4b — đã làm (2026-10-29):** báo cáo **Hạ vỏ, Cấp vỏ, Sửa chữa (chi tiết)** phân trang ở database: migration `20261109000001_report_paging.sql` thêm cột sinh `report_at` (= thời điểm báo cáo như `reports.ts`: GATE IN OK / Giám định; OUT / lập lệnh; hoàn tất / tạo) + `container_serial` + chỉ mục; `loadReportPage` / `loadReportAll` (`loadWorking.ts`), `reportPaging.ts`, hook `usePagedReport`. Xem = database lọc + đếm + trả 1 trang (kèm container / chứng từ / giao dịch / phiếu thu của trang), dòng vẫn dựng bằng hàm trong `reports.ts`; Excel lấy theo đợt 1.000 dòng. **Bỏ giới hạn 3 tháng** cho 3 báo cáo này — mỗi lần tối đa 366 ngày (như Demo). Đo 50.000 lượt: mỗi trang 40–140 ms / ~0,2 MB với mọi khoảng; Excel Hạ vỏ 3 tháng (46.000 dòng) ~9 giây. **Sản lượng sửa chữa** lọc trước hôm nay chỉ tải phiếu sửa chữa đã xong trong khoảng + thợ + container (`loadRepairOutputState`): 3 tháng 6 giây / 104 MB (trước 17 giây / 367 MB). **Sửa lỗi số liệu (bản database):** cách tải cũ chỉ lấy phiếu sửa chữa của cont HẠ trong khoảng lọc → báo cáo Sửa chữa / Sản lượng **thiếu** phiếu sửa xong trong khoảng của cont hạ trước đó (thử: thiếu 57 / 15.002 phiếu trong 30 ngày) — nay đúng. Mở hồ sơ cũ nay tải cả giao dịch theo chứng từ (cột Thanh toán / Mã phiếu thu).
+- **Còn giữ giới hạn 3 tháng / tải theo khoảng:** Phiếu thu, Sản lượng sửa chữa, Tổng hợp, báo cáo tàu, Góp ý (lượng dữ liệu nhỏ hơn hoặc lọc thường theo tháng). Làm phân trang ở database cho Phiếu thu khi cần (bộ lọc Hóa đơn / Tác nghiệp đang tính trên máy).
+- Mục tiêu: mở app hiện trường < 2 giây / < 0,3 MB; Văn phòng < 4 giây / < 2 MB; báo cáo trang đầu < 2 giây; tìm số cont < 0,5 giây; mở hồ sơ < 1 giây.
+
 ### DEC-177 — Header 1 dòng: icon QUẢN TRỊ HỆ THỐNG gộp tài khoản; Góp ý cùng dòng tên màn
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng). Mục đích: tối ưu hiển thị màn tác nghiệp mobile (Giám định, Vệ sinh, Xe nâng, Sửa chữa).
@@ -1691,6 +1709,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-177 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-178 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

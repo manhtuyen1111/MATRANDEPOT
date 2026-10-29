@@ -21,9 +21,11 @@ import { quickRange, fileStamp } from '../../services/datetime';
 import { VesselReport } from './VesselReport';
 import { RepairOutputReport } from './RepairOutputReport';
 import { useReportState } from '../../components/useReportState';
+import { usePagedReport } from '../../components/usePagedReport';
 import { linkCls, DateRangeFilter, ExportExcelButton, Feedback, formatViTime, inputCls, labelCls, Pager, primaryBtn, SectionCard, usePageSize, CellText, CELL_MAX } from '../../components/shared';
 import { PaymentInfoCells } from '../../components/PaymentInfoCells';
 import { voucherPaymentInfo } from '../../services/payments';
+import { CONTAINER_SEARCH_HINT } from '../../services/containerSearch';
 
 export type ReportSection = 'BC_HA_VO' | 'BC_CAP_VO' | 'BC_NHAP_TAU' | 'BC_XUAT_TAU' | 'BC_SUA_CHUA' | 'BC_TONG_HOP';
 
@@ -56,10 +58,10 @@ const SECTION_FILE: Record<ReportSection, string> = {
 function operationSheet(state: DepotState, section: ReportSection, f: OperationReportFilter): SheetData {
   if (section === 'BC_HA_VO' || section === 'BC_NHAP_TAU') {
     const type = section === 'BC_HA_VO' ? 'CUSTOMER_RETURN' : 'VESSEL_IMPORT';
-    return gateInSheet(section === 'BC_HA_VO' ? 'HẠ VỎ' : 'NHẬP TÀU', collectAllPages((p) => queryGateInReport(state, type, f, p)), state);
+    return gateInSheet(section === 'BC_HA_VO' ? 'HẠ VỎ' : 'NHẬP TÀU', collectAllPages((p, size) => queryGateInReport(state, type, f, p, size)), state);
   }
   const types: GateOutType[] = section === 'BC_CAP_VO' ? ['EMPTY_RELEASE'] : ['VESSEL_EXPORT'];
-  return gateOutSheet(section === 'BC_CAP_VO' ? 'CẤP VỎ' : 'XUẤT TÀU', state, collectAllPages((p) => queryGateOutReport(state, types, f, p)));
+  return gateOutSheet(section === 'BC_CAP_VO' ? 'CẤP VỎ' : 'XUẤT TÀU', state, collectAllPages((p, size) => queryGateOutReport(state, types, f, p, size)));
 }
 
 const GATE_IN_STATUS: Record<GateInOrder['status'], string> = {
@@ -91,37 +93,34 @@ export const ReportsWorkspace: React.FC<Props> = ({ state, section, onOpenDossie
   );
 };
 
+const cleanOperation = (f: OperationReportFilter): OperationReportFilter => ({ ...f, shippingLineCode: f.shippingLineCode || undefined, size: f.size || undefined });
+
 const OperationReport: React.FC<Props> = ({ state: live, section, onOpenDossier, onOpenReceipt }) => {
-  const report = useReportState(live); // N7: lọc ngoài 90 ngày ở chế độ database → tải riêng
-  const state = report.data;
   const [draft, setDraft] = useState<OperationReportFilter>(() => ({ containerNo: '', ...quickRange('TODAY'), shippingLineCode: '', size: '' }));
   const [applied, setApplied] = useState<OperationReportFilter | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = usePageSize(`report-${section}`, 50); // DEC-080
-  const showMoney = can(state.currentUser, 'REPORT_FINANCE');
+  const showMoney = can(live.currentUser, 'REPORT_FINANCE');
 
-  let outRows: PagedResult<GateOutOrder> | null = null;
-  let inRows: PagedResult<GateInOrder> | null = null;
-  let queryError: string | null = null;
-  if (applied) {
-    const f = { ...applied, shippingLineCode: applied.shippingLineCode || undefined, size: applied.size || undefined };
-    try {
-      if (section === 'BC_HA_VO') inRows = queryGateInReport(state, 'CUSTOMER_RETURN', f, page, pageSize);
-      else if (section === 'BC_NHAP_TAU') inRows = queryGateInReport(state, 'VESSEL_IMPORT', f, page, pageSize);
-      else outRows = queryGateOutReport(state, section === 'BC_CAP_VO' ? ['EMPTY_RELEASE'] : ['VESSEL_EXPORT'], f, page, pageSize);
-    } catch (err) {
-      queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
-    }
-  }
-  const result = outRows || inRows;
+  // DEC-178 bước 4b: database trả đúng trang đang xem (Demo: chạy trên dữ liệu sẵn có)
+  const isGateIn = section === 'BC_HA_VO';
+  const filter = applied && cleanOperation(applied);
+  const paged = usePagedReport<GateInOrder | GateOutOrder>(live, isGateIn ? 'HA_VO' : 'CAP_VO', filter, page, pageSize, (s, p, size) =>
+    isGateIn ? queryGateInReport(s, 'CUSTOMER_RETURN', filter!, p, size) : queryGateOutReport(s, ['EMPTY_RELEASE'], filter!, p, size)
+  );
+  const state = paged.state;
+  const result = paged.result;
+  const inRows = isGateIn ? (result as PagedResult<GateInOrder> | null) : null;
+  const outRows = isGateIn ? null : (result as PagedResult<GateOutOrder> | null);
+  const queryError = paged.error;
 
   return (
     <div className="space-y-4">
       <SectionCard title={TITLES[section]} icon={<Search className="h-4 w-4 text-ink-muted" />}>
-        <form onSubmit={(e) => { e.preventDefault(); report.run(draft, () => { setApplied({ ...draft }); setPage(1); }); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+        <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2">
             <span className={labelCls}>Số container</span>
-            <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
+            <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} placeholder={CONTAINER_SEARCH_HINT} className={`${inputCls} font-mono uppercase`} />
           </label>
           <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <label>
@@ -139,27 +138,27 @@ const OperationReport: React.FC<Props> = ({ state: live, section, onOpenDossier,
             </select>
           </label>
           <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-6">
-            <button type="submit" className={primaryBtn} disabled={report.loading}>
+            <button type="submit" className={primaryBtn} disabled={paged.loading}>
               <Search className="h-4 w-4" />
-              {report.loading ? 'Đang tải…' : 'Tra cứu'}
+              {paged.loading ? 'Đang tải…' : 'Tra cứu'}
             </button>
             {applied && result && result.total > 0 && (
               <ExportExcelButton
                 fileName={`MATRAN_${SECTION_FILE[section]}_${fileStamp(applied.dateFrom) || applied.containerNo || "tra-cuu"}.xlsx`}
-                getSheets={() => [operationSheet(state, section, { ...applied, shippingLineCode: applied.shippingLineCode || undefined, size: applied.size || undefined })]}
+                getSheets={async () => [operationSheet(await paged.exportState(), section, cleanOperation(applied))]}
               />
             )}
           </div>
         </form>
       </SectionCard>
 
-      <Feedback error={report.loadError} />
-
       <div className="overflow-x-auto rounded-lg border border-line bg-white">
         {!applied ? (
           <p className="p-8 text-center text-xs text-ink-muted">Nhập số container hoặc chọn khoảng thời gian, sau đó bấm Tra cứu.</p>
         ) : queryError ? (
           <p className="p-6 text-center text-xs text-red-700">{queryError}</p>
+        ) : paged.loading ? (
+          <p className="p-8 text-center text-xs text-ink-muted">Đang tải…</p>
         ) : !result || result.total === 0 ? (
           <p className="p-8 text-center text-xs text-ink-muted">Không có dữ liệu phù hợp.</p>
         ) : (
@@ -345,8 +344,6 @@ const RepairReportTabs: React.FC<{ state: DepotState; onOpenDossier: (code: stri
 
 // BÁO CÁO SỬA CHỮA CHI TIẾT (DEC-044): bắt buộc lọc, phân trang, xuất Excel kết quả lọc
 const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) => void }> = ({ state: live, onOpenDossier }) => {
-  const report = useReportState(live);
-  const state = report.data;
   const [draft, setDraft] = useState<RepairReportFilter>(() => ({ containerNo: '', ...quickRange('TODAY'), teamCode: '', shippingLineCode: '', status: 'ALL' }));
   const [applied, setApplied] = useState<RepairReportFilter | null>(null);
   const [page, setPage] = useState(1);
@@ -357,23 +354,20 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
     teamCode: f.teamCode || undefined,
     shippingLineCode: f.shippingLineCode || undefined,
   });
-  let result: PagedResult<RepairReportRow> | null = null;
-  let queryError: string | null = null;
-  if (applied) {
-    try {
-      result = queryRepairReport(state, clean(applied), page, pageSize);
-    } catch (err) {
-      queryError = err instanceof Error ? err.message : 'Lỗi tra cứu';
-    }
-  }
+  // DEC-178 bước 4b: database trả đúng trang đang xem (Demo: chạy trên dữ liệu sẵn có)
+  const filter = applied && clean(applied);
+  const paged = usePagedReport<RepairReportRow>(live, 'SUA_CHUA', filter, page, pageSize, (s, p, size) => queryRepairReport(s, filter!, p, size));
+  const state = paged.state;
+  const result = paged.result;
+  const queryError = paged.error;
 
   return (
     <div className="space-y-4">
       <SectionCard title="Báo cáo Sửa chữa" icon={<Search className="h-4 w-4 text-ink-muted" />}>
-        <form onSubmit={(e) => { e.preventDefault(); report.run(draft, () => { setApplied({ ...draft }); setPage(1); }); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+        <form onSubmit={(e) => { e.preventDefault(); setApplied({ ...draft }); setPage(1); }} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <label className="col-span-2 sm:col-span-1">
             <span className={labelCls}>Số container</span>
-            <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} className={`${inputCls} font-mono uppercase`} />
+            <input value={draft.containerNo} onChange={(e) => setDraft({ ...draft, containerNo: e.target.value.toUpperCase() })} placeholder={CONTAINER_SEARCH_HINT} className={`${inputCls} font-mono uppercase`} />
           </label>
           <DateRangeFilter value={draft} onChange={(r) => setDraft({ ...draft, ...r })} />
           <label>
@@ -400,13 +394,16 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
             </select>
           </label>
           <div className="col-span-2 flex gap-2 sm:col-span-6">
-            <button type="submit" className={primaryBtn} disabled={report.loading}>
+            <button type="submit" className={primaryBtn} disabled={paged.loading}>
               <Search className="h-4 w-4" />
-              {report.loading ? 'Đang tải…' : 'Tra cứu'}
+              {paged.loading ? 'Đang tải…' : 'Tra cứu'}
             </button>
             {result && result.total > 0 && (
               <ExportExcelButton
-                getSheets={() => [repairReportSheet(collectAllPages((p) => queryRepairReport(state, clean(applied!), p)))]}
+                getSheets={async () => {
+                  const all = await paged.exportState();
+                  return [repairReportSheet(collectAllPages((p, size) => queryRepairReport(all, clean(applied!), p, size)))];
+                }}
                 fileName={`MATRAN_SUA_CHUA_${fileStamp(applied!.dateFrom) || applied!.containerNo || "tra-cuu"}.xlsx`}
               />
             )}
@@ -414,13 +411,13 @@ const RepairReport: React.FC<{ state: DepotState; onOpenDossier: (code: string) 
         </form>
       </SectionCard>
 
-      <Feedback error={report.loadError} />
-
       <div className="overflow-x-auto rounded-lg border border-line bg-white">
         {!applied ? (
           <p className="p-8 text-center text-xs text-ink-muted">Nhập số container hoặc chọn khoảng thời gian, sau đó bấm Tra cứu.</p>
         ) : queryError ? (
           <p className="p-6 text-center text-xs text-red-700">{queryError}</p>
+        ) : paged.loading ? (
+          <p className="p-8 text-center text-xs text-ink-muted">Đang tải…</p>
         ) : !result || result.total === 0 ? (
           <p className="p-8 text-center text-xs text-ink-muted">Không có dữ liệu phù hợp.</p>
         ) : (

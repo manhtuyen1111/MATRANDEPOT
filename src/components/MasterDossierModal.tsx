@@ -11,7 +11,7 @@ import { CompanyHeader, PrintPreviewModal } from "./ReceiptPrint";
 import { exportPdf, printNow } from "./printNow";
 import { CustomerSlipK80, EeirK80Sheet, slipPrintCount, VesselEeirPrintSheet } from './K80TicketModal';
 import { findVesselItemByCode, vesselListProgress } from '../services/vessel';
-import { linkCls, formatViTime, PhotoZoom } from './shared';
+import { linkCls, formatViTime, PhotoGallery } from './shared';
 
 interface Props {
   masterDossierCode: string | null; // Mã hồ sơ HẠ VỎ (HV-...) hoặc CẤP VỎ (CV-...)
@@ -320,15 +320,11 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
           ) : (
             <p className="text-ink-muted">Chưa sửa.</p>
           )}
-          {/* DEC-176: ảnh HOÀN THÀNH SỬA CHỮA */}
+          {/* DEC-176: ảnh HOÀN THÀNH SỬA CHỮA — bấm XEM ẢNH mới tải (DEC-178) */}
           {repairWo.repairPhotos && repairWo.repairPhotos.length > 0 && (
             <div className="mt-2" data-testid="repair-photo-list">
               <p className="mb-1 text-ink-muted">Ảnh hoàn thành sửa chữa ({repairWo.repairPhotos.length})</p>
-              <div className="flex flex-wrap gap-1.5">
-                {repairWo.repairPhotos.map((p, i) => (
-                  <PhotoZoom key={i} src={p} alt={`Ảnh hoàn thành sửa chữa ${i + 1}`} className="h-16 w-16" />
-                ))}
-              </div>
+              <PhotoGallery photos={repairWo.repairPhotos} alt="Ảnh hoàn thành sửa chữa" className="h-16 w-16" />
             </div>
           )}
         </Step>
@@ -383,7 +379,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
               <h3 className="pt-1 text-xs font-black uppercase tracking-wider text-ink-muted">Tác nghiệp HẠ VỎ — {visitCode}</h3>
               <Step no={next()} title="Giám định — Hạ vỏ" confirm={{ done: true, by: gateIn.fieldStaffName, at: gateIn.fieldRecordedAt }}>
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  <PhotoZoom src={gateIn.doorPhotoUrl} alt="Ảnh cửa container" className="h-24 w-full sm:w-36" />
+                  <div className="shrink-0 sm:w-36"><PhotoGallery photos={[gateIn.doorPhotoUrl]} alt="Ảnh cửa container" className="h-24 w-full sm:w-36" /></div>
                   <dl className="grid flex-1 grid-cols-2 gap-2">
                     <Field label="Trạng thái" value={`${gateIn.conditionClass}${gateIn.damageRemarks.length ? ` — ${gateIn.damageRemarks.join(', ')}` : ''}`} />
                     <Field label="Đóng hàng" value={gateIn.stuffingClass} />

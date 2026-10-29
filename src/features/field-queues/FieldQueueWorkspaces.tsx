@@ -24,6 +24,7 @@ import { linkCls,
   SlotValue,
   LocationText,
 } from '../../components/shared';
+import { CONTAINER_SEARCH_HINT, matchContainerNo } from '../../services/containerSearch';
 
 export type FieldQueueMode = 'VS_CHO_VE_SINH' | 'XN_CHO_HA_VO' | 'XN_CHO_CAP_VO' | 'BG_CHO_BAO_GIA' | 'SC_CHO_SUA_CHUA';
 
@@ -109,10 +110,10 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
     setSlot(EMPTY_SLOT);
   }, [mode]);
 
-  // DEC-176: Sửa chữa không quét QR — tìm theo số container (gõ một phần số cont, danh sách lọc ngay)
+  // DEC-176: Sửa chữa không quét QR — tìm theo số container; DEC-178: 7 số seri, gợi ý theo đầu seri khi đang gõ
   const [search, setSearch] = useState('');
   const searchKey = search.replace(/[\s-]/g, '').toUpperCase();
-  const matches = searchKey ? queue.filter((c) => c.containerNo.includes(searchKey)) : [];
+  const matches = searchKey ? queue.filter((c) => matchContainerNo(c.containerNo, searchKey)) : [];
 
   // Chỉ nhận container đang nằm trong hàng chờ của bộ phận này
   const lookup = (raw: string) => {
@@ -223,7 +224,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value.toUpperCase())}
-              placeholder="Nhập số container (VD 1234567)"
+              placeholder={CONTAINER_SEARCH_HINT}
               autoCapitalize="characters"
               autoComplete="off"
               spellCheck={false}

@@ -12,6 +12,7 @@ import { formatDateTime, parseDateTime } from '../../services/datetime';
 import { can } from '../../services/permissions';
 import { linkCls, ContainerNo, DateTimeField, DetailDrawer, Feedback, inputCls, labelCls, Pager, primaryBtn, secondaryBtn, SectionCard, usePageSize, LocationText, CellText, CELL_MAX, BlockIcon, blockLabel } from '../../components/shared';
 import { VesselListStatus, VesselListTitle, VesselProgressBar, VesselProgressInline } from './VesselShared';
+import { CONTAINER_SEARCH_HINT, matchContainerNo } from '../../services/containerSearch';
 
 interface Props {
   mode: VesselMode;
@@ -310,7 +311,7 @@ export const ExportPicker: React.FC<{ state: DepotState; picked: Set<string>; on
         state.containers
           .filter((c) => c.status === 'IN_YARD' || c.status === 'ALLOCATED')
           .filter((c) => bulkList.length === 0 || bulkList.includes(c.containerNo))
-          .filter((c) => !search.trim() || c.containerNo.includes(search.trim().toUpperCase()))
+          .filter((c) => matchContainerNo(c.containerNo, search))
           .filter((c) => size === 'ALL' || c.size === size)
           .filter((c) => condition === 'ALL' || c.conditionClass === condition)
       ),
@@ -332,7 +333,7 @@ export const ExportPicker: React.FC<{ state: DepotState; picked: Set<string>; on
           <span className={labelCls}>Số cont</span>
           <div className="relative">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} className={`${inputCls} w-40 pl-7 font-mono uppercase`} />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={CONTAINER_SEARCH_HINT} className={`${inputCls} w-40 pl-7 font-mono uppercase`} />
           </div>
         </label>
         <label>
