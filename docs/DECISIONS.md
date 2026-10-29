@@ -1527,6 +1527,13 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-188 — Lịch sử hồ sơ: cột TRẠNG THÁI (chỉ icon) bên phải Nhân viên
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng).
+- Bảng LỊCH SỬ HỒ SƠ: Thời gian | Bộ phận | Tác nghiệp | Nội dung | Chi tiết | Nhân viên | **Trạng thái**.
+- Cột Trạng thái **chỉ có icon**: **tích xanh** = hoàn thành (mọi dòng lịch sử), **đồng hồ cát** (vàng, nhấp nháy) = đang chờ (dòng ĐANG CHỜ). Icon đồng hồ ở cột Thời gian của dòng chờ chuyển sang cột này.
+- Code: `DoneIcon` / `WaitIcon` (`MasterDossierModal.tsx`).
+
 ### DEC-187 — Lịch sử hồ sơ: thêm cột TÁC NGHIỆP bên phải BỘ PHẬN; ĐỔI CONT ghi rõ
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng). Bổ sung DEC-184.
@@ -1839,6 +1846,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-187 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-188 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
