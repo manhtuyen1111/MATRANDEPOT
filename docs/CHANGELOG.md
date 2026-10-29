@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-177 (2026-10-29): Header 1 dòng cho màn tác nghiệp mobile — Tải lại / Đổi mật khẩu / Đăng xuất gộp vào icon **Quản trị hệ thống** (mở danh mục THÔNG TIN NHÂN VIÊN …); nút Góp ý thu gọn icon, cùng dòng tên màn (VD Giám định / Hạ vỏ).
 - DEC-176 (2026-10-29): Chờ sửa chữa bỏ quét QR → **tìm theo số container**; **CHỤP ẢNH HOÀN THÀNH SỬA CHỮA** (1–30 ảnh, màn chụp kiểu iPhone: chụp liên tục, .5 / 1× / 2× / 3×, đèn), mỗi ảnh < 200 KB; thư mục ảnh theo ngày (ANH-GATE-IN / ANH-SUA-CHUA); **ảnh không tự xóa** (thay DEC-159). **Migration mới `20261107000001_repair_photos.sql`**.
 - DEC-175 (2026-10-29): Báo cáo SẢN LƯỢNG SỬA CHỮA thêm **Lương sản phẩm / Giờ vượt giờ / Sản phẩm vượt giờ**; Tổng tiền sản phẩm = Lương sản phẩm + Sản phẩm vượt giờ (giờ công trong khoảng lọc trên 200 giờ × 3.000 đ / giờ — Admin sửa ở Danh mục chung → Sửa chữa → BẬC THỢ, khối Vượt giờ). **Migration mới `20261106000001_repair_overtime.sql`**.
 - DEC-174: Đơn giá bậc thợ chốt lúc hoàn tất sửa chữa (đổi giá sau không ảnh hưởng kỳ cũ); `work_order_members.grade_name / hourly_rate` + trigger (cùng migration `20261105000001`).

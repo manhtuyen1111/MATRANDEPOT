@@ -1527,6 +1527,13 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-177 — Header 1 dòng: icon QUẢN TRỊ HỆ THỐNG gộp tài khoản; Góp ý cùng dòng tên màn
+
+- Trạng thái: CONFIRMED (2026-10-29, người dùng). Mục đích: tối ưu hiển thị màn tác nghiệp mobile (Giám định, Vệ sinh, Xe nâng, Sửa chữa).
+- Header mọi màn **chỉ 1 dòng**: nút menu | tên màn (VD "Giám định / Hạ vỏ", cắt "…" khi dài) | biểu tượng Mobile → bên phải: DEMO (nếu có) | **Góp ý** (điện thoại chỉ hiện icon) | icon **Quản trị hệ thống**.
+- Bấm icon **Quản trị hệ thống** (`AccountMenu`, `src/components/AccountMenu.tsx`) mở danh mục: **THÔNG TIN NHÂN VIÊN** (họ tên, tên đăng nhập, vai trò) → **Tải lại** → **Đổi mật khẩu** → **Đăng xuất**. Bản Demo: ô chọn người dùng nằm trong khối Thông tin nhân viên, kèm **Xóa dữ liệu** / **Nạp dữ liệu test** (không có Đăng xuất).
+- Không còn nút Tải lại / Đổi mật khẩu / Đăng xuất rời trên header. Màn mới không thêm nút tài khoản ra header — thêm vào `AccountMenu`.
+
 ### DEC-176 — Chờ sửa chữa: tìm theo số cont + CHỤP ẢNH HOÀN THÀNH SỬA CHỮA; ảnh không tự xóa
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi). **Thay DEC-159** (ảnh cửa giữ 2 tháng).
@@ -1684,6 +1691,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-176 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-177 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
