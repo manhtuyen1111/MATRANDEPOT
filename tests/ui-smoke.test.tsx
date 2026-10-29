@@ -1063,7 +1063,16 @@ describe('DEC-057: mã QR tác nghiệp THẬT + quét bằng camera', () => {
     expect(html).toContain('data-testid="repair-photo-list"');
     expect(html).toContain(`XEM ẢNH (${wo.repairPhotos!.length})`);
     expect(html).not.toContain('Ảnh hoàn thành sửa chữa 1');
-    expect(html).not.toContain('<img');
+    // DEC-182: ảnh cửa cont Giám định hiện luôn (1 ảnh), ảnh sửa chữa vẫn chờ bấm XEM ẢNH
+    expect(html.match(/<img/g)).toHaveLength(1);
+    expect(html).toContain('alt="Ảnh cửa container"');
+  });
+
+  it('DEC-182: PhotoGallery autoShow — hiện ảnh ngay, không có nút XEM ẢNH', async () => {
+    const { PhotoGallery } = await import('../src/components/shared');
+    const html = renderToString(<PhotoGallery photos={['data:image/jpeg;base64,AA']} alt="Ảnh cửa container" className="h-24 w-36" autoShow />).replace(/<!-- -->/g, '');
+    expect(html).toContain('<img');
+    expect(html).not.toContain('XEM ẢNH');
   });
 
   it('DEC-178: PhotoGallery — chưa bấm thì không có ảnh; không có ảnh thì không hiện nút', async () => {

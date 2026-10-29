@@ -843,8 +843,9 @@ function usePhotoSrc(src: string): string {
 }
 
 // NÚT XEM ẢNH (DEC-178): mở hồ sơ / chi tiết KHÔNG tải ảnh — chỉ bấm XEM ẢNH mới xin link + tải ảnh
-export const PhotoGallery: React.FC<{ photos: (string | undefined)[]; alt: string; className: string; testId?: string }> = ({ photos, alt, className, testId }) => {
-  const [shown, setShown] = React.useState(false);
+// autoShow (DEC-182): ảnh cửa cont của Giám định hiện luôn khi mở hồ sơ / màn chi tiết (1 ảnh) — không cần bấm XEM ẢNH
+export const PhotoGallery: React.FC<{ photos: (string | undefined)[]; alt: string; className: string; testId?: string; autoShow?: boolean }> = ({ photos, alt, className, testId, autoShow = false }) => {
+  const [shown, setShown] = React.useState(autoShow);
   const list = photos.filter((p): p is string => Boolean(p));
   if (!list.length) return null;
   if (!shown) {

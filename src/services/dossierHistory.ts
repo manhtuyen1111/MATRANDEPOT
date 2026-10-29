@@ -28,6 +28,7 @@ export interface DossierHistoryRow {
   receipts?: HistoryReceipt[];
   photos?: string[]; // đường dẫn kho — chỉ tải khi bấm XEM ẢNH (DEC-178)
   photoAlt?: string;
+  showPhotos?: boolean; // DEC-182: ảnh cửa cont Giám định hiện luôn (không cần bấm XEM ẢNH)
 }
 
 export interface DossierContext {
@@ -155,6 +156,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
       staff: gateIn.fieldStaffName,
       photos: gateIn.doorPhotoUrl ? [gateIn.doorPhotoUrl] : [],
       photoAlt: 'Ảnh cửa container',
+      showPhotos: true,
     });
     if (gateIn.toInspectionRack) {
       if (gateIn.rackInspectedAt) {
@@ -217,6 +219,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
         staff: item.inspectedBy,
         photos: item.doorPhotoUrl ? [item.doorPhotoUrl] : [],
         photoAlt: 'Ảnh cửa container',
+        showPhotos: true,
       });
     } else pending.push('Chờ xe về — Giám định nhập tàu');
   }

@@ -67,10 +67,10 @@ const HistoryDetail: React.FC<{ row: DossierHistoryRow; onOpenReceipt?: (key: st
         {row.receipts.map((r) => <ReceiptLink key={r.target} receipt={r} onOpenReceipt={onOpenReceipt} />)}
       </p>
     )}
-    {/* Ảnh chỉ tải khi bấm XEM ẢNH (DEC-178) */}
+    {/* Ảnh cửa cont Giám định hiện luôn (DEC-182); ảnh khác chỉ tải khi bấm XEM ẢNH (DEC-178) */}
     {row.photos && row.photos.length > 0 && (
       <div data-testid={row.operation === 'Sửa chữa' ? 'repair-photo-list' : undefined}>
-        <PhotoGallery photos={row.photos} alt={row.photoAlt || 'Ảnh'} className="h-16 w-16" />
+        <PhotoGallery photos={row.photos} alt={row.photoAlt || 'Ảnh'} className={row.showPhotos ? 'h-24 w-36' : 'h-16 w-16'} autoShow={row.showPhotos} />
       </div>
     )}
   </div>

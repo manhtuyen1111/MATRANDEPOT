@@ -227,7 +227,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                 right={<span className="text-[11px] text-ink-muted">Giám định: {order.fieldStaffName}</span>}
               >
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  <div className="shrink-0 sm:w-44"><PhotoGallery photos={[order.doorPhotoUrl]} alt="Ảnh cửa container" className="h-28 w-full sm:w-44" /></div>
+                  <div className="shrink-0 sm:w-44"><PhotoGallery photos={[order.doorPhotoUrl]} alt="Ảnh cửa container" className="h-28 w-full sm:w-44" autoShow /></div>
                   <dl className="grid flex-1 grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                     <dt className="text-ink-muted">Trạng thái</dt>
                     <dd className={`font-bold ${order.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>
