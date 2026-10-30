@@ -2190,3 +2190,66 @@ describe('DEC-195: mã ISO 6346', () => {
   });
 });
 
+// DEC-198: GIÁM ĐỊNH CHỤP ẢNH CẤP VỎ (cont MSK) — sau khi Xe nâng cấp, trước khi Văn phòng trả chứng từ
+import { hasReleasePhoto, needsReleasePhoto, pendingReleasePhotos, recordReleasePhotos, RELEASE_PHOTO_MAX } from '../src/services/releasePhoto';
+import { confirmDocumentsReturn as returnDocs, getDriverRoute as routeOf, releaseTicketsInProgress } from '../src/services/driverRoute';
+
+describe('DEC-198: Giám định chụp ảnh cấp vỏ cont MSK', () => {
+  const demo = createDemoState();
+  const order = pendingReleasePhotos(demo)[0];
+  const ticket = demo.k80Tickets.find((t) => t.outDossierCode === order.gateOutCode)!;
+  const inspector = as(demo, 'usr-inspector');
+
+  it('cont MSK đã cấp lên xe vào hàng chờ; lộ trình K80 có bước GIÁM ĐỊNH; chưa chụp thì không trả chứng từ', () => {
+    expect(needsReleasePhoto(demo, order)).toBe(true);
+    expect(routeOf(demo, ticket).map((x) => x.dept)).toEqual(['VĂN PHÒNG', 'XE NÂNG', 'GIÁM ĐỊNH', 'VĂN PHÒNG']);
+    expect(() => returnDocs(as(demo, 'usr-office'), { scannedQrCode: ticket.qrCode })).toThrow(/GIÁM ĐỊNH — Chụp ảnh cấp vỏ/);
+    expect(releaseTicketsInProgress(demo).find((r) => r.order.id === order.id)?.photoWait).toBe(true);
+    expect(dossierHistory(demo, resolveDossier(demo, order.gateOutCode)!).pending.some((p) => p.dept === 'Giám định' && p.task === 'Chụp ảnh cấp vỏ')).toBe(true);
+  });
+
+  it('chụp 1 ảnh → rời hàng chờ, có dòng hồ sơ kèm ảnh, Văn phòng trả chứng từ được', () => {
+    const s = recordReleasePhotos(inspector, { gateOutOrderId: order.id, photos: ['data:a'] });
+    const o = s.gateOutOrders.find((x) => x.id === order.id)!;
+    expect(hasReleasePhoto(o)).toBe(true);
+    expect(o.releasePhotosBy).toBe(inspector.currentUser.fullName);
+    expect(pendingReleasePhotos(s).some((x) => x.id === order.id)).toBe(false);
+    const row = dossierHistory(s, resolveDossier(s, order.gateOutCode)!).rows.find((r) => r.operation === 'Giám định — Chụp ảnh cấp vỏ')!;
+    expect(row.photos).toEqual(['data:a']);
+    expect(row.dept).toBe('Giám định');
+    expect(s.auditLogs.some((a) => a.actionCode === 'RELEASE_PHOTOS' && a.entityCode === order.gateOutCode)).toBe(true);
+    expect(returnDocs(as(s, 'usr-office'), { scannedQrCode: ticket.qrCode }).pack.dossierCode).toBe(order.gateOutCode);
+    expect(() => recordReleasePhotos(as(s, 'usr-inspector'), { gateOutOrderId: order.id, photos: ['data:b'] })).toThrow(/Đã chụp ảnh cấp vỏ/);
+  });
+
+  it('từ chối: sai quyền, không có ảnh, quá 30 ảnh, Xe nâng chưa cấp, đã trả chứng từ', () => {
+    expect(() => recordReleasePhotos(as(demo, 'usr-forklift'), { gateOutOrderId: order.id, photos: ['data:a'] })).toThrow(/Không đủ quyền/);
+    expect(() => recordReleasePhotos(inspector, { gateOutOrderId: order.id, photos: [] })).toThrow(/ít nhất 1 ảnh/);
+    expect(() => recordReleasePhotos(inspector, { gateOutOrderId: order.id, photos: Array(RELEASE_PHOTO_MAX + 1).fill('data:a') })).toThrow(/Tối đa 30/);
+    const waiting = demo.gateOutOrders.find((o) => o.status === 'PENDING_FORKLIFT')!;
+    expect(() => recordReleasePhotos(inspector, { gateOutOrderId: waiting.id, photos: ['data:a'] })).toThrow(/chưa cấp/);
+    const returned = demo.gateOutOrders.find((o) => o.documentsReturnedAt);
+    if (returned) expect(() => recordReleasePhotos(inspector, { gateOutOrderId: returned.id, photos: ['data:a'] })).toThrow(/đã trả chứng từ/);
+  });
+
+  it('cont hãng khác không phải chụp — lộ trình giữ 3 bước, Giám định không chụp được', () => {
+    let s = createReleaseOrder(as(createInitialState(), 'usr-office'), {
+      bookingNo: 'BK-R', customerName: VIETLOG, containerNo: 'MSKU4089123', truckNo: '15H', driverPhone: '0912345678', feeCatalogIds: [FEE_LOLO_40HC_MSK],
+    });
+    s = confirmReleasePayment(as(s, 'usr-office'), { gateOutOrderId: s.gateOutOrders[0].id, paymentCategory: 'TTS', ttsNote: 'x' });
+    s = executeGateOut(as(s, 'usr-forklift'), { containerNo: 'MSKU4089123' });
+    expect(needsReleasePhoto(s, s.gateOutOrders[0])).toBe(false);
+    expect(routeOf(s, s.k80Tickets[0]).map((x) => x.dept)).toEqual(['VĂN PHÒNG', 'XE NÂNG', 'VĂN PHÒNG']);
+    expect(() => recordReleasePhotos(as(s, 'usr-inspector'), { gateOutOrderId: s.gateOutOrders[0].id, photos: ['data:a'] })).toThrow(/không thuộc hãng/);
+  });
+
+  it('đổi container sau khi chụp: ảnh cũ không tính, cont mới phải chụp lại', () => {
+    let s = recordReleasePhotos(inspector, { gateOutOrderId: order.id, photos: ['data:a'] });
+    const old = s.containers.find((c) => c.masterDossierCode === order.masterDossierCode && c.containerNo === order.containerNo)!;
+    const fresh = swapCandidates(s, order.id)[0];
+    s = swapGateOutContainer(as(s, 'usr-office'), { gateOutOrderId: order.id, reason: 'KEN_VO', newContainerNo: fresh.containerNo });
+    expect(hasReleasePhoto(s.gateOutOrders.find((x) => x.id === order.id))).toBe(false);
+    expect(old.containerNo).not.toBe(fresh.containerNo);
+  });
+});
+
