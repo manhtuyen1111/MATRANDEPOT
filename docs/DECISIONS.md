@@ -1527,6 +1527,20 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-200 — Hư hỏng cont MSK ghi theo mã CEDEX (eEIR)
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-062). **CHƯA CODE** — chờ danh mục mã.
+- **Chỉ cont MSK có hư** ở các màn Giám định (Hạ vỏ, Nhập tàu, Cấp vỏ): mỗi chỗ hư nhập **vị trí CEDEX** + **loại hư** + **bên gây hư** + 1–3 ảnh (đúng trường `damages[]` của eEIR — `docs/EDI_MAERSK.md` 12.3, 15.2). Hãng khác giữ remark hư nhanh như cũ.
+- Cont không hư → 1 mục "không hư / hao mòn" (`0000`) + ảnh.
+- **Cần trước khi code:** danh mục mã CEDEX (vị trí, loại hư), mã bên gây hư / `tpIndicator` — lấy từ tài liệu eEIR v4.3 (phần damages) hoặc Maersk; đưa vào Danh mục (Admin sửa), không viết cứng ở giao diện.
+
+### DEC-199 — Booking cont MSK phải là 9–11 chữ số
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-063). **CHƯA CODE**.
+- Văn phòng lập lệnh **Cấp vỏ Release for customer** cho cont **hãng MSK**: số booking không phải **9–11 chữ số** → **chặn**, báo "Booking Maersk phải là 9–11 chữ số". Lý do: eEIR gate-out của Maersk từ chối booking sai dạng; sửa ngay khi khách còn ở quầy.
+- Không áp dụng: Release for sale (dùng Sale code — DEC-194), hãng khác.
+- Khi code: kiểm tra ở `createReleaseOrder` + RPC `create_release_order` (migration mới); dữ liệu Demo đang dùng booking dạng `BK-MSK-…` → đổi sang 9 chữ số.
+
 ### DEC-198 — Giám định chụp ảnh CẤP VỎ (cont Maersk) trước khi trả chứng từ
 
 - Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-059).
@@ -2013,6 +2027,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-198 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-200 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

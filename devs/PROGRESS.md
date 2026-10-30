@@ -283,7 +283,8 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
   - 📐 **PDF eEIR từ email** (mục 16): không thay ảnh; **lưu làm chứng từ** bằng Google Apps Script trong hộp thư → Edge Function → kho `eeir-pdf`, nút PDF eEIR trong hồ sơ. Chờ người dùng gửi 1 email mẫu (chụp người gửi / tiêu đề / tên file) + 1 PDF mẫu.
   - ✅ **Mẫu eEIR thật** (mục 18): mã depot **3HY**; Cấp vỏ = `OUT-EMPTY-EXP`; depot đang nhập tay app eEIR Maersk (2 ảnh cửa + bên trong); email từ `eeirappnoreply@maersk.com`, tiêu đề = số cont, file PDF = EIR Reference No → gắn PDF vào hồ sơ dễ.
   - ⏸ **Ticket Maersk** (mục 17 — nội dung đã gom): khóa eEIR staging + JSON mẫu (Q-056), moveType (Q-058 — dự đoán Hạ vỏ IMP, Cấp vỏ EXP, Nhập / Xuất tàu POS, cấp sale ?), Release for sale ghi gì vào `bookingNo`, eEIR thay CODECO? (Q-061), API tải PDF, SFTP IP / xác nhận.
-  - ⏸ Câu hỏi nghiệp vụ: Q-062 (có ghi hư do bên thứ 3 theo mã CEDEX không), Q-063 (chặn booking MSK sai độ dài), Nhập / Xuất tàu có gửi eEIR + ghi gì ở số xe.
+  - ✅ Chốt 2026-10-30: **DEC-199** chặn booking cont MSK không phải 9–11 chữ số (Cấp vỏ Release for customer — chưa code); **DEC-200** hư cont MSK ghi theo **CEDEX** (chưa code — chờ danh mục mã CEDEX / bên gây hư).
+  - ⏸ Câu hỏi nghiệp vụ còn: Q-065 Nhập / Xuất tàu có gửi eEIR + ghi gì ở số xe.
 - **Bước tiếp theo đề xuất:** (1) bạn gửi ticket Maersk + lấy thông số AutoEDI; (2) trong lúc chờ, agent làm mục 15.4 bước 1 (phiếu eEIR chạy thử, không cần khóa) sau khi bạn chốt Q-058 tạm / Q-062 / Q-063.
 
 **▶ BÀN GIAO CUỐI PHIÊN 2026-10-29 (KHUYA) — DEC-181 → DEC-191 — ĐỌC ĐẦU TIÊN (bổ sung khối "TỐI" bên dưới):**

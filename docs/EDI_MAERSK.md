@@ -400,6 +400,8 @@ Tài liệu nhận được: **API License Terms** (sửa 31/08/2026) + OpenAPI 
 
 **Phương án khác:** (a) hỏi Maersk có **API tải PDF theo `inspectionId`** không (gọn nhất — thêm vào ticket); (b) Gmail API với OAuth từ máy chủ (phức tạp hơn, phải giữ refresh token).
 
+**Đã chốt 2026-10-30:** CEDEX cho cont MSK có hư (DEC-200), chặn booking MSK sai dạng (DEC-199).
+
 **Cần người dùng gửi:** 1 email eEIR mẫu (chụp màn hình: người gửi, tiêu đề, tên file đính kèm) + 1 file PDF mẫu (xem dung lượng, nội dung có số cont / inspectionId không). **Không gửi mật khẩu Gmail.**
 
 ## 17. Ticket hỗ trợ gửi Maersk (gom câu hỏi)
