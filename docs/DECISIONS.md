@@ -1527,6 +1527,27 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-192 — Đổi container cả khi CHƯA NÂNG HẠ; Trả chứng từ cấp vỏ hiện đủ lệnh + icon nâng hạ
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng — yêu cầu + trả lời câu hỏi). Bổ sung DEC-185 / 186; sửa DEC-188 (icon chờ).
+- Tình huống mới: lái xe ra kiểm tra cont, yêu cầu đổi **trước khi Xe nâng nâng hạ lên xe**. Trường hợp đổi khi đã lên xe giữ nguyên như DEC-185 / 186.
+- **Văn phòng → Trả chứng từ, cột CẤP VỎ hiện đủ** các lệnh đã thu tiền, chưa trả chứng từ (trước đây chỉ hiện lệnh đã nâng hạ). Mỗi dòng có **icon nâng hạ**:
+  - **xanh** = ĐÃ NÂNG HẠ lên xe;
+  - **vàng** = CHƯA NÂNG HẠ → nút **Trả chứng từ khóa**, nhưng **vẫn ĐỔI CONTAINER được**.
+- **Đổi khi chưa nâng hạ (icon vàng):**
+  - lệnh CV- (giữ mã, chứng từ, phiếu thu, QR) chuyển sang cont mới và **vẫn ở Xe nâng — Chờ cấp vỏ**, mang nhãn **ĐỔI CONT**;
+  - cont cũ **giữ nguyên vị trí**, bỏ khóa phân bổ, tồn bãi; không có việc Xe nâng hạ lại.
+  - **Kén vỏ:** cấp được cho khách khác ngay.
+  - **Hư hỏng:** DAMAGE + nhãn PHÁT SINH CẤP VỎ + **vào Chờ báo giá ngay** (người dùng chọn — cần chuyển khu sửa chữa thì Xe nâng Đảo chuyển như thường).
+- Lệnh chưa thu tiền vẫn không đổi được (hủy lệnh như cũ).
+- Lịch sử hồ sơ cont cũ: dòng ĐỔI CONT ghi "Chưa nâng hạ — cont giữ vị trí cũ"; không có dòng Xe nâng cấp vỏ.
+- **Icon chờ trong Lịch sử hồ sơ:** dòng ĐANG CHỜ dùng **đồng hồ** như cũ (bỏ đồng hồ cát — DEC-188).
+- Code:
+  - `canSwapGateOut` (thêm `PENDING_FORKLIFT`), `isGateOutLifted`, `swapGateOutContainer` (nhánh chưa nâng hạ), `releaseDamageWorkOrder` (`depotOperations.ts`);
+  - `releaseTicketsInProgress` (`driverRoute.ts`);
+  - `GateOutSwap.lifted`.
+- Database: migration `20261115000001_gate_out_swap_before_lift.sql` (định nghĩa lại `swap_gate_out_container`), pgTAP `0015` (35 kiểm tra).
+
 ### DEC-191 — User - Role dạng tab; thông tin chi tiết nhân viên
 
 - Trạng thái: CONFIRMED (2026-10-29, người dùng — yêu cầu + trả lời câu hỏi).
@@ -1910,6 +1931,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-191 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-192 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
