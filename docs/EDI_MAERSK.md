@@ -75,6 +75,21 @@ UNT+11+2'                                  ← 11 dòng như cấp thường, kh
 - File 15:00 có **48 cont sale cùng 1 Sale code, cùng giờ 14:16** (cấp cả lô) + 3 gate-out thường + 1 gate-in → 1 file có thể tới 50+ tin, bình thường.
 - Gate-in trong file này: `MRSU0011444 2200 … GRADEK DAM+1+6` — giống mẫu trước.
 
+### 3.4 Xuất tàu — từ file mẫu `202610241100.txt` (người dùng gửi 2026-10-30, cont HASU1040690)
+
+```
+BGM+36+202610241100-49'                    ← GATE-OUT (36)
+EQD+CN+HASU1040690+2200:102:5++8+4'        ← trạng thái 8 (như cấp sale), 4 = rỗng
+RFF+BN:VNHPHTM'                            ← ô BOOKING ghi MÃ CẢNG / TERMINAL ĐẾN (VNHPH = Hải Phòng + TM)
+DTM+7:202610241056:203'
+… (LOC, TDT, CNT, UNT 11 dòng — giống cấp thường)
+```
+
+- **Xuất tàu = gate-out (36) + `EQD …++8+4` + `RFF+BN:<mã cảng đến>`** (mẫu: `VNHPHTM`). File 11:00 có **60 cont xuất tàu cùng giờ 10:56** (cả danh sách tàu) + 2 cấp thường + 1 gate-in `GRADED DAM+1+2`.
+- **Trạng thái 8** dùng cho cả **cấp sale** và **xuất tàu** (cont đi không theo booking xuất khẩu); cấp thường theo booking = **2**.
+- Ánh xạ MATRAN: cont XUẤT TÀU (DEC-069) khi Xe nâng xuất (`item.status = DONE`, giờ `doneAt`) → `RFF+BN` = mã cảng đến. Danh sách tàu **hiện chưa có trường mã cảng** → Q-064.
+- Giờ `DTM` của cả 60 cont **giống nhau (10:56)** → app cũ có thể lấy giờ **duyệt danh sách** / giờ nhập lô, không phải giờ từng xe ra (cần đối chiếu — Q-051).
+
 ## 4. Sự kiện cần gửi (tác nghiệp → EDI)
 
 | Tác nghiệp MATRAN | Khi nào ghi sự kiện | Loại tin | Ghi chú |
@@ -82,7 +97,7 @@ UNT+11+2'                                  ← 11 dòng như cấp thường, kh
 | **Hạ vỏ** (cont MSK) | GATE IN OK (hoặc lúc Xe nâng hạ — Q-051) | Gate-in (34) | hạng vỏ theo Giám định |
 | **Cấp vỏ — Release for customer** | Xe nâng cấp xong (GATE_OUT_OK) | Gate-out (36) | `RFF+BN` = booking |
 | **Cấp vỏ — Release for sale** (DEC-194) | Xe nâng cấp xong | Gate-out (36) | ✓ đã có mẫu (mục 3.3): `EQD …++8+4`, `RFF+BN:<Sale code>` |
-| **Xuất tàu** (DEC-069) | Xe nâng xuất (cont OUT ra cảng) | Gate-out? | người dùng xác nhận cần gửi; mã / booking dùng gì — Q-050 |
+| **Xuất tàu** (DEC-069) | Xe nâng xuất (cont OUT ra cảng) | Gate-out (36) | ✓ đã có mẫu (mục 3.4): `EQD …++8+4`, `RFF+BN:<mã cảng đến>` (VD VNHPHTM) — mã cảng lấy ở đâu: Q-064 |
 | **Nhập tàu** (DEC-069) | Xe nâng hạ (cont vào bãi) | Gate-in? | chưa xác nhận có gửi không — Q-050 |
 | **Đổi container sau khi đã lên xe** (DEC-185) | Văn phòng đổi | **Hủy / sửa** gate-out cont cũ (nếu đã gửi) + gate-out cont mới khi Xe nâng cấp | app cũ xử lý thế nào — Q-052 |
 | **Đổi container chưa nâng hạ** (DEC-192) | — | không gửi gì thêm (chưa có gate-out) | |
