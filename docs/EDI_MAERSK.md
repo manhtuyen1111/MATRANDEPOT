@@ -313,3 +313,11 @@ Tài liệu nhận được: **API License Terms** (sửa 31/08/2026) + OpenAPI 
 - Với 3 câu (eEIR có thay CODECO không; API nào là gate-in / gate-out cho depot; API nhận booking release / release for sale), Devy trả lời: **portal không có tài liệu nào nói rõ**, và trong danh sách sản phẩm **không thấy sản phẩm "depot gate-in / gate-out equipment move" hay "booking release"** → đề nghị mở **support ticket**.
 - **Đánh giá tạm:** hiện **chưa có API công khai thay CODECO** cho lượt ra / vào → **EDI CODECO vẫn là kênh báo ra / vào**; eEIR API là phiếu giao nhận bổ sung (ảnh, hạng vỏ, hư hỏng). Chờ ticket / eEIRSupport trả lời Q-061.
 
+## 13. Đã làm — bản chạy thử (DEC-197, 2026-10-30)
+
+- **Danh mục chung → EDI hãng tàu** (Admin): chọn giờ file → tạo file CODECO của giờ đó (Hạ vỏ, Cấp vỏ, Cấp sale, Xuất tàu — cont MSK), xem danh sách tin, tin bị bỏ ra + lý do, nội dung file, **tải .txt** để so với file ERPVINASHIP cùng giờ. **Chưa gửi Maersk.**
+- Builder dựng lại **đúng từng ký tự** file mẫu `202610290500.txt` (test `tests/edi-codeco.test.ts`).
+- Bộ mã Size / Type chọn được: **mã app cũ** (mặc định) / **ISO 6346** (DEC-195).
+- **Cách so khớp khi chạy song song:** chọn cùng giờ → tải file → so **từng cont** (loại tin, size/type, RFF+BN, giờ) với file app cũ. Thứ tự dòng có thể khác (MATRAN sắp theo giờ); giờ có thể lệch vài phút vì MATRAN lấy giờ thao tác thật trên app (Q-051).
+- **Còn lại trước khi gửi thật:** kênh gửi (Q-053), tin hủy / sửa khi đổi container sau khi đã lên xe (Q-052), Nhập tàu (Q-050), giờ không có cont (Q-049), tự động mỗi giờ + hàng chờ / nhật ký / gửi lại.
+

@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-197 (2026-10-30): **Danh mục chung → EDI hãng tàu** (Admin) — **chạy thử EDI CODECO Maersk**: tạo file 1 giờ (Hạ vỏ, Cấp vỏ, Cấp sale, Xuất tàu — cont MSK) đúng mẫu app cũ, xem tin bị bỏ ra, tải .txt để so; **chưa gửi** Maersk. Không migration.
 - DEC-196 (2026-10-30): **Xuất tàu — Mã cảng đến** (tùy tàu, bắt buộc) cho EDI. **Migration mới `20261118000001_vessel_destination_port.sql`**.
 - DEC-195 (2026-10-30): **Mã ISO 6346** theo Size - Type ở Danh mục Container (giữ tên 20DC / 40HC trên màn hình); hồ sơ container hiện ISO. **Migration mới `20261117000001_container_iso_codes.sql`** (pgTAP 334/334 local).
 - DEC-194 (2026-10-30): **Cấp vỏ — Tác nghiệp Release for customer / Release for sale** (bắt buộc Sale code); các bước sau giống nhau. **Migration mới `20261116000001_release_purpose.sql`** (pgTAP 320/320 local).

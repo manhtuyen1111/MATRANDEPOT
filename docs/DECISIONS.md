@@ -1527,6 +1527,28 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-197 — EDI CODECO Maersk: chạy thử (chưa gửi)
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng đồng ý làm bản chạy thử trước). Thuộc OPEN-009.
+- Menu **Danh mục chung → EDI hãng tàu** (chỉ Admin — Q-054 chờ chốt có cho Văn phòng không).
+  - Chọn **giờ file HH:00** (nút giờ trước / sau) + **bộ mã Size / Type** (mã app cũ / ISO 6346 — DEC-195) → **Tạo file**.
+  - Hiện: tóm tắt số tin theo tác nghiệp, **tin bị bỏ ra + lý do** (thiếu dữ liệu), danh sách tin (1 dòng / tin: Mã hồ sơ | Số container | Size / Type | Mã EDI | Tác nghiệp | Giờ thực tế | RFF+BN | Trong file), **nội dung file**, nút **Tải file .txt** để so với file app cũ.
+  - **Chưa gửi Maersk** (kênh gửi Q-053, tin hủy / sửa Q-052 chưa có).
+- **File giờ HH:00** gồm các lượt từ (HH-1):00 đến trước HH:00 (giống app cũ); tên file / mã tham chiếu `yyyyMMddHHmm`; giờ ghi theo giờ Việt Nam.
+- **Lượt đưa vào (chỉ cont hãng MSK), dữ liệu thực tế:**
+  - **Hạ vỏ** (mã HV-) — giờ GATE IN OK (`gateInAt`); `RFF+BN:GRADE` + hạng (DAMAGE → D, còn lại = Phân loại M / K / E); `DAM+1+2` (DAMAGE) / `+6`. Cont W-SURVEY chưa giám định → bỏ ra.
+  - **Cấp vỏ theo booking** — giờ Xe nâng cấp (`confirmedAt`); `EQD …++2+4`, `RFF+BN:<booking>`.
+  - **Cấp sale** (DEC-194) — `EQD …++8+4`, `RFF+BN:<Sale code>`.
+  - **Xuất tàu** (DEC-196) — giờ thực tế từng cont (`doneAt`); `EQD …++8+4`, `RFF+BN:<mã cảng đến>`.
+  - Chưa đưa: **Nhập tàu** (Q-050), **tin hủy / sửa** khi đổi container sau khi đã lên xe (Q-052).
+- Sắp theo giờ, cùng giờ thì gate-in trước gate-out (app cũ không sắp theo giờ — so khớp theo từng cont, không theo thứ tự dòng).
+- Kiểm chứng: test **dựng lại đúng từng ký tự** file mẫu app cũ `202610290500.txt` (`tests/edi-codeco.test.ts`).
+- Code:
+  - `src/services/edi/codeco.ts` (`MAERSK_CODECO`, `codecoEvents`, `buildCodecoFile`);
+  - `src/services/remote/ediSource.ts` + `loadEdiState` (database: tải lượt ra / vào của giờ đó);
+  - `src/features/catalog/EdiWorkspace.tsx`.
+- Không cần migration.
+
 ### DEC-196 — Xuất tàu: Mã cảng đến (tùy tàu)
 
 - Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-064).
@@ -1979,6 +2001,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-196 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-197 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
