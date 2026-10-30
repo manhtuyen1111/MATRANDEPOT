@@ -290,6 +290,7 @@ function buildState(base: DepotState, raw: RawData): DepotState {
     confirmedBy: opt(o.confirmed_by_name), confirmedAt: opt(o.confirmed_at), cancelReason: opt(o.cancel_reason), cancelledAt: opt(o.cancelled_at),
     documentsReturnedAt: opt(o.documents_returned_at), documentsReturnedBy: opt(o.documents_returned_by_name), createdAt: o.created_at,
     swaps: o.swaps?.length ? o.swaps : undefined, // DEC-185
+    releasePurpose: o.release_purpose === 'SALE' ? 'SALE' : undefined, saleCode: opt(o.sale_code), // DEC-194
   } as GateOutOrder);
 
   const mapBooking = (b: Row): ReleaseBooking => {

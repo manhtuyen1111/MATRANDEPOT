@@ -8,6 +8,8 @@ import {
   GateInOrder,
   GateOutOrder,
   K80InternalTicket,
+  RELEASE_PURPOSE_LABELS,
+  ReleasePurpose,
 } from '../../types/depot';
 import { DepotState, formatVnd } from '../../services/depotStore';
 import { gateInContainerConflict, getBookingSummary, blockedOnlyByHold, releaseBlocker } from '../../services/depotOperations';
@@ -340,6 +342,9 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
 
   const [filters, setFilters] = useState({ search: '', line: 'ALL', size: 'ALL', type: 'ALL', condition: 'AV' as ConditionFilter });
   const [bookingNo, setBookingNo] = useState('');
+  // DEC-194: Tác nghiệp — Release for customer (mặc định) / Release for sale (bắt buộc Sale code); giữ khi lập nhiều cont cùng booking
+  const [releasePurpose, setReleasePurpose] = useState<ReleasePurpose>('CUSTOMER');
+  const [saleCode, setSaleCode] = useState('');
   const [showBookingList, setShowBookingList] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [selectedContainerId, setSelectedContainerId] = useState('');
@@ -374,7 +379,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
   const suggested = selected
     ? suggestLoloFee(state.feeCatalog, selected.size, selected.type, selected.shippingLineCode)?.id
     : undefined;
-  const part1Done = Boolean(bookingNo.trim() && customerName && selected);
+  const part1Done = Boolean(bookingNo.trim() && customerName && selected && (releasePurpose === 'CUSTOMER' || saleCode.trim()));
   const part2Done = part1Done && Boolean(truckNo.trim() && driverPhone.trim());
 
   const resetForm = () => {
@@ -416,6 +421,8 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
         truckNo,
         driverPhone,
         feeCatalogIds: feeIds,
+        releasePurpose,
+        saleCode,
       });
       const order = created.gateOutOrders[0];
       const next = confirmReleasePayment(created, { gateOutOrderId: order.id, ...payment });
@@ -608,6 +615,23 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
 
         <form onSubmit={handleSubmit} className="space-y-4 lg:col-span-6">
           <SectionCard title="1. Booking & container" icon={<Truck className="h-4 w-4 text-ink-muted" />}>
+            {/* DEC-194: Tác nghiệp cấp vỏ — các bước sau giống nhau */}
+            <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label>
+                <span className={labelCls}>Tác nghiệp *</span>
+                <select value={releasePurpose} onChange={(e) => setReleasePurpose(e.target.value as ReleasePurpose)} className={inputCls} data-testid="release-purpose">
+                  {(Object.keys(RELEASE_PURPOSE_LABELS) as ReleasePurpose[]).map((p) => (
+                    <option key={p} value={p}>{RELEASE_PURPOSE_LABELS[p]}</option>
+                  ))}
+                </select>
+              </label>
+              {releasePurpose === 'SALE' && (
+                <label>
+                  <span className={labelCls}>Sale code *</span>
+                  <input value={saleCode} onChange={(e) => setSaleCode(e.target.value.toUpperCase())} maxLength={40} className={`${inputCls} font-mono uppercase`} data-testid="sale-code" />
+                </label>
+              )}
+            </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label>
                 <span className={labelCls}>Số booking *</span>

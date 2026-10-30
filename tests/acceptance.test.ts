@@ -2138,3 +2138,30 @@ describe('DEC-192: đổi container trước khi nâng hạ', () => {
     expect(s.workOrders.find((w) => w.masterDossierCode === old.masterDossierCode && w.category === 'INSPECTION' && w.workStatus === 'OPEN')?.items).toEqual(['Móp vách']);
   });
 });
+
+// DEC-194: Văn phòng → Cấp vỏ: Tác nghiệp Release for customer (mặc định) / Release for sale (bắt buộc Sale code); các bước sau giống nhau
+describe('DEC-194: cấp vỏ Release for sale', () => {
+  const office = as(createInitialState(), 'usr-office');
+  const base = { bookingNo: 'BK-SALE-1', customerName: VIETLOG, containerNo: 'MSKU4089123', truckNo: '15H-1', driverPhone: '0912345678', feeCatalogIds: [FEE_LOLO_40HC_MSK] };
+
+  it('mặc định Release for customer (không lưu sale code)', () => {
+    const s = createReleaseOrder(office, { ...base, saleCode: 'BỎ QUA' });
+    expect(s.gateOutOrders[0].releasePurpose).toBeUndefined();
+    expect(s.gateOutOrders[0].saleCode).toBeUndefined();
+  });
+
+  it('Release for sale: bắt buộc Sale code; lưu viết hoa; thanh toán → Xe nâng như thường; hồ sơ ghi rõ', () => {
+    expect(() => createReleaseOrder(office, { ...base, releasePurpose: 'SALE', saleCode: '  ' })).toThrow(/SALE CODE/);
+    expect(() => createReleaseOrder(office, { ...base, releasePurpose: 'SALE', saleCode: 'X'.repeat(41) })).toThrow(/40 ký tự/);
+    let s = createReleaseOrder(office, { ...base, releasePurpose: 'SALE', saleCode: 'sl-2026-001' });
+    const o = s.gateOutOrders[0];
+    expect(o).toMatchObject({ releasePurpose: 'SALE', saleCode: 'SL-2026-001', gateOutType: 'EMPTY_RELEASE' });
+    s = confirmReleasePayment(s, { gateOutOrderId: o.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    expect(s.gateOutOrders.find((x) => x.id === o.id)!.status).toBe('PENDING_FORKLIFT');
+    s = executeGateOut(as(s, 'usr-forklift'), { containerNo: 'MSKU4089123' });
+    expect(s.gateOutOrders.find((x) => x.id === o.id)!.status).toBe('GATE_OUT_OK');
+    const row = dossierHistory(s, resolveDossier(s, o.gateOutCode)!).rows.find((r) => r.operation === 'Văn phòng — Cấp vỏ')!;
+    expect(row.detail).toContain('Release for sale');
+    expect(row.detail).toContain('Sale code SL-2026-001');
+  });
+});

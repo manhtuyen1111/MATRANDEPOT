@@ -1224,3 +1224,13 @@ describe('DEC-192: Trả chứng từ CẤP VỎ hiện đủ lệnh + icon nân
     expect(strip(renderToString(<SwapContainerModal state={demo} gateOutOrderId={wait.order.id} onClose={noop} onDone={noop} />))).toContain('CHƯA NÂNG HẠ');
   });
 });
+
+describe('DEC-194: Văn phòng → Cấp vỏ có ô Tác nghiệp', () => {
+  it('mặc định Release for customer; có lựa chọn Release for sale', () => {
+    const html = renderToString(<OfficeCapVoWorkspace state={as(base, 'usr-office')} onUpdateState={noop} onOpenK80Ticket={noop} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('data-testid="release-purpose"');
+    expect(html).toMatch(/<option value="CUSTOMER" selected="">Release for customer<\/option>/);
+    expect(html).toContain('Release for sale');
+    expect(html).not.toContain('data-testid="sale-code"'); // chỉ hiện khi chọn Release for sale
+  });
+});

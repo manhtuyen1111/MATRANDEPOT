@@ -601,7 +601,11 @@ export interface ReleaseBooking {
   createdAt: string;
 }
 
-// Hồ sơ CẤP VỎ / XUẤT bãi
+// DEC-194: TÁC NGHIỆP cấp vỏ — Release for customer (mặc định) / Release for sale (CẤP SALE, bắt buộc Sale code).
+// Các bước sau (thanh toán, Xe nâng, trả chứng từ, đổi cont) giống nhau; dùng cho EDI hãng tàu (docs/EDI_MAERSK.md).
+export type ReleasePurpose = 'CUSTOMER' | 'SALE';
+export const RELEASE_PURPOSE_LABELS: Record<ReleasePurpose, string> = { CUSTOMER: 'Release for customer', SALE: 'Release for sale' };
+
 // DEC-185: ĐỔI CONTAINER (Văn phòng, khi cont đã cấp ra, chưa trả chứng từ) — giữ mã CV-, chứng từ, phiếu thu
 export type SwapReason = 'KEN_VO' | 'DAMAGE';
 export const SWAP_REASON_LABELS: Record<SwapReason, string> = {
@@ -623,6 +627,7 @@ export interface GateOutSwap {
   swappedAt: string;
 }
 
+// Hồ sơ CẤP VỎ / XUẤT bãi
 export interface GateOutOrder {
   id: string;
   masterDossierCode: string; // Mã hồ sơ HẠ VỎ của lượt lưu bãi
@@ -652,6 +657,8 @@ export interface GateOutOrder {
   documentsReturnedAt?: string; // DEC-052
   documentsReturnedBy?: string;
   swaps?: GateOutSwap[]; // DEC-185: các lần ĐỔI CONTAINER của lệnh
+  releasePurpose?: ReleasePurpose; // DEC-194: không có = Release for customer
+  saleCode?: string;               // DEC-194: bắt buộc khi Release for sale
   createdAt: string;
 }
 

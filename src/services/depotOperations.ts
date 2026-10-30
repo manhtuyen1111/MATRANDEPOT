@@ -18,6 +18,8 @@ import {
   RepairTeam,
   RepairTeamMember,
   ServiceWorkOrder,
+  RELEASE_PURPOSE_LABELS,
+  ReleasePurpose,
   STAFF_GENDER_LABELS,
   StaffGender,
   SWAP_REASON_LABELS,
@@ -1112,9 +1114,16 @@ export function createReleaseOrder(
     truckNo: string;
     driverPhone: string;
     feeCatalogIds: string[];
+    releasePurpose?: ReleasePurpose; // DEC-194: mặc định Release for customer
+    saleCode?: string;
   }
 ): DepotState {
   assertPermission(state, 'RELEASE_ORDER', 'chỉ Văn phòng / Quản lý được lập lệnh CẤP VỎ.');
+  const purpose: ReleasePurpose = input.releasePurpose || 'CUSTOMER';
+  if (!RELEASE_PURPOSE_LABELS[purpose]) throw new Error('Tác nghiệp cấp vỏ không hợp lệ.');
+  const saleCode = purpose === 'SALE' ? (input.saleCode || '').trim().toUpperCase() : '';
+  if (purpose === 'SALE' && !saleCode) throw new Error('Release for sale: vui lòng nhập SALE CODE.');
+  if (saleCode.length > 40) throw new Error('SALE CODE tối đa 40 ký tự.');
   const bookingNo = input.bookingNo.trim().toUpperCase();
   if (!bookingNo) throw new Error('Vui lòng nhập SỐ BOOKING.');
   const customerName = normalizeCustomer(state, input.customerName);
@@ -1201,6 +1210,7 @@ export function createReleaseOrder(
     status: 'PAYMENT_PENDING',
     createdBy: state.currentUser.fullName,
     createdAt: nowIso(),
+    ...(purpose === 'SALE' ? { releasePurpose: 'SALE' as const, saleCode } : {}),
   };
   const bookingId = booking.id;
   next = updateContainerById(
@@ -1227,7 +1237,7 @@ export function createReleaseOrder(
     'RELEASE_ORDER_CREATED',
     'GATE_OUT',
     outCode.code,
-    `[Hồ sơ ${outCode.code}] Lập lệnh CẤP VỎ ${container.containerNo} (${container.conditionClass}) theo booking ${bookingNo}, xe ${truckNo}; chứng từ ${voucher.voucherNo}: ${amount.toLocaleString('vi-VN')}đ`,
+    `[Hồ sơ ${outCode.code}] Lập lệnh CẤP VỎ ${container.containerNo} (${container.conditionClass}) theo booking ${bookingNo}, xe ${truckNo}${purpose === 'SALE' ? `, Release for sale — Sale code ${saleCode}` : ''}; chứng từ ${voucher.voucherNo}: ${amount.toLocaleString('vi-VN')}đ`,
     container.masterDossierCode
   );
 }

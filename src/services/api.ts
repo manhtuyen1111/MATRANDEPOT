@@ -124,6 +124,7 @@ export const createReleaseOrder = wrap(ops.createReleaseOrder, ([s, i], next) =>
     const res = await rpc<{ gate_out_id: string }>(c, 'create_release_order', {
       p_request_id: requestId(), p_booking_no: i.bookingNo, p_customer_name: i.customerName, p_container_no: i.containerNo,
       p_truck_no: i.truckNo, p_driver_phone: i.driverPhone, p_fee_ids: i.feeCatalogIds,
+      p_purpose: i.releasePurpose || 'CUSTOMER', p_sale_code: nul(i.saleCode), // DEC-194
     });
     if (localId) mapId(localId, res.gate_out_id); // lập lệnh + thu tiền trong cùng 1 lần bấm
   };
