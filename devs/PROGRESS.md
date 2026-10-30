@@ -253,7 +253,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 ### I.5 — DATABASE GĐ 4 (cập nhật 2026-10-29 — đọc trước — mới nhất)
 
 **▶ BÀN GIAO CUỐI PHIÊN 2026-10-30 — DEC-195 → DEC-198 + EDI / eEIR — ĐỌC ĐẦU TIÊN (thay khối "KHUYA" bên dưới):**
-- **Code:** nhánh **`agent/claude/perf-large-data`** đã push — chứa DEC-175 → **DEC-198** + sửa lỗi GOUT-002. **1 PR duy nhất** → `main`: https://github.com/manhtuyen1111/MATRANDEPOT/compare/main...agent/claude/perf-large-data
+- **Code:** nhánh **`agent/claude/perf-large-data`** đã push — chứa DEC-175 → **DEC-201** + sửa lỗi GOUT-002 + eEIR chạy thử (nghiệp vụ). **1 PR duy nhất** → `main`: https://github.com/manhtuyen1111/MATRANDEPOT/compare/main...agent/claude/perf-large-data
 - **Database `matran-test`:** đã có tới `20261112000001`. **Bạn phải chạy** `npx supabase migration list --linked` rồi `npx supabase db push --linked` — 7 file (pgTAP local 345/345):
   - `20261113000001` DEC-189 sức khỏe database • `20261114000001` DEC-191 nhân viên • `20261115000001` DEC-192 đổi cont trước nâng hạ
   - `20261116000001` DEC-194 Release for sale • `20261117000001` DEC-195 mã ISO • `20261118000001` DEC-196 mã cảng đến Xuất tàu
@@ -265,6 +265,12 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
   - DEC-198 **Giám định → Cấp vỏ** (mobile, menu `GD_CAP_VO`): cont **MSK** sau Xe nâng cấp → Giám định chụp 1–30 ảnh → mới Trả chứng từ (K80 thêm bước GIÁM ĐỊNH; Trả chứng từ icon máy ảnh xám + khóa nút; hồ sơ có dòng + ĐANG CHỜ; đổi cont thì chụp lại). Ảnh `door-photos/ANH-CAP-VO/…`.
   - **Sửa lỗi GOUT-002** (database, cont HASU9182828 / CV-261030-004 — dữ liệu đúng): đồng bộ 30 giây không kéo booking tạo ngày trước được lệnh mới dùng lại → `missingReleaseRefs` tải bù booking / cont. Trước khi có bản sửa: Xe nâng bấm Tải lại.
 - **Kho ảnh (3 loại, Storage — database chỉ giữ đường dẫn):** `ANH-GATE-IN/` (Hạ vỏ + Nhập tàu, `door-photos`) • `ANH-CAP-VO/` (DEC-198, `door-photos`) • `ANH-SUA-CHUA/` (`repair-photos`). < 200 KB / ảnh, không tự xóa (DEC-176). Người dùng chọn giữ cỡ ảnh hiện nay.
+
+**▶ CẬP NHẬT CUỐI PHIÊN 2026-10-30 (khuya) — ĐỌC TRƯỚC KHỐI EDI / eEIR BÊN DƯỚI:**
+- Đã làm thêm: sửa lỗi **GOUT-002** (đồng bộ 30 giây tải bù booking / cont — `missingReleaseRefs`); **DEC-199** chặn booking cont MSK không phải 9–11 ký tự chữ / số (app — **database CHƯA chặn**, cần migration); **DEC-200** CEDEX chỉ cho hư bên thứ 3 (chưa code); **DEC-201** eEIR chỉ cont MSK **DRY**; **eEIR chạy thử** phần nghiệp vụ `src/services/edi/eeir.ts` (chưa có màn hình); `docs/EDI_MAERSK.md` mục 18 (mẫu PDF / email thật — depot **3HY**, Cấp vỏ `OUT-EMPTY-EXP`) + mục 19 (tài liệu v4.3 đọc lại đầy đủ).
+- Kiểm thử: vitest **257 pass / 14 bỏ qua** • build PASS. Chưa có migration cho DEC-199 (để phiên sau).
+- **Phiên sau làm theo thứ tự:** (1) hỏi người dùng: DEC-198 ảnh cấp vỏ + DEC-199 booking có thu hẹp về cont DRY không; (2) tab **eEIR** ở Danh mục chung → EDI hãng tàu; (3) migration DEC-199 (trigger trước khi thêm `gate_out_orders`: cont MSK + CUSTOMER → booking khớp `^[A-Z0-9]{9,11}$`) + pgTAP, chạy Supabase local rồi tắt; (4) màn Giám định cont MSK DRY có hư: Hao mòn / Bên thứ 3 → CEDEX (DEC-200).
+- **Người dùng cần:** db push 7 file `20261113` → `20261119`; merge PR; gửi ticket Maersk (mục 17) xin khóa eEIR staging + JSON mẫu; lấy thông số SFTP từ AutoEDI; dung lượng PDF eEIR + 1 PDF Hạ vỏ (xác nhận IN-EMPTY-IMP); bảng mã vị trí CEDEX depot đang dùng (nếu có).
 
 **▶ EDI / eEIR MAERSK — TRẠNG THÁI ĐẦY ĐỦ ĐỂ LÀM TIẾP (tài liệu chính: `docs/EDI_MAERSK.md`):**
 - **Hiểu đúng 2 kênh:**
@@ -281,8 +287,10 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
   - ✅ Ảnh cấp vỏ (DEC-198) — điều kiện bắt buộc của eEIR gate-out. Q-059 xong; Q-060 depot đã có email nhận PDF (nhập vào cấu hình khi làm, không viết cứng).
   - 📐 **Thiết kế màn Giám định theo eEIR** (mục 15, CHƯA CODE): khung "Thông tin Maersk" khi gõ số cont MSK; Hạ vỏ / Cấp vỏ / Nhập tàu / Xuất tàu thêm trường eEIR; kiểm tra booking 9–11 số + số xe ≤ 11; theo dõi phiếu CHỜ GỬI / ĐÃ GỬI / LỖI; thứ tự 3 bước (không khóa → staging → thật).
   - 📐 **PDF eEIR từ email** (mục 16): không thay ảnh; **lưu làm chứng từ** bằng Google Apps Script trong hộp thư → Edge Function → kho `eeir-pdf`, nút PDF eEIR trong hồ sơ. Chờ người dùng gửi 1 email mẫu (chụp người gửi / tiêu đề / tên file) + 1 PDF mẫu.
+  - ✅ **Mẫu eEIR thật** (mục 18): mã depot **3HY**; Cấp vỏ = `OUT-EMPTY-EXP`; depot đang nhập tay app eEIR Maersk (2 ảnh cửa + bên trong); email từ `eeirappnoreply@maersk.com`, tiêu đề = số cont, file PDF = EIR Reference No → gắn PDF vào hồ sơ dễ.
   - ⏸ **Ticket Maersk** (mục 17 — nội dung đã gom): khóa eEIR staging + JSON mẫu (Q-056), moveType (Q-058 — dự đoán Hạ vỏ IMP, Cấp vỏ EXP, Nhập / Xuất tàu POS, cấp sale ?), Release for sale ghi gì vào `bookingNo`, eEIR thay CODECO? (Q-061), API tải PDF, SFTP IP / xác nhận.
-  - ⏸ Câu hỏi nghiệp vụ: Q-062 (có ghi hư do bên thứ 3 theo mã CEDEX không), Q-063 (chặn booking MSK sai độ dài), Nhập / Xuất tàu có gửi eEIR + ghi gì ở số xe.
+  - ✅ Chốt 2026-10-30: **DEC-199** chặn booking cont MSK không phải 9–11 chữ số (Cấp vỏ Release for customer — chưa code); **DEC-200** hư cont MSK ghi theo **CEDEX** (chưa code — chờ danh mục mã CEDEX / bên gây hư).
+  - ⏸ Câu hỏi nghiệp vụ còn: Q-065 Nhập / Xuất tàu có gửi eEIR + ghi gì ở số xe.
 - **Bước tiếp theo đề xuất:** (1) bạn gửi ticket Maersk + lấy thông số AutoEDI; (2) trong lúc chờ, agent làm mục 15.4 bước 1 (phiếu eEIR chạy thử, không cần khóa) sau khi bạn chốt Q-058 tạm / Q-062 / Q-063.
 
 **▶ BÀN GIAO CUỐI PHIÊN 2026-10-29 (KHUYA) — DEC-181 → DEC-191 — ĐỌC ĐẦU TIÊN (bổ sung khối "TỐI" bên dưới):**
@@ -786,6 +794,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-29 — Claude Code: DEC-164 chiều cao dòng bảng đồng bộ = Tồn vỏ (40px), class data-table 21 bảng + test chặn. 174 test • build PASS.
 - 2026-10-29 — Claude Code: bàn giao cuối ngày — checklist ca mới, việc chờ quyết, LƯU Ý IN ẤN (DEC-161 → 163), LƯU Ý CHO AGENT.
 - 2026-10-29 (tối) — Claude Code: DEC-177 header 1 dòng (icon Quản trị hệ thống); DEC-178 dữ liệu lớn (thử tải 200.000 lượt → sửa RLS quá 8 giây, ảnh chỉ tải khi XEM ẢNH, mở app gọn theo vai trò + hôm nay, hồ sơ tải khi mở, tìm 7 số seri, báo cáo phân trang ở database, bỏ dò lồng nhau); DEC-179 / 180 báo cáo theo bộ phận (Giám định / Vệ sinh / Xe nâng Chi tiết mới, menu chỉ bộ phận). 3 migration mới (`20261108` → `20261110`). 210 test • build PASS • pgTAP 252/252 • chạy thật 5/5. Nhánh `agent/claude/perf-large-data` đã push.
+- 2026-10-30 — Claude Code: DEC-199 (booking MSK 9–11 chữ / số — app), DEC-200 (CEDEX chỉ bên thứ 3 — chưa code), DEC-201 (eEIR chỉ DRY), eEIR chạy thử `edi/eeir.ts` (nghiệp vụ + test, chưa màn hình); EDI_MAERSK mục 18–19. 257 test • build PASS.
 - 2026-10-30 — Claude Code: sửa lỗi Xe nâng báo **GOUT-002** (database, cont HASU9182828 / CV-261030-004 — dữ liệu đúng): đồng bộ 30 giây không kéo booking tạo ngày trước được lệnh mới dùng lại → tải bù booking / cont (`missingReleaseRefs`). 251 test • build PASS. Chưa thử trên database thật.
 - 2026-10-30 — Claude Code: DEC-198 **Giám định → Cấp vỏ** (mobile): cont MSK sau Xe nâng cấp phải chụp 1–30 ảnh mới Trả chứng từ (K80 thêm bước GIÁM ĐỊNH, icon máy ảnh ở Trả chứng từ, dòng hồ sơ, đổi cont chụp lại). Migration `20261119000001` (pgTAP 345/345 local, đã tắt + xóa dữ liệu). 250 test • build PASS. Chưa thử chụp trên điện thoại thật.
 - 2026-10-30 — Claude Code: EDI — đề xuất tự động mỗi giờ + gửi SFTP, 14 thông số cần có (`docs/EDI_MAERSK.md` mục 14); hướng dẫn lấy thông số từ app AutoEDI. Lưu tiến độ EDI / eEIR — **đang chờ tài liệu** (thông số gửi, khóa eEIR).

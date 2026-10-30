@@ -2269,3 +2269,67 @@ describe('Đồng bộ: tải bù booking / cont lệnh cấp trỏ tới', () =
     expect(missingReleaseRefs({ gateOuts: [{ id: 'o4', booking_id: null, container_id: null }], bookings: [], containers: [] })).toEqual({ bookings: [], containers: [] });
   });
 });
+
+// DEC-199: cấp vỏ cont Maersk cho khách — booking 9–11 chữ số (eEIR gate-out); cấp sale / hãng khác không kiểm
+describe('DEC-199: booking cont MSK 9–11 ký tự chữ / số', () => {
+  const demo = createDemoState();
+  const cont = demo.containers.find((c) => c.status === 'IN_YARD' && c.shippingLineCode === 'MSK' && !releaseBlocker(c))!;
+  const office = as(demo, 'usr-office');
+  const order = (bookingNo: string, extra: object = {}) =>
+    createReleaseOrder(office, { bookingNo, customerName: 'KH01', containerNo: cont.containerNo, truckNo: '15H-1', driverPhone: '0912345678', feeCatalogIds: [demo.feeCatalog[0].id], ...extra });
+
+  it('chặn booking sai dạng; nhận 9 và 11 chữ số', () => {
+    for (const bad of ['56366366', '563663666123', '563-663-666', 'BK 5636636']) expect(() => order(bad)).toThrow('Booking Maersk phải gồm 9–11 ký tự chữ / số');
+    expect(order('bkn234189').gateOutOrders[0].bookingNo).toBe('BKN234189'); // tài liệu v4.3: chữ + số
+    expect(order(' 563663666 ').gateOutOrders[0].bookingNo).toBe('563663666');
+    expect(order('56366366612').gateOutOrders[0].bookingNo).toBe('56366366612');
+  });
+
+  it('Release for sale không kiểm booking (dùng Sale code)', () => {
+    expect(order('BK-SALE-1', { releasePurpose: 'SALE', saleCode: 'SALEO26VN51' }).gateOutOrders[0].saleCode).toBe('SALEO26VN51');
+  });
+
+  it('hãng khác không kiểm', () => {
+    let s = createReleaseOrder(as(createInitialState(), 'usr-office'), {
+      bookingNo: 'BK-R', customerName: VIETLOG, containerNo: 'MSKU4089123', truckNo: '15H', driverPhone: '0912345678', feeCatalogIds: [FEE_LOLO_40HC_MSK],
+    });
+    expect(s.gateOutOrders[0].bookingNo).toBe('BK-R');
+  });
+});
+
+// eEIR chạy thử — theo tài liệu eEIR External API v4.3; chỉ cont MSK loại DRY
+import { eeirInspectionDetails, eeirInspections, eeirMoveLabel, eeirTypeSize, isEeirContainer } from '../src/services/edi/eeir';
+
+describe('eEIR chạy thử: phiếu Hạ vỏ / Cấp vỏ cont MSK DRY', () => {
+  const demo = createDemoState();
+  const all = eeirInspections(demo, { from: new Date('2000-01-01'), to: new Date('2100-01-01') });
+
+  it('chỉ cont MSK DRY; gate-in IN-EMPTY-IMP, gate-out OUT-EMPTY-EXP; sắp theo giờ', () => {
+    expect(all.length).toBeGreaterThan(0);
+    for (const i of all) expect(isEeirContainer({ shippingLineCode: 'MSK', type: i.type })).toBe(true);
+    expect(isEeirContainer({ shippingLineCode: 'MSK', type: 'RF' })).toBe(false);
+    expect(isEeirContainer({ shippingLineCode: 'ONE', type: 'DC' })).toBe(false);
+    expect(all.some((i) => eeirMoveLabel(i) === 'IN-EMPTY-IMP')).toBe(true);
+    expect(all.some((i) => eeirMoveLabel(i) === 'OUT-EMPTY-EXP')).toBe(true);
+    expect(all.map((i) => i.at)).toEqual([...all.map((i) => i.at)].sort());
+  });
+
+  it('cấp vỏ có ảnh + booking đúng → không thiếu gì; JSON đúng trường tài liệu', () => {
+    const ok = all.find((i) => i.source === 'CAP_VO' && i.photos.length)!;
+    expect(ok.problems).toEqual([]);
+    const j = eeirInspectionDetails(ok);
+    expect(j.submittedLocalDate).toBe(j.createdLocalDate);
+    expect(j.createdLocalDate).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+    expect(j.createdUtcDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+    expect(j.container).toMatchObject({ containerStatus: 1, operator: 1, moveType: 3, moveStatus: 2, fgStatus: 1, grade: 'N', bookingNo: ok.bookingNo });
+    expect(j.damages).toEqual([{ damageLocation: '0000', tpIndicator: 0, isDamage: false, images: [{ imageName: `${ok.containerNo}_1` }] }]);
+    expect(j.truckers.truckerRegno.length).toBeLessThanOrEqual(11);
+  });
+
+  it('cấp vỏ chưa có ảnh Giám định → báo thiếu; mã size/type theo tài liệu', () => {
+    const noPhoto = all.find((i) => i.source === 'CAP_VO' && !i.photos.length)!;
+    expect(noPhoto.problems).toContain('Chưa có ảnh cấp vỏ của Giám định (DEC-198)');
+    expect(eeirTypeSize({ size: '40', type: 'HC', isoCode: '45G1' })).toBe('40DRY 45G1');
+    expect(eeirTypeSize({ size: '20', type: 'DC', isoCode: '' })).toBe('99XXX 99X9');
+  });
+});

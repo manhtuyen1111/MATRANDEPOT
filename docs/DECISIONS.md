@@ -1527,6 +1527,28 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-201 — eEIR chỉ tích hợp cont MSK loại KHÔ (DRY)
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng): eEIR **chỉ áp dụng cont DRY** (Size/Type DC, HC); cont lạnh / open-top / flat **chưa tích hợp**.
+- Code: `isEeirContainer` (`src/services/edi/eeir.ts`). Bản chạy thử `eeirInspections` / `eeirInspectionDetails` đã có (chưa có màn hình, chưa gửi).
+- **Chưa chốt:** DEC-198 (ảnh cấp vỏ) và DEC-199 (booking) hiện áp cho **mọi cont MSK** — có thu hẹp về DRY không (hỏi người dùng phiên sau).
+
+### DEC-200 — Hư hỏng cont MSK ghi theo mã CEDEX (eEIR)
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-062). **CHƯA CODE** — chờ danh mục mã.
+- **Chỉ cont MSK có hư** ở các màn Giám định (Hạ vỏ, Nhập tàu, Cấp vỏ): mỗi chỗ hư nhập **vị trí CEDEX** + **loại hư** + **bên gây hư** + 1–3 ảnh (đúng trường `damages[]` của eEIR — `docs/EDI_MAERSK.md` 12.3, 15.2). Hãng khác giữ remark hư nhanh như cũ.
+- Theo tài liệu eEIR v4.3 mục 6.1.2 (đọc lại 2026-10-30): **mã CEDEX chỉ cần cho hư do BÊN THỨ 3** (tạo hồ sơ đòi bồi thường DERT).
+  - Không hư → `0000`, `tpIndicator` 0, 1–20 ảnh • **Hao mòn (W&T)** → `0000`, `tpIndicator` 3, 1–20 ảnh.
+  - **Bên thứ 3** → mỗi chỗ hư: vị trí CEDEX 4 ký tự (VD `DX2N`, `RX1N`; `panelIndicatorCode` = chữ đầu), **loại hư 1–16** (1 Dirty, 2 Broken/Split, 3 Cut, 4 Corroded, 5 Dented, 6 Missing, 7 Loose, 8 Wear and Tear, 9 Oil Stains, 10 Markings, 11 Cracked, 12 Debris, 13 Bowed, 14 Delaminated, 16 Others), **bên gây hư** (1 Trucker, 2 Customer, 3 Handling, 4 Unknown), mô tả, 1–3 ảnh.
+- → Màn Giám định cont MSK DRY có hư: chọn **Hao mòn** hay **Bên thứ 3**; bên thứ 3 mới nhập CEDEX. Tài liệu **không kèm bảng mã vị trí CEDEX** → cần bảng mã depot đang dùng hoặc ô nhập 4 ký tự.
+
+### DEC-199 — Booking cont MSK phải là 9–11 chữ số
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-063). **Đã code ở app** (`edi/maersk.ts`, `createReleaseOrder`); **database chưa chặn** — cần migration (phiên sau).
+- Văn phòng lập lệnh **Cấp vỏ Release for customer** cho cont **hãng MSK**: số booking không phải **9–11 ký tự chữ / số** → **chặn**. (Sửa 2026-10-30 theo tài liệu v4.3: Maersk nhận alphanumeric 9–11, không chỉ chữ số.) Lý do: eEIR gate-out của Maersk từ chối booking sai dạng; sửa ngay khi khách còn ở quầy.
+- Không áp dụng: Release for sale (dùng Sale code — DEC-194), hãng khác.
+- Dữ liệu Demo đã đổi booking sang 9 chữ số. Còn: migration chặn ở database (trigger trước khi thêm `gate_out_orders`).
+
 ### DEC-198 — Giám định chụp ảnh CẤP VỎ (cont Maersk) trước khi trả chứng từ
 
 - Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-059).
@@ -2013,6 +2035,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-198 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-201 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
