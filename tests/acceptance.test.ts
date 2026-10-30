@@ -1894,7 +1894,7 @@ describe('DEC-181: lịch sử hồ sơ container', () => {
 });
 
 // DEC-185: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ — giữ lệnh CV-, chứng từ, phiếu thu, QR; cont cũ Xe nâng hạ lại
-import { releaseBlocker, swapGateOutContainer } from '../src/services/depotOperations';
+import { canSwapGateOut, isGateOutLifted, releaseBlocker, swapCandidates, swapGateOutContainer } from '../src/services/depotOperations';
 import { containerOperation } from '../src/services/vessel';
 
 describe('DEC-185: đổi container khi chờ trả chứng từ cấp vỏ', () => {
@@ -1983,9 +1983,10 @@ describe('DEC-185: đổi container khi chờ trả chứng từ cấp vỏ', ()
 
   it('Từ chối: sai quyền, chưa cấp ra / đã trả chứng từ, cont thay thế khác size-type hoặc đang khóa, trùng cont', () => {
     expect(() => swapGateOutContainer(as(demo, 'usr-forklift'), { gateOutOrderId: order.id, reason: 'KEN_VO', newContainerNo: fresh.containerNo })).toThrow(/Không đủ quyền/);
-    const pendingOrder = demo.gateOutOrders.find((o) => o.status === 'PENDING_FORKLIFT');
-    if (pendingOrder) {
-      expect(() => swapGateOutContainer(office, { gateOutOrderId: pendingOrder.id, reason: 'KEN_VO', newContainerNo: fresh.containerNo })).toThrow(/chờ trả chứng từ/);
+    // DEC-192: lệnh chưa thu tiền thì không đổi (hủy lệnh như cũ)
+    const unpaid = demo.gateOutOrders.find((o) => o.status === 'PAYMENT_PENDING');
+    if (unpaid) {
+      expect(() => swapGateOutContainer(office, { gateOutOrderId: unpaid.id, reason: 'KEN_VO', newContainerNo: fresh.containerNo })).toThrow(/chờ trả chứng từ/);
     }
     const returned = { ...office, gateOutOrders: office.gateOutOrders.map((o) => (o.id === order.id ? { ...o, documentsReturnedAt: '2026-10-29T00:00:00.000Z' } : o)) };
     expect(() => swapGateOutContainer(returned, { gateOutOrderId: order.id, reason: 'KEN_VO', newContainerNo: fresh.containerNo })).toThrow(/chờ trả chứng từ/);
@@ -2092,5 +2093,48 @@ describe('DEC-191: thông tin chi tiết nhân viên', () => {
     expect(() => updateStaffProfile(admin, { userId: target.id, birthYear: 1900 })).toThrow(/Năm sinh không hợp lệ/);
     expect(() => updateStaffProfile(admin, { userId: target.id, birthYear: new Date().getFullYear() })).toThrow(/Năm sinh không hợp lệ/);
     expect(() => updateStaffProfile(admin, { userId: target.id, department: 'X' as never })).toThrow(/Phòng ban/);
+  });
+});
+
+// DEC-192: ĐỔI CONTAINER khi CHƯA NÂNG HẠ (lái xe kiểm tra trước) — cont cũ giữ chỗ; Xe nâng Chờ cấp vỏ đổi sang cont mới (nhãn ĐỔI CONT)
+describe('DEC-192: đổi container trước khi nâng hạ', () => {
+  const demo = createDemoState();
+  const order = demo.gateOutOrders.find((o) => o.status === 'PENDING_FORKLIFT')!;
+  const old = demo.containers.find((c) => c.masterDossierCode === order.masterDossierCode && c.containerNo === order.containerNo)!;
+  const office = as(demo, 'usr-office');
+  const fresh = swapCandidates(office, order.id)[0];
+
+  it('Kén vỏ: cont cũ giữ nguyên vị trí, tồn bãi cấp được ngay; lệnh vẫn chờ Xe nâng, sang cont mới (ĐỔI CONT)', () => {
+    expect(canSwapGateOut(order)).toBe(true);
+    expect(isGateOutLifted(order)).toBe(false);
+    const s = swapGateOutContainer(office, { gateOutOrderId: order.id, reason: 'KEN_VO', newContainerNo: fresh.containerNo });
+    const back = s.containers.find((c) => c.id === old.id)!;
+    expect(back.status).toBe('IN_YARD');
+    expect(back.currentBlock).toBe(old.currentBlock); // không có việc Xe nâng hạ lại
+    expect(back.swapReturn).toBeUndefined();
+    expect(back.outDossierCode).toBeUndefined();
+    expect(releaseBlocker(back)).toBeNull();
+    const o = s.gateOutOrders.find((x) => x.id === order.id)!;
+    expect(o.status).toBe('PENDING_FORKLIFT');
+    expect(o.containerNo).toBe(fresh.containerNo);
+    expect(o.swaps![0].lifted).toBe(false);
+    const nf = s.containers.find((c) => c.id === fresh.id)!;
+    expect(nf.status).toBe('ALLOCATED');
+    expect(containerOperation(s, nf).code).toBe('DOI_CONT');
+    expect(s.bookings.find((b) => b.bookingNo === order.bookingNo)!.allocatedContainers).toContain(fresh.containerNo);
+    expect(s.bookings.find((b) => b.bookingNo === order.bookingNo)!.allocatedContainers).not.toContain(old.containerNo);
+    // Không phải hạ cont cũ → cấp cont mới được ngay bằng QR phiếu đang cầm
+    const out = executeGateOut(as(s, 'usr-forklift'), { scannedQrCode: `QR-${order.gateOutCode}` });
+    expect(out.containers.find((c) => c.id === fresh.id)!.status).toBe('GATED_OUT');
+    const rows = dossierHistory(s, resolveDossier(s, old.masterDossierCode)!).rows;
+    expect(rows.some((r) => r.operation === 'Xe nâng — Cấp vỏ')).toBe(false); // cont cũ chưa từng lên xe
+    expect(rows.find((r) => r.task === 'ĐỔI CONT')?.detail).toContain('Chưa nâng hạ');
+  });
+
+  it('Hư hỏng: cont cũ giữ chỗ, chuyển DAMAGE + PHÁT SINH CẤP VỎ, vào Chờ báo giá ngay', () => {
+    const s = swapGateOutContainer(office, { gateOutOrderId: order.id, reason: 'DAMAGE', newContainerNo: fresh.containerNo, note: 'Móp vách' });
+    const back = s.containers.find((c) => c.id === old.id)!;
+    expect(back).toMatchObject({ status: 'IN_YARD', conditionClass: 'DAMAGE', releaseDamage: true, needsQuotation: true });
+    expect(s.workOrders.find((w) => w.masterDossierCode === old.masterDossierCode && w.category === 'INSPECTION' && w.workStatus === 'OPEN')?.items).toEqual(['Móp vách']);
   });
 });

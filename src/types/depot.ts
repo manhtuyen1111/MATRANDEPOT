@@ -616,6 +616,7 @@ export interface GateOutSwap {
   toMasterDossierCode: string;
   reason: SwapReason;
   note?: string;
+  lifted?: boolean;     // DEC-192: true = đổi khi cont đã nâng lên xe (đã OUT); false = đổi trước khi nâng hạ
   gatedOutBy?: string; // Xe nâng đã cấp cont cũ (trước khi đổi)
   gatedOutAt?: string;
   swappedBy: string;

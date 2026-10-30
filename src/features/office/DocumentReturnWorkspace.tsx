@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { CameraScanButton } from '../../components/Qr';
 import { confirmDocumentsReturn, recordReceiptPrint } from '../../services/api';
-import { Eye, FileCheck2, Printer, QrCode, Repeat, X } from 'lucide-react';
+import { Eye, FileCheck2, Forklift, Printer, QrCode, Repeat, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
 
-import { DocumentPack, previewDocumentPack, ticketsAwaitingReturn } from '../../services/driverRoute';
+import { DocumentPack, previewDocumentPack, releaseTicketsInProgress, ticketsAwaitingReturn } from '../../services/driverRoute';
 import { linkCls, ContainerNo, Feedback, inputCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
 import { PrintPortal } from '../../components/ReceiptPrint';
 import { CustomerSlipK80, slipPrintCount } from '../../components/K80TicketModal';
@@ -28,6 +28,7 @@ export const DocumentReturnWorkspace: React.FC<{
   const [success, setSuccess] = useState<string | null>(null);
   const [swapOrderId, setSwapOrderId] = useState<string | null>(null); // DEC-185
   const allWaiting = ticketsAwaitingReturn(state);
+  const releaseRows = releaseTicketsInProgress(state); // DEC-192
 
   const confirm = (raw: string) => {
     setError(null);
@@ -69,7 +70,8 @@ export const DocumentReturnWorkspace: React.FC<{
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {(['HA_VO', 'CAP_VO'] as Mode[]).map((m) => {
-          const waiting = allWaiting.filter((t) => t.operationMode === m);
+          // DEC-192: CẤP VỎ hiện đủ lệnh đã thu tiền chưa trả chứng từ (kể cả chưa nâng hạ); HẠ VỎ giữ như cũ
+          const waiting = m === 'CAP_VO' ? releaseRows.map((r) => r.ticket) : allWaiting.filter((t) => t.operationMode === m);
           return (
             <SectionCard
               key={m}
@@ -82,18 +84,30 @@ export const DocumentReturnWorkspace: React.FC<{
               ) : (
                 <ul className="divide-y divide-line text-xs">
                   {waiting.map((t) => {
-                    // DEC-185: cont đã cấp ra, chờ trả chứng từ → được ĐỔI CONTAINER
-                    const outOrder = m === 'CAP_VO' ? state.gateOutOrders.find((o) => o.gateOutCode === t.outDossierCode) : undefined;
+                    // DEC-185 / DEC-192: đổi container được cả khi chưa / đã nâng hạ; chưa nâng hạ thì chưa trả chứng từ
+                    const rel = m === 'CAP_VO' ? releaseRows.find((r) => r.ticket.ticketCode === t.ticketCode) : undefined;
+                    const outOrder = rel?.order;
+                    const canReturn = !rel || rel.lifted;
                     return (
                     <li key={t.ticketCode} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="flex flex-wrap items-center gap-2">
+                        {rel && (
+                          <span
+                            title={rel.lifted ? 'ĐÃ NÂNG HẠ lên xe' : 'CHƯA NÂNG HẠ — Xe nâng chưa cấp cont'}
+                            aria-label={rel.lifted ? 'Đã nâng hạ' : 'Chưa nâng hạ'}
+                            data-testid={rel.lifted ? 'lift-done' : 'lift-wait'}
+                            className={`inline-flex h-6 w-6 items-center justify-center rounded ${rel.lifted ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-600'}`}
+                          >
+                            <Forklift className="h-4 w-4" />
+                          </span>
+                        )}
                         <ContainerNo no={t.containerNo} />
                         <button type="button" onClick={() => onOpenDossier?.(t.outDossierCode || t.masterDossierCode)} className={linkCls}>{t.outDossierCode || t.masterDossierCode}</button>
                         <span className="text-ink-muted">Xe {t.truckNo || '-'} • {t.driverPhone || '-'}</span>
                       </span>
                       <span className="flex gap-2">
                         <button type="button" onClick={() => showPreview(t.qrCode)} className={secondaryBtn}><Eye className="h-3.5 w-3.5" />Xem trước</button>
-                        <button type="button" onClick={() => confirm(t.qrCode)} className={secondaryBtn}>Trả chứng từ</button>
+                        <button type="button" onClick={() => confirm(t.qrCode)} disabled={!canReturn} title={canReturn ? undefined : 'Chưa nâng hạ — chờ Xe nâng cấp cont'} className={`${secondaryBtn} disabled:cursor-not-allowed disabled:opacity-40`}>Trả chứng từ</button>
                         {outOrder && canSwapGateOut(outOrder) && (
                           <button type="button" onClick={() => setSwapOrderId(outOrder.id)} className={secondaryBtn}><Repeat className="h-3.5 w-3.5" />ĐỔI CONTAINER</button>
                         )}

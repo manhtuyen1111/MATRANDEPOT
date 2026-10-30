@@ -3,13 +3,13 @@ import { Repeat, X } from 'lucide-react';
 import { SWAP_REASON_LABELS, SwapReason } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import { swapGateOutContainer } from '../../services/api';
-import { swapCandidates } from '../../services/depotOperations';
+import { isGateOutLifted, swapCandidates } from '../../services/depotOperations';
 import { CONTAINER_SEARCH_HINT, matchContainerNo } from '../../services/containerSearch';
 import { ContainerNo, inputCls, labelCls, LocationText, primaryBtn, secondaryBtn } from '../../components/shared';
 
 const SHOW_MAX = 20; // danh sách cont thay thế: gõ số seri để lọc, chỉ hiện 20 cont đầu
 
-// DEC-185: ĐỔI CONTAINER — cont đã cấp ra, đang chờ TRẢ CHỨNG TỪ CẤP VỎ. Bắt buộc chọn 1 trong 2 lý do + cont thay thế.
+// DEC-185 / DEC-192: ĐỔI CONTAINER — lệnh đã thu tiền, đang chờ TRẢ CHỨNG TỪ CẤP VỎ (đã hoặc chưa nâng hạ lên xe). Bắt buộc chọn 1 trong 2 lý do + cont thay thế.
 // Giữ lệnh CV-, chứng từ, phiếu thu, QR phiếu K80; cont cũ về hàng chờ Xe nâng HẠ LẠI.
 export const SwapContainerModal: React.FC<{
   state: DepotState;
@@ -26,6 +26,7 @@ export const SwapContainerModal: React.FC<{
   const candidates = useMemo(() => swapCandidates(state, gateOutOrderId), [state, gateOutOrderId]);
   const shown = candidates.filter((c) => matchContainerNo(c.containerNo, query)).slice(0, SHOW_MAX);
   if (!order) return null;
+  const lifted = isGateOutLifted(order); // DEC-192: chưa nâng hạ → cont cũ giữ chỗ, không cần Xe nâng hạ lại
 
   const submit = () => {
     setError(null);
@@ -35,7 +36,9 @@ export const SwapContainerModal: React.FC<{
       const next = swapGateOutContainer(state, { gateOutOrderId, reason, newContainerNo: picked, note });
       onDone(
         next,
-        `Đã đổi ${order.containerNo} → ${picked} (${order.gateOutCode}). Xe nâng: hạ lại ${order.containerNo}${reason === 'DAMAGE' ? ' (khu sửa chữa)' : ''} và cấp ${picked}.`
+        lifted
+          ? `Đã đổi ${order.containerNo} → ${picked} (${order.gateOutCode}). Xe nâng: hạ lại ${order.containerNo}${reason === 'DAMAGE' ? ' (khu sửa chữa)' : ''} rồi cấp ${picked}.`
+          : `Đã đổi ${order.containerNo} → ${picked} (${order.gateOutCode}). Xe nâng — Chờ cấp vỏ đã chuyển sang ${picked} (ĐỔI CONT)${reason === 'DAMAGE' ? `; ${order.containerNo} vào Chờ báo giá` : ''}.`
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không đổi được container');
@@ -54,7 +57,10 @@ export const SwapContainerModal: React.FC<{
         </div>
 
         <dl className="grid grid-cols-3 gap-2 rounded-md border border-line bg-canvas p-3">
-          <div><dt className={labelCls}>Container đang cấp</dt><dd><ContainerNo no={order.containerNo} /></dd></div>
+          <div>
+            <dt className={labelCls}>Container đang cấp</dt>
+            <dd><ContainerNo no={order.containerNo} /> <span className={`ml-1 text-[11px] font-bold ${lifted ? 'text-emerald-700' : 'text-amber-600'}`}>{lifted ? 'ĐÃ NÂNG HẠ' : 'CHƯA NÂNG HẠ'}</span></dd>
+          </div>
           <div><dt className={labelCls}>Booking</dt><dd className="font-mono font-semibold">{order.bookingNo}</dd></div>
           <div><dt className={labelCls}>Số xe</dt><dd className="font-semibold">{order.truckNo}</dd></div>
         </dl>
@@ -67,9 +73,13 @@ export const SwapContainerModal: React.FC<{
               <span>
                 <span className="font-bold text-ink">{i + 1}. {SWAP_REASON_LABELS[r]}</span>
                 <span className="block text-ink-muted">
-                  {r === 'KEN_VO'
-                    ? 'Xe nâng hạ lại cont, chọn vị trí mới — cont tồn bãi, cấp được cho khách khác.'
-                    : 'Cont chuyển DAMAGE (PHÁT SINH CẤP VỎ) — Xe nâng hạ khu sửa chữa, hạ xong vào Chờ báo giá.'}
+                  {lifted
+                    ? r === 'KEN_VO'
+                      ? 'Xe nâng hạ lại cont, chọn vị trí mới — cont tồn bãi, cấp được cho khách khác.'
+                      : 'Cont chuyển DAMAGE (PHÁT SINH CẤP VỎ) — Xe nâng hạ khu sửa chữa, hạ xong vào Chờ báo giá.'
+                    : r === 'KEN_VO'
+                    ? 'Chưa nâng hạ: cont giữ nguyên vị trí, tồn bãi — cấp được cho khách khác.'
+                    : 'Chưa nâng hạ: cont giữ nguyên vị trí, chuyển DAMAGE (PHÁT SINH CẤP VỎ) và vào Chờ báo giá ngay.'}
                 </span>
               </span>
             </label>

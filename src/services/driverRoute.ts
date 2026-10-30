@@ -145,6 +145,21 @@ export function ticketsAwaitingReturn(state: DepotState): K80InternalTicket[] {
   });
 }
 
+// DEC-192: Văn phòng → Trả chứng từ, cột CẤP VỎ hiện ĐỦ lệnh đã thu tiền chưa trả chứng từ — kèm đã / chưa nâng hạ.
+// Chưa nâng hạ (Xe nâng chưa cấp) thì chưa trả chứng từ được (lộ trình chặn), nhưng vẫn ĐỔI CONTAINER được.
+export function releaseTicketsInProgress(state: DepotState): { ticket: K80InternalTicket; order: GateOutOrder; lifted: boolean }[] {
+  const out: { ticket: K80InternalTicket; order: GateOutOrder; lifted: boolean }[] = [];
+  const seen = new Set<string>();
+  for (const t of state.k80Tickets) {
+    if (t.operationMode !== 'CAP_VO' || !t.outDossierCode || seen.has(t.outDossierCode)) continue;
+    seen.add(t.outDossierCode);
+    const order = state.gateOutOrders.find((o) => o.gateOutCode === t.outDossierCode);
+    if (!order || order.documentsReturnedAt || (order.status !== 'PENDING_FORKLIFT' && order.status !== 'GATE_OUT_OK')) continue;
+    out.push({ ticket: t, order, lifted: order.status === 'GATE_OUT_OK' });
+  }
+  return out;
+}
+
 // DEC-057: phiếu đã trả chứng từ (đi hết lộ trình) → đóng, không được in lại / quét lại
 export function isTicketClosed(state: DepotState, ticket: K80InternalTicket): boolean {
   const steps = getDriverRoute(state, ticket);

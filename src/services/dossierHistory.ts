@@ -382,7 +382,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
           operation: 'Văn phòng — Đổi container',
           task: SWAP_TASK.SWAP,
           action: 'SỬA',
-          detail: join([SWAP_REASON_LABELS[s.reason], s.note, `Lệnh ${o.gateOutCode} chuyển sang ${s.toContainerNo}`, s.reason === 'DAMAGE' && 'Chuyển DAMAGE — PHÁT SINH CẤP VỎ']),
+          detail: join([SWAP_REASON_LABELS[s.reason], s.note, `Lệnh ${o.gateOutCode} chuyển sang ${s.toContainerNo}`, s.lifted === false && 'Chưa nâng hạ — cont giữ vị trí cũ', s.reason === 'DAMAGE' && 'Chuyển DAMAGE — PHÁT SINH CẤP VỎ']),
           staff: s.swappedBy,
         });
       }
