@@ -1527,6 +1527,19 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-194 — Cấp vỏ: Tác nghiệp Release for customer / Release for sale (Sale code)
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng).
+- Văn phòng → Cấp vỏ, khối 1 có ô **Tác nghiệp**: **Release for customer** (mặc định) / **Release for sale** (cấp sale).
+- Chọn Release for sale → bắt buộc nhập **Sale code** (viết hoa, tối đa 40 ký tự). Release for customer không lưu sale code.
+- **Các bước sau giống nhau:** thanh toán, Xe nâng cấp vỏ, trả chứng từ, đổi container. Loại cấp vỏ (`gateOutType`) giữ `EMPTY_RELEASE` → báo cáo Cấp vỏ vẫn gồm cấp sale.
+- Tác nghiệp + Sale code ghi ở lệnh cấp (`releasePurpose`, `saleCode`), hiện ở Lịch sử hồ sơ (dòng Văn phòng — Cấp vỏ) và nhật ký. Chuẩn bị cho EDI hãng tàu (`docs/EDI_MAERSK.md`, OPEN-009).
+- Tác nghiệp + Sale code giữ lại khi lập nhiều cont cùng booking (như số booking / khách hàng).
+- Database: migration `20261116000001_release_purpose.sql`:
+  - cột `gate_out_orders.release_purpose`, `sale_code` + ràng buộc SALE phải có sale code;
+  - `create_release_order` thêm `p_purpose`, `p_sale_code` (có mặc định — gọi kiểu cũ vẫn chạy);
+  - pgTAP `0018` (8 kiểm tra).
+
 ### DEC-193 — Icon nâng hạ (Trả chứng từ cấp vỏ) dùng màu token
 
 - Trạng thái: CONFIRMED (2026-10-30, người dùng). Sửa DEC-192 phần màu.
@@ -1914,6 +1927,12 @@ Quy ước trạng thái:
 - Trạng thái: OPEN
 - Cần xác nhận: (1) Danh sách vai trò mới không có KẾ TOÁN — ai tạo phiếu thu TTT và xác nhận tiền mặt (hiện là Kế toán)? Gộp vào Văn phòng hay giữ Kế toán? (2) QC SỬA CHỮA làm gì trong quy trình (nghiệm thu sau sửa? có được trả lại sửa lại?) và vào màn nào? (3) Bỏ hẳn GATE_STAFF / YARD_STAFF?
 
+### OPEN-009 — EDI hãng tàu MAERSK (CODECO)
+
+- Trạng thái: OPEN (2026-10-30) — đang thu thập dữ liệu từ app cũ ERPVINASHIP.
+- Mục tiêu: tự gửi CODECO gate-in / gate-out (Hạ vỏ, Cấp vỏ — kể cả Release for sale, Xuất tàu…) cho Maersk mỗi giờ, qua SFTP hoặc Gmail; màn theo dõi + cảnh báo.
+- Phân tích file mẫu + thiết kế đề xuất: `docs/EDI_MAERSK.md`. Cần trả lời Q-046 → Q-055 trước khi chốt DEC và viết code.
+
 ### OPEN-008 — Hủy lệnh cấp đã thanh toán / hoàn tiền
 
 - Trạng thái: OPEN
@@ -1939,6 +1958,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-193 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-194 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

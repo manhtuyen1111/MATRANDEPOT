@@ -106,3 +106,16 @@ Cập nhật lần cuối: 2026-10-22.
   5. Ai chạy import (Admin, 1 lần) và có cần xem trước + báo lỗi từng dòng trước khi ghi không?
 
 - ~~**Q-045 (2026-10-28) — EEIR Nhập tàu / Xuất tàu có đổi sang khổ K80 không?**~~ **ĐÃ CHỐT 2026-10-28: có — khổ K80 (DEC-161).** DEC-161 đổi Hạ vỏ / Cấp vỏ sang Phiếu EEIR (K80). Nhập / Xuất tàu không có phiếu K80 (DEC-069) nên EEIR tàu vẫn in nửa A4 (DEC-081). Cần chốt: giữ nửa A4, hay làm mẫu EEIR tàu khổ K80 (giữ thông tin tàu + tình trạng vỏ Giám định)?
+
+## EDI hãng tàu MAERSK (OPEN-009 — chi tiết `docs/EDI_MAERSK.md`, mở 2026-10-30)
+
+- [ ] Q-046: Tài liệu **ITG14 (CODECO D.95B) của Maersk**, hoặc tài liệu / mã nguồn module EDI của ERPVINASHIP (`D:\ERPVINASHIP\…\EDI_MSK`).
+- [ ] Q-047: Bảng mã ISO size/type đầy đủ app cũ dùng (đã biết 20DC = 2200, 40DC = 4200; còn 40HC, 45HC, RF, OT, FR…).
+- [ ] Q-048: Ý nghĩa `RFF+BN:GRADED / GRADEK / GRADEM` (có E?) và `DAM+1+2` / `DAM+1+6`; có khớp Phân loại M / K / E (DEC-166) + AV / DAMAGE không.
+- [ ] Q-049: Giờ không có cont có gửi file rỗng không; xin file mẫu 00:00 → 03:00.
+- [ ] Q-050: Release for sale (Sale code), Xuất tàu, Nhập tàu gửi loại tin gì, `RFF` gì — xin file mẫu từng loại.
+- [ ] Q-051: Giờ ghi `DTM+7`: giờ xe vào / ra cổng, giờ Văn phòng GATE IN OK hay giờ Xe nâng — app cũ lấy giờ nào.
+- [ ] Q-052: Tin hủy / sửa (đổi container sau khi đã gửi gate-out, nhập sai số cont): app cũ làm thế nào; file mẫu.
+- [ ] Q-053: Kênh gửi — SFTP (máy chủ, cổng, thư mục, mật khẩu hay khóa) hay Gmail (gửi tới đâu, tiêu đề, đính kèm); Maersk có trả xác nhận / báo lỗi không. **Không gửi mật khẩu cho agent.**
+- [ ] Q-054: Ai xem / gửi lại EDI: chỉ Admin hay cả Văn phòng.
+- [ ] Q-055: Lượt nhập muộn (hạ 03:50, 04:10 mới nhập) đưa vào file giờ nào; Maersk có chấp nhận gửi trễ / trùng không.
