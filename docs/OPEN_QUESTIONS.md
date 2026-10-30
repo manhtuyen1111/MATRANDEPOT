@@ -128,3 +128,5 @@ Cập nhật lần cuối: 2026-10-22.
 - [ ] Q-062: Depot có xác định **hư do bên thứ 3** (mã CEDEX vị trí, loại hư, bên gây hư) không; danh mục hư nhanh có cần đổi sang mã CEDEX.
 - [ ] Q-063: Booking Maersk luôn 9–11 ký tự chữ số? Có chặn nhập sai ở Cấp vỏ cho cont MSK không.
 - [x] Q-064: Xuất tàu — mã cảng đến: **tùy tàu** (2026-10-30) → ô "Mã cảng đến" khi lập danh sách Xuất tàu (DEC-196).
+- [ ] Q-065: eEIR — **Nhập tàu / Xuất tàu** có gửi eEIR không; nếu có, `truckerRegno` (bắt buộc, ≤ 11 ký tự) ghi gì (tên tàu / sà lan?); Xuất tàu phải thêm ảnh. (`docs/EDI_MAERSK.md` 15.2)
+- [ ] Q-066: PDF eEIR Maersk gửi về email — gửi 1 email mẫu (chụp người gửi / tiêu đề / tên file) + 1 PDF mẫu để thiết kế lưu PDF làm chứng từ (`docs/EDI_MAERSK.md` mục 16). Không gửi mật khẩu Gmail.
