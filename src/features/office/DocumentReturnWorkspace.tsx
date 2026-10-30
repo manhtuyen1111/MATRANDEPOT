@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CameraScanButton } from '../../components/Qr';
 import { confirmDocumentsReturn, recordReceiptPrint } from '../../services/api';
-import { Eye, FileCheck2, Forklift, Printer, QrCode, Repeat, X } from 'lucide-react';
+import { Camera, Eye, FileCheck2, Forklift, Printer, QrCode, Repeat, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
 
 import { DocumentPack, previewDocumentPack, releaseTicketsInProgress, ticketsAwaitingReturn } from '../../services/driverRoute';
@@ -87,7 +87,7 @@ export const DocumentReturnWorkspace: React.FC<{
                     // DEC-185 / DEC-192: đổi container được cả khi chưa / đã nâng hạ; chưa nâng hạ thì chưa trả chứng từ. Icon nâng hạ: màu token success / trung tính (DEC-193)
                     const rel = m === 'CAP_VO' ? releaseRows.find((r) => r.ticket.ticketCode === t.ticketCode) : undefined;
                     const outOrder = rel?.order;
-                    const canReturn = !rel || rel.lifted;
+                    const canReturn = !rel || (rel.lifted && !rel.photoWait); // DEC-198: cont MSK chờ Giám định chụp ảnh cấp vỏ
                     return (
                     <li key={t.ticketCode} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="flex flex-wrap items-center gap-2">
@@ -101,13 +101,23 @@ export const DocumentReturnWorkspace: React.FC<{
                             <Forklift className="h-4 w-4" />
                           </span>
                         )}
+                        {rel?.photoWait && (
+                          <span
+                            title="CHỜ GIÁM ĐỊNH CHỤP ẢNH CẤP VỎ"
+                            aria-label="Chờ chụp ảnh cấp vỏ"
+                            data-testid="release-photo-wait"
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-line-strong bg-canvas text-ink-muted"
+                          >
+                            <Camera className="h-4 w-4" />
+                          </span>
+                        )}
                         <ContainerNo no={t.containerNo} />
                         <button type="button" onClick={() => onOpenDossier?.(t.outDossierCode || t.masterDossierCode)} className={linkCls}>{t.outDossierCode || t.masterDossierCode}</button>
                         <span className="text-ink-muted">Xe {t.truckNo || '-'} • {t.driverPhone || '-'}</span>
                       </span>
                       <span className="flex gap-2">
                         <button type="button" onClick={() => showPreview(t.qrCode)} className={secondaryBtn}><Eye className="h-3.5 w-3.5" />Xem trước</button>
-                        <button type="button" onClick={() => confirm(t.qrCode)} disabled={!canReturn} title={canReturn ? undefined : 'Chưa nâng hạ — chờ Xe nâng cấp cont'} className={`${secondaryBtn} disabled:cursor-not-allowed disabled:opacity-40`}>Trả chứng từ</button>
+                        <button type="button" onClick={() => confirm(t.qrCode)} disabled={!canReturn} title={canReturn ? undefined : rel?.lifted ? 'Chờ Giám định chụp ảnh cấp vỏ' : 'Chưa nâng hạ — chờ Xe nâng cấp cont'} className={`${secondaryBtn} disabled:cursor-not-allowed disabled:opacity-40`}>Trả chứng từ</button>
                         {outOrder && canSwapGateOut(outOrder) && (
                           <button type="button" onClick={() => setSwapOrderId(outOrder.id)} className={secondaryBtn}><Repeat className="h-3.5 w-3.5" />ĐỔI CONTAINER</button>
                         )}

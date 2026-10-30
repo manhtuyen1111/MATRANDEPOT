@@ -112,7 +112,8 @@ async function fetchRaw(client: SupabaseClient, since: string, until: string, pa
     win('containers', 'gate_in_at'),
     all((a, b) => client.from('gate_in_orders').select('*').in('status', OPEN_GATE_IN).range(a, b)),
     win('gate_in_orders', 'created_at'),
-    all((a, b) => client.from('gate_out_orders').select('*').in('status', OPEN_GATE_OUT).range(a, b)),
+    // + lệnh đã cấp ra chưa trả chứng từ (Trả chứng từ / Giám định chụp ảnh cấp vỏ — DEC-198), kể cả ngoài khoảng ngày
+    all((a, b) => client.from('gate_out_orders').select('*').or('status.in.(PAYMENT_PENDING,PENDING_FORKLIFT),and(status.eq.GATE_OUT_OK,documents_returned_at.is.null)').range(a, b)),
     win('gate_out_orders', 'created_at'),
     win('release_bookings', 'created_at'),
     pay(() => all((a, b) => client.from('prepaid_receipts').select('*').in('status', ['PENDING_PAYMENT', 'ACTIVE']).range(a, b))),
@@ -140,7 +141,9 @@ async function expand(client: SupabaseClient, r: Roots, payments: boolean): Prom
     const got = new Set(have.map((x) => x[key]));
     return ids.filter((id) => id && !got.has(id));
   };
-  const { containers, gateOuts, prepaids, lists } = r;
+  const { gateOuts, prepaids, lists } = r;
+  // DEC-198: cont của lệnh cấp đã ra khỏi bãi (hãng → có phải chụp ảnh cấp vỏ không)
+  const containers = merge(r.containers, await byIds(client, 'containers', 'id', missing(gateOuts.map((o) => o.container_id), r.containers)));
 
   // Đợt 2: hồ sơ liên quan tới cont / lệnh / phiếu trả trước / danh sách tàu đã có
   const [giById, bkById, txByPrepaid, ddByPrepaid, tkByDossier, works, history, items] = await Promise.all([
@@ -310,6 +313,8 @@ function buildState(base: DepotState, raw: RawData): DepotState {
     chkPaymentSettled: o.chk_payment_settled, chkDocumentsCompleted: o.chk_documents_completed, status: o.status, createdBy: opt(o.created_by_name),
     confirmedBy: opt(o.confirmed_by_name), confirmedAt: opt(o.confirmed_at), cancelReason: opt(o.cancel_reason), cancelledAt: opt(o.cancelled_at),
     documentsReturnedAt: opt(o.documents_returned_at), documentsReturnedBy: opt(o.documents_returned_by_name), createdAt: o.created_at,
+    releasePhotos: o.release_photo_paths?.length ? o.release_photo_paths : undefined, releasePhotoContainerNo: opt(o.release_photo_container_no), // DEC-198
+    releasePhotosAt: opt(o.release_photos_at), releasePhotosBy: opt(o.release_photos_by_name),
     swaps: o.swaps?.length ? o.swaps : undefined, // DEC-185
     releasePurpose: o.release_purpose === 'SALE' ? 'SALE' : undefined, saleCode: opt(o.sale_code), // DEC-194
   } as GateOutOrder);

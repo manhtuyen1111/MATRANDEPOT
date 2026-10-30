@@ -29,6 +29,7 @@ import { createVesselList, executeVesselExport, inspectVesselImportItem } from '
 import { completeCleaningTask, completeRackInspection, shiftContainer } from './depotOperations';
 import { markInvoiceIssued, prepaidInvoiceView, submitInvoiceRequest, submitPrepaidInvoiceGroup } from './invoice';
 import { respondFeedback, submitFeedback } from './feedback';
+import { recordReleasePhotos } from './releasePhoto';
 import type { ContainerSize, ContainerType } from '../types/depot';
 
 const as = (state: DepotState, userId: string): DepotState => ({
@@ -356,6 +357,8 @@ export function createDemoState(): DepotState {
   s = createReleaseOrder(as(s, 'usr-office'), { bookingNo: 'BK-MSK-0001', customerName: KH(2), containerNo: 'MSKU2000011', truckNo: '15H-501.01', driverPhone: '0987 654 321', feeCatalogIds: FEES['40'] });
   s = confirmReleasePayment(as(s, 'usr-office'), { gateOutOrderId: s.gateOutOrders[0].id, paymentCategory: 'TTTT', directMethod: 'CASH' });
   s = executeGateOut(as(s, 'usr-forklift'), { containerNo: 'MSKU2000011' });
+  // DEC-198: cont MSK — Giám định chụp ảnh cấp vỏ (các lượt cấp hàng loạt bên trên để CHỜ CHỤP)
+  s = recordReleasePhotos(as(s, 'usr-inspector'), { gateOutOrderId: s.gateOutOrders[0].id, photos: [PHOTO] });
   s = createReleaseOrder(as(s, 'usr-office'), { bookingNo: 'BK-MSK-0002', customerName: KH(2), containerNo: 'MSKU2000022', truckNo: '15H-502.02', driverPhone: '0987 654 322', feeCatalogIds: FEES['20'] });
   s = confirmReleasePayment(as(s, 'usr-office'), { gateOutOrderId: s.gateOutOrders[0].id, paymentCategory: 'TTS', ttsNote: 'Hãng tàu MSK duyệt công nợ' });
 

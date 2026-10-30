@@ -58,6 +58,7 @@ export type WorkspaceMenuId =
   | 'VP_XUAT_TAU'
   | 'GD_NHAP_TAU'
   | 'GD_XUAT_TAU'
+  | 'GD_CAP_VO' // DEC-198: Giám định chụp ảnh cấp vỏ (cont MSK)
   | 'XN_NHAP_TAU'
   | 'XN_XUAT_TAU'
   | 'VS_CHO_VE_SINH'
@@ -668,6 +669,11 @@ export interface GateOutOrder {
   swaps?: GateOutSwap[]; // DEC-185: các lần ĐỔI CONTAINER của lệnh
   releasePurpose?: ReleasePurpose; // DEC-194: không có = Release for customer
   saleCode?: string;               // DEC-194: bắt buộc khi Release for sale
+  // DEC-198: ảnh CẤP VỎ do Giám định chụp (cont MSK) — đường dẫn kho; gắn với số cont đã chụp (đổi cont thì phải chụp lại)
+  releasePhotos?: string[];
+  releasePhotoContainerNo?: string;
+  releasePhotosAt?: string;
+  releasePhotosBy?: string;
   createdAt: string;
 }
 

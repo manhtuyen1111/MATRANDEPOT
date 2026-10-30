@@ -27,6 +27,7 @@ import { openVesselLists, VesselFieldStep, vesselStepSummary } from '../services
 import { FieldQueueMode, FieldQueueWorkspaces, getFieldQueue } from '../features/field-queues/FieldQueueWorkspaces';
 import { ticketsAwaitingReturn } from '../services/driverRoute';
 import { pendingRackInspections } from '../services/depotOperations';
+import { pendingReleasePhotos } from '../services/releasePhoto';
 import { FeedbackButton } from '../components/FeedbackButton';
 import { AccountMenu } from '../components/AccountMenu';
 import { ScreenLoading } from '../components/LoadingScreens';
@@ -60,6 +61,7 @@ function preloadScreens(): () => void {
   };
 }
 const InspectorHaVoMobile = named(() => import('../features/inspector/InspectorHaVoMobile'), 'InspectorHaVoMobile');
+const InspectorCapVoMobile = named(() => import('../features/inspector/InspectorCapVoMobile'), 'InspectorCapVoMobile');
 const OfficeHaVoWorkspace = named(() => import('../features/office/OfficeWorkspaces'), 'OfficeHaVoWorkspace');
 const OfficeCapVoWorkspace = named(() => import('../features/office/OfficeWorkspaces'), 'OfficeCapVoWorkspace');
 const OfficeVesselWorkspace = named(() => import('../features/vessel/OfficeVesselWorkspace'), 'OfficeVesselWorkspace');
@@ -97,6 +99,7 @@ const MENU: MenuGroup[] = [
   { key: 'TON_VO', label: 'Tồn vỏ', icon: Boxes, items: [{ id: 'TON_VO', label: 'Danh sách tồn vỏ' }] },
   { key: 'GD', label: 'Giám định', icon: ClipboardCheck, items: [
     { id: 'GD_HA_VO', label: 'Hạ vỏ', mobile: true },
+    { id: 'GD_CAP_VO', label: 'Cấp vỏ', mobile: true }, // DEC-198
     { id: 'GD_NHAP_TAU', label: 'Nhập tàu', mobile: true },
     { id: 'GD_XUAT_TAU', label: 'Xuất tàu', mobile: true },
   ] },
@@ -306,6 +309,7 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
     TON_VO: state.containers.filter((c) => c.status !== 'GATED_OUT').length,
     // DEC-147: + phiếu chờ giám định trên kệ (cont đã hạ lên kệ)
     GD_HA_VO: state.gateInOrders.filter((o) => o.status === 'FIELD_RECORDED').length + pendingRackInspections(state).filter((c) => c.status === 'IN_YARD').length,
+    GD_CAP_VO: pendingReleasePhotos(state).length, // DEC-198
     VP_HA_VO: state.gateInOrders.filter((o) => o.status !== 'GATE_IN_OK' && o.status !== 'CANCELLED').length,
     VP_CAP_VO: state.gateOutOrders.filter((o) => o.status === 'PAYMENT_PENDING').length,
     VP_PHIEU_THU: state.paymentTransactions.filter((t) => t.status === 'PENDING').length,
@@ -547,6 +551,7 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
             <YardFeature state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} onOpenK80Ticket={setActiveK80Ticket} onOpenReceipt={openReceipt} />
           )}
           {activeMenu === 'GD_HA_VO' && <InspectorHaVoMobile state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
+          {activeMenu === 'GD_CAP_VO' && <InspectorCapVoMobile state={state} onUpdateState={handleUpdateState} onOpenDossier={setActiveDossierCode} />}
           {activeMenu === 'VP_HA_VO' && (
             <OfficeHaVoWorkspace state={state} onUpdateState={handleUpdateState} onOpenK80Ticket={setActiveK80Ticket} onOpenDossier={setActiveDossierCode} />
           )}

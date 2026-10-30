@@ -10,6 +10,7 @@ import { paymentLabelOf } from './payments';
 import { formatDateTime } from './datetime';
 import { findVesselItemByCode, vesselListProgress } from './vessel';
 import { LOCATION_ACTION_LABELS } from './reports';
+import { hasReleasePhoto, needsReleasePhoto } from './releasePhoto';
 
 export type HistoryAction = 'TẠO MỚI' | 'SỬA' | 'XÓA';
 
@@ -406,6 +407,10 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
     if (o.status === 'GATE_OUT_OK') {
       const swappedIn = (o.swaps || []).some((s) => s.toMasterDossierCode === d.visitCode);
       add({ at: o.confirmedAt || '', operation: 'Xe nâng — Cấp vỏ', task: swappedIn ? SWAP_TASK.ISSUE : undefined, action: 'TẠO MỚI', detail: join(['Đã OUT khỏi bãi', o.truckNo && `Số xe ${o.truckNo}`]), staff: o.confirmedBy });
+      // DEC-198: Giám định chụp ảnh cấp vỏ (cont MSK) — trước khi trả chứng từ
+      if (hasReleasePhoto(o)) {
+        add({ at: o.releasePhotosAt || '', operation: 'Giám định — Chụp ảnh cấp vỏ', action: 'TẠO MỚI', detail: `${o.releasePhotos!.length} ảnh cấp vỏ`, staff: o.releasePhotosBy, photos: o.releasePhotos, photoAlt: `Ảnh cấp vỏ ${o.containerNo}` });
+      } else if (!o.documentsReturnedAt && needsReleasePhoto(state, o)) pend('Giám định', 'Chụp ảnh cấp vỏ', `Chờ giám định chụp ảnh cấp vỏ ${o.gateOutCode}`);
       if (o.documentsReturnedAt) {
         add({ at: o.documentsReturnedAt, operation: 'Văn phòng — Trả chứng từ Cấp vỏ', action: 'TẠO MỚI', detail: 'Trả Phiếu EEIR (K80) + phiếu thu cho lái xe', staff: o.documentsReturnedBy });
       } else pend('Văn phòng', 'Trả chứng từ Cấp vỏ', `Chờ lái xe quay về trả chứng từ cấp vỏ ${o.gateOutCode}`);

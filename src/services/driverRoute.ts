@@ -2,16 +2,17 @@ import { GateInOrder, GateOutOrder, K80InternalTicket, PaymentReceipt } from '..
 import type { DepotState } from './depotStore';
 import { appendAudit, assertPermission, nowIso } from './core';
 import { formatDateTime } from './datetime';
+import { hasReleasePhoto, needsReleasePhoto } from './releasePhoto';
 
 // ============================================================================
 // LỘ TRÌNH LÁI XE TRÊN PHIẾU K80 & TRẢ CHỨNG TỪ (DEC-052)
 //   HẠ VỎ : Văn phòng thu phí → (Vệ sinh) → Xe nâng hạ vỏ → Văn phòng trả chứng từ
-//   CẤP VỎ: Văn phòng thu phí → Xe nâng cấp vỏ → Văn phòng trả chứng từ
+//   CẤP VỎ: Văn phòng thu phí → Xe nâng cấp vỏ → (Giám định chụp ảnh cấp vỏ — cont MSK, DEC-198) → Văn phòng trả chứng từ
 // Văn phòng quét QR lần cuối → ghi nhận trả chứng từ → in EEIR + phiếu thu (nếu có).
 // ============================================================================
 
 export interface RouteStep {
-  key: 'OFFICE_PAY' | 'CLEANING' | 'FORKLIFT_PLACE' | 'FORKLIFT_RELEASE' | 'OFFICE_RETURN';
+  key: 'OFFICE_PAY' | 'CLEANING' | 'FORKLIFT_PLACE' | 'FORKLIFT_RELEASE' | 'SURVEY_RELEASE_PHOTO' | 'OFFICE_RETURN';
   dept: string;
   action: string;
   done: boolean;
@@ -43,6 +44,9 @@ export function getDriverRoute(state: DepotState, ticket: K80InternalTicket): Ro
     return [
       { key: 'OFFICE_PAY', dept: 'VĂN PHÒNG', action: 'Thu phí & in phiếu', done: true, doneAt: ticket.issuedAt, doneBy: ticket.issuedBy },
       { key: 'FORKLIFT_RELEASE', dept: 'XE NÂNG', action: `Quét mã • nhận vỏ${ticket.targetBlock ? ` tại ${ticket.targetBlock}` : ''}`, done: released, doneAt: gateOut?.confirmedAt, doneBy: gateOut?.confirmedBy },
+      ...(needsReleasePhoto(state, gateOut)
+        ? [{ key: 'SURVEY_RELEASE_PHOTO' as const, dept: 'GIÁM ĐỊNH', action: 'Chụp ảnh cấp vỏ', done: hasReleasePhoto(gateOut), doneAt: gateOut?.releasePhotosAt, doneBy: gateOut?.releasePhotosBy }]
+        : []),
       { key: 'OFFICE_RETURN', dept: 'VĂN PHÒNG', action: 'Quét mã • nhận EEIR / phiếu thu', done: Boolean(gateOut?.documentsReturnedAt), doneAt: gateOut?.documentsReturnedAt, doneBy: gateOut?.documentsReturnedBy },
     ];
   }
@@ -147,15 +151,18 @@ export function ticketsAwaitingReturn(state: DepotState): K80InternalTicket[] {
 
 // DEC-192: Văn phòng → Trả chứng từ, cột CẤP VỎ hiện ĐỦ lệnh đã thu tiền chưa trả chứng từ — kèm đã / chưa nâng hạ.
 // Chưa nâng hạ (Xe nâng chưa cấp) thì chưa trả chứng từ được (lộ trình chặn), nhưng vẫn ĐỔI CONTAINER được.
-export function releaseTicketsInProgress(state: DepotState): { ticket: K80InternalTicket; order: GateOutOrder; lifted: boolean }[] {
-  const out: { ticket: K80InternalTicket; order: GateOutOrder; lifted: boolean }[] = [];
+// DEC-198: photoWait = cont MSK đã nâng hạ nhưng Giám định chưa chụp ảnh cấp vỏ (lộ trình cũng chặn trả chứng từ).
+export interface ReleaseTicketRow { ticket: K80InternalTicket; order: GateOutOrder; lifted: boolean; photoWait: boolean }
+export function releaseTicketsInProgress(state: DepotState): ReleaseTicketRow[] {
+  const out: ReleaseTicketRow[] = [];
   const seen = new Set<string>();
   for (const t of state.k80Tickets) {
     if (t.operationMode !== 'CAP_VO' || !t.outDossierCode || seen.has(t.outDossierCode)) continue;
     seen.add(t.outDossierCode);
     const order = state.gateOutOrders.find((o) => o.gateOutCode === t.outDossierCode);
     if (!order || order.documentsReturnedAt || (order.status !== 'PENDING_FORKLIFT' && order.status !== 'GATE_OUT_OK')) continue;
-    out.push({ ticket: t, order, lifted: order.status === 'GATE_OUT_OK' });
+    const lifted = order.status === 'GATE_OUT_OK';
+    out.push({ ticket: t, order, lifted, photoWait: lifted && needsReleasePhoto(state, order) && !hasReleasePhoto(order) });
   }
   return out;
 }

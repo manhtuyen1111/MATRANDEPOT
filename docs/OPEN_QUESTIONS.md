@@ -116,14 +116,14 @@ Cập nhật lần cuối: 2026-10-22.
 - [ ] Q-050: Release for sale (Sale code), Xuất tàu, Nhập tàu gửi loại tin gì, `RFF` gì — xin file mẫu từng loại. — 2026-10-30: **Release for sale đã có mẫu** (`EQD …++8+4`, `RFF+BN:<Sale code>` — `docs/EDI_MAERSK.md` 3.3). **Xuất tàu đã có mẫu** (`EQD …++8+4`, `RFF+BN:VNHPHTM` — 3.4). **Còn Nhập tàu** (có gửi không).
 - [ ] Q-051: Giờ ghi `DTM+7`: giờ xe vào / ra cổng, giờ Văn phòng GATE IN OK hay giờ Xe nâng — app cũ lấy giờ nào. — 2026-10-30: **Xuất tàu lấy giờ thực tế từng cont ra bãi** (DEC-196). Gate-in / cấp vỏ: tạm lấy giờ GATE IN OK / giờ Xe nâng cấp (dữ liệu thực tế) — đối chiếu khi chạy song song.
 - [ ] Q-052: Tin hủy / sửa (đổi container sau khi đã gửi gate-out, nhập sai số cont): app cũ làm thế nào; file mẫu.
-- [ ] Q-053: Kênh gửi — SFTP (máy chủ, cổng, thư mục, mật khẩu hay khóa) hay Gmail (gửi tới đâu, tiêu đề, đính kèm); Maersk có trả xác nhận / báo lỗi không. **Không gửi mật khẩu cho agent.**
+- [ ] Q-053: Kênh gửi — SFTP (máy chủ, cổng, thư mục, mật khẩu hay khóa) hay Gmail (gửi tới đâu, tiêu đề, đính kèm); Maersk có trả xác nhận / báo lỗi không. **Không gửi mật khẩu cho agent.** — 2026-10-30: người dùng muốn **tự động mỗi giờ tạo + gửi**; danh sách 14 thông số cần có ở `docs/EDI_MAERSK.md` mục 14 (quan trọng: giao thức FTP / SFTP, giới hạn IP).
 - [ ] Q-054: Ai xem / gửi lại EDI: chỉ Admin hay cả Văn phòng.
 - [ ] Q-055: Lượt nhập muộn (hạ 03:50, 04:10 mới nhập) đưa vào file giờ nào; Maersk có chấp nhận gửi trễ / trùng không.
 - [ ] Q-056: ~~eEIR External API v4.3~~ — **đã nhận + đọc 2026-10-30** (`docs/EDI_MAERSK.md` mục 12). Còn: **eEIR Container Assignment Integration Guide v1.6** + **file mẫu `inspectionDetails` JSON** (Maersk gửi qua email khi cấp khóa).
 - [x] Q-057: Depot đã được Maersk duyệt dùng API chưa…? → **Trả lời 2026-10-30:** xin duyệt được; **đã có tài khoản developer**; **đã có mã depot 3 ký tự**; người dùng muốn **đồng bộ API cho toàn bộ app** (thay EDI). Còn chờ tài liệu API (Q-056 + danh sách ở `docs/EDI_MAERSK.md` mục 11).
 - [ ] Q-058: eEIR `moveType` (1 POS / 2 IMP / 3 EXP) cho từng tác nghiệp: Hạ vỏ khách trả, Cấp vỏ theo booking, Release for sale, Nhập tàu, Xuất tàu, đổi container.
-- [ ] Q-059: eEIR bắt buộc ≥ 1 ảnh mỗi lượt → Cấp vỏ (hiện chưa chụp ảnh) chụp ở bước nào (Xe nâng / Giám định / Văn phòng), bao nhiêu ảnh.
-- [ ] Q-060: Email depot nhận PDF eEIR (`emails[].email`, bắt buộc).
+- [x] Q-059: **Trả lời 2026-10-30:** Giám định chụp 1 – nhiều ảnh sau khi Xe nâng cấp, chỉ cont MSK; chưa có ảnh không trả chứng từ (DEC-198). Câu gốc: eEIR bắt buộc ≥ 1 ảnh mỗi lượt → Cấp vỏ (hiện chưa chụp ảnh) chụp ở bước nào (Xe nâng / Giám định / Văn phòng), bao nhiêu ảnh.
+- [ ] Q-060: — 2026-10-30: depot **đã có email** đang nhận PDF eEIR → nhập vào cấu hình khi làm eEIR (không viết cứng). Không dùng PDF thay ảnh (DEC-198). Câu gốc: Email depot nhận PDF eEIR (`emails[].email`, bắt buộc).
 - [ ] Q-061: Maersk (EMR / eEIRSupport) xác nhận: gửi eEIR qua API có **thay** CODECO EDI không, hay phải gửi cả hai. — 2026-10-30: Devy (developer portal) không trả lời được, portal không có sản phẩm "gate-in / gate-out equipment move" → cần **support ticket** / eEIRSupport.
 - [ ] Q-062: Depot có xác định **hư do bên thứ 3** (mã CEDEX vị trí, loại hư, bên gây hư) không; danh mục hư nhanh có cần đổi sang mã CEDEX.
 - [ ] Q-063: Booking Maersk luôn 9–11 ký tự chữ số? Có chặn nhập sai ở Cấp vỏ cho cont MSK không.

@@ -22,6 +22,7 @@ import { MasterCatalogWorkspace } from '../src/features/catalog/MasterCatalogWor
 import { HistoryTable, MasterDossierModal } from '../src/components/MasterDossierModal';
 import { dossierHistory, resolveDossier } from '../src/services/dossierHistory';
 import { InspectorHaVoMobile } from '../src/features/inspector/InspectorHaVoMobile';
+import { InspectorCapVoMobile } from '../src/features/inspector/InspectorCapVoMobile';
 import { RepairTeamCatalog } from '../src/features/catalog/RepairTeamCatalog';
 import { UserRoleCatalog } from '../src/features/catalog/UserRoleCatalog';
 import { DocumentReturnWorkspace } from '../src/features/office/DocumentReturnWorkspace';
@@ -48,11 +49,11 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toContain('MATRAN DEPOT');
     expect(html).toContain('Đảo chuyển');
     expect(html).not.toContain('HẠ SỬA CHỮA');
-    expect(html.match(/aria-label="Tác nghiệp mobile"/g)?.length).toBe(10);
+    expect(html.match(/aria-label="Tác nghiệp mobile"/g)?.length).toBe(11); // DEC-198: + Giám định → Cấp vỏ
     // DEC-075: việc hiện trường đang chờ được tô cam + chấm nhấp nháy
     expect(html).toContain('Có việc đang chờ');
     // DEC-078: biểu tượng mobile nằm trong cột cố định → thẳng hàng
-    expect(html.match(/flex w-6 shrink-0 justify-center"><span title="Tác nghiệp mobile"/g)?.length).toBe(10);
+    expect(html.match(/flex w-6 shrink-0 justify-center"><span title="Tác nghiệp mobile"/g)?.length).toBe(11);
     // DEC-190: chỉ mở 1 bộ phận một lúc — các nhóm khác thu gọn (danh sách ẩn)
     expect(html.match(/aria-expanded="true"/g)).toHaveLength(1);
     expect(html.match(/<ul hidden=""/g)!.length).toBeGreaterThanOrEqual(5); // các bộ phận còn lại đều thu gọn
@@ -117,6 +118,7 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
       <ReportsWorkspace state={base} section="BC_NHAP_TAU" onOpenDossier={noop} />,
       <ReportsWorkspace state={base} section="BC_XUAT_TAU" onOpenDossier={noop} />,
       <InspectorHaVoMobile state={base} onUpdateState={noop} />,
+      <InspectorCapVoMobile state={base} onUpdateState={noop} />,
       <YardShiftWorkspace state={base} onUpdateState={noop} />,
       <ReceiptsWorkspace state={as(base, 'usr-acc')} onUpdateState={noop} />,
       <ReportsWorkspace state={base} section="BC_CAP_VO" onOpenDossier={noop} />,

@@ -1527,6 +1527,18 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-198 — Giám định chụp ảnh CẤP VỎ (cont Maersk) trước khi trả chứng từ
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-059).
+- **Chỉ cont hãng MSK** (Maersk bắt buộc mỗi eEIR gate-out có ≥ 1 ảnh). Hãng khác giữ luồng cũ.
+- Thời điểm: **sau khi Xe nâng cấp lên xe** (GATE OUT OK) → cont vào hàng chờ **Giám định → Cấp vỏ** (màn mobile, có số đếm) → Giám định **chụp 1 – 30 ảnh** (`PhotoCamera`, mỗi ảnh < 200 KB như DEC-176) → xác nhận.
+- **Chưa có ảnh cấp vỏ thì Văn phòng không Trả chứng từ được** — phiếu K80 thêm bước **GIÁM ĐỊNH – Chụp ảnh cấp vỏ** giữa Xe nâng và Văn phòng (`getDriverRoute`); Hồ sơ container thêm dòng / dòng ĐANG CHỜ tương ứng.
+- **Đổi container** (DEC-185 / DEC-192): ảnh gắn với **số cont đã chụp** — đổi sang cont khác thì ảnh cũ không tính, cont mới phải chụp lại.
+- Ảnh lưu kho `door-photos`, thư mục `ANH-CAP-VO/<năm>/<tháng>/<ngày>/` (không tự xóa — DEC-176); xem qua `PhotoGallery` (DEC-178). Dùng cho eEIR gate-out sau này.
+- Giữ cỡ ảnh như hiện nay (< 200 KB, cạnh dài 1600px).
+- **Không** dùng PDF eEIR Maersk gửi về thay cho ảnh: PDF chỉ có sau khi đã gửi ảnh, chỉ về qua email, chỉ có cont MSK, không nhẹ hơn ảnh đã nén.
+- Code: `src/services/releasePhoto.ts` (`recordReleasePhotos`, `pendingReleasePhotos`, `needsReleasePhoto`, `hasReleasePhoto`), `src/features/inspector/InspectorCapVoMobile.tsx` (menu `GD_CAP_VO`, mobile). Database: migration `20261119000001_release_photos.sql` (cột `gate_out_orders.release_photo_*`, RPC `record_release_photos`, `mark_documents_returned` chặn thiếu ảnh), pgTAP `0021`.
+
 ### DEC-197 — EDI CODECO Maersk: chạy thử (chưa gửi)
 
 - Trạng thái: CONFIRMED (2026-10-30, người dùng đồng ý làm bản chạy thử trước). Thuộc OPEN-009.
@@ -2001,6 +2013,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-197 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-198 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
