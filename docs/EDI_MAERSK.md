@@ -258,3 +258,10 @@ Tài liệu nhận được: **API License Terms** (sửa 31/08/2026) + OpenAPI 
 | Q-062 | Depot có xác định **hư do bên thứ 3** (mã CEDEX vị trí, loại hư, bên gây hư) không; danh mục hư nhanh có cần đổi sang mã CEDEX |
 | Q-063 | Booking Maersk luôn 9–11 ký tự chữ số? Có chặn nhập sai ở Cấp vỏ cho cont MSK không |
 | Q-056 (còn) | Integration Guide v1.6 (chọn cont) + **file mẫu `inspectionDetails` JSON** Maersk gửi qua email khi cấp khóa |
+
+### 12.6 Hỏi Devy (trợ lý developer.maersk.com) — 2026-10-30
+
+- Devy xác nhận: API và EDI **không thay 1-đổi-1**, tùy sản phẩm; có sản phẩm chỉ API, sản phẩm cũ vẫn EDI.
+- Với 3 câu (eEIR có thay CODECO không; API nào là gate-in / gate-out cho depot; API nhận booking release / release for sale), Devy trả lời: **portal không có tài liệu nào nói rõ**, và trong danh sách sản phẩm **không thấy sản phẩm "depot gate-in / gate-out equipment move" hay "booking release"** → đề nghị mở **support ticket**.
+- **Đánh giá tạm:** hiện **chưa có API công khai thay CODECO** cho lượt ra / vào → **EDI CODECO vẫn là kênh báo ra / vào**; eEIR API là phiếu giao nhận bổ sung (ảnh, hạng vỏ, hư hỏng). Chờ ticket / eEIRSupport trả lời Q-061.
+

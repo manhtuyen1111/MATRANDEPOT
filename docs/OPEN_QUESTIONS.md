@@ -124,6 +124,6 @@ Cập nhật lần cuối: 2026-10-22.
 - [ ] Q-058: eEIR `moveType` (1 POS / 2 IMP / 3 EXP) cho từng tác nghiệp: Hạ vỏ khách trả, Cấp vỏ theo booking, Release for sale, Nhập tàu, Xuất tàu, đổi container.
 - [ ] Q-059: eEIR bắt buộc ≥ 1 ảnh mỗi lượt → Cấp vỏ (hiện chưa chụp ảnh) chụp ở bước nào (Xe nâng / Giám định / Văn phòng), bao nhiêu ảnh.
 - [ ] Q-060: Email depot nhận PDF eEIR (`emails[].email`, bắt buộc).
-- [ ] Q-061: Maersk (EMR / eEIRSupport) xác nhận: gửi eEIR qua API có **thay** CODECO EDI không, hay phải gửi cả hai.
+- [ ] Q-061: Maersk (EMR / eEIRSupport) xác nhận: gửi eEIR qua API có **thay** CODECO EDI không, hay phải gửi cả hai. — 2026-10-30: Devy (developer portal) không trả lời được, portal không có sản phẩm "gate-in / gate-out equipment move" → cần **support ticket** / eEIRSupport.
 - [ ] Q-062: Depot có xác định **hư do bên thứ 3** (mã CEDEX vị trí, loại hư, bên gây hư) không; danh mục hư nhanh có cần đổi sang mã CEDEX.
 - [ ] Q-063: Booking Maersk luôn 9–11 ký tự chữ số? Có chặn nhập sai ở Cấp vỏ cho cont MSK không.
