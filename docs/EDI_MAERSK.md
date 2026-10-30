@@ -144,3 +144,35 @@ Gom sự kiện PENDING của giờ trước (theo giờ thực tế, gate-in tr
 | Q-053 | Kênh gửi: SFTP (máy chủ, cổng, thư mục, đăng nhập mật khẩu hay khóa) hay Gmail (gửi tới đâu, tiêu đề, đính kèm); Maersk có trả xác nhận / báo lỗi không |
 | Q-054 | Ai xem / gửi lại EDI: Admin hay cả Văn phòng |
 | Q-055 | Lượt nhập muộn (VD hạ 03:50, 04:10 mới nhập): đưa vào file giờ nào; Maersk có chấp nhận gửi trễ / trùng không |
+
+## 10. API Maersk (người dùng gửi 2026-10-30) — có thay được EDI không?
+
+Tài liệu nhận được: **API License Terms** (sửa 31/08/2026) + OpenAPI **Empty Container Assignment API** (`container-export-steering`, v1.0.0).
+
+**Kết luận: CHƯA thay được EDI CODECO.** API này chỉ lo phần **chọn cont rỗng cho booking (trước khi cấp vỏ)**, không có lệnh báo gate-in / gate-out.
+
+| Endpoint | Việc | Dùng ở MATRAN |
+|---|---|---|
+| `GET …/maintenance-shops/{shop}/booking-equipment` | Danh sách booking giao cho depot | Văn phòng → Cấp vỏ: gợi ý booking |
+| `GET …/bookings/{booking}` | Chi tiết booking: số cont cần theo loại (DRY / REEF, 20 / 40, 8'6 / 9'6), đã gán bao nhiêu, nơi giao hàng, cont gợi ý | kiểm tra booking + số lượng (thay tự đếm — Q-043) |
+| `POST …/bookings/{booking}/equipment/{cont}/assignment-audits` | **Kiểm tra cont có hợp lệ cho booking** (đúng loại, hạng `containerGradeCode` S / M = cao cấp, cont sale / trả thuê, tổn thất toàn bộ) → hợp lệ / cảnh báo / lỗi | khi Văn phòng chọn cont cấp vỏ / đổi cont (DEC-185 / 192) / **Release for sale** (`isSaleEligible` — DEC-194) |
+| `DELETE …/assignment-audits` | Bỏ gán cont khỏi booking (khi cont **chưa** gate-out) | hủy lệnh cấp / đổi cont trước nâng hạ |
+| `POST …/bookings/{booking}/booking-equipment` | Nộp danh sách cont đã gán cho booking | sau khi lập lệnh cấp |
+
+- Báo **gate-in / gate-out** (thay CODECO) nằm ở bộ khác: **eEIR External API** (`eir-external-api-documentation_v4.3-5.pdf`, 34 trang — link trong OpenAPI). Agent tải được file nhưng **không đọc được nội dung** (PDF nén / font riêng, máy không có công cụ đọc PDF) → cần người dùng gửi bản chữ hoặc chụp các trang endpoint (Q-056).
+- Hướng dẫn tích hợp chọn cont: `eir-container-assignment-integration-guide_v1-6.pdf` (Q-056).
+- **Điều kiện được dùng:** chỉ đơn vị **đã được Maersk duyệt** (nhà cung cấp dùng hệ thống AEMS), đăng ký app trên developer.maersk.com bằng email công ty → **Consumer-Key** + **OAuth 2.0** (token Bearer); cần **mã depot 3 ký tự** (`maintenanceShopCode`, VD `9AA`) — Q-057.
+- **Giới hạn:** 200 lần gọi / giờ, 120 lần / phút / key (vượt → lỗi 429). Một ngày ~100–300 lượt ra / vào → đủ nếu mỗi lượt gọi 1–2 lần; phải xếp hàng + gọi lại khi 429.
+- **Điều khoản cần lưu ý:**
+  - giữ key bí mật, **chỉ 1 bộ key**, lộ thì báo Maersk + đổi ngay → key chỉ đặt ở máy chủ (Edge Function / Vercel), **không** đặt ở trình duyệt;
+  - không chia sẻ / bán dữ liệu Maersk cho bên thứ ba;
+  - chấm dứt hợp đồng → xóa dữ liệu Maersk;
+  - Maersk có thể đổi điều khoản, tính phí, công khai tên depot là đơn vị dùng API;
+  - luật Đan Mạch.
+- **Hướng đề xuất:**
+  - (1) giữ **CODECO EDI** cho báo ra / vào — như app cũ, đang chạy được;
+  - (2) thêm **API chọn cont** vào Văn phòng → Cấp vỏ để kiểm tra cont hợp lệ trước khi lập lệnh (giảm cấp sai, nhất là cấp sale);
+  - (3) khi có tài liệu eEIR External API và Maersk xác nhận cho depot dùng thì cân nhắc thay CODECO bằng API.
+- Câu hỏi thêm:
+  - **Q-056** — bản đọc được của eEIR External API v4.3 + Integration Guide v1.6;
+  - **Q-057** — depot đã được Maersk duyệt / có tài khoản developer + `maintenanceShopCode` chưa; Maersk yêu cầu dùng API hay vẫn nhận EDI.

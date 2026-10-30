@@ -119,3 +119,5 @@ Cập nhật lần cuối: 2026-10-22.
 - [ ] Q-053: Kênh gửi — SFTP (máy chủ, cổng, thư mục, mật khẩu hay khóa) hay Gmail (gửi tới đâu, tiêu đề, đính kèm); Maersk có trả xác nhận / báo lỗi không. **Không gửi mật khẩu cho agent.**
 - [ ] Q-054: Ai xem / gửi lại EDI: chỉ Admin hay cả Văn phòng.
 - [ ] Q-055: Lượt nhập muộn (hạ 03:50, 04:10 mới nhập) đưa vào file giờ nào; Maersk có chấp nhận gửi trễ / trùng không.
+- [ ] Q-056: Bản đọc được (text / ảnh chụp trang endpoint) của **eEIR External API v4.3** (gate-in / gate-out) và **eEIR Container Assignment Integration Guide v1.6** — agent tải được PDF nhưng không đọc được nội dung.
+- [ ] Q-057: Depot đã được Maersk duyệt dùng API chưa (tài khoản developer.maersk.com, Consumer-Key, **maintenanceShopCode** 3 ký tự)? Maersk yêu cầu chuyển sang API hay vẫn nhận EDI CODECO?
