@@ -80,6 +80,7 @@ export type WorkspaceMenuId =
   | 'DM_CONG_TY'
   | 'DM_USER'
   | 'DM_DATABASE' // DEC-189: sức khỏe database (chỉ Admin)
+  | 'DM_EDI' // DEC-197: EDI CODECO hãng tàu — chạy thử (chỉ Admin)
   | 'BC_HA_VO'
   | 'BC_SUA_CHUA'
   | 'BC_SC_SAN_LUONG' // DEC-179: Sửa chữa — Sản lượng (tách khỏi tab)
@@ -152,6 +153,13 @@ export const DAMAGE_QUICK_SUGGESTIONS: string[] = [
 
 export type ContainerSize = string; // Mặc định: '20' | '40' | '45' (Cấu hình trong DANH MỤC CHUNG)
 export type ContainerType = string; // Mặc định: 'DC' | 'HC' | 'OT' | 'FR' | 'RF' (Cấu hình trong DANH MỤC CHUNG)
+
+// DEC-195: mã ISO 6346 theo Size + Type (Danh mục Container, Admin sửa). Màn hình / phiếu / biểu giá vẫn dùng 20DC, 40HC…
+export interface ContainerIsoCode {
+  size: ContainerSize;
+  type: ContainerType;
+  isoCode: string; // 4 ký tự, VD 22G1, 45G1, L5G1
+}
 
 export type FeeTariffCategory =
   | 'NANG_HA'      // NÂNG HẠ (theo từng Size - Type - Hãng tàu)
@@ -327,6 +335,7 @@ export interface ContainerRecord {
   vesselExportItemId?: string; // Đang nằm trong danh sách XUẤT TÀU (DEC-069)
   // DEC-185: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ — chờ Xe nâng hạ lại (xóa khi hạ xong)
   swapReturn?: { gateOutCode: string; reason: SwapReason; note?: string; toContainerNo: string; requestedBy: string; requestedAt: string };
+  isoCode?: string; // DEC-195: mã ISO 6346 riêng của cont (VD lấy từ Maersk eEIR); trống = theo Danh mục Size + Type
   releaseDamage?: boolean; // DEC-185: nhãn PHÁT SINH CẤP VỎ — hư hỏng phát hiện khi cấp vỏ (giữ cho cả lượt lưu bãi)
   gateInAt: string;
   gateOutAt?: string;
@@ -601,7 +610,11 @@ export interface ReleaseBooking {
   createdAt: string;
 }
 
-// Hồ sơ CẤP VỎ / XUẤT bãi
+// DEC-194: TÁC NGHIỆP cấp vỏ — Release for customer (mặc định) / Release for sale (CẤP SALE, bắt buộc Sale code).
+// Các bước sau (thanh toán, Xe nâng, trả chứng từ, đổi cont) giống nhau; dùng cho EDI hãng tàu (docs/EDI_MAERSK.md).
+export type ReleasePurpose = 'CUSTOMER' | 'SALE';
+export const RELEASE_PURPOSE_LABELS: Record<ReleasePurpose, string> = { CUSTOMER: 'Release for customer', SALE: 'Release for sale' };
+
 // DEC-185: ĐỔI CONTAINER (Văn phòng, khi cont đã cấp ra, chưa trả chứng từ) — giữ mã CV-, chứng từ, phiếu thu
 export type SwapReason = 'KEN_VO' | 'DAMAGE';
 export const SWAP_REASON_LABELS: Record<SwapReason, string> = {
@@ -623,6 +636,7 @@ export interface GateOutSwap {
   swappedAt: string;
 }
 
+// Hồ sơ CẤP VỎ / XUẤT bãi
 export interface GateOutOrder {
   id: string;
   masterDossierCode: string; // Mã hồ sơ HẠ VỎ của lượt lưu bãi
@@ -652,6 +666,8 @@ export interface GateOutOrder {
   documentsReturnedAt?: string; // DEC-052
   documentsReturnedBy?: string;
   swaps?: GateOutSwap[]; // DEC-185: các lần ĐỔI CONTAINER của lệnh
+  releasePurpose?: ReleasePurpose; // DEC-194: không có = Release for customer
+  saleCode?: string;               // DEC-194: bắt buộc khi Release for sale
   createdAt: string;
 }
 
@@ -751,6 +767,7 @@ export interface VesselList {
   mode: VesselMode;
   vesselName: string;
   shippingLineCode?: string;     // NT: bắt buộc, 1 hãng cho cả danh sách
+  destinationPort?: string;      // DEC-196: XT — mã cảng / terminal đến (VD VNHPHTM), tùy tàu; gửi EDI CODECO (RFF+BN)
   plannedAt: string;             // Thời gian nhập / xuất tàu
   truckNos: string[];            // Danh sách số xe
   items: VesselListItem[];

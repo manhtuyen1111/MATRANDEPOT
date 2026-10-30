@@ -22,6 +22,7 @@ import {
 } from '../../services/depotStore';
 
 import { FeeTariffCategory } from '../../types/depot';
+import { ContainerIsoCodeCard } from './ContainerIsoCodeCard';
 import { blockDimensions, SLOT_DIMENSION_LABELS } from '../../services/core';
 
 export type CatalogTab =
@@ -754,6 +755,7 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
       {/* TAB 4: + CONTAINER (SIZE - TYPE) */}
       {/* ===================================================================== */}
       {activeTab === 'CONTAINER' && (
+        <div className="space-y-5">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {/* CẤU HÌNH SIZE */}
           <div className="rounded-xl border border-line bg-white p-4 text-xs space-y-4">
@@ -868,6 +870,9 @@ export const MasterCatalogWorkspace: React.FC<Props> = ({
               ))}
             </div>
           </div>
+        </div>
+        {/* DEC-195: mã ISO 6346 theo Size - Type */}
+        <ContainerIsoCodeCard state={state} isAdmin={isAdmin} onUpdateState={onUpdateState} />
         </div>
       )}
 

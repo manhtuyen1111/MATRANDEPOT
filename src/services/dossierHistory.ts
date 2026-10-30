@@ -2,7 +2,7 @@
 // Dựng từ dữ liệu tác nghiệp sẵn có (không đọc nhật ký audit): mỗi bước đã làm = 1 dòng
 // THỜI GIAN | BỘ PHẬN | NỘI DUNG (TẠO MỚI / SỬA / XÓA) | CHI TIẾT | NHÂN VIÊN — cũ trên, mới dưới (DEC-184: cột Bộ phận).
 // Bước chưa làm: mỗi việc 1 dòng ĐANG CHỜ cuối bảng, kèm bộ phận phụ trách.
-import { SWAP_REASON_LABELS } from '../types/depot';
+import { RELEASE_PURPOSE_LABELS, SWAP_REASON_LABELS } from '../types/depot';
 import type { ContainerRecord, GateInOrder, GateOutOrder, LocationHistoryItem, PaymentVoucher, ServiceWorkOrder, VesselList, VesselListItem } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { formatVnd } from './depotStore';
@@ -370,7 +370,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
       at: o.createdAt,
       operation: 'Văn phòng — Cấp vỏ',
       action: 'TẠO MỚI',
-      detail: join([`Lệnh ${o.gateOutCode}`, `Booking ${o.bookingNo}`, `Khách hàng ${o.receiverRep || '-'}`, o.truckNo && `Số xe ${o.truckNo}`, o.driverPhone && `SĐT ${o.driverPhone}`]),
+      detail: join([`Lệnh ${o.gateOutCode}`, RELEASE_PURPOSE_LABELS[o.releasePurpose || 'CUSTOMER'], o.saleCode && `Sale code ${o.saleCode}`, `Booking ${o.bookingNo}`, `Khách hàng ${o.receiverRep || '-'}`, o.truckNo && `Số xe ${o.truckNo}`, o.driverPhone && `SĐT ${o.driverPhone}`]),
       staff: o.createdBy,
     });
     // DEC-185: ĐỔI CONTAINER — lượt này là cont bị đổi đi (đã cấp ra rồi trả về) hoặc cont cấp thay

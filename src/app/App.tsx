@@ -74,6 +74,7 @@ const RepairTeamCatalog = named(() => import('../features/catalog/RepairTeamCata
 const StuffingClassCatalog = named(() => import('../features/catalog/StuffingClassCatalog'), 'StuffingClassCatalog');
 const UserRoleCatalog = named(() => import('../features/catalog/UserRoleCatalog'), 'UserRoleCatalog');
 const CompanyCatalog = named(() => import('../features/catalog/CompanyCatalog'), 'CompanyCatalog');
+const EdiWorkspace = named(() => import('../features/catalog/EdiWorkspace'), 'EdiWorkspace');
 const DatabaseHealthWorkspace = named(() => import('../features/catalog/DatabaseHealthWorkspace'), 'DatabaseHealthWorkspace');
 const FeedbackReport = named(() => import('../features/reports/FeedbackReport'), 'FeedbackReport');
 const MasterDossierModal = named(() => import('../components/MasterDossierModal'), 'MasterDossierModal');
@@ -158,6 +159,7 @@ const MENU: MenuGroup[] = [
       { id: 'DM_SUA_CHUA', label: 'Sửa chữa' },
       { id: 'DM_USER', label: 'User - Role' }, // DEC-144: đổi tên menu (giữ lại)
       { id: 'DM_DATABASE', label: 'Database' }, // DEC-189: sức khỏe database (chỉ Admin)
+      { id: 'DM_EDI', label: 'EDI hãng tàu' }, // DEC-197: CODECO chạy thử (chỉ Admin)
     ],
   },
 ];
@@ -577,6 +579,7 @@ export const App: React.FC<{ initialState?: DepotState; remote?: RemoteSessionPr
           {activeMenu === 'DM_USER' && <UserRoleCatalog state={state} onUpdateState={handleUpdateState} />}
           {activeMenu === 'DM_CONG_TY' && <CompanyCatalog state={state} onUpdateState={handleUpdateState} />}
           {activeMenu === 'DM_DATABASE' && <DatabaseHealthWorkspace onAlertCount={setDbAlerts} />}
+          {activeMenu === 'DM_EDI' && <EdiWorkspace state={state} onOpenDossier={setActiveDossierCode} />}
           {CATALOG_TABS[activeMenu] &&<MasterCatalogWorkspace state={state} onUpdateState={handleUpdateState} tab={CATALOG_TABS[activeMenu]} />}
           </Suspense>
         </main>

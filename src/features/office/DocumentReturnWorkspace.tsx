@@ -84,7 +84,7 @@ export const DocumentReturnWorkspace: React.FC<{
               ) : (
                 <ul className="divide-y divide-line text-xs">
                   {waiting.map((t) => {
-                    // DEC-185 / DEC-192: đổi container được cả khi chưa / đã nâng hạ; chưa nâng hạ thì chưa trả chứng từ
+                    // DEC-185 / DEC-192: đổi container được cả khi chưa / đã nâng hạ; chưa nâng hạ thì chưa trả chứng từ. Icon nâng hạ: màu token success / trung tính (DEC-193)
                     const rel = m === 'CAP_VO' ? releaseRows.find((r) => r.ticket.ticketCode === t.ticketCode) : undefined;
                     const outOrder = rel?.order;
                     const canReturn = !rel || rel.lifted;
@@ -96,7 +96,7 @@ export const DocumentReturnWorkspace: React.FC<{
                             title={rel.lifted ? 'ĐÃ NÂNG HẠ lên xe' : 'CHƯA NÂNG HẠ — Xe nâng chưa cấp cont'}
                             aria-label={rel.lifted ? 'Đã nâng hạ' : 'Chưa nâng hạ'}
                             data-testid={rel.lifted ? 'lift-done' : 'lift-wait'}
-                            className={`inline-flex h-6 w-6 items-center justify-center rounded ${rel.lifted ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-600'}`}
+                            className={`inline-flex h-6 w-6 items-center justify-center rounded-md border ${rel.lifted ? 'border-success-fg/30 bg-success-bg text-success-fg' : 'border-line-strong bg-canvas text-ink-muted'}`}
                           >
                             <Forklift className="h-4 w-4" />
                           </span>

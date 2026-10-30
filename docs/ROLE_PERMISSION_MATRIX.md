@@ -67,6 +67,7 @@ Nguồn duy nhất trong code: `src/services/permissions.ts` (`PERMISSIONS`, `ME
 | Thông tin chi tiết nhân viên (giới tính, CCCD, năm sinh, quê quán, phòng ban) — sửa | ADMIN | DEC-191 |
 | Thông tin chi tiết nhân viên — xem | ADMIN (mọi người) + chính nhân viên (của mình) | DEC-191 |
 | Danh mục chung → Database (sức khỏe database, giới hạn dung lượng) | ADMIN | DEC-189 |
+| Danh mục chung → EDI hãng tàu (chạy thử CODECO) | ADMIN | DEC-197 |
 | Gửi góp ý, xem góp ý của chính mình | Mọi người dùng đang hoạt động | DEC-120 |
 | Báo cáo → Góp ý: xem, lọc, Excel, cập nhật trạng thái + phản hồi | ADMIN (`FEEDBACK_MANAGE`) | DEC-120 |
 | Hiển thị menu | Theo `MENU_ACCESS`: mỗi vai trò chỉ thấy màn của mình. Kế toán chỉ thấy Văn phòng → Phiếu thu | DEC-045, DEC-111 |

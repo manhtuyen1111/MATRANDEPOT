@@ -5,6 +5,12 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-197 (2026-10-30): **Danh mục chung → EDI hãng tàu** (Admin) — **chạy thử EDI CODECO Maersk**: tạo file 1 giờ (Hạ vỏ, Cấp vỏ, Cấp sale, Xuất tàu — cont MSK) đúng mẫu app cũ, xem tin bị bỏ ra, tải .txt để so; **chưa gửi** Maersk. Không migration.
+- DEC-196 (2026-10-30): **Xuất tàu — Mã cảng đến** (tùy tàu, bắt buộc) cho EDI. **Migration mới `20261118000001_vessel_destination_port.sql`**.
+- DEC-195 (2026-10-30): **Mã ISO 6346** theo Size - Type ở Danh mục Container (giữ tên 20DC / 40HC trên màn hình); hồ sơ container hiện ISO. **Migration mới `20261117000001_container_iso_codes.sql`** (pgTAP 334/334 local).
+- DEC-194 (2026-10-30): **Cấp vỏ — Tác nghiệp Release for customer / Release for sale** (bắt buộc Sale code); các bước sau giống nhau. **Migration mới `20261116000001_release_purpose.sql`** (pgTAP 320/320 local).
+- OPEN-009 (2026-10-30): tài liệu **`docs/EDI_MAERSK.md`** — phân tích CODECO của app cũ, thiết kế module EDI, câu hỏi Q-046 → Q-055 (chưa code).
+- DEC-193 (2026-10-30): icon nâng hạ ở Trả chứng từ cấp vỏ dùng màu token (đã nâng: success; chưa nâng: trung tính) theo DESIGN_SYSTEM.
 - DEC-192 (2026-10-30): **Đổi container cả khi chưa nâng hạ** — Trả chứng từ cấp vỏ hiện đủ lệnh + icon nâng hạ (xanh đã / vàng chưa — vàng khóa Trả chứng từ, vẫn đổi được); đổi khi chưa nâng: cont cũ giữ chỗ, Xe nâng Chờ cấp vỏ chuyển sang cont mới (ĐỔI CONT), hư hỏng vào Chờ báo giá ngay. Icon chờ lịch sử hồ sơ quay lại đồng hồ. **Migration mới `20261115000001_gate_out_swap_before_lift.sql`** (pgTAP 312/312 local).
 - DEC-191 (2026-10-29): **User - Role dạng tab** (DANH SÁCH NHÂN VIÊN | VAI TRÒ & QUYỀN); thông tin chi tiết nhân viên (giới tính, CCCD, năm sinh, quê quán, phòng ban — độc lập vai trò), chỉ Admin + chính nhân viên xem; icon khiên → Thông tin chi tiết (chỉ xem). **Migration mới `20261114000001_staff_profile.sql`** (pgTAP 304/304 local). Sửa lỗi DEC-189 ghi đè `assert_admin()`.
 - DEC-190 (2026-10-29): Menu **chỉ mở 1 bộ phận một lúc** — mở bộ phận khác thì bộ phận trước tự thu gọn.

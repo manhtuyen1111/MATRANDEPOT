@@ -18,6 +18,8 @@ import {
   RepairTeam,
   RepairTeamMember,
   ServiceWorkOrder,
+  RELEASE_PURPOSE_LABELS,
+  ReleasePurpose,
   STAFF_GENDER_LABELS,
   StaffGender,
   SWAP_REASON_LABELS,
@@ -1112,9 +1114,16 @@ export function createReleaseOrder(
     truckNo: string;
     driverPhone: string;
     feeCatalogIds: string[];
+    releasePurpose?: ReleasePurpose; // DEC-194: mặc định Release for customer
+    saleCode?: string;
   }
 ): DepotState {
   assertPermission(state, 'RELEASE_ORDER', 'chỉ Văn phòng / Quản lý được lập lệnh CẤP VỎ.');
+  const purpose: ReleasePurpose = input.releasePurpose || 'CUSTOMER';
+  if (!RELEASE_PURPOSE_LABELS[purpose]) throw new Error('Tác nghiệp cấp vỏ không hợp lệ.');
+  const saleCode = purpose === 'SALE' ? (input.saleCode || '').trim().toUpperCase() : '';
+  if (purpose === 'SALE' && !saleCode) throw new Error('Release for sale: vui lòng nhập SALE CODE.');
+  if (saleCode.length > 40) throw new Error('SALE CODE tối đa 40 ký tự.');
   const bookingNo = input.bookingNo.trim().toUpperCase();
   if (!bookingNo) throw new Error('Vui lòng nhập SỐ BOOKING.');
   const customerName = normalizeCustomer(state, input.customerName);
@@ -1201,6 +1210,7 @@ export function createReleaseOrder(
     status: 'PAYMENT_PENDING',
     createdBy: state.currentUser.fullName,
     createdAt: nowIso(),
+    ...(purpose === 'SALE' ? { releasePurpose: 'SALE' as const, saleCode } : {}),
   };
   const bookingId = booking.id;
   next = updateContainerById(
@@ -1227,7 +1237,7 @@ export function createReleaseOrder(
     'RELEASE_ORDER_CREATED',
     'GATE_OUT',
     outCode.code,
-    `[Hồ sơ ${outCode.code}] Lập lệnh CẤP VỎ ${container.containerNo} (${container.conditionClass}) theo booking ${bookingNo}, xe ${truckNo}; chứng từ ${voucher.voucherNo}: ${amount.toLocaleString('vi-VN')}đ`,
+    `[Hồ sơ ${outCode.code}] Lập lệnh CẤP VỎ ${container.containerNo} (${container.conditionClass}) theo booking ${bookingNo}, xe ${truckNo}${purpose === 'SALE' ? `, Release for sale — Sale code ${saleCode}` : ''}; chứng từ ${voucher.voucherNo}: ${amount.toLocaleString('vi-VN')}đ`,
     container.masterDossierCode
   );
 }
@@ -1966,6 +1976,31 @@ export function addContainerTypeCatalogItem(
     clean,
     `[Admin Danh mục chung] Thêm cấu hình Container TYPE: ${clean}`
   );
+}
+
+// DEC-195: MÃ ISO 6346 theo Size + Type — Admin đặt / sửa / bỏ (mã trống = bỏ). 4 ký tự chữ hoa / số (VD 22G1, 45G1, L5G1).
+export function setContainerIsoCode(state: DepotState, input: { size: string; type: string; isoCode: string }): DepotState {
+  assertAdmin(state);
+  const size = input.size.trim().toUpperCase();
+  const type = input.type.trim().toUpperCase();
+  if (!(state.containerSizes || []).includes(size) || !(state.containerTypes || []).includes(type)) {
+    throw new Error('Vui lòng chọn SIZE và TYPE có trong Danh mục Container.');
+  }
+  const isoCode = input.isoCode.trim().toUpperCase();
+  if (isoCode && !/^[0-9A-Z]{4}$/.test(isoCode)) throw new Error('Mã ISO 6346 gồm đúng 4 ký tự chữ / số (VD: 22G1, 45G1, L5G1).');
+  const rest = (state.containerIsoCodes || []).filter((c) => !(c.size === size && c.type === type));
+  return appendAudit(
+    { ...state, containerIsoCodes: isoCode ? [...rest, { size, type, isoCode }] : rest },
+    'ADMIN_SET_ISO_CODE',
+    'CATALOG',
+    `${size}${type}`,
+    `[Admin Danh mục chung] Mã ISO 6346 ${size}${type}: ${isoCode || '(bỏ)'}`
+  );
+}
+
+// Mã ISO 6346 của 1 cont: mã riêng của cont (nếu có) → theo Danh mục Size + Type → trống
+export function containerIsoCode(state: Pick<DepotState, 'containerIsoCodes'>, c: { size: string; type: string; isoCode?: string }): string {
+  return c.isoCode || (state.containerIsoCodes || []).find((x) => x.size === c.size && x.type === c.type)?.isoCode || '';
 }
 
 // DEC-166: tích / bỏ hãng tàu ƯU TIÊN — chỉ 1 hãng; tích hãng khác thì hãng cũ tự bỏ

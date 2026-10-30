@@ -2,13 +2,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { ChangePasswordScreen, LoginScreen } from '../features/auth/LoginScreen';
 import { changePassword, loadStaffSession, signIn, signOut, type StaffSession } from '../services/remote/session';
-import { createWorkingSync, loadDossierState, loadRepairOutputState, loadReportAll, loadReportPage, loadWorkingState, type WorkingSync } from '../services/remote/loadWorking';
+import { createWorkingSync, loadDossierState, loadEdiState, loadRepairOutputState, loadReportAll, loadReportPage, loadWorkingState, type WorkingSync } from '../services/remote/loadWorking';
 import { clearIdMap, friendlyError, isOffline, setRemoteSink, takeCatalogTouched, type RemoteOp } from '../services/remote/sync';
 import { setReportLoader } from '../services/remote/reportSource';
 import { setPhotoClient } from '../services/remote/photoLink';
 import { setDossierLoader } from '../services/remote/dossierSource';
 import { setReportPager } from '../services/remote/reportPaging';
 import { setDbHealthClient } from '../services/remote/dbHealthSource';
+import { setEdiLoader } from '../services/remote/ediSource';
 import type { DepotState } from '../services/depotStore';
 import { App } from './App';
 import { AppLoading, SavingIndicator, StatusPill } from '../components/LoadingScreens';
@@ -125,6 +126,7 @@ export const RemoteApp: React.FC = () => {
   useEffect(() => {
     setPhotoClient(client);
     setDbHealthClient(client); // DEC-189: sức khỏe database (Admin)
+    setEdiLoader((state, range) => loadEdiState(client, state, range)); // DEC-197: EDI CODECO chạy thử
     setDossierLoader((state, code) => loadDossierState(client, state, code));
     // Báo cáo Hạ vỏ / Cấp vỏ / Sửa chữa: database trả từng trang (DEC-178 bước 4b)
     setReportPager({
@@ -134,6 +136,7 @@ export const RemoteApp: React.FC = () => {
     return () => {
       setPhotoClient(null);
       setDbHealthClient(null);
+      setEdiLoader(null);
       setDossierLoader(null);
       setReportPager(null);
     };

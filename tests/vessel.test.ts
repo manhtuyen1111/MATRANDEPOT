@@ -8,6 +8,7 @@ import {
   inspectVesselImportItem,
   getVesselRoute,
   removeVesselListItem,
+  updateVesselList,
   vesselQrCode,
 } from '../src/services/vessel';
 import { queryVesselReport, vesselReportSheet } from '../src/services/reports';
@@ -97,7 +98,7 @@ describe('DEC-069: NHẬP TÀU', () => {
 });
 
 describe('DEC-069: XUẤT TÀU', () => {
-  const base = { mode: 'XUAT_TAU' as const, vesselName: 'Wan Hai 305', plannedAt: PLANNED, truckNos: ['15C-333.33'] };
+  const base = { mode: 'XUAT_TAU' as const, destinationPort: 'VNHPHTM', vesselName: 'Wan Hai 305', plannedAt: PLANNED, truckNos: ['15C-333.33'] };
 
   it('Lập từ tồn vỏ (XT-), chặn cont khóa, gán xe → OUT, chặn cấp vỏ khi đang trong danh sách, bỏ cont, duyệt', () => {
     const s0 = as(createInitialState(), 'usr-office');
@@ -181,7 +182,7 @@ describe('DEC-070: Văn phòng sửa / thêm cont / xóa danh sách khi chưa du
     const v = await import('../src/services/vessel');
     const office = as(createInitialState(), 'usr-office');
     const yard = office.containers.filter((c) => c.status === 'IN_YARD').slice(0, 2);
-    let { state: s, listId } = v.createVesselList(office, { mode: 'XUAT_TAU', vesselName: 'Tàu X', plannedAt: PLANNED, truckNos: ['15C-9'], exportContainerIds: [yard[0].id] });
+    let { state: s, listId } = v.createVesselList(office, { mode: 'XUAT_TAU', destinationPort: 'VNHPHTM', vesselName: 'Tàu X', plannedAt: PLANNED, truckNos: ['15C-9'], exportContainerIds: [yard[0].id] });
     s = v.addVesselListItems(s, { listId, mode: 'XUAT_TAU', exportContainerIds: [yard[1].id] });
     expect(s.vesselLists[0].items.map((i) => i.dossierCode)).toEqual([expect.stringMatching(/-001$/), expect.stringMatching(/-002$/)]);
     expect(() => v.addVesselListItems(s, { listId, mode: 'XUAT_TAU', exportContainerIds: [yard[1].id] })).toThrow(/Xuất tàu khác/);
@@ -192,7 +193,7 @@ describe('DEC-070: Văn phòng sửa / thêm cont / xóa danh sách khi chưa du
 
     for (const i of s.vesselLists[0].items) s = executeVesselExport(as(s, 'usr-forklift'), { listId, itemId: i.id, truckNo: '15C-9' });
     s = approveVesselList(as(s, 'usr-office'), { listId, mode: 'XUAT_TAU' });
-    expect(() => v.updateVesselList(s, { listId, mode: 'XUAT_TAU', vesselName: 'Y', plannedAt: PLANNED, truckNos: ['1'] })).toThrow(/đã được duyệt/);
+    expect(() => v.updateVesselList(s, { listId, mode: 'XUAT_TAU', destinationPort: 'VNHPHTM', vesselName: 'Y', plannedAt: PLANNED, truckNos: ['1'] })).toThrow(/đã được duyệt/);
     expect(() => v.deleteVesselList(s, { listId, mode: 'XUAT_TAU' })).toThrow(/đã được duyệt/);
   });
 });
@@ -247,7 +248,7 @@ describe('DEC-083: tác nghiệp hiện tại của cont (cho Vệ sinh / Xe nâ
     const ntCont = s.containers.find((c) => c.containerNo === 'TCLU3333333')!;
     expect(containerOperation(s, ntCont)).toMatchObject({ code: 'NHAP_TAU', vesselName: 'TÀU VÀO', dossierCode: ntCont.masterDossierCode });
 
-    const xt = createVesselList(as(s, 'usr-office'), { mode: 'XUAT_TAU', vesselName: 'Tàu Ra', plannedAt: PLANNED, truckNos: ['15C-2'], exportContainerIds: [yard[0].id] });
+    const xt = createVesselList(as(s, 'usr-office'), { mode: 'XUAT_TAU', destinationPort: 'VNHPHTM', vesselName: 'Tàu Ra', plannedAt: PLANNED, truckNos: ['15C-2'], exportContainerIds: [yard[0].id] });
     const xtCont = xt.state.containers.find((c) => c.id === yard[0].id)!;
     expect(containerOperation(xt.state, xtCont)).toMatchObject({ code: 'XUAT_TAU', vesselName: 'TÀU RA', dossierCode: xt.state.vesselLists[0].items[0].dossierCode });
 
@@ -269,7 +270,7 @@ describe('DEC-131: duyệt khi chưa đủ — gạch cont không kịp, bắt b
     const { updateContainerOfficeNote } = await import('../src/services/depotOperations');
     const s0 = as(createInitialState(), 'usr-office');
     const yard = s0.containers.filter((c) => c.status === 'IN_YARD' && !c.isOnHold).slice(0, 2);
-    let { state: s, listId } = createVesselList(s0, { mode: 'XUAT_TAU', vesselName: 'Wan Hai 305', plannedAt: PLANNED, truckNos: ['15C-333.33'], exportContainerIds: yard.map((c) => c.id) });
+    let { state: s, listId } = createVesselList(s0, { mode: 'XUAT_TAU', destinationPort: 'VNHPHTM', vesselName: 'Wan Hai 305', plannedAt: PLANNED, truckNos: ['15C-333.33'], exportContainerIds: yard.map((c) => c.id) });
     expect(() => updateContainerOfficeNote(s, { containerId: yard[0].id, officeNote: 'Sửa tay' })).toThrow(/Xuất tàu quản lý/);
     const items = s.vesselLists[0].items;
     s = executeVesselExport(as(s, 'usr-forklift'), { listId, itemId: items[0].id, truckNo: '15C-333.33' });
@@ -319,7 +320,7 @@ describe('DEC-163: phiếu EEIR Nhập tàu / Xuất tàu có mã QR + LỘ TRÌ
     const s0 = createInitialState();
     const inYard = s0.containers.find((c) => c.status === 'IN_YARD' && !c.isOnHold)!;
     let { state: s, listId } = createVesselList(as(s0, 'usr-office'), {
-      mode: 'XUAT_TAU', vesselName: 'Route X', plannedAt: PLANNED, truckNos: ['15C-7'], exportContainerIds: [inYard.id],
+      mode: 'XUAT_TAU', destinationPort: 'VNHPHTM', vesselName: 'Route X', plannedAt: PLANNED, truckNos: ['15C-7'], exportContainerIds: [inYard.id],
     });
     const item = () => s.vesselLists[0].items[0];
     expect(vesselQrCode(item())).toBe(`QR-${item().dossierCode}`);
@@ -336,7 +337,7 @@ describe('DEC-165: danh sách tàu ở Văn phòng + báo cáo chế độ TÊN 
     const { vesselListStatusLabel } = await import('../src/services/vessel');
     const s0 = as(createInitialState(), 'usr-office');
     const yard = s0.containers.filter((c) => c.status === 'IN_YARD' && !c.isOnHold).slice(0, 2);
-    let { state: s, listId } = createVesselList(s0, { mode: 'XUAT_TAU', vesselName: 'Wan Hai 305', plannedAt: PLANNED, truckNos: ['15C-333.33'], exportContainerIds: yard.map((c) => c.id) });
+    let { state: s, listId } = createVesselList(s0, { mode: 'XUAT_TAU', destinationPort: 'VNHPHTM', vesselName: 'Wan Hai 305', plannedAt: PLANNED, truckNos: ['15C-333.33'], exportContainerIds: yard.map((c) => c.id) });
     expect(vesselListStatusLabel(s.vesselLists[0])).toBe('ĐANG THỰC HIỆN');
     s = executeVesselExport(as(s, 'usr-forklift'), { listId, itemId: s.vesselLists[0].items[0].id, truckNo: '15C-333.33' });
     expect(() => queryVesselSummaryReport(s, 'XUAT_TAU', { dateFrom: '', dateTo: '' })).toThrow(/Tra cứu|trước khi tra cứu/);
@@ -354,3 +355,21 @@ describe('DEC-165: danh sách tàu ở Văn phòng + báo cáo chế độ TÊN 
     expect(queryVesselSummaryReport(s, 'NHAP_TAU', { dateFrom: '', dateTo: '', vesselName: 'wan' }).total).toBe(0);
   });
 });
+
+// DEC-196: Xuất tàu bắt buộc MÃ CẢNG ĐẾN (tùy tàu) — gửi EDI CODECO; Nhập tàu không dùng
+describe('DEC-196: mã cảng đến Xuất tàu', () => {
+  it('bắt buộc, chuẩn hóa chữ hoa, sửa được; Nhập tàu bỏ qua', () => {
+    const s0 = as(createInitialState(), 'usr-office');
+    const yard = s0.containers.filter((c) => c.status === 'IN_YARD').slice(0, 1);
+    const base = { mode: 'XUAT_TAU' as const, vesselName: 'TAU PORT', plannedAt: PLANNED, truckNos: ['15C-1'], exportContainerIds: yard.map((c) => c.id) };
+    expect(() => createVesselList(s0, base)).toThrow(/MÃ CẢNG ĐẾN/);
+    expect(() => createVesselList(s0, { ...base, destinationPort: 'VN HP' })).toThrow(/MÃ CẢNG ĐẾN/);
+    const { state: s, listId } = createVesselList(s0, { ...base, destinationPort: ' vnhphtm ' });
+    expect(s.vesselLists.find((l) => l.id === listId)!.destinationPort).toBe('VNHPHTM');
+    const s2 = updateVesselList(s, { listId, mode: 'XUAT_TAU', vesselName: 'TAU PORT', plannedAt: PLANNED, truckNos: ['15C-1'], destinationPort: 'VNCLITM' });
+    expect(s2.vesselLists.find((l) => l.id === listId)!.destinationPort).toBe('VNCLITM');
+    const nt = createVesselList(s0, { mode: 'NHAP_TAU', vesselName: 'TAU NT', plannedAt: PLANNED, truckNos: ['15C-2'], shippingLineCode: s0.partners.find((p) => p.isShippingLine)!.code, destinationPort: 'VNHPHTM', importItems: [{ containerNo: 'TCLU7654321', size: '20', type: 'DC' }] });
+    expect(nt.state.vesselLists.find((l) => l.id === nt.listId)!.destinationPort).toBeUndefined();
+  });
+});
+

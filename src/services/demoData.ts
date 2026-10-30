@@ -274,7 +274,7 @@ function bulkData(state: DepotState): DepotState {
   const exportNos = av.slice(32, 44).filter((no) => s.containers.some((x) => x.containerNo === no && x.status === 'IN_YARD' && !x.isOnHold));
   if (exportNos.length) {
     const xt = createVesselList(as(s, 'usr-office'), {
-      mode: 'XUAT_TAU', vesselName: 'MSK DELTA', plannedAt: planned, truckNos: ['15C-901.01', '15C-902.02'],
+      mode: 'XUAT_TAU', destinationPort: 'VNHPHTM', vesselName: 'MSK DELTA', plannedAt: planned, truckNos: ['15C-901.01', '15C-902.02'],
       exportContainerIds: exportNos.map((no) => s.containers.find((c) => c.containerNo === no && c.status === 'IN_YARD')!.id),
     });
     s = xt.state;
@@ -384,7 +384,7 @@ export function createDemoState(): DepotState {
 
   // ── XUẤT TÀU: 1 cont đã xuất, 1 cont chờ xuất
   const xt = createVesselList(as(s, 'usr-office'), {
-    mode: 'XUAT_TAU', vesselName: 'MAERSK SEMARANG', plannedAt: planned, truckNos: ['15C-501.01'],
+    mode: 'XUAT_TAU', destinationPort: 'VNHPHTM', vesselName: 'MAERSK SEMARANG', plannedAt: planned, truckNos: ['15C-501.01'],
     exportContainerIds: ['MSKU3000011', 'MSKU3000022'].map((no) => s.containers.find((c) => c.containerNo === no && c.status === 'IN_YARD')!.id),
   });
   s = xt.state;

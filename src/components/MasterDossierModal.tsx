@@ -3,6 +3,7 @@ import { CheckCircle2, Clock, Eye, EyeOff, FileDown, FileText, Printer, ReceiptT
 import { ContainerStatus, K80InternalTicket, VesselList, VesselListItem } from '../types/depot';
 import { DepotState } from '../services/depotStore';
 import { formatLocation } from '../services/core';
+import { containerIsoCode } from '../services/depotOperations';
 import { documentPackOf } from "../services/driverRoute";
 import { recordReceiptPrint } from "../services/api";
 import { formatDateTime } from "../services/datetime";
@@ -217,6 +218,8 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
   const cleaningItems = container?.cleaningItems || gateIn?.cleaningItems || [];
   const activeOut = outOrders.find((o) => o.status !== 'CANCELLED' && o.masterDossierCode === visitCode); // DEC-185: bỏ lệnh đã đổi sang cont khác
   const history = dossierHistory(state, dossier);
+  // DEC-195: mã ISO 6346 (mã riêng của cont → theo Danh mục Size + Type)
+  const isoCode = containerIsoCode(state, { size: container?.size || gateIn?.size || '', type: container?.type || gateIn?.type || '', isoCode: container?.isoCode });
 
   // Nội dung hồ sơ — dùng chung cho màn hình và bản in A4 (bản in mở toàn bộ chi tiết)
   const renderContent = (printMode: boolean) => (
@@ -241,7 +244,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
             </button>
           </div>
           <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-white/20 pt-3 text-xs sm:grid-cols-4 [&_dd]:text-white [&_dt]:text-slate-300">
-            <Field label="Size / Type" value={`${container?.size || gateIn?.size || '-'} / ${container?.type || gateIn?.type || '-'}`} />
+            <Field label="Size / Type (ISO)" value={`${container?.size || gateIn?.size || '-'} / ${container?.type || gateIn?.type || '-'}${isoCode ? ` (${isoCode})` : ''}`} />
             <Field label="Hãng tàu" value={container?.shippingLineCode || gateIn?.shippingLineCode} />
             <Field label="Trạng thái • Đóng hàng" value={`${container?.conditionClass || gateIn?.conditionClass || '-'} • ${container?.stuffingClass || gateIn?.stuffingClass || '-'}`} />
             <Field label="AGE" value={container?.manufactureYear || gateIn?.manufactureYear} />

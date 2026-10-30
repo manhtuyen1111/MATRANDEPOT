@@ -2138,3 +2138,55 @@ describe('DEC-192: đổi container trước khi nâng hạ', () => {
     expect(s.workOrders.find((w) => w.masterDossierCode === old.masterDossierCode && w.category === 'INSPECTION' && w.workStatus === 'OPEN')?.items).toEqual(['Móp vách']);
   });
 });
+
+// DEC-194: Văn phòng → Cấp vỏ: Tác nghiệp Release for customer (mặc định) / Release for sale (bắt buộc Sale code); các bước sau giống nhau
+describe('DEC-194: cấp vỏ Release for sale', () => {
+  const office = as(createInitialState(), 'usr-office');
+  const base = { bookingNo: 'BK-SALE-1', customerName: VIETLOG, containerNo: 'MSKU4089123', truckNo: '15H-1', driverPhone: '0912345678', feeCatalogIds: [FEE_LOLO_40HC_MSK] };
+
+  it('mặc định Release for customer (không lưu sale code)', () => {
+    const s = createReleaseOrder(office, { ...base, saleCode: 'BỎ QUA' });
+    expect(s.gateOutOrders[0].releasePurpose).toBeUndefined();
+    expect(s.gateOutOrders[0].saleCode).toBeUndefined();
+  });
+
+  it('Release for sale: bắt buộc Sale code; lưu viết hoa; thanh toán → Xe nâng như thường; hồ sơ ghi rõ', () => {
+    expect(() => createReleaseOrder(office, { ...base, releasePurpose: 'SALE', saleCode: '  ' })).toThrow(/SALE CODE/);
+    expect(() => createReleaseOrder(office, { ...base, releasePurpose: 'SALE', saleCode: 'X'.repeat(41) })).toThrow(/40 ký tự/);
+    let s = createReleaseOrder(office, { ...base, releasePurpose: 'SALE', saleCode: 'sl-2026-001' });
+    const o = s.gateOutOrders[0];
+    expect(o).toMatchObject({ releasePurpose: 'SALE', saleCode: 'SL-2026-001', gateOutType: 'EMPTY_RELEASE' });
+    s = confirmReleasePayment(s, { gateOutOrderId: o.id, paymentCategory: 'TTTT', directMethod: 'CASH' });
+    expect(s.gateOutOrders.find((x) => x.id === o.id)!.status).toBe('PENDING_FORKLIFT');
+    s = executeGateOut(as(s, 'usr-forklift'), { containerNo: 'MSKU4089123' });
+    expect(s.gateOutOrders.find((x) => x.id === o.id)!.status).toBe('GATE_OUT_OK');
+    const row = dossierHistory(s, resolveDossier(s, o.gateOutCode)!).rows.find((r) => r.operation === 'Văn phòng — Cấp vỏ')!;
+    expect(row.detail).toContain('Release for sale');
+    expect(row.detail).toContain('Sale code SL-2026-001');
+  });
+});
+
+// DEC-195: mã ISO 6346 theo Size + Type (Danh mục Container) — màn hình vẫn 20DC / 40HC…
+import { containerIsoCode, setContainerIsoCode } from '../src/services/depotOperations';
+
+describe('DEC-195: mã ISO 6346', () => {
+  const admin = as(createInitialState(), 'usr-admin');
+  it('mặc định có mã thường dùng; cont có mã riêng thì ưu tiên mã riêng', () => {
+    expect(containerIsoCode(admin, { size: '20', type: 'DC' })).toBe('22G1');
+    expect(containerIsoCode(admin, { size: '40', type: 'HC' })).toBe('45G1');
+    expect(containerIsoCode(admin, { size: '45', type: 'HC' })).toBe('L5G1');
+    expect(containerIsoCode(admin, { size: '40', type: 'HC', isoCode: '4510' })).toBe('4510');
+    expect(containerIsoCode(admin, { size: '45', type: 'DC' })).toBe('');
+  });
+  it('Admin đặt / sửa / bỏ mã; từ chối sai quyền, sai mã, size / type ngoài Danh mục', () => {
+    let s = setContainerIsoCode(admin, { size: '40', type: 'hc', isoCode: '45g1 ' });
+    s = setContainerIsoCode(s, { size: '45', type: 'DC', isoCode: 'L2G1' });
+    expect(containerIsoCode(s, { size: '45', type: 'DC' })).toBe('L2G1');
+    s = setContainerIsoCode(s, { size: '45', type: 'DC', isoCode: '' });
+    expect(containerIsoCode(s, { size: '45', type: 'DC' })).toBe('');
+    expect(() => setContainerIsoCode(as(admin, 'usr-office'), { size: '40', type: 'HC', isoCode: '45G1' })).toThrow(/ADMIN/);
+    expect(() => setContainerIsoCode(admin, { size: '40', type: 'HC', isoCode: '45G' })).toThrow(/4 ký tự/);
+    expect(() => setContainerIsoCode(admin, { size: '53', type: 'HC', isoCode: '45G1' })).toThrow(/Danh mục Container/);
+  });
+});
+

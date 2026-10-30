@@ -169,6 +169,14 @@ function buildExportItems(state: DepotState, containerIds: string[], vesselName:
   return { state: next, items };
 }
 
+// DEC-196: Xuất tàu bắt buộc MÃ CẢNG ĐẾN (tùy tàu) — 5–10 chữ hoa / số (VD VNHPHTM); Nhập tàu không dùng
+function cleanDestinationPort(mode: VesselMode, raw?: string): string | undefined {
+  if (mode !== 'XUAT_TAU') return undefined;
+  const port = (raw || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{5,10}$/.test(port)) throw new Error('Vui lòng nhập MÃ CẢNG ĐẾN 5–10 ký tự chữ / số (VD: VNHPHTM).');
+  return port;
+}
+
 export function createVesselList(
   state: DepotState,
   input: {
@@ -177,12 +185,14 @@ export function createVesselList(
     plannedAt: string;
     truckNos: string[];
     shippingLineCode?: string;
+    destinationPort?: string; // DEC-196: bắt buộc khi XUẤT TÀU
     importItems?: ImportRow[];
     exportContainerIds?: string[];
   }
 ): { state: DepotState; listId: string } {
   assertPermission(state, 'VESSEL_LIST_MANAGE', `chỉ Văn phòng / Quản lý được lập danh sách ${label(input.mode)}.`);
   const { vesselName, truckNos } = validateHeader(input.mode, input);
+  const destinationPort = cleanDestinationPort(input.mode, input.destinationPort);
   const listId = newId('vsl');
   let next = state;
   let items: VesselListItem[];
@@ -194,7 +204,7 @@ export function createVesselList(
     ({ state: next, items } = buildExportItems(state, input.exportContainerIds || [], vesselName));
   }
   const list: VesselList = {
-    id: listId, mode: input.mode, vesselName, shippingLineCode, plannedAt: input.plannedAt, truckNos, items,
+    id: listId, mode: input.mode, vesselName, shippingLineCode, destinationPort, plannedAt: input.plannedAt, truckNos, items,
     status: 'OPEN', createdBy: state.currentUser.fullName, createdAt: nowIso(),
   };
   return {
@@ -212,11 +222,12 @@ export function createVesselList(
 // Sửa thông tin chung: tên tàu, thời gian, danh sách số xe; hãng tàu (NHẬP TÀU) chỉ đổi được khi chưa giám định cont nào
 export function updateVesselList(
   state: DepotState,
-  input: { listId: string; mode: VesselMode; vesselName: string; plannedAt: string; truckNos: string[]; shippingLineCode?: string }
+  input: { listId: string; mode: VesselMode; vesselName: string; plannedAt: string; truckNos: string[]; shippingLineCode?: string; destinationPort?: string }
 ): DepotState {
   assertPermission(state, 'VESSEL_LIST_MANAGE', `chỉ Văn phòng / Quản lý được sửa danh sách ${label(input.mode)}.`);
   const list = findList(state, input.listId, input.mode);
   const { vesselName, truckNos } = validateHeader(input.mode, input);
+  const destinationPort = cleanDestinationPort(input.mode, input.destinationPort);
   let shippingLineCode = list.shippingLineCode;
   if (input.mode === 'NHAP_TAU') {
     const code = assertShippingLine(state, input.shippingLineCode);
@@ -230,11 +241,11 @@ export function updateVesselList(
     for (const i of list.items) if (i.status === 'PENDING' && i.containerId) next = vesselLock(next, i.containerId, vesselName); // DEC-131
   }
   return appendAudit(
-    { ...next, vesselLists: next.vesselLists.map((l) => (l.id === list.id ? { ...l, vesselName, plannedAt: input.plannedAt, truckNos, shippingLineCode } : l)) },
+    { ...next, vesselLists: next.vesselLists.map((l) => (l.id === list.id ? { ...l, vesselName, plannedAt: input.plannedAt, truckNos, shippingLineCode, destinationPort } : l)) },
     'VESSEL_UPDATE_LIST',
     'VESSEL',
     vesselName,
-    `Sửa danh sách ${label(list.mode)}: tàu ${list.vesselName} → ${vesselName}, ${formatDateTime(input.plannedAt)}, xe ${truckNos.join(', ')}${shippingLineCode ? `, hãng ${shippingLineCode}` : ''}`
+    `Sửa danh sách ${label(list.mode)}: tàu ${list.vesselName} → ${vesselName}, ${formatDateTime(input.plannedAt)}, xe ${truckNos.join(', ')}${shippingLineCode ? `, hãng ${shippingLineCode}` : ''}${destinationPort ? `, cảng đến ${destinationPort}` : ''}`
   );
 }
 

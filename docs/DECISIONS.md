@@ -1527,13 +1527,77 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-197 — EDI CODECO Maersk: chạy thử (chưa gửi)
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng đồng ý làm bản chạy thử trước). Thuộc OPEN-009.
+- Menu **Danh mục chung → EDI hãng tàu** (chỉ Admin — Q-054 chờ chốt có cho Văn phòng không).
+  - Chọn **giờ file HH:00** (nút giờ trước / sau) + **bộ mã Size / Type** (mã app cũ / ISO 6346 — DEC-195) → **Tạo file**.
+  - Hiện: tóm tắt số tin theo tác nghiệp, **tin bị bỏ ra + lý do** (thiếu dữ liệu), danh sách tin (1 dòng / tin: Mã hồ sơ | Số container | Size / Type | Mã EDI | Tác nghiệp | Giờ thực tế | RFF+BN | Trong file), **nội dung file**, nút **Tải file .txt** để so với file app cũ.
+  - **Chưa gửi Maersk** (kênh gửi Q-053, tin hủy / sửa Q-052 chưa có).
+- **File giờ HH:00** gồm các lượt từ (HH-1):00 đến trước HH:00 (giống app cũ); tên file / mã tham chiếu `yyyyMMddHHmm`; giờ ghi theo giờ Việt Nam.
+- **Lượt đưa vào (chỉ cont hãng MSK), dữ liệu thực tế:**
+  - **Hạ vỏ** (mã HV-) — giờ GATE IN OK (`gateInAt`); `RFF+BN:GRADE` + hạng (DAMAGE → D, còn lại = Phân loại M / K / E); `DAM+1+2` (DAMAGE) / `+6`. Cont W-SURVEY chưa giám định → bỏ ra.
+  - **Cấp vỏ theo booking** — giờ Xe nâng cấp (`confirmedAt`); `EQD …++2+4`, `RFF+BN:<booking>`.
+  - **Cấp sale** (DEC-194) — `EQD …++8+4`, `RFF+BN:<Sale code>`.
+  - **Xuất tàu** (DEC-196) — giờ thực tế từng cont (`doneAt`); `EQD …++8+4`, `RFF+BN:<mã cảng đến>`.
+  - Chưa đưa: **Nhập tàu** (Q-050), **tin hủy / sửa** khi đổi container sau khi đã lên xe (Q-052).
+- Sắp theo giờ, cùng giờ thì gate-in trước gate-out (app cũ không sắp theo giờ — so khớp theo từng cont, không theo thứ tự dòng).
+- Kiểm chứng: test **dựng lại đúng từng ký tự** file mẫu app cũ `202610290500.txt` (`tests/edi-codeco.test.ts`).
+- Code:
+  - `src/services/edi/codeco.ts` (`MAERSK_CODECO`, `codecoEvents`, `buildCodecoFile`);
+  - `src/services/remote/ediSource.ts` + `loadEdiState` (database: tải lượt ra / vào của giờ đó);
+  - `src/features/catalog/EdiWorkspace.tsx`.
+- Không cần migration.
+
+### DEC-196 — Xuất tàu: Mã cảng đến (tùy tàu)
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-064).
+- Văn phòng lập / sửa danh sách **Xuất tàu** bắt buộc nhập **Mã cảng đến** (5–10 chữ hoa / số, VD `VNHPHTM`) — **tùy tàu**. Nhập tàu không dùng.
+- Dùng cho EDI CODECO gate-out xuất tàu: `RFF+BN:<mã cảng đến>` (`docs/EDI_MAERSK.md` 3.4).
+- Giờ gửi EDI cho cont xuất tàu = **giờ thực tế từng cont ra bãi** (Xe nâng xuất — `doneAt`), không lấy giờ cả lô như app cũ (người dùng chọn — Q-051 phần xuất tàu).
+- Code: `cleanDestinationPort`, `VesselList.destinationPort` (`vessel.ts`). Database: migration `20261118000001_vessel_destination_port.sql` (cột `vessel_lists.destination_port`, hàm `vessel_destination_port`, `create_vessel_list` / `update_vessel_list` thêm `p_destination_port`), pgTAP `0020`.
+
+### DEC-195 — Mã ISO 6346 cho Size / Type (giữ tên 20DC, 40HC…)
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng chọn phương án A).
+- **Màn hình, phiếu in, biểu giá giữ cách gọi 20DC / 40DC / 40HC / 45HC…** — không bắt nhân viên học mã mới.
+- **Danh mục Container** thêm khung **Mã ISO 6346 theo Size - Type** (Admin sửa; mã trống = bỏ). Mặc định:
+  - 20DC 22G1 • 40DC 42G1 • 40HC 45G1 • 45HC L5G1;
+  - 20RF 22R1 • 40RF 45R1 • 20OT 22U1 • 40OT 42U1 • 20FR 22P1 • 40FR 42P1.
+- **Mỗi cont có thể có mã riêng** (`isoCode`, VD lấy từ Maersk eEIR API khi Giám định — làm ở bước eEIR); không có thì theo Danh mục (`containerIsoCode`).
+- Hồ sơ container hiện **Size / Type (ISO)**.
+- **EDI:** công tắc "Bộ mã gửi" theo hãng — **mã app cũ** (2200 / 4200 / 4500 — chạy song song để so khớp) hoặc **ISO 6346** (khi Maersk xác nhận). Làm ở bước EDI.
+- Lý do: app cũ gửi mã không đúng chuẩn (40DC và 40HC cùng `4200`, 45HC `4500`); Maersk eEIR API dùng ISO 6346 (`equipmentISOCode`).
+- Database: migration `20261117000001_container_iso_codes.sql` (bảng `container_iso_codes`, cột `containers.iso_code`, RPC `catalog_set_iso_code`), pgTAP `0019`.
+
+### DEC-194 — Cấp vỏ: Tác nghiệp Release for customer / Release for sale (Sale code)
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng).
+- Văn phòng → Cấp vỏ, khối 1 có ô **Tác nghiệp**: **Release for customer** (mặc định) / **Release for sale** (cấp sale).
+- Chọn Release for sale → bắt buộc nhập **Sale code** (viết hoa, tối đa 40 ký tự). Release for customer không lưu sale code.
+- **Các bước sau giống nhau:** thanh toán, Xe nâng cấp vỏ, trả chứng từ, đổi container. Loại cấp vỏ (`gateOutType`) giữ `EMPTY_RELEASE` → báo cáo Cấp vỏ vẫn gồm cấp sale.
+- Tác nghiệp + Sale code ghi ở lệnh cấp (`releasePurpose`, `saleCode`), hiện ở Lịch sử hồ sơ (dòng Văn phòng — Cấp vỏ) và nhật ký. Chuẩn bị cho EDI hãng tàu (`docs/EDI_MAERSK.md`, OPEN-009).
+- Tác nghiệp + Sale code giữ lại khi lập nhiều cont cùng booking (như số booking / khách hàng).
+- Database: migration `20261116000001_release_purpose.sql`:
+  - cột `gate_out_orders.release_purpose`, `sale_code` + ràng buộc SALE phải có sale code;
+  - `create_release_order` thêm `p_purpose`, `p_sale_code` (có mặc định — gọi kiểu cũ vẫn chạy);
+  - pgTAP `0018` (8 kiểm tra).
+
+### DEC-193 — Icon nâng hạ (Trả chứng từ cấp vỏ) dùng màu token
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng). Sửa DEC-192 phần màu.
+- Icon xe nâng ở Văn phòng → Trả chứng từ → Đang chờ TRẢ CHỨNG TỪ CẤP VỎ dùng màu token của DESIGN_SYSTEM, không dùng xanh / vàng Tailwind:
+  - **Đã nâng hạ:** `bg-success-bg text-success-fg` (viền `success-fg/30`).
+  - **Chưa nâng hạ:** trung tính `bg-canvas text-ink-muted border-line-strong` (cùng kiểu nút phụ).
+  - Khung `rounded-md border`, 24px.
+
 ### DEC-192 — Đổi container cả khi CHƯA NÂNG HẠ; Trả chứng từ cấp vỏ hiện đủ lệnh + icon nâng hạ
 
 - Trạng thái: CONFIRMED (2026-10-30, người dùng — yêu cầu + trả lời câu hỏi). Bổ sung DEC-185 / 186; sửa DEC-188 (icon chờ).
 - Tình huống mới: lái xe ra kiểm tra cont, yêu cầu đổi **trước khi Xe nâng nâng hạ lên xe**. Trường hợp đổi khi đã lên xe giữ nguyên như DEC-185 / 186.
 - **Văn phòng → Trả chứng từ, cột CẤP VỎ hiện đủ** các lệnh đã thu tiền, chưa trả chứng từ (trước đây chỉ hiện lệnh đã nâng hạ). Mỗi dòng có **icon nâng hạ**:
-  - **xanh** = ĐÃ NÂNG HẠ lên xe;
-  - **vàng** = CHƯA NÂNG HẠ → nút **Trả chứng từ khóa**, nhưng **vẫn ĐỔI CONTAINER được**.
+  - **xanh** (token success — DEC-193) = ĐÃ NÂNG HẠ lên xe;
+  - **xám trung tính** (DEC-193; ban đầu vàng) = CHƯA NÂNG HẠ → nút **Trả chứng từ khóa**, nhưng **vẫn ĐỔI CONTAINER được**.
 - **Đổi khi chưa nâng hạ (icon vàng):**
   - lệnh CV- (giữ mã, chứng từ, phiếu thu, QR) chuyển sang cont mới và **vẫn ở Xe nâng — Chờ cấp vỏ**, mang nhãn **ĐỔI CONT**;
   - cont cũ **giữ nguyên vị trí**, bỏ khóa phân bổ, tồn bãi; không có việc Xe nâng hạ lại.
@@ -1906,6 +1970,12 @@ Quy ước trạng thái:
 - Trạng thái: OPEN
 - Cần xác nhận: (1) Danh sách vai trò mới không có KẾ TOÁN — ai tạo phiếu thu TTT và xác nhận tiền mặt (hiện là Kế toán)? Gộp vào Văn phòng hay giữ Kế toán? (2) QC SỬA CHỮA làm gì trong quy trình (nghiệm thu sau sửa? có được trả lại sửa lại?) và vào màn nào? (3) Bỏ hẳn GATE_STAFF / YARD_STAFF?
 
+### OPEN-009 — EDI hãng tàu MAERSK (CODECO)
+
+- Trạng thái: OPEN (2026-10-30) — đang thu thập dữ liệu từ app cũ ERPVINASHIP.
+- Mục tiêu: tự gửi CODECO gate-in / gate-out (Hạ vỏ, Cấp vỏ — kể cả Release for sale, Xuất tàu…) cho Maersk mỗi giờ, qua SFTP hoặc Gmail; màn theo dõi + cảnh báo.
+- Phân tích file mẫu + thiết kế đề xuất: `docs/EDI_MAERSK.md`. Cần trả lời Q-046 → Q-055 trước khi chốt DEC và viết code.
+
 ### OPEN-008 — Hủy lệnh cấp đã thanh toán / hoàn tiền
 
 - Trạng thái: OPEN
@@ -1931,6 +2001,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-192 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-197 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

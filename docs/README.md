@@ -27,3 +27,4 @@ Dành cho AI agent (Claude Code, Antigravity). Người giao việc xem `devs/RE
 | `PROJECT_STRUCTURE.md` | Cấu trúc thư mục (mục 5 = thực tế) |
 | `DEVELOPMENT_RULES.md`, `ENVIRONMENT_SETUP.md` | Quy tắc phát triển, môi trường |
 | `CHANGELOG.md` | Lịch sử thay đổi |
+| `EDI_MAERSK.md` | EDI hãng tàu Maersk (CODECO): phân tích file mẫu app cũ, thiết kế, theo dõi, triển khai — OPEN-009, Q-046 → Q-055 |

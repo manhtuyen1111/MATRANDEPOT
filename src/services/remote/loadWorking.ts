@@ -221,6 +221,26 @@ export async function loadDossierState(client: SupabaseClient, base: DepotState,
   return buildState(base, raw);
 }
 
+// EDI CODECO chạy thử (DEC-197): lượt ra / vào bãi trong khoảng giờ — cont hạ (gate_in_at), lệnh cấp đã OUT (confirmed_at),
+// cont xuất tàu (done_at) — đủ để tạo file 1 giờ. base: danh mục đang có (mã ISO, hãng tàu).
+export async function loadEdiState(client: SupabaseClient, base: DepotState, range: { from: string; to: string }): Promise<DepotState> {
+  const [contIn, outs, items] = await Promise.all([
+    all((a, b) => client.from('containers').select('*').gte('gate_in_at', range.from).lt('gate_in_at', range.to).range(a, b)),
+    all((a, b) => client.from('gate_out_orders').select('*').eq('status', 'GATE_OUT_OK').gte('confirmed_at', range.from).lt('confirmed_at', range.to).range(a, b)),
+    all((a, b) => client.from('vessel_list_items').select('*').eq('status', 'DONE').gte('done_at', range.from).lt('done_at', range.to).range(a, b)),
+  ]);
+  const [contOut, lists] = await Promise.all([
+    byIds(client, 'containers', 'id', [...outs.map((o) => o.container_id), ...items.map((i) => i.container_id)]),
+    byIds(client, 'vessel_lists', 'id', items.map((i) => i.list_id)),
+  ]);
+  const raw = await expand(
+    client,
+    { containers: merge(contIn, contOut), gateIns: [], gateOuts: outs, bookings: [], prepaids: [], vouchers: [], txs: [], receipts: [], deductions: [], tickets: [], lists, feedbacks: [] },
+    false
+  );
+  return buildState(base, raw);
+}
+
 export async function loadWorkingState(client: SupabaseClient, me: StaffSession, range?: { from: string; to: string }): Promise<DepotState> {
   const base = await loadCatalogState(client, me);
   const raw = await fetchRaw(client, range?.from ?? windowStart(), range?.to ?? FAR, seesPayments(me));
@@ -264,6 +284,7 @@ function buildState(base: DepotState, raw: RawData): DepotState {
       outDossierCode: opt(c.out_dossier_code), officeNote: opt(c.office_note), officeNoteUpdatedBy: opt(c.office_note_by_name), officeNoteUpdatedAt: opt(c.office_note_at),
       vesselExportItemId: opt(c.vessel_export_item_id), gateInAt: c.gate_in_at, gateOutAt: opt(c.gate_out_at),
       swapReturn: opt(c.swap_return), releaseDamage: c.release_damage || undefined, // DEC-185
+      isoCode: opt(c.iso_code), // DEC-195
     };
   };
 
@@ -290,6 +311,7 @@ function buildState(base: DepotState, raw: RawData): DepotState {
     confirmedBy: opt(o.confirmed_by_name), confirmedAt: opt(o.confirmed_at), cancelReason: opt(o.cancel_reason), cancelledAt: opt(o.cancelled_at),
     documentsReturnedAt: opt(o.documents_returned_at), documentsReturnedBy: opt(o.documents_returned_by_name), createdAt: o.created_at,
     swaps: o.swaps?.length ? o.swaps : undefined, // DEC-185
+    releasePurpose: o.release_purpose === 'SALE' ? 'SALE' : undefined, saleCode: opt(o.sale_code), // DEC-194
   } as GateOutOrder);
 
   const mapBooking = (b: Row): ReleaseBooking => {
@@ -394,7 +416,7 @@ function buildState(base: DepotState, raw: RawData): DepotState {
   });
 
   const mapList = (l: Row): VesselList => ({
-    id: l.id, mode: l.mode, vesselName: l.vessel_name, shippingLineCode: opt(l.shipping_line_code), plannedAt: l.planned_at, truckNos: l.truck_nos || [],
+    id: l.id, mode: l.mode, vesselName: l.vessel_name, shippingLineCode: opt(l.shipping_line_code), destinationPort: opt(l.destination_port), plannedAt: l.planned_at, truckNos: l.truck_nos || [],
     items: (itemsByList.get(l.id) || []).map(mapItem), status: l.status, createdBy: l.created_by_name, createdAt: l.created_at,
     approvedBy: opt(l.approved_by_name), approvedAt: opt(l.approved_at), approveNote: opt(l.approve_note),
   });

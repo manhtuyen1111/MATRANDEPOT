@@ -124,6 +124,7 @@ export const createReleaseOrder = wrap(ops.createReleaseOrder, ([s, i], next) =>
     const res = await rpc<{ gate_out_id: string }>(c, 'create_release_order', {
       p_request_id: requestId(), p_booking_no: i.bookingNo, p_customer_name: i.customerName, p_container_no: i.containerNo,
       p_truck_no: i.truckNo, p_driver_phone: i.driverPhone, p_fee_ids: i.feeCatalogIds,
+      p_purpose: i.releasePurpose || 'CUSTOMER', p_sale_code: nul(i.saleCode), // DEC-194
     });
     if (localId) mapId(localId, res.gate_out_id); // lập lệnh + thu tiền trong cùng 1 lần bấm
   };
@@ -176,6 +177,7 @@ export const markInvoiceIssued = wrap(inv.markInvoiceIssued, ([, i]) => async (c
 export const createVesselList = wrap(ves.createVesselList, ([, i]) => async (c) => {
   await rpc(c, 'create_vessel_list', {
     p_mode: i.mode, p_vessel_name: i.vesselName, p_planned_at: i.plannedAt, p_truck_nos: i.truckNos, p_shipping_line_code: nul(i.shippingLineCode),
+    p_destination_port: nul(i.destinationPort), // DEC-196
     p_import_items: i.importItems?.length ? i.importItems.map((r) => ({ container_no: r.containerNo, size: r.size, type: r.type })) : null,
     p_export_container_ids: i.exportContainerIds?.length ? i.exportContainerIds : null,
   });
@@ -183,6 +185,7 @@ export const createVesselList = wrap(ves.createVesselList, ([, i]) => async (c) 
 export const updateVesselList = wrap(ves.updateVesselList, ([, i]) => async (c) => {
   await rpc(c, 'update_vessel_list', {
     p_list_id: i.listId, p_mode: i.mode, p_vessel_name: i.vesselName, p_planned_at: i.plannedAt, p_truck_nos: i.truckNos, p_shipping_line_code: nul(i.shippingLineCode),
+    p_destination_port: nul(i.destinationPort), // DEC-196
   });
 });
 export const addVesselListItems = wrap(ves.addVesselListItems, ([, i]) => async (c) => {
@@ -265,6 +268,10 @@ export const addContainerTypeCatalogItem = wrap(ops.addContainerTypeCatalogItem,
 });
 export const deleteContainerTypeCatalogItem = wrap(ops.deleteContainerTypeCatalogItem, ([, v]) => async (c) => {
   await rpc(c, 'catalog_set_type_active', { p_code: v, p_active: false });
+});
+// DEC-195: mã ISO 6346 theo Size + Type (mã trống = bỏ)
+export const setContainerIsoCode = wrap(ops.setContainerIsoCode, ([, i]) => async (c) => {
+  await rpc(c, 'catalog_set_iso_code', { p_size: i.size, p_type: i.type, p_iso_code: i.isoCode });
 });
 export const addDepotFeeCatalogItem = wrap(ops.addDepotFeeCatalogItem, ([, i]) => async (c) => {
   await rpc(c, 'catalog_add_fee', {

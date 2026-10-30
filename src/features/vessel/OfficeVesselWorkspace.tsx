@@ -226,6 +226,7 @@ interface HeaderValue {
   vesselName: string;
   plannedAt: string; // dd/MM/yyyy HH:mm:ss
   lineCode: string;
+  portCode: string; // DEC-196: Xuất tàu — mã cảng đến
   trucksText: string;
 }
 
@@ -247,7 +248,13 @@ const HeaderFields: React.FC<{ mode: VesselMode; state: DepotState; value: Heade
           </select>
         </label>
       )}
-      <label className={mode === 'NHAP_TAU' ? '' : 'sm:col-span-2'}>
+      {mode === 'XUAT_TAU' && (
+        <label>
+          <span className={labelCls}>Mã cảng đến *</span>
+          <input value={value.portCode} onChange={(e) => onChange({ ...value, portCode: e.target.value.toUpperCase().replace(/\s/g, '') })} maxLength={10} placeholder="VD: VNHPHTM" className={`${inputCls} font-mono uppercase`} data-testid="destination-port" />
+        </label>
+      )}
+      <label>
         <span className={labelCls}>Danh sách số xe * ({trucks.length})</span>
         <textarea value={value.trucksText} onChange={(e) => onChange({ ...value, trucksText: e.target.value })} rows={2} placeholder={'15C-111.11\n15C-222.22'} className={`${inputCls} uppercase`} />
       </label>
@@ -257,7 +264,7 @@ const HeaderFields: React.FC<{ mode: VesselMode; state: DepotState; value: Heade
 
 const toHeaderInput = (v: HeaderValue) => {
   const at = parseDateTime(v.plannedAt, 'start');
-  return { vesselName: v.vesselName, plannedAt: at ? at.toISOString() : '', truckNos: parseTruckList(v.trucksText), shippingLineCode: v.lineCode || undefined };
+  return { vesselName: v.vesselName, plannedAt: at ? at.toISOString() : '', truckNos: parseTruckList(v.trucksText), shippingLineCode: v.lineCode || undefined, destinationPort: v.portCode || undefined };
 };
 
 // ---------------------------------------------------------------------------
@@ -443,7 +450,7 @@ const CreateListForm: React.FC<{
   onCancel: () => void;
   onCreate: (input: ReturnType<typeof toHeaderInput> & { importItems?: ReturnType<typeof parseVesselImportText>['rows']; exportContainerIds?: string[] }) => void;
 }> = ({ mode, state, onCancel, onCreate }) => {
-  const [header, setHeader] = useState<HeaderValue>(() => ({ vesselName: '', plannedAt: formatDateTime(new Date()), lineCode: '', trucksText: '' }));
+  const [header, setHeader] = useState<HeaderValue>(() => ({ vesselName: '', plannedAt: formatDateTime(new Date()), lineCode: '', portCode: '', trucksText: '' }));
   const [importText, setImportText] = useState('');
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const parsed = parseVesselImportText(state, importText);
@@ -497,6 +504,7 @@ export const ListDetail: React.FC<{
     vesselName: list.vesselName,
     plannedAt: formatDateTime(list.plannedAt),
     lineCode: list.shippingLineCode || '',
+    portCode: list.destinationPort || '',
     trucksText: list.truckNos.join('\n'),
   }));
   const [importText, setImportText] = useState('');
@@ -512,7 +520,7 @@ export const ListDetail: React.FC<{
 
   const openPanel = (p2: typeof panel) => {
     setPanel(panel === p2 ? '' : p2);
-    setHeader({ vesselName: list.vesselName, plannedAt: formatDateTime(list.plannedAt), lineCode: list.shippingLineCode || '', trucksText: list.truckNos.join('\n') });
+    setHeader({ vesselName: list.vesselName, plannedAt: formatDateTime(list.plannedAt), lineCode: list.shippingLineCode || '', portCode: list.destinationPort || '', trucksText: list.truckNos.join('\n') });
     setImportText('');
     setPicked(new Set());
   };
