@@ -3,6 +3,7 @@
 // Dùng chung cho ảnh cửa Gate in và ảnh HOÀN THÀNH SỬA CHỮA (chỉ chạy trên trình duyệt).
 // Đường dẫn kho ảnh (Supabase Storage không nhận chữ có dấu → thư mục viết không dấu):
 //   door-photos   : ANH-GATE-IN/<năm>/<tháng>/<ngày>/<mã hồ sơ>-<ngẫu nhiên>.jpg
+//   door-photos   : ANH-CAP-VO/<năm>/<tháng>/<ngày>/<mã hồ sơ CV->-<ngẫu nhiên>-<n>.jpg (DEC-198)
 //   repair-photos : ANH-SUA-CHUA/<năm>/<tháng>/<ngày>/<mã tổ>/<số cont>/<số cont>-<giờ phút giây>-<n>.jpg
 // ============================================================================
 
@@ -16,6 +17,11 @@ const safe = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/
 
 export function gateInPhotoPath(dossierCode: string, d = new Date()): string {
   return `ANH-GATE-IN/${photoDateFolder(d)}/${safe(dossierCode)}-${crypto.randomUUID().slice(0, 8)}.jpg`;
+}
+
+// DEC-198: ảnh cấp vỏ Giám định chụp (cont MSK)
+export function releasePhotoPath(gateOutCode: string, index: number, d = new Date()): string {
+  return `ANH-CAP-VO/${photoDateFolder(d)}/${safe(gateOutCode)}-${crypto.randomUUID().slice(0, 8)}-${pad(index + 1)}.jpg`;
 }
 
 export function repairPhotoPath(teamCode: string, containerNo: string, index: number, d = new Date()): string {

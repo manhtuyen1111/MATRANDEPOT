@@ -6,7 +6,7 @@
 //   Database từ chối → báo lỗi + tải lại (không mất gì). Không có hàng chờ (Demo) → hàm bọc chỉ chạy hàm gốc.
 // ============================================================================
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { gateInPhotoPath, photoBlob, repairPhotoPath } from '../photo';
+import { gateInPhotoPath, photoBlob, releasePhotoPath, repairPhotoPath } from '../photo';
 
 export type RemoteOp = (client: SupabaseClient) => Promise<void>;
 
@@ -99,5 +99,18 @@ export async function uploadRepairPhotos(client: SupabaseClient, photos: string[
     for (let i = queue.shift(); i !== undefined; i = queue.shift()) await uploadPhoto(client, 'repair-photos', paths[i], photos[i]);
   };
   await Promise.all(Array.from({ length: Math.min(4, queue.length) }, worker));
+  return paths;
+}
+
+// DEC-198: ảnh CẤP VỎ (Giám định) — kho door-photos, tải lần lượt; trả đường dẫn theo thứ tự chụp
+export async function uploadReleasePhotos(client: SupabaseClient, photos: string[], gateOutCode: string): Promise<string[]> {
+  const at = new Date();
+  const paths: string[] = [];
+  for (const [i, p] of photos.entries()) {
+    if (!p.startsWith('data:')) { paths.push(p); continue; }
+    const path = releasePhotoPath(gateOutCode, i, at);
+    await uploadPhoto(client, 'door-photos', path, p);
+    paths.push(path);
+  }
   return paths;
 }

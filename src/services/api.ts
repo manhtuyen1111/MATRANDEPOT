@@ -11,8 +11,9 @@ import * as ves from './vessel';
 import * as inv from './invoice';
 import * as fb from './feedback';
 import * as route from './driverRoute';
+import * as rp from './releasePhoto';
 import type { DepotState } from './depotStore';
-import { enqueue, isRemoteMode, mapId, realId, requestId, rpc, uploadDoorPhoto, uploadRepairPhotos, type RemoteOp } from './remote/sync';
+import { enqueue, isRemoteMode, mapId, realId, requestId, rpc, uploadDoorPhoto, uploadReleasePhotos, uploadRepairPhotos, type RemoteOp } from './remote/sync';
 import { callEdgeFunction } from './remote/edge';
 
 function wrap<A extends unknown[], R>(fn: (...args: A) => R, remote: (args: A, result: R) => RemoteOp): (...args: A) => R {
@@ -213,6 +214,15 @@ export const executeVesselExport = wrap(ves.executeVesselExport, ([, i]) => asyn
 });
 export const approveVesselList = wrap(ves.approveVesselList, ([, i]) => async (c) => {
   await rpc(c, 'approve_vessel_list', { p_list_id: i.listId, p_mode: i.mode, p_reason: nul(i.reason) });
+});
+
+// DEC-198: Giám định chụp ảnh CẤP VỎ (cont MSK) — tải ảnh lên kho trước rồi ghi đường dẫn
+export const recordReleasePhotos = wrap(rp.recordReleasePhotos, ([s, i]) => {
+  const code = s.gateOutOrders.find((o) => o.id === i.gateOutOrderId)?.gateOutCode || 'CV';
+  return async (c) => {
+    const paths = await uploadReleasePhotos(c, i.photos, code);
+    await rpc(c, 'record_release_photos', { p_gate_out_id: realId(i.gateOutOrderId), p_photo_paths: paths });
+  };
 });
 
 // ---------------------------------------------------------------------------

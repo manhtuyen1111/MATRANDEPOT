@@ -496,7 +496,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
   );
 };
 
-const QueueHeader: React.FC<{ dept: string; name: string; count: number }> = ({ dept, name, count }) => (
+export const QueueHeader: React.FC<{ dept: string; name: string; count: number }> = ({ dept, name, count }) => (
   <div className="flex items-center justify-between rounded-lg border border-line bg-white px-4 py-2.5">
     <div>
       <span className="block text-[11px] font-semibold uppercase text-ink-muted">{dept}</span>
