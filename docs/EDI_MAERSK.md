@@ -190,3 +190,71 @@ Tài liệu nhận được: **API License Terms** (sửa 31/08/2026) + OpenAPI 
   6. Danh sách API product đang bật cho app của depot (ảnh chụp trang My Apps — che Consumer Key / Secret).
 - Điều khoản đã đọc: `API License Terms` (31/08/2026) — mục 10.
 
+## 12. eEIR External API v4.3 (đã đọc 2026-10-30) — phần thay được EDI gate-in / gate-out
+
+> Tài liệu có kèm **client id / secret môi trường thử (staging)** công khai của Maersk — **không chép vào repo / code**; khi cần thì người dùng tự nhập vào cấu hình máy chủ.
+
+### 12.1 Tóm tắt
+
+- **eEIR** = phiếu giao nhận container điện tử (Equipment Interchange Report) của Maersk — đúng việc depot làm ở mỗi lượt **gate-in / gate-out**. Depot có hệ thống riêng (như MATRAN) gửi qua API thay cho app điện thoại eEIR của Maersk.
+- **Đăng nhập:** `POST https://api.maersk.com/customer-identity/oauth/v2/access_token` (form: `client_id`, `client_secret`, `grant_type=client_credentials`) → dùng **`id_token`** (không phải `access_token`), hạn **2 giờ**.
+  - Mọi lệnh gọi kèm header `Authorization: Bearer <id_token>`, `consumer-key: <client_id>`, `user-type: EXTERNAL`.
+  - **Client id / secret cấp riêng cho depot** — xin qua email `eEIRSupport@maersk.com` (và người phụ trách eEIR trong tài liệu). **Khác** Consumer-Key của developer portal (API chọn cont ở mục 10) → depot có **2 bộ khóa**.
+- **Môi trường thử:** `api-stage.maersk.com` (có danh sách cont thử: lạnh / khô / open-top). Thử xong Maersk mới cấp khóa thật.
+
+| # | API | Việc | Dùng ở MATRAN |
+|---|---|---|---|
+| 1 | `GET /eir/equipment/getEquipmentDetails?containerNo=…&userId=<client_id>` | **BẮT BUỘC** gọi trước: thông tin cont từ hệ thống Maersk (RKEM) | Giám định Hạ vỏ (gõ số cont MSK) + Văn phòng Cấp vỏ (chọn cont) |
+| 2 | `POST /eir/inspection/save` (**multipart/form-data**: `inspectionDetails` JSON + `files` ảnh) | **Gửi eEIR** của 1 lượt gate-in / gate-out → trả `inspectionId` | sau GATE IN OK / Xe nâng cấp vỏ (thay tin CODECO) |
+| 3 | `PUT /eir/inspection/updateAdditionalDamages/{inspectionId}` | Thêm ảnh cho eEIR đã gửi | bổ sung ảnh sau |
+
+### 12.2 API 1 trả về gì (dùng ngay được)
+
+- `containerSize`, `equipmentSubType` (DRY / REEF / FLAT / OPEN), `equipmentISOCode` (VD 22G1, 45G1), chiều cao `eqouthgu` ("8 6" / "9 6") → **tự điền size / type đúng mã ISO** (giải Q-047).
+- `productionYear` → **AGE** (năm sản xuất).
+- **`smokeTested` = HẠNG VỎ (grade):** M food grade • S flexi-bag / premium food • K general cargo sạch / premium • E general cargo • Q scrap cargo • N chưa phân loại → khớp **Phân loại M / K / E** (DEC-166); giải một phần Q-048.
+- `sTSELSCR` (cont **đánh dấu bán** — liên quan Release for sale DEC-194), `stBlock` (**cấm di chuyển / cấm dùng**), `stSound` (Maersk ghi nhận hư), `globalHuntStatus` / `globalHuntRedeliveryLocation` (cont thuê phải trả hãng cho thuê), `damage`, lần ra / vào gần nhất ở Maersk (`move`, `activityLocation`, ngày giờ), PTI / bảo hành máy lạnh.
+- Lỗi (không phải cont Maersk / chưa có dữ liệu) → **bỏ qua, làm tiếp** quy trình depot (không chặn tác nghiệp).
+
+### 12.3 API 2 — dữ liệu gửi mỗi eEIR (ánh xạ MATRAN)
+
+| Trường | Bắt buộc | Lấy từ MATRAN | Ghi chú |
+|---|---|---|---|
+| `createdLocalDate` / `submittedLocalDate` (`YYYY-MM-DD HH:MM:SS`), `createdUtcDate` | ✓ | giờ GATE IN OK / Xe nâng cấp vỏ | gửi trễ được trong **24 giờ** |
+| `user.surveyorId` | ✓ | client id của depot | |
+| `container.containerStatus` | ✓ | 1 = rỗng | depot cont rỗng |
+| `container.operator` | ✓ | 1 = Maersk | chỉ cont MSK |
+| `container.moveType` | ✓ | 1 POS / 2 IMP / 3 EXP | **cần Maersk xác nhận ánh xạ** từng tác nghiệp (Q-058) |
+| `container.moveStatus` | ✓ | 1 IN (Hạ vỏ, Nhập tàu) / 2 OUT (Cấp vỏ, Xuất tàu) | |
+| `container.containerTypeSize` | ✓ | `containerSize + subType + " " + ISO` (VD `40DRY 45G1`) từ API 1 | không có thì `99XXX 99X9` |
+| `container.bookingNo` | ✓ khi **gate-out xuất rỗng theo booking** | Booking lệnh Cấp vỏ | **9–11 ký tự chữ số** — booking nhập tay phải đúng độ dài |
+| `container.grade` | ✓ | `smokeTested` từ API 1 (không có → `N`) | đối chiếu Phân loại MATRAN |
+| `container.containerNo`, `sealNo`, `productionYear`… | containerNo ✓ | | |
+| `damages[]` | ✓ (luôn có ít nhất 1 mục) | không hư / hao mòn → 1 mục `damageLocation=0000`, `tpIndicator` 0 / 3, **1–20 ảnh**; hư do bên thứ 3 → mỗi hư 1 mục mã **CEDEX** + loại hư + bên gây hư + 1–3 ảnh | hư do bên thứ 3 → Maersk tự mở hồ sơ đòi bồi thường (DERT) |
+| `images[]` + file | ✓ | **ít nhất 1 ảnh / eEIR** (jpg / png) | Hạ vỏ có ảnh cửa ✓; **Cấp vỏ hiện chưa chụp ảnh** (Q-059) |
+| `truckers.truckerRegno` | ✓ (≤ 11 ký tự) | Số xe (Hạ vỏ / Cấp vỏ) ✓ | SĐT, tên lái xe tùy chọn |
+| `emails[].email` | ✓ | email depot nhận PDF eEIR | cấu hình (Q-060) |
+
+- Lỗi 400 / 404 / **412 (sai mã depot)** / 500 → **lưu lại, gửi lại khi API chạy lại** (đúng thiết kế hàng chờ ở mục 5).
+
+### 12.4 Kết luận
+
+- **Đủ thông tin kỹ thuật** để làm: đăng nhập, lấy thông tin cont, gửi eEIR gate-in / gate-out kèm ảnh, thêm ảnh.
+- **Chưa chắc eEIR thay hoàn toàn CODECO:** tài liệu không nói rõ gửi eEIR có tự cập nhật lượt ra / vào trong hệ thống Maersk (RKEM) hay vẫn phải gửi CODECO song song (sơ đồ vẫn có "TOS gửi EDI cho Merc+ để tạo lệnh sửa chữa") → **hỏi Maersk (Q-061)** trước khi tắt EDI.
+- **Thay đổi nghiệp vụ cần chốt trước khi code:**
+  - (a) Cấp vỏ phải có **≥ 1 ảnh** (ai chụp: Xe nâng hay Giám định — Q-059);
+  - (b) ánh xạ moveType cho Hạ vỏ / Cấp vỏ / Release for sale / Nhập tàu / Xuất tàu (Q-058);
+  - (c) Giám định có ghi **hư do bên thứ 3** theo mã CEDEX không (Q-062) — nếu không, chỉ gửi "không hư / hao mòn" + ảnh;
+  - (d) booking phải 9–11 ký tự (kiểm tra ở Cấp vỏ với cont MSK — Q-063).
+
+### 12.5 Câu hỏi mới
+
+| Mã | Câu hỏi |
+|---|---|
+| Q-058 | moveType POS / IMP / EXP cho từng tác nghiệp: Hạ vỏ khách trả, Cấp vỏ theo booking, Release for sale, Nhập tàu, Xuất tàu, đổi container |
+| Q-059 | Cấp vỏ bắt buộc ≥ 1 ảnh eEIR: chụp ở bước nào (Xe nâng khi cấp / Giám định / Văn phòng), bao nhiêu ảnh |
+| Q-060 | Email depot nhận PDF eEIR (`emails[].email`) |
+| Q-061 | Maersk (EMR / eEIRSupport) xác nhận: gửi eEIR qua API có **thay** CODECO EDI không, hay phải gửi cả hai |
+| Q-062 | Depot có xác định **hư do bên thứ 3** (mã CEDEX vị trí, loại hư, bên gây hư) không; danh mục hư nhanh có cần đổi sang mã CEDEX |
+| Q-063 | Booking Maersk luôn 9–11 ký tự chữ số? Có chặn nhập sai ở Cấp vỏ cho cont MSK không |
+| Q-056 (còn) | Integration Guide v1.6 (chọn cont) + **file mẫu `inspectionDetails` JSON** Maersk gửi qua email khi cấp khóa |
