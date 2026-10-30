@@ -1527,13 +1527,21 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-193 — Icon nâng hạ (Trả chứng từ cấp vỏ) dùng màu token
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng). Sửa DEC-192 phần màu.
+- Icon xe nâng ở Văn phòng → Trả chứng từ → Đang chờ TRẢ CHỨNG TỪ CẤP VỎ dùng màu token của DESIGN_SYSTEM, không dùng xanh / vàng Tailwind:
+  - **Đã nâng hạ:** `bg-success-bg text-success-fg` (viền `success-fg/30`).
+  - **Chưa nâng hạ:** trung tính `bg-canvas text-ink-muted border-line-strong` (cùng kiểu nút phụ).
+  - Khung `rounded-md border`, 24px.
+
 ### DEC-192 — Đổi container cả khi CHƯA NÂNG HẠ; Trả chứng từ cấp vỏ hiện đủ lệnh + icon nâng hạ
 
 - Trạng thái: CONFIRMED (2026-10-30, người dùng — yêu cầu + trả lời câu hỏi). Bổ sung DEC-185 / 186; sửa DEC-188 (icon chờ).
 - Tình huống mới: lái xe ra kiểm tra cont, yêu cầu đổi **trước khi Xe nâng nâng hạ lên xe**. Trường hợp đổi khi đã lên xe giữ nguyên như DEC-185 / 186.
 - **Văn phòng → Trả chứng từ, cột CẤP VỎ hiện đủ** các lệnh đã thu tiền, chưa trả chứng từ (trước đây chỉ hiện lệnh đã nâng hạ). Mỗi dòng có **icon nâng hạ**:
-  - **xanh** = ĐÃ NÂNG HẠ lên xe;
-  - **vàng** = CHƯA NÂNG HẠ → nút **Trả chứng từ khóa**, nhưng **vẫn ĐỔI CONTAINER được**.
+  - **xanh** (token success — DEC-193) = ĐÃ NÂNG HẠ lên xe;
+  - **xám trung tính** (DEC-193; ban đầu vàng) = CHƯA NÂNG HẠ → nút **Trả chứng từ khóa**, nhưng **vẫn ĐỔI CONTAINER được**.
 - **Đổi khi chưa nâng hạ (icon vàng):**
   - lệnh CV- (giữ mã, chứng từ, phiếu thu, QR) chuyển sang cont mới và **vẫn ở Xe nâng — Chờ cấp vỏ**, mang nhãn **ĐỔI CONT**;
   - cont cũ **giữ nguyên vị trí**, bỏ khóa phân bổ, tồn bãi; không có việc Xe nâng hạ lại.
@@ -1931,6 +1939,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-192 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-193 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
