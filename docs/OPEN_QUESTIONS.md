@@ -110,7 +110,7 @@ Cập nhật lần cuối: 2026-10-22.
 ## EDI hãng tàu MAERSK (OPEN-009 — chi tiết `docs/EDI_MAERSK.md`, mở 2026-10-30)
 
 - [ ] Q-046: Tài liệu **ITG14 (CODECO D.95B) của Maersk**, hoặc tài liệu / mã nguồn module EDI của ERPVINASHIP (`D:\ERPVINASHIP\…\EDI_MSK`).
-- [ ] Q-047: Bảng mã ISO size/type đầy đủ app cũ dùng (đã biết 20DC = 2200, 40DC = 4200; còn 40HC, 45HC, RF, OT, FR…).
+- [ ] Q-047: Bảng mã size/type app cũ dùng — 2026-10-30: **20DC = 2200, 40HC = 4200, 45HC = 4500** (người dùng xác nhận); **còn 40DC** (người dùng đang tìm), RF / OT / FR khi gặp.
 - [ ] Q-048: Ý nghĩa `RFF+BN:GRADED / GRADEK / GRADEM` (có E?) và `DAM+1+2` / `DAM+1+6`; có khớp Phân loại M / K / E (DEC-166) + AV / DAMAGE không.
 - [ ] Q-049: Giờ không có cont có gửi file rỗng không; xin file mẫu 00:00 → 03:00.
 - [ ] Q-050: Release for sale (Sale code), Xuất tàu, Nhập tàu gửi loại tin gì, `RFF` gì — xin file mẫu từng loại. — 2026-10-30: **Release for sale đã có mẫu** (`EQD …++8+4`, `RFF+BN:<Sale code>` — `docs/EDI_MAERSK.md` 3.3). **Xuất tàu đã có mẫu** (`EQD …++8+4`, `RFF+BN:VNHPHTM` — 3.4). **Còn Nhập tàu** (có gửi không).

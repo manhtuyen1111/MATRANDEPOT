@@ -43,7 +43,7 @@ UNZ+15+202610300400'                                      ← tổng số tin tr
 |---|---|---|---|---|
 | `NAD+CF` | MSK | MSK | Hãng tàu của cont (Danh mục, mã MSK) | ✓ |
 | `EQD` số cont | ✓ | ✓ | `containerNo` | ✓ |
-| `EQD` size/type | 2200 / 4200 | 2200 / 4200 | `size` + `type` → bảng mã ISO (20DC = 2200, 40DC = 4200; **40HC / 45HC / RF chưa có mẫu** — Q-047) | một phần |
+| `EQD` size/type | 2200 / 4200 / 4500 | 2200 / 4200 / 4500 | `size` + `type` → bảng mã (mục 3.5) | gần đủ (còn 40DC) |
 | `EQD` …`++2` | không có | có (xuất khẩu) | cố định theo loại tin | ✓ |
 | `RFF+BN` | `GRADE` + hạng | số booking | gate-in: hạng vỏ (Q-048); gate-out: `bookingNo` lệnh Cấp vỏ | gate-out ✓ |
 | `DTM+7` | giờ vào | giờ ra | gate-in: giờ GATE IN OK? / Xe nâng hạ? (Q-051); gate-out: giờ Xe nâng cấp (`confirmedAt`) | chưa |
@@ -89,6 +89,18 @@ DTM+7:202610241056:203'
 - **Trạng thái 8** dùng cho cả **cấp sale** và **xuất tàu** (cont đi không theo booking xuất khẩu); cấp thường theo booking = **2**.
 - Ánh xạ MATRAN: cont XUẤT TÀU (DEC-069) khi Xe nâng xuất (`item.status = DONE`, giờ `doneAt`) → `RFF+BN` = mã cảng đến. Danh sách tàu **hiện chưa có trường mã cảng** → Q-064.
 - Giờ `DTM` của cả 60 cont **giống nhau (10:56)** → app cũ có thể lấy giờ **duyệt danh sách** / giờ nhập lô, không phải giờ từng xe ra (cần đối chiếu — Q-051).
+
+### 3.5 Bảng mã size / type app cũ gửi (người dùng xác nhận 2026-10-30, file `202610290500.txt`)
+
+| Size / Type MATRAN | Mã `EQD` | Cont mẫu |
+|---|---|---|
+| **20DC** | `2200` | MRKU7458447 |
+| **40HC** | **`4200`** | MRSU7403637 (người dùng: 40HC rất nhiều) |
+| **45HC** | `4500` | MSKU4773745 |
+| **40DC** | **chưa rõ** — người dùng đang tìm cont mẫu | — |
+
+- **Lưu ý:** app cũ gửi **40HC = 4200** (không theo mã ISO chuẩn 45G1 / 4500 cho 40 cao) → MATRAN phải gửi **đúng như app cũ**, không tự đổi sang mã ISO chuẩn. Bảng mã để trong cấu hình EDI của hãng (sửa không cần code).
+- Cont lạnh (RF), open-top… chưa có mẫu — thêm khi gặp.
 
 ## 4. Sự kiện cần gửi (tác nghiệp → EDI)
 
