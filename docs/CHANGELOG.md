@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-192 (2026-10-30): **Đổi container cả khi chưa nâng hạ** — Trả chứng từ cấp vỏ hiện đủ lệnh + icon nâng hạ (xanh đã / vàng chưa — vàng khóa Trả chứng từ, vẫn đổi được); đổi khi chưa nâng: cont cũ giữ chỗ, Xe nâng Chờ cấp vỏ chuyển sang cont mới (ĐỔI CONT), hư hỏng vào Chờ báo giá ngay. Icon chờ lịch sử hồ sơ quay lại đồng hồ. **Migration mới `20261115000001_gate_out_swap_before_lift.sql`** (pgTAP 312/312 local).
 - DEC-191 (2026-10-29): **User - Role dạng tab** (DANH SÁCH NHÂN VIÊN | VAI TRÒ & QUYỀN); thông tin chi tiết nhân viên (giới tính, CCCD, năm sinh, quê quán, phòng ban — độc lập vai trò), chỉ Admin + chính nhân viên xem; icon khiên → Thông tin chi tiết (chỉ xem). **Migration mới `20261114000001_staff_profile.sql`** (pgTAP 304/304 local). Sửa lỗi DEC-189 ghi đè `assert_admin()`.
 - DEC-190 (2026-10-29): Menu **chỉ mở 1 bộ phận một lúc** — mở bộ phận khác thì bộ phận trước tự thu gọn.
 - DEC-189 (2026-10-29): **Danh mục chung → Database** (chỉ Admin) — dashboard sức khỏe database: dung lượng / kho ảnh / kết nối / phản hồi / truy vấn chậm / bộ nhớ đệm / bảng lớn / tác vụ định kỳ / partition; cảnh báo vàng 70% đỏ 85%, số đếm đỏ trên menu; giới hạn dung lượng Admin nhập. **Migration mới `20261113000001_db_health.sql`** (pgTAP 291/291 local).

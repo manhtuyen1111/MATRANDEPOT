@@ -1206,3 +1206,21 @@ describe('DEC-191: User - Role dạng tab + Thông tin chi tiết ở icon khiê
     expect(html).not.toContain('<input');
   });
 });
+
+describe('DEC-192: Trả chứng từ CẤP VỎ hiện đủ lệnh + icon nâng hạ; đổi cont khi chưa nâng hạ', () => {
+  const strip = (h: string) => h.replace(/<!-- -->/g, '');
+  it('chưa nâng hạ: icon vàng, nút Trả chứng từ khóa, vẫn có ĐỔI CONTAINER; đã nâng hạ: icon xanh', async () => {
+    const demo = as(createDemoState(), 'usr-office');
+    const html = strip(renderToString(<DocumentReturnWorkspace state={demo} onUpdateState={noop} />));
+    const { releaseTicketsInProgress } = await import('../src/services/driverRoute');
+    const rows = releaseTicketsInProgress(demo);
+    expect(rows.some((r) => !r.lifted)).toBe(true);
+    expect(html.match(/data-testid="lift-wait"/g)!.length).toBe(rows.filter((r) => !r.lifted).length);
+    expect(html.match(/data-testid="lift-done"/g)?.length || 0).toBe(rows.filter((r) => r.lifted).length);
+    expect(html).toContain('title="Chưa nâng hạ — chờ Xe nâng cấp cont"');
+    expect(html.match(/ĐỔI CONTAINER/g)!.length).toBeGreaterThanOrEqual(rows.length);
+    const { SwapContainerModal } = await import('../src/features/office/SwapContainerModal');
+    const wait = rows.find((r) => !r.lifted)!;
+    expect(strip(renderToString(<SwapContainerModal state={demo} gateOutOrderId={wait.order.id} onClose={noop} onDone={noop} />))).toContain('CHƯA NÂNG HẠ');
+  });
+});

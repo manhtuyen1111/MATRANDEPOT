@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Eye, EyeOff, Hourglass, FileDown, FileText, Printer, ReceiptText, X } from 'lucide-react';
+import { CheckCircle2, Clock, Eye, EyeOff, FileDown, FileText, Printer, ReceiptText, X } from 'lucide-react';
 import { ContainerStatus, K80InternalTicket, VesselList, VesselListItem } from '../types/depot';
 import { DepotState } from '../services/depotStore';
 import { formatLocation } from '../services/core';
@@ -76,9 +76,9 @@ const HistoryDetail: React.FC<{ row: DossierHistoryRow; onOpenReceipt?: (key: st
   </div>
 );
 
-// Cột TRẠNG THÁI (DEC-188): chỉ icon — tích xanh = hoàn thành, đồng hồ cát = đang chờ
+// Cột TRẠNG THÁI (DEC-188): chỉ icon — tích xanh = hoàn thành, đồng hồ = đang chờ (DEC-192: bỏ đồng hồ cát)
 const DoneIcon: React.FC = () => <CheckCircle2 className="inline h-5 w-5 text-emerald-600" aria-label="Hoàn thành" data-testid="status-done" />;
-const WaitIcon: React.FC = () => <Hourglass className="inline h-5 w-5 animate-pulse text-amber-500" aria-label="Đang chờ" data-testid="status-wait" />;
+const WaitIcon: React.FC = () => <Clock className="inline h-5 w-5 animate-pulse text-amber-500" aria-label="Đang chờ" data-testid="status-wait" />;
 
 // Tác nghiệp ĐỔI CONT nổi bật (DEC-187)
 const TaskText: React.FC<{ task: string }> = ({ task }) =>

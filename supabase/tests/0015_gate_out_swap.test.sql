@@ -1,7 +1,7 @@
--- pgTAP — DEC-185 / DEC-186: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ (swap_gate_out_container) + Xe nâng hạ lại (update_container_location).
+-- pgTAP — DEC-185 / DEC-186 / DEC-192: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ (swap_gate_out_container) + Xe nâng hạ lại (update_container_location).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(27);
+select plan(35);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000a1', 'gd@matrandepot.local'),
@@ -54,6 +54,11 @@ select pg_temp.in_yard('MSKU3000001');
 select pg_temp.in_yard('MSKU3000002');
 select pg_temp.in_yard('MSKU3000003');
 select pg_temp.in_yard('MSKU3000004');
+select pg_temp.in_yard('MSKU3000005');
+select pg_temp.in_yard('MSKU3000006');
+select pg_temp.in_yard('MSKU3000007');
+select pg_temp.in_yard('MSKU3000008');
+select pg_temp.in_yard('MSKU3000009');
 select pg_temp.gated_out('MSKU3000001', 'BK-SWAP-1') as go1 \gset
 select code as cv1 from public.gate_out_orders where id = :'go1' \gset
 
@@ -88,8 +93,6 @@ select is((select status::text || '|' || active_qr_code from public.containers w
 select is((select status::text || '|' || (swap_return->>'reason') || '|' || condition_class::text from public.containers where container_no = 'MSKU3000001' and status <> 'GATED_OUT'),
   'WAITING_PLACEMENT|KEN_VO|AV', 'Cont cũ về chờ hạ lại, giữ AV');
 select is((select gate_out_at from public.containers where container_no = 'MSKU3000001' and status <> 'GATED_OUT'), null, 'Bỏ giờ OUT của cont cũ');
-select throws_like(format($$ select public.swap_gate_out_container(gen_random_uuid(), %L, 'KEN_VO', 'MSKU3000003') $$, :'go1'),
-  '%chờ trả chứng từ%', 'Lệnh chưa cấp ra lại thì không đổi tiếp');
 
 -- Xe nâng cấp cont mới bằng QR phiếu đang cầm; hạ lại cont cũ → tồn bãi, cấp được khách khác
 select pg_temp.login('00000000-0000-0000-0000-0000000000a4');
@@ -115,6 +118,35 @@ select is((select needs_quotation::text || '|' || release_damage::text from publ
   'true|true', 'Hạ xong → Chờ báo giá, giữ nhãn PHÁT SINH CẤP VỎ');
 select is((select items from public.work_orders where container_no = 'MSKU3000003' and category = 'INSPECTION' and work_status = 'OPEN'),
   array['Thủng sàn'], 'Tạo việc Báo giá với ghi chú hư hỏng');
+
+-- ==== 4. DEC-192: đổi khi CHƯA NÂNG HẠ (lệnh đã thu tiền, Xe nâng chưa cấp) ====
+create or replace function pg_temp.paid(no text, booking text) returns uuid language plpgsql as $$
+declare v_go uuid;
+begin
+  perform pg_temp.login('00000000-0000-0000-0000-0000000000a2');
+  v_go := (public.create_release_order(gen_random_uuid(), booking, 'Khách hàng 01', no, '15H-2', '0912345678', array['00000000-0000-0000-0000-0000000000f1'::uuid])->>'gate_out_id')::uuid;
+  perform public.confirm_release_payment(gen_random_uuid(), v_go, 'TTTT', null, null, 'CASH');
+  return v_go;
+end $$;
+select pg_temp.paid('MSKU3000005', 'BK-SWAP-3') as go3 \gset
+select code as cv3 from public.gate_out_orders where id = :'go3' \gset
+select lives_ok(format($$ select public.swap_gate_out_container(gen_random_uuid(), %L, 'KEN_VO', 'MSKU3000006') $$, :'go3'), 'Đổi khi chưa nâng hạ (kén vỏ)');
+select is((select status::text || '|' || current_block || '|' || coalesce(out_dossier_code, '-') from public.containers where container_no = 'MSKU3000005' and status <> 'GATED_OUT'),
+  'IN_YARD|BLOCK-B|-', 'Cont cũ giữ nguyên vị trí, bỏ khóa phân bổ');
+select is((select public.release_blocker(c) from public.containers c where container_no = 'MSKU3000005' and status <> 'GATED_OUT'), null, 'Cấp được cho khách khác ngay');
+select is((select status::text || '|' || container_no || '|' || (swaps->0->>'lifted') from public.gate_out_orders where id = :'go3'),
+  'PENDING_FORKLIFT|MSKU3000006|false', 'Lệnh vẫn chờ Xe nâng, sang cont mới');
+select pg_temp.login('00000000-0000-0000-0000-0000000000a4');
+select lives_ok(format($$ select public.execute_gate_out(gen_random_uuid(), null, %L) $$, 'QR-' || :'cv3'), 'Không phải hạ lại → cấp cont mới ngay');
+select pg_temp.paid('MSKU3000007', 'BK-SWAP-4') as go4 \gset
+select lives_ok(format($$ select public.swap_gate_out_container(gen_random_uuid(), %L, 'DAMAGE', 'MSKU3000008', 'Móp vách') $$, :'go4'), 'Đổi khi chưa nâng hạ (hư hỏng)');
+select is((select status::text || '|' || condition_class::text || '|' || release_damage::text || '|' || needs_quotation::text from public.containers where container_no = 'MSKU3000007' and status <> 'GATED_OUT'),
+  'IN_YARD|DAMAGE|true|true', 'Hư hỏng chưa nâng: giữ chỗ, DAMAGE + PHÁT SINH CẤP VỎ, vào Chờ báo giá ngay');
+select is((select items from public.work_orders where container_no = 'MSKU3000007' and category = 'INSPECTION' and work_status = 'OPEN'), array['Móp vách'], 'Tạo việc Báo giá');
+-- Lệnh chưa thu tiền thì không đổi (hủy lệnh như cũ)
+select pg_temp.login('00000000-0000-0000-0000-0000000000a2');
+select (public.create_release_order(gen_random_uuid(), 'BK-SWAP-5', 'Khách hàng 01', 'MSKU3000009', '15H-3', '0912345678', array['00000000-0000-0000-0000-0000000000f1'::uuid])->>'gate_out_id') as go5 \gset
+select throws_like(format($$ select public.swap_gate_out_container(gen_random_uuid(), %L, 'KEN_VO', 'MSKU3000005') $$, :'go5'), '%chờ trả chứng từ%', 'Chưa thu tiền thì không đổi');
 
 select * from finish();
 rollback;

@@ -641,6 +641,24 @@ export function updateContainerLocation(
   ), container.id);
 }
 
+// DEC-185 / DEC-192: việc Báo giá cho cont PHÁT SINH CẤP VỎ (hư hỏng phát hiện khi cấp vỏ)
+function releaseDamageWorkOrder(container: ContainerRecord, gateOutCode: string, now: string): ServiceWorkOrder {
+  return {
+    id: newId('wo'),
+    masterDossierCode: container.masterDossierCode,
+    workOrderCode: `INSP-${container.masterDossierCode}-PS`,
+    containerNo: container.containerNo,
+    category: 'INSPECTION',
+    sourceOrderCode: gateOutCode,
+    items: container.damageRemarks.length ? [...container.damageRemarks] : ['Hư hỏng phát sinh khi cấp vỏ'],
+    estimateCost: 0,
+    approvalStatus: 'NOT_REQUIRED',
+    workStatus: 'OPEN',
+    assignedTo: 'Bộ phận Báo giá',
+    createdAt: now,
+  };
+}
+
 // DEC-185: Xe nâng HẠ LẠI cont bị ĐỔI CONTAINER (vị trí mới do Xe nâng chọn).
 // Kén vỏ → tồn bãi, cấp được cho khách khác. Hư hỏng → CHỜ BÁO GIÁ (nhãn PHÁT SINH CẤP VỎ), rồi Sửa chữa như luồng thường.
 function placeSwapReturn(
@@ -678,25 +696,7 @@ function placeSwapReturn(
       },
       ...next.locationHistory,
     ],
-    workOrders: isDamage
-      ? [
-          {
-            id: newId('wo'),
-            masterDossierCode: container.masterDossierCode,
-            workOrderCode: `INSP-${container.masterDossierCode}-PS`,
-            containerNo: container.containerNo,
-            category: 'INSPECTION' as const,
-            sourceOrderCode: swap.gateOutCode,
-            items: container.damageRemarks.length ? [...container.damageRemarks] : ['Hư hỏng phát sinh khi cấp vỏ'],
-            estimateCost: 0,
-            approvalStatus: 'NOT_REQUIRED' as const,
-            workStatus: 'OPEN' as const,
-            assignedTo: 'Bộ phận Báo giá',
-            createdAt: now,
-          },
-          ...next.workOrders,
-        ]
-      : next.workOrders,
+    workOrders: isDamage ? [releaseDamageWorkOrder(container, swap.gateOutCode, now), ...next.workOrders] : next.workOrders,
   };
   return appendAudit(
     next,
@@ -1384,14 +1384,17 @@ export function releaseAllocatedContainer(
 
 // ============================================================================
 // DEC-185: ĐỔI CONTAINER — Văn phòng, khi cont đã cấp ra (Xe nâng OUT) và đang chờ TRẢ CHỨNG TỪ CẤP VỎ.
+//   DEC-192: cũng đổi được khi CHƯA NÂNG HẠ (lái xe kiểm tra trước) — cont cũ giữ chỗ, bỏ khóa phân bổ; hư hỏng → Chờ báo giá ngay.
 //   Giữ nguyên lệnh CV-, chứng từ, phiếu thu, QR phiếu K80 → lệnh chuyển sang cont thay thế (Xe nâng cấp lại).
 //   Cont cũ quay về bãi (giữ hồ sơ HV- / ngày hạ gốc) → Xe nâng HẠ LẠI, chọn vị trí mới.
 //   KEN_VO: giữ trạng thái, hạ xong cấp được cho khách khác. DAMAGE: chuyển DAMAGE + PHÁT SINH CẤP VỎ, hạ xong → Chờ báo giá.
 // ============================================================================
-// DEC-185: lệnh cấp đổi được container (cont đã cấp ra, chưa trả chứng từ) + danh sách cont thay thế hợp lệ
+// DEC-185 / DEC-192: lệnh cấp đổi được container — đã thu tiền, chưa trả chứng từ:
+//   CHƯA NÂNG HẠ (chờ Xe nâng cấp) hoặc ĐÃ NÂNG HẠ lên xe (đã OUT)
 export function canSwapGateOut(order: GateOutOrder | undefined): boolean {
-  return Boolean(order && order.status === 'GATE_OUT_OK' && !order.documentsReturnedAt);
+  return Boolean(order && !order.documentsReturnedAt && (order.status === 'GATE_OUT_OK' || order.status === 'PENDING_FORKLIFT'));
 }
+export const isGateOutLifted = (order: GateOutOrder | undefined) => order?.status === 'GATE_OUT_OK';
 export function swapCandidates(state: DepotState, gateOutOrderId: string): ContainerRecord[] {
   const order = state.gateOutOrders.find((o) => o.id === gateOutOrderId);
   if (!canSwapGateOut(order)) return [];
@@ -1430,13 +1433,14 @@ export function swapGateOutContainer(
   const order = state.gateOutOrders.find((o) => o.id === input.gateOutOrderId);
   if (!order) throw new Error('Không tìm thấy hồ sơ CẤP VỎ.');
   if (!canSwapGateOut(order)) {
-    throw new Error(`Hồ sơ ${order.gateOutCode}: chỉ ĐỔI CONTAINER khi cont đã cấp ra và đang chờ trả chứng từ.`);
+    throw new Error(`Hồ sơ ${order.gateOutCode}: chỉ ĐỔI CONTAINER khi lệnh đã thu tiền và đang chờ trả chứng từ.`);
   }
+  const lifted = isGateOutLifted(order); // DEC-192: chưa nâng hạ → cont cũ vẫn nằm trong bãi
   const old = state.containers.find(
-    (c) => c.masterDossierCode === order.masterDossierCode && c.containerNo === order.containerNo && c.status === 'GATED_OUT'
+    (c) => c.masterDossierCode === order.masterDossierCode && c.containerNo === order.containerNo && c.status === (lifted ? 'GATED_OUT' : 'ALLOCATED')
   );
   if (!old) throw new Error(`Không tìm thấy lượt lưu bãi của container ${order.containerNo}.`);
-  if (findActiveContainer(state, old.containerNo)) {
+  if (lifted && findActiveContainer(state, old.containerNo)) {
     throw new Error(`Container ${old.containerNo} đang có lượt lưu bãi khác — không đổi được.`);
   }
   const fresh = findActiveContainer(state, input.newContainerNo);
@@ -1463,6 +1467,7 @@ export function swapGateOutContainer(
     toMasterDossierCode: fresh.masterDossierCode,
     reason: input.reason,
     note,
+    lifted,
     gatedOutBy: order.confirmedBy,
     gatedOutAt: order.confirmedAt,
     swappedBy: actor,
@@ -1515,7 +1520,7 @@ export function swapGateOutContainer(
         ? {
             ...b,
             gatedOutContainers: b.gatedOutContainers.filter((no) => no !== old.containerNo),
-            allocatedContainers: [...b.allocatedContainers, fresh.containerNo],
+            allocatedContainers: [...b.allocatedContainers.filter((no) => no !== old.containerNo), fresh.containerNo],
             releasedContainers: [
               ...(b.releasedContainers || []),
               { containerNo: old.containerNo, outDossierCode: order.gateOutCode, reason: `ĐỔI CONTAINER: ${SWAP_REASON_LABELS[input.reason]}`, releasedBy: actor, releasedAt: now },
@@ -1525,19 +1530,39 @@ export function swapGateOutContainer(
         : b
     ),
   };
-  // Cont cũ: về hàng chờ Xe nâng HẠ LẠI (giữ hồ sơ HV- + ngày hạ gốc)
-  next = updateContainerById(next, old.id, {
-    status: 'WAITING_PLACEMENT',
-    gateOutAt: undefined,
-    allocatedBookingNo: undefined,
-    allocatedTruckNo: undefined,
-    allocatedDriverPhone: undefined,
-    allocatedAt: undefined,
-    outDossierCode: undefined,
-    activeQrCode: `QR-${old.masterDossierCode}`,
-    swapReturn: { gateOutCode: order.gateOutCode, reason: input.reason, note, toContainerNo: fresh.containerNo, requestedBy: actor, requestedAt: now },
-    ...(isDamage ? { conditionClass: 'DAMAGE' as const, damageRemarks: note ? [note] : old.damageRemarks, releaseDamage: true } : {}),
-  });
+  const damage = isDamage ? { conditionClass: 'DAMAGE' as const, damageRemarks: note ? [note] : old.damageRemarks, releaseDamage: true } : {};
+  if (!lifted) {
+    // DEC-192: chưa nâng hạ → cont cũ giữ nguyên vị trí, bỏ khóa phân bổ; hư hỏng → Chờ báo giá ngay (không việc Xe nâng)
+    next = updateContainerById(next, old.id, {
+      status: 'IN_YARD',
+      allocatedBookingNo: undefined,
+      allocatedTruckNo: undefined,
+      allocatedDriverPhone: undefined,
+      allocatedAt: undefined,
+      outDossierCode: undefined,
+      activeQrCode: `QR-${old.masterDossierCode}`,
+      ...damage,
+      ...(isDamage ? { needsQuotation: true } : {}),
+    });
+    if (isDamage) {
+      const damaged = next.containers.find((c) => c.id === old.id)!;
+      next = { ...next, workOrders: [releaseDamageWorkOrder(damaged, order.gateOutCode, now), ...next.workOrders] };
+    }
+  } else {
+    // Đã nâng lên xe → cont cũ về hàng chờ Xe nâng HẠ LẠI (giữ hồ sơ HV- + ngày hạ gốc)
+    next = updateContainerById(next, old.id, {
+      status: 'WAITING_PLACEMENT',
+      gateOutAt: undefined,
+      allocatedBookingNo: undefined,
+      allocatedTruckNo: undefined,
+      allocatedDriverPhone: undefined,
+      allocatedAt: undefined,
+      outDossierCode: undefined,
+      activeQrCode: `QR-${old.masterDossierCode}`,
+      swapReturn: { gateOutCode: order.gateOutCode, reason: input.reason, note, toContainerNo: fresh.containerNo, requestedBy: actor, requestedAt: now },
+      ...damage,
+    });
+  }
   // Cont thay thế: khóa phân bổ cho lệnh CV- (QR phiếu K80 giữ nguyên)
   next = updateContainerById(next, fresh.id, {
     status: 'ALLOCATED',
@@ -1553,7 +1578,7 @@ export function swapGateOutContainer(
     'GATE_OUT_SWAP',
     'GATE_OUT',
     order.gateOutCode,
-    `[Hồ sơ ${order.gateOutCode}] ĐỔI CONTAINER ${old.containerNo} → ${fresh.containerNo}. Lý do: ${SWAP_REASON_LABELS[input.reason]}${note ? ` — ${note}` : ''}`,
+    `[Hồ sơ ${order.gateOutCode}] ĐỔI CONTAINER ${old.containerNo} → ${fresh.containerNo} (${lifted ? 'đã nâng lên xe' : 'chưa nâng hạ'}). Lý do: ${SWAP_REASON_LABELS[input.reason]}${note ? ` — ${note}` : ''}`,
     old.masterDossierCode
   );
 }
