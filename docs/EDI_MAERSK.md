@@ -349,3 +349,65 @@ Tài liệu nhận được: **API License Terms** (sửa 31/08/2026) + OpenAPI 
 - (b) Vercel Cron + hàm Node — cron mỗi giờ cần gói Pro, cũng không có IP cố định;
 - (c) máy chủ nhỏ / máy tính depot chạy 24/24 (như ERPVINASHIP) — có IP cố định, phải giữ máy luôn bật.
 
+
+## 15. Thiết kế màn Giám định theo eEIR (đề xuất 2026-10-30 — CHƯA CODE, chờ chốt câu hỏi + khóa)
+
+**Nguyên tắc:** giữ màn Giám định hiện có (`InspectionFields` dùng chung Hạ vỏ / Nhập tàu, màn Giám định → Cấp vỏ DEC-198), **bổ sung đúng trường eEIR bắt buộc** — chỉ áp cho cont **MSK**; hãng khác giữ nguyên. **Không chặn tác nghiệp khi API Maersk lỗi** — phiếu eEIR vào hàng chờ gửi lại.
+
+### 15.1 Khối chung khi Giám định gõ / quét số cont MSK
+
+1. Gọi **API 1 `getEquipmentDetails`** → hiện khung **"Thông tin Maersk"** (chỉ đọc):
+   - Size / Type + **mã ISO** (`equipmentISOCode`) → tự điền mã ISO riêng của cont (`isoCode`, DEC-195);
+   - **Năm sản xuất** (`productionYear`) → gợi ý AGE;
+   - **Hạng Maersk** (`smokeTested`: M / S / K / E / Q / N) → so với Phân loại MATRAN, khác nhau thì tô vàng;
+   - **Cảnh báo đỏ:** `stBlock` (Maersk cấm dùng), `sTSELSCR` (cont đánh dấu bán), `globalHuntStatus` (cont thuê phải trả hãng cho thuê), `stSound` (Maersk ghi hư).
+2. API lỗi / cont không có trong Maersk → hiện "Không lấy được thông tin Maersk" → làm tiếp như cũ.
+
+### 15.2 Từng màn
+
+| Màn | eEIR | Trường thêm / kiểm tra | Câu hỏi còn mở |
+|---|---|---|---|
+| **Giám định → Hạ vỏ** | gate-in, `moveStatus` 1 | Khối Maersk (15.1); **AV** → mục hư `0000` "không hư / hao mòn" + ảnh cửa (đã có); **DAMAGE** → (nếu chốt Q-062) mỗi chỗ hư: **vị trí CEDEX** + loại hư + **bên gây hư** + 1–3 ảnh; số seal (tùy chọn) | moveType (Q-058, dự đoán IMP), CEDEX (Q-062) |
+| **Văn phòng → Hạ vỏ** | (bổ sung) | **Số xe ≤ 11 ký tự** (`truckerRegno`) cho cont MSK | — |
+| **Giám định → Cấp vỏ** (DEC-198 — đã có màn + ảnh) | gate-out, `moveStatus` 2 | Khối Maersk (cảnh báo `stBlock` / cont bán trước khi cho xe ra); mục hư `0000` + ảnh cấp vỏ (đã có) | moveType (dự đoán EXP); cấp sale gửi gì (booking 9–11 số không khớp Sale code) |
+| **Văn phòng → Cấp vỏ** | (bổ sung) | **Booking cont MSK 9–11 chữ số** (Q-063); số xe ≤ 11 | Q-063 |
+| **Giám định → Nhập tàu** | gate-in | Như Hạ vỏ (dùng chung `InspectionFields`) | có gửi eEIR không; `truckerRegno` bắt buộc — tàu / sà lan ghi gì; moveType (dự đoán POS) |
+| **Xuất tàu** (Giám định / Xe nâng) | gate-out | **Hiện chưa chụp ảnh** → nếu phải gửi eEIR cần thêm ảnh như Cấp vỏ | có gửi eEIR không; moveType (dự đoán POS) |
+
+### 15.3 Theo dõi gửi
+
+- Mỗi lượt MSK sinh 1 **phiếu eEIR**: CHỜ GỬI → ĐÃ GỬI (`inspectionId`) / LỖI (lý do, gửi lại); gửi trễ tối đa **24 giờ** → quá hạn cảnh báo đỏ.
+- Hồ sơ container: dòng "eEIR gate-in / gate-out" + `inspectionId` (+ PDF nếu làm mục 16).
+- Màn **Danh mục chung → EDI hãng tàu** thêm tab **eEIR**: danh sách phiếu theo ngày, trạng thái, gửi lại, xem dữ liệu (JSON) đã gửi.
+
+### 15.4 Thứ tự làm
+
+1. **Không cần khóa:** khung dữ liệu phiếu eEIR + kiểm tra thiếu trường (booking 9–11 số, số xe ≤ 11, ảnh ≥ 1, email) + tab eEIR **chạy thử** (xem JSON sẽ gửi). Cần chốt Q-058 (tạm để "chờ xác nhận"), Q-062, Q-063.
+2. **Có khóa staging:** API 1 (khung Thông tin Maersk) → API 2 gửi thử trên `api-stage` với danh sách cont thử của Maersk.
+3. **Maersk duyệt → khóa thật:** bật gửi thật, chạy song song CODECO (Q-061).
+- Khóa eEIR / email chỉ đặt ở biến môi trường máy chủ (Edge Function), **không** trong code / database / frontend.
+
+## 16. PDF eEIR Maersk gửi về email (đề xuất 2026-10-30 — chờ email mẫu)
+
+**Kết luận:** **không dùng PDF thay ảnh** (DEC-198 — phải gửi ảnh trước mới có PDF; chỉ cont MSK; PDF không nhẹ hơn ảnh < 200 KB). **Nên lưu PDF làm chứng từ đối chiếu** (bản Maersk xác nhận tình trạng vỏ khi giao / nhận — dùng khi tranh chấp hư hỏng, gửi lại khách).
+
+**Phương án đề xuất — Google Apps Script trong chính hộp thư nhận PDF** (không cần đưa mật khẩu Gmail cho ai):
+1. Script chạy trong tài khoản Gmail đó, **mỗi 15 phút** tìm thư mới từ Maersk eEIR (lọc theo người gửi / tiêu đề), lấy file PDF.
+2. Gửi PDF tới 1 **Edge Function** MATRAN kèm **mã bí mật riêng** (đặt trong Script Properties + biến môi trường máy chủ).
+3. Edge Function đọc **số cont / inspectionId / giờ** (từ tiêu đề, tên file hoặc nội dung), lưu PDF vào kho `eeir-pdf/EEIR-PDF/<năm>/<tháng>/<ngày>/`, gắn vào đúng lượt (khớp `inspectionId` đã gửi, hoặc số cont + giờ).
+4. Hồ sơ container: nút **PDF eEIR** (chỉ tải khi bấm — như XEM ẢNH, DEC-178). Thư không khớp lượt nào → danh sách "PDF chưa gắn" ở tab eEIR để Admin gắn tay.
+5. Script gắn nhãn Gmail "MATRAN-ĐÃ-LẤY" để không lấy trùng.
+
+**Phương án khác:** (a) hỏi Maersk có **API tải PDF theo `inspectionId`** không (gọn nhất — thêm vào ticket); (b) Gmail API với OAuth từ máy chủ (phức tạp hơn, phải giữ refresh token).
+
+**Cần người dùng gửi:** 1 email eEIR mẫu (chụp màn hình: người gửi, tiêu đề, tên file đính kèm) + 1 file PDF mẫu (xem dung lượng, nội dung có số cont / inspectionId không). **Không gửi mật khẩu Gmail.**
+
+## 17. Ticket hỗ trợ gửi Maersk (gom câu hỏi)
+
+Gửi `eEIRSupport@maersk.com` / ticket developer portal, nêu mã depot 3 ký tự:
+- Xin **client id / secret eEIR** môi trường staging (sau đó production) + **mẫu `inspectionDetails` JSON** (Q-056).
+- **moveType** (1 POS / 2 IMP / 3 EXP) cho: khách trả vỏ, cấp vỏ theo booking, release for sale, cont dỡ từ tàu, cont xếp lên tàu, đổi container (Q-058).
+- Release for sale: `bookingNo` ghi gì khi chỉ có Sale code.
+- eEIR có **thay** CODECO không hay gửi cả hai (Q-061).
+- Có **API tải PDF eEIR** theo `inspectionId` không (mục 16).
+- SFTP CODECO: có giới hạn IP gửi, file xác nhận / báo lỗi, thư mục thử không (mục 14).

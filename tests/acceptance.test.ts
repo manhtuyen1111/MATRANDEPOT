@@ -2253,3 +2253,19 @@ describe('DEC-198: Giám định chụp ảnh cấp vỏ cont MSK', () => {
   });
 });
 
+
+// Đồng bộ 30 giây (DEC-158): lệnh cấp mới dùng lại booking tạo ngày trước → phải tải bù booking / cont còn thiếu (lỗi GOUT-002 ở Xe nâng)
+import { missingReleaseRefs } from '../src/services/remote/loadWorking';
+
+describe('Đồng bộ: tải bù booking / cont lệnh cấp trỏ tới', () => {
+  it('lệnh mới về máy nhưng booking cũ (không đổi) chưa có → cần tải bù; đã có thì không tải lại', () => {
+    const gateOuts = [
+      { id: 'o1', booking_id: 'bk-old', container_id: 'c1' },
+      { id: 'o2', booking_id: 'bk-old', container_id: 'c2' },
+      { id: 'o3', booking_id: 'bk-today', container_id: 'c1' },
+    ];
+    expect(missingReleaseRefs({ gateOuts, bookings: [{ id: 'bk-today' }], containers: [{ id: 'c1' }] })).toEqual({ bookings: ['bk-old'], containers: ['c2'] });
+    expect(missingReleaseRefs({ gateOuts, bookings: [{ id: 'bk-old' }, { id: 'bk-today' }], containers: [{ id: 'c1' }, { id: 'c2' }] })).toEqual({ bookings: [], containers: [] });
+    expect(missingReleaseRefs({ gateOuts: [{ id: 'o4', booking_id: null, container_id: null }], bookings: [], containers: [] })).toEqual({ bookings: [], containers: [] });
+  });
+});
