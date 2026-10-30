@@ -31,6 +31,7 @@ import { allocateCode } from './codes';
 import { markVesselImportPlaced } from './vessel';
 import { resolveStuffing } from './stuffing';
 import { ASSIGNABLE_ROLES } from './permissions';
+import { isMaerskBooking, isMaerskLine, MAERSK_BOOKING_ERROR } from './edi/maersk';
 import {
   appendAudit,
   assertPermission,
@@ -1131,6 +1132,8 @@ export function createReleaseOrder(
   if (!container) throw new Error('Không tìm thấy container đang tồn bãi.');
   const blocker = releaseBlocker(container);
   if (blocker) throw new Error(`Container ${container.containerNo} chưa đủ điều kiện CẤP VỎ: ${blocker}.`);
+  // DEC-199: cont Maersk cấp cho khách — booking 9–11 chữ số (eEIR gate-out); cấp sale dùng Sale code nên không kiểm
+  if (purpose === 'CUSTOMER' && isMaerskLine(container.shippingLineCode) && !isMaerskBooking(bookingNo)) throw new Error(MAERSK_BOOKING_ERROR);
   const truckNo = input.truckNo.trim().toUpperCase();
   if (!truckNo) throw new Error('Vui lòng nhập SỐ XE.');
   const driverPhone = normalizeDriverPhone(input.driverPhone);

@@ -234,7 +234,7 @@ function bulkData(state: DepotState): DepotState {
     const c = s.containers.find((x) => x.containerNo === no && x.status === 'IN_YARD')!;
     const fee = FEES[c.size === '40' && c.type === 'DC' ? '40DC' : c.size];
     const cust = CUSTOMERS[k % 8].name;
-    s = createReleaseOrder(as(s, 'usr-office'), { bookingNo: `BK-MSK-${String(100 + k).padStart(4, '0')}`, customerName: cust, containerNo: no, truckNo: `15H-${String(700 + k)}.${String(10 + k).padStart(2, '0')}`, driverPhone: '0912 907 980', feeCatalogIds: fee });
+    s = createReleaseOrder(as(s, 'usr-office'), { bookingNo: `5631${String(k).padStart(5, '0')}` /* DEC-199: booking Maersk 9 chữ số */, customerName: cust, containerNo: no, truckNo: `15H-${String(700 + k)}.${String(10 + k).padStart(2, '0')}`, driverPhone: '0912 907 980', feeCatalogIds: fee });
     const order = s.gateOutOrders[0];
     if (k % 4 === 3) return; // chờ thanh toán
     if (k % 4 === 2) {
@@ -354,12 +354,12 @@ export function createDemoState(): DepotState {
   s = completeRepairTask(as(s, 'usr-repair'), { containerNo: 'MSKU1000077', teamId: 'rt-1', memberIds: ['rtm-1', 'rtm-2'], photos: [PHOTO] });
 
   // ── CẤP VỎ: 1 lượt đã xuất bãi (TT tiền mặt), 1 lượt TTS chờ Xe nâng
-  s = createReleaseOrder(as(s, 'usr-office'), { bookingNo: 'BK-MSK-0001', customerName: KH(2), containerNo: 'MSKU2000011', truckNo: '15H-501.01', driverPhone: '0987 654 321', feeCatalogIds: FEES['40'] });
+  s = createReleaseOrder(as(s, 'usr-office'), { bookingNo: '563000001', customerName: KH(2), containerNo: 'MSKU2000011', truckNo: '15H-501.01', driverPhone: '0987 654 321', feeCatalogIds: FEES['40'] });
   s = confirmReleasePayment(as(s, 'usr-office'), { gateOutOrderId: s.gateOutOrders[0].id, paymentCategory: 'TTTT', directMethod: 'CASH' });
   s = executeGateOut(as(s, 'usr-forklift'), { containerNo: 'MSKU2000011' });
   // DEC-198: cont MSK — Giám định chụp ảnh cấp vỏ (các lượt cấp hàng loạt bên trên để CHỜ CHỤP)
   s = recordReleasePhotos(as(s, 'usr-inspector'), { gateOutOrderId: s.gateOutOrders[0].id, photos: [PHOTO] });
-  s = createReleaseOrder(as(s, 'usr-office'), { bookingNo: 'BK-MSK-0002', customerName: KH(2), containerNo: 'MSKU2000022', truckNo: '15H-502.02', driverPhone: '0987 654 322', feeCatalogIds: FEES['20'] });
+  s = createReleaseOrder(as(s, 'usr-office'), { bookingNo: '563000002', customerName: KH(2), containerNo: 'MSKU2000022', truckNo: '15H-502.02', driverPhone: '0987 654 322', feeCatalogIds: FEES['20'] });
   s = confirmReleasePayment(as(s, 'usr-office'), { gateOutOrderId: s.gateOutOrders[0].id, paymentCategory: 'TTS', ttsNote: 'Hãng tàu MSK duyệt công nợ' });
 
   // ── NHẬP TÀU: 1 cont đã hạ bãi, 1 cont DAMAGE + vệ sinh đang chờ, 1 cont chưa giám định

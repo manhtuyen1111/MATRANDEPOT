@@ -2269,3 +2269,29 @@ describe('Đồng bộ: tải bù booking / cont lệnh cấp trỏ tới', () =
     expect(missingReleaseRefs({ gateOuts: [{ id: 'o4', booking_id: null, container_id: null }], bookings: [], containers: [] })).toEqual({ bookings: [], containers: [] });
   });
 });
+
+// DEC-199: cấp vỏ cont Maersk cho khách — booking 9–11 chữ số (eEIR gate-out); cấp sale / hãng khác không kiểm
+describe('DEC-199: booking cont MSK phải là 9–11 chữ số', () => {
+  const demo = createDemoState();
+  const cont = demo.containers.find((c) => c.status === 'IN_YARD' && c.shippingLineCode === 'MSK' && !releaseBlocker(c))!;
+  const office = as(demo, 'usr-office');
+  const order = (bookingNo: string, extra: object = {}) =>
+    createReleaseOrder(office, { bookingNo, customerName: 'KH01', containerNo: cont.containerNo, truckNo: '15H-1', driverPhone: '0912345678', feeCatalogIds: [demo.feeCatalog[0].id], ...extra });
+
+  it('chặn booking sai dạng; nhận 9 và 11 chữ số', () => {
+    for (const bad of ['BK563663666', '56366366', '563663666123', '563-663-666']) expect(() => order(bad)).toThrow('Booking Maersk phải là 9–11 chữ số.');
+    expect(order(' 563663666 ').gateOutOrders[0].bookingNo).toBe('563663666');
+    expect(order('56366366612').gateOutOrders[0].bookingNo).toBe('56366366612');
+  });
+
+  it('Release for sale không kiểm booking (dùng Sale code)', () => {
+    expect(order('BK-SALE-1', { releasePurpose: 'SALE', saleCode: 'SALEO26VN51' }).gateOutOrders[0].saleCode).toBe('SALEO26VN51');
+  });
+
+  it('hãng khác không kiểm', () => {
+    let s = createReleaseOrder(as(createInitialState(), 'usr-office'), {
+      bookingNo: 'BK-R', customerName: VIETLOG, containerNo: 'MSKU4089123', truckNo: '15H', driverPhone: '0912345678', feeCatalogIds: [FEE_LOLO_40HC_MSK],
+    });
+    expect(s.gateOutOrders[0].bookingNo).toBe('BK-R');
+  });
+});
