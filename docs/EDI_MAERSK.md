@@ -176,3 +176,17 @@ Tài liệu nhận được: **API License Terms** (sửa 31/08/2026) + OpenAPI 
 - Câu hỏi thêm:
   - **Q-056** — bản đọc được của eEIR External API v4.3 + Integration Guide v1.6;
   - **Q-057** — depot đã được Maersk duyệt / có tài khoản developer + `maintenanceShopCode` chưa; Maersk yêu cầu dùng API hay vẫn nhận EDI.
+
+## 11. Hướng mới (người dùng 2026-10-30): đồng bộ API Maersk cho toàn app
+
+- Trả lời Q-057: xin Maersk duyệt được; đã có tài khoản developer.maersk.com; đã có mã depot 3 ký tự. Người dùng muốn **dùng API cho toàn bộ app** thay EDI.
+- Chưa chốt DEC — chờ đọc tài liệu dưới đây rồi đề xuất phạm vi (gate-in / gate-out, chọn cont cho booking, sửa chữa…).
+- **Tài liệu agent cần** (người dùng tải → **đính kèm thẳng vào tin nhắn** — PDF đính kèm đọc được; key / mật khẩu không gửi):
+  1. eEIR External API Documentation v4.3 — https://edpmediastorage.blob.core.windows.net/media/eir-external-api-documentation_v4.3-5.pdf
+  2. eEIR Container Assignment Integration Guide v1.6 — https://edpmediastorage.blob.core.windows.net/media/eir-container-assignment-integration-guide_v1-6.pdf
+  3. Authorisation Guide (OAuth 2.0) — https://developer.maersk.com/support/authorisation
+  4. Getting Started — https://developer.maersk.com/support/getting-started-api
+  5. Trong developer.maersk.com → danh mục API: tải **file OpenAPI (JSON)** của mỗi API depot được mở (eEIR gate-in / gate-out, Empty Container Assignment — đã có, sửa chữa / AEMS nếu có).
+  6. Danh sách API product đang bật cho app của depot (ảnh chụp trang My Apps — che Consumer Key / Secret).
+- Điều khoản đã đọc: `API License Terms` (31/08/2026) — mục 10.
+
