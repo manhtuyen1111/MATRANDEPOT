@@ -87,7 +87,7 @@ DTM+7:202610241056:203'
 
 - **Xuất tàu = gate-out (36) + `EQD …++8+4` + `RFF+BN:<mã cảng đến>`** (mẫu: `VNHPHTM`). File 11:00 có **60 cont xuất tàu cùng giờ 10:56** (cả danh sách tàu) + 2 cấp thường + 1 gate-in `GRADED DAM+1+2`.
 - **Trạng thái 8** dùng cho cả **cấp sale** và **xuất tàu** (cont đi không theo booking xuất khẩu); cấp thường theo booking = **2**.
-- Ánh xạ MATRAN: cont XUẤT TÀU (DEC-069) khi Xe nâng xuất (`item.status = DONE`, giờ `doneAt`) → `RFF+BN` = mã cảng đến. Danh sách tàu **hiện chưa có trường mã cảng** → Q-064.
+- Ánh xạ MATRAN: cont XUẤT TÀU (DEC-069) khi Xe nâng xuất (`item.status = DONE`, giờ **thực tế** `doneAt` — DEC-196) → `RFF+BN` = **Mã cảng đến** của danh sách (`destinationPort`, tùy tàu — DEC-196).
 - Giờ `DTM` của cả 60 cont **giống nhau (10:56)** → app cũ có thể lấy giờ **duyệt danh sách** / giờ nhập lô, không phải giờ từng xe ra (cần đối chiếu — Q-051).
 
 ### 3.5 Bảng mã size / type app cũ gửi (người dùng xác nhận 2026-10-30, file `202610290500.txt`)
@@ -99,6 +99,7 @@ DTM+7:202610241056:203'
 | **45HC** | `4500` | MSKU4773745 |
 | **40DC** | **`4200`** | MSKU6919401 (file `202610190600.txt`) |
 
+- **DEC-195:** MATRAN lưu mã ISO 6346 chuẩn (Danh mục Container + mã riêng từng cont). EDI có công tắc **Bộ mã gửi** theo hãng: mã app cũ (bảng dưới) để chạy song song, chuyển ISO khi Maersk xác nhận.
 - **Lưu ý:** app cũ gửi **40DC và 40HC cùng mã `4200`** (không phân biệt cao / thường; không theo mã ISO chuẩn 42G1 / 45G1) → MATRAN gửi **đúng như app cũ** (Maersk đang nhận), không tự đổi sang mã ISO chuẩn. Bảng mã để trong cấu hình EDI của hãng (sửa không cần code).
 - Cont lạnh (RF), open-top… chưa có mẫu — thêm khi gặp.
 

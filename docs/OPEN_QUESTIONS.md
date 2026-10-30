@@ -114,7 +114,7 @@ Cập nhật lần cuối: 2026-10-22.
 - [ ] Q-048: Ý nghĩa `RFF+BN:GRADED / GRADEK / GRADEM` (có E?) và `DAM+1+2` / `DAM+1+6`; có khớp Phân loại M / K / E (DEC-166) + AV / DAMAGE không.
 - [ ] Q-049: Giờ không có cont có gửi file rỗng không; xin file mẫu 00:00 → 03:00.
 - [ ] Q-050: Release for sale (Sale code), Xuất tàu, Nhập tàu gửi loại tin gì, `RFF` gì — xin file mẫu từng loại. — 2026-10-30: **Release for sale đã có mẫu** (`EQD …++8+4`, `RFF+BN:<Sale code>` — `docs/EDI_MAERSK.md` 3.3). **Xuất tàu đã có mẫu** (`EQD …++8+4`, `RFF+BN:VNHPHTM` — 3.4). **Còn Nhập tàu** (có gửi không).
-- [ ] Q-051: Giờ ghi `DTM+7`: giờ xe vào / ra cổng, giờ Văn phòng GATE IN OK hay giờ Xe nâng — app cũ lấy giờ nào.
+- [ ] Q-051: Giờ ghi `DTM+7`: giờ xe vào / ra cổng, giờ Văn phòng GATE IN OK hay giờ Xe nâng — app cũ lấy giờ nào. — 2026-10-30: **Xuất tàu lấy giờ thực tế từng cont ra bãi** (DEC-196). Gate-in / cấp vỏ: tạm lấy giờ GATE IN OK / giờ Xe nâng cấp (dữ liệu thực tế) — đối chiếu khi chạy song song.
 - [ ] Q-052: Tin hủy / sửa (đổi container sau khi đã gửi gate-out, nhập sai số cont): app cũ làm thế nào; file mẫu.
 - [ ] Q-053: Kênh gửi — SFTP (máy chủ, cổng, thư mục, mật khẩu hay khóa) hay Gmail (gửi tới đâu, tiêu đề, đính kèm); Maersk có trả xác nhận / báo lỗi không. **Không gửi mật khẩu cho agent.**
 - [ ] Q-054: Ai xem / gửi lại EDI: chỉ Admin hay cả Văn phòng.
@@ -127,4 +127,4 @@ Cập nhật lần cuối: 2026-10-22.
 - [ ] Q-061: Maersk (EMR / eEIRSupport) xác nhận: gửi eEIR qua API có **thay** CODECO EDI không, hay phải gửi cả hai. — 2026-10-30: Devy (developer portal) không trả lời được, portal không có sản phẩm "gate-in / gate-out equipment move" → cần **support ticket** / eEIRSupport.
 - [ ] Q-062: Depot có xác định **hư do bên thứ 3** (mã CEDEX vị trí, loại hư, bên gây hư) không; danh mục hư nhanh có cần đổi sang mã CEDEX.
 - [ ] Q-063: Booking Maersk luôn 9–11 ký tự chữ số? Có chặn nhập sai ở Cấp vỏ cho cont MSK không.
-- [ ] Q-064: Xuất tàu — `RFF+BN` = mã cảng / terminal đến (mẫu `VNHPHTM`): **luôn cố định** hay **tùy tàu / cảng**? Nếu tùy → thêm ô "Mã cảng đến" khi Văn phòng lập danh sách Xuất tàu.
+- [x] Q-064: Xuất tàu — mã cảng đến: **tùy tàu** (2026-10-30) → ô "Mã cảng đến" khi lập danh sách Xuất tàu (DEC-196).

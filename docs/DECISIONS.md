@@ -1527,6 +1527,27 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-196 — Xuất tàu: Mã cảng đến (tùy tàu)
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-064).
+- Văn phòng lập / sửa danh sách **Xuất tàu** bắt buộc nhập **Mã cảng đến** (5–10 chữ hoa / số, VD `VNHPHTM`) — **tùy tàu**. Nhập tàu không dùng.
+- Dùng cho EDI CODECO gate-out xuất tàu: `RFF+BN:<mã cảng đến>` (`docs/EDI_MAERSK.md` 3.4).
+- Giờ gửi EDI cho cont xuất tàu = **giờ thực tế từng cont ra bãi** (Xe nâng xuất — `doneAt`), không lấy giờ cả lô như app cũ (người dùng chọn — Q-051 phần xuất tàu).
+- Code: `cleanDestinationPort`, `VesselList.destinationPort` (`vessel.ts`). Database: migration `20261118000001_vessel_destination_port.sql` (cột `vessel_lists.destination_port`, hàm `vessel_destination_port`, `create_vessel_list` / `update_vessel_list` thêm `p_destination_port`), pgTAP `0020`.
+
+### DEC-195 — Mã ISO 6346 cho Size / Type (giữ tên 20DC, 40HC…)
+
+- Trạng thái: CONFIRMED (2026-10-30, người dùng chọn phương án A).
+- **Màn hình, phiếu in, biểu giá giữ cách gọi 20DC / 40DC / 40HC / 45HC…** — không bắt nhân viên học mã mới.
+- **Danh mục Container** thêm khung **Mã ISO 6346 theo Size - Type** (Admin sửa; mã trống = bỏ). Mặc định:
+  - 20DC 22G1 • 40DC 42G1 • 40HC 45G1 • 45HC L5G1;
+  - 20RF 22R1 • 40RF 45R1 • 20OT 22U1 • 40OT 42U1 • 20FR 22P1 • 40FR 42P1.
+- **Mỗi cont có thể có mã riêng** (`isoCode`, VD lấy từ Maersk eEIR API khi Giám định — làm ở bước eEIR); không có thì theo Danh mục (`containerIsoCode`).
+- Hồ sơ container hiện **Size / Type (ISO)**.
+- **EDI:** công tắc "Bộ mã gửi" theo hãng — **mã app cũ** (2200 / 4200 / 4500 — chạy song song để so khớp) hoặc **ISO 6346** (khi Maersk xác nhận). Làm ở bước EDI.
+- Lý do: app cũ gửi mã không đúng chuẩn (40DC và 40HC cùng `4200`, 45HC `4500`); Maersk eEIR API dùng ISO 6346 (`equipmentISOCode`).
+- Database: migration `20261117000001_container_iso_codes.sql` (bảng `container_iso_codes`, cột `containers.iso_code`, RPC `catalog_set_iso_code`), pgTAP `0019`.
+
 ### DEC-194 — Cấp vỏ: Tác nghiệp Release for customer / Release for sale (Sale code)
 
 - Trạng thái: CONFIRMED (2026-10-30, người dùng).
@@ -1958,6 +1979,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-194 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-196 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
