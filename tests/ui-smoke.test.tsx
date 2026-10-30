@@ -1246,3 +1246,15 @@ describe('DEC-195: Danh mục Container có mã ISO 6346', () => {
   });
 });
 
+describe('DEC-197: Danh mục chung → EDI hãng tàu (chạy thử)', () => {
+  it('màn có nhãn CHẠY THỬ, ô giờ file, bộ mã; chưa tạo thì chưa có file', async () => {
+    const { EdiWorkspace } = await import('../src/features/catalog/EdiWorkspace');
+    const html = renderToString(<EdiWorkspace state={as(base, 'usr-admin')} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('data-testid="edi-dry-run"');
+    expect(html).toContain('Chưa gửi Maersk');
+    expect(html).toContain('Giờ file (HH:00)');
+    expect(html).toContain('Mã app cũ (2200 / 4200 / 4500)');
+    expect(html).not.toContain('data-testid="edi-file"');
+  });
+});
+

@@ -221,6 +221,26 @@ export async function loadDossierState(client: SupabaseClient, base: DepotState,
   return buildState(base, raw);
 }
 
+// EDI CODECO chạy thử (DEC-197): lượt ra / vào bãi trong khoảng giờ — cont hạ (gate_in_at), lệnh cấp đã OUT (confirmed_at),
+// cont xuất tàu (done_at) — đủ để tạo file 1 giờ. base: danh mục đang có (mã ISO, hãng tàu).
+export async function loadEdiState(client: SupabaseClient, base: DepotState, range: { from: string; to: string }): Promise<DepotState> {
+  const [contIn, outs, items] = await Promise.all([
+    all((a, b) => client.from('containers').select('*').gte('gate_in_at', range.from).lt('gate_in_at', range.to).range(a, b)),
+    all((a, b) => client.from('gate_out_orders').select('*').eq('status', 'GATE_OUT_OK').gte('confirmed_at', range.from).lt('confirmed_at', range.to).range(a, b)),
+    all((a, b) => client.from('vessel_list_items').select('*').eq('status', 'DONE').gte('done_at', range.from).lt('done_at', range.to).range(a, b)),
+  ]);
+  const [contOut, lists] = await Promise.all([
+    byIds(client, 'containers', 'id', [...outs.map((o) => o.container_id), ...items.map((i) => i.container_id)]),
+    byIds(client, 'vessel_lists', 'id', items.map((i) => i.list_id)),
+  ]);
+  const raw = await expand(
+    client,
+    { containers: merge(contIn, contOut), gateIns: [], gateOuts: outs, bookings: [], prepaids: [], vouchers: [], txs: [], receipts: [], deductions: [], tickets: [], lists, feedbacks: [] },
+    false
+  );
+  return buildState(base, raw);
+}
+
 export async function loadWorkingState(client: SupabaseClient, me: StaffSession, range?: { from: string; to: string }): Promise<DepotState> {
   const base = await loadCatalogState(client, me);
   const raw = await fetchRaw(client, range?.from ?? windowStart(), range?.to ?? FAR, seesPayments(me));

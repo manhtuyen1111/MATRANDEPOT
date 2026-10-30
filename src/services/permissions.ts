@@ -98,6 +98,7 @@ export const MENU_ACCESS: Record<WorkspaceMenuId, AppRole[]> = {
   DM_BIEU_GIA: OFFICE_BLOCK,
   DM_USER: [],
   DM_DATABASE: [], // DEC-189: chỉ Admin (Admin thấy mọi menu — DEC-045)
+  DM_EDI: [], // DEC-197: chỉ Admin (Q-054 — Văn phòng xem / gửi lại: chờ chốt)
   BC_GOP_Y: PERMISSIONS.FEEDBACK_MANAGE, // DEC-120: chỉ Admin
 };
 
