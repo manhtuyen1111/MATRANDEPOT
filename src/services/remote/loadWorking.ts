@@ -59,6 +59,21 @@ async function byIds(client: SupabaseClient, table: string, column: string, ids:
   return out;
 }
 
+// id còn thiếu: được trỏ tới nhưng chưa có trong danh sách đã tải
+const missingIds = (ids: (string | null | undefined)[], have: Row[], key = 'id') => {
+  const got = new Set(have.map((x) => x[key]));
+  return ids.filter((id): id is string => Boolean(id) && !got.has(id));
+};
+
+// Đồng bộ 30 giây chỉ lấy dòng VỪA ĐỔI → lệnh cấp mới dùng lại booking tạo ngày trước (không đổi) thì booking không về máy
+// → Xe nâng báo GOUT-002. Tải bù booking / cont mà lệnh cấp trỏ tới nhưng máy chưa có (giống lúc mở app — expand).
+export function missingReleaseRefs(r: Pick<RawData, 'gateOuts' | 'bookings' | 'containers'>): { bookings: string[]; containers: string[] } {
+  return {
+    bookings: Array.from(new Set(missingIds(r.gateOuts.map((o) => o.booking_id), r.bookings))),
+    containers: Array.from(new Set(missingIds(r.gateOuts.map((o) => o.container_id), r.containers))),
+  };
+}
+
 const merge = (...lists: Row[][]): Row[] => {
   const map = new Map<string, Row>();
   for (const l of lists) for (const r of l) map.set(r.id, r);
@@ -137,10 +152,7 @@ async function fetchRaw(client: SupabaseClient, since: string, until: string, pa
 
 // Các đợt sau: hồ sơ liên quan tới gốc. Chỉ tải phần CHƯA có (trước đây tải trùng phần đã có theo thời gian — DEC-178)
 async function expand(client: SupabaseClient, r: Roots, payments: boolean): Promise<RawData> {
-  const missing = (ids: (string | null | undefined)[], have: Row[], key = 'id') => {
-    const got = new Set(have.map((x) => x[key]));
-    return ids.filter((id) => id && !got.has(id));
-  };
+  const missing = missingIds;
   const { gateOuts, prepaids, lists } = r;
   // DEC-198: cont của lệnh cấp đã ra khỏi bãi (hãng → có phải chụp ảnh cấp vỏ không)
   const containers = merge(r.containers, await byIds(client, 'containers', 'id', missing(gateOuts.map((o) => o.container_id), r.containers)));
@@ -519,6 +531,10 @@ export function createWorkingSync(client: SupabaseClient, me: StaffSession): Wor
       const fresh = await byIds(client, c.table, c.parent, Array.from(parents), c.select);
       r[c.key] = [...r[c.key].filter((x) => !parents.has(x[c.parent])), ...fresh];
     }
+    const refs = missingReleaseRefs(r);
+    const [bk, ct] = await Promise.all([byIds(client, 'release_bookings', 'id', refs.bookings), byIds(client, 'containers', 'id', refs.containers)]);
+    r.bookings = merge(r.bookings, bk);
+    r.containers = merge(r.containers, ct);
     cursor = next;
     return build(r, opts.catalog ?? true);
   };

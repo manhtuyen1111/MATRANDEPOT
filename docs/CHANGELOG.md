@@ -77,6 +77,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 - DEC-161 bổ sung: EEIR Nhập / Xuất tàu khổ K80; bản in giống hệt bản xem (khung nét đứt, 72mm), xem trước khổ 80mm × chiều dài phiếu (không còn A4); quy trình Xem phiếu → In trong cửa sổ xem; tên nút IN HOA (EEIR HẠ VỎ / PHIẾU THU, EEIR CẤP VỎ / PHIẾU THU, EEIR NHẬP TÀU, EEIR XUẤT TÀU, HỒ SƠ CONTAINER).
 
 ### Fixed
+- 2026-10-30: **Xe nâng báo GOUT-002 "Không có lệnh cấp / booking hợp lệ"** (chế độ database) khi Văn phòng lập lệnh cấp dùng lại **booking tạo ngày trước** trong lúc máy Xe nâng đang mở app — đồng bộ 30 giây chỉ lấy dòng vừa đổi nên booking cũ không về máy. Sửa: đồng bộ tải bù booking / cont mà lệnh cấp trỏ tới (`missingReleaseRefs`, `loadWorking.ts`). Tạm thời trước khi cập nhật: bấm Tải lại.
 - Lưu mượt (DEC-160): lưu ngầm không chặn màn, bấm tiếp trong lúc lưu được; sau khi lưu không tải lại danh mục; bớt 1 lượt chờ mạng khi đồng bộ.
 - Ô quét hiện trường: bỏ nút "Quét" thừa (chỉ còn ô nhập + camera).
 - Tài liệu rà soát + tư vấn vận hành / phát triển: `docs/VAN_HANH_VA_PHAT_TRIEN.md`.
