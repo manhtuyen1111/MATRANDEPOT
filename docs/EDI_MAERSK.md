@@ -55,13 +55,33 @@ UNZ+15+202610300400'                                      ← tổng số tin tr
 - Có cont **hạ rồi cấp ra ngay**: MRSU6421317 hạ 05:21 → cấp 05:22 (cùng file 06:00); TRHU4951840 hạ 05:57 (file 06:00) → cấp 06:03 (file 07:00); MRSU3056416 hạ 03:44 → cấp 07:04. → Trong 1 file, **gate-in phải đứng trước gate-out** của cùng cont; giữa 2 file thì theo giờ.
 - Số tin mỗi giờ: 4 → 16; một ngày cỡ 100–300 tin — nhẹ, không cần lo tải.
 
+### 3.3 Release for sale (cấp sale) — từ file mẫu `202610291500.txt` (người dùng gửi 2026-10-30, cont PONU1771369)
+
+```
+BGM+36+202610291500-2'                     ← vẫn là GATE-OUT (36)
+NAD+CF+MSK'
+GID+1'
+EQD+CN+PONU1771369+4200:102:5++8+4'        ← khác cấp thường: trạng thái 8 (cấp thường = 2), 4 = rỗng
+RFF+BN:SALEO26VN51'                        ← ô BOOKING ghi SALE CODE (cấp thường = số booking)
+DTM+7:202610291416:203'
+LOC+165+VNHPHVI:139:6+HPHVI:TER:ZZZ'
+TDT+1++3++HPHTRK:172:20'
+CNT+16:1'
+UNT+11+2'                                  ← 11 dòng như cấp thường, không có DAM
+```
+
+- **Cấp sale = gate-out (36) + `EQD …++8+4` + `RFF+BN:<Sale code>`.** Ánh xạ MATRAN: lệnh Cấp vỏ `releasePurpose = SALE` (DEC-194) → `RFF+BN` lấy **`saleCode`**, `EQD` trạng thái **8**; cấp thường (`CUSTOMER`) → booking + trạng thái **2**.
+- Mẫu Sale code: `SALEO26VN51` (11 ký tự, chữ + số).
+- File 15:00 có **48 cont sale cùng 1 Sale code, cùng giờ 14:16** (cấp cả lô) + 3 gate-out thường + 1 gate-in → 1 file có thể tới 50+ tin, bình thường.
+- Gate-in trong file này: `MRSU0011444 2200 … GRADEK DAM+1+6` — giống mẫu trước.
+
 ## 4. Sự kiện cần gửi (tác nghiệp → EDI)
 
 | Tác nghiệp MATRAN | Khi nào ghi sự kiện | Loại tin | Ghi chú |
 |---|---|---|---|
 | **Hạ vỏ** (cont MSK) | GATE IN OK (hoặc lúc Xe nâng hạ — Q-051) | Gate-in (34) | hạng vỏ theo Giám định |
 | **Cấp vỏ — Release for customer** | Xe nâng cấp xong (GATE_OUT_OK) | Gate-out (36) | `RFF+BN` = booking |
-| **Cấp vỏ — Release for sale** (DEC-194) | Xe nâng cấp xong | Gate-out (36)? | có **Sale code**; Maersk ghi ở đâu (RFF khác? BGM khác?) — Q-050 |
+| **Cấp vỏ — Release for sale** (DEC-194) | Xe nâng cấp xong | Gate-out (36) | ✓ đã có mẫu (mục 3.3): `EQD …++8+4`, `RFF+BN:<Sale code>` |
 | **Xuất tàu** (DEC-069) | Xe nâng xuất (cont OUT ra cảng) | Gate-out? | người dùng xác nhận cần gửi; mã / booking dùng gì — Q-050 |
 | **Nhập tàu** (DEC-069) | Xe nâng hạ (cont vào bãi) | Gate-in? | chưa xác nhận có gửi không — Q-050 |
 | **Đổi container sau khi đã lên xe** (DEC-185) | Văn phòng đổi | **Hủy / sửa** gate-out cont cũ (nếu đã gửi) + gate-out cont mới khi Xe nâng cấp | app cũ xử lý thế nào — Q-052 |
