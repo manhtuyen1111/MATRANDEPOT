@@ -28,6 +28,7 @@ import {
   YardBlock,
   VesselList,
   StuffingClassItem,
+  ContainerIsoCode,
 } from '../types/depot';
 import { defaultStuffingClasses } from './stuffing';
 
@@ -42,6 +43,7 @@ export interface DepotState {
   yardBlocks: YardBlock[];
   containerSizes: ContainerSize[];
   containerTypes: ContainerType[];
+  containerIsoCodes: ContainerIsoCode[]; // DEC-195: mã ISO 6346 theo Size + Type
   stuffingClasses: StuffingClassItem[]; // DEC-166: Phân loại đóng hàng theo hãng tàu
   feeCatalog: DepotFeeCatalogItem[];
   containers: ContainerRecord[];
@@ -75,6 +77,20 @@ export const INITIAL_CONTAINER_TYPES: ContainerType[] = [
   'OT',
   'FR',
   'RF',
+];
+
+// DEC-195: mã ISO 6346 thường dùng (Admin sửa ở Danh mục Container)
+export const INITIAL_CONTAINER_ISO_CODES: ContainerIsoCode[] = [
+  { size: '20', type: 'DC', isoCode: '22G1' },
+  { size: '40', type: 'DC', isoCode: '42G1' },
+  { size: '40', type: 'HC', isoCode: '45G1' },
+  { size: '45', type: 'HC', isoCode: 'L5G1' },
+  { size: '20', type: 'RF', isoCode: '22R1' },
+  { size: '40', type: 'RF', isoCode: '45R1' },
+  { size: '20', type: 'OT', isoCode: '22U1' },
+  { size: '40', type: 'OT', isoCode: '42U1' },
+  { size: '20', type: 'FR', isoCode: '22P1' },
+  { size: '40', type: 'FR', isoCode: '42P1' },
 ];
 
 export const INITIAL_STAFF: StaffUser[] = [
@@ -370,6 +386,7 @@ export function createInitialState(): DepotState {
     yardBlocks: INITIAL_YARD_BLOCKS,
     containerSizes: INITIAL_CONTAINER_SIZES,
     containerTypes: INITIAL_CONTAINER_TYPES,
+    containerIsoCodes: INITIAL_CONTAINER_ISO_CODES,
     stuffingClasses: defaultStuffingClasses(INITIAL_PARTNERS),
     feeCatalog: INITIAL_FEE_CATALOG,
     containers: [
@@ -852,6 +869,7 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
     feedbacks: raw.feedbacks || [],
     // DEC-166: dữ liệu cũ chưa có danh mục → M / K / E cho mọi hãng tàu (giữ hành vi cũ)
     stuffingClasses: raw.stuffingClasses || defaultStuffingClasses(raw.partners || base.partners),
+    containerIsoCodes: raw.containerIsoCodes || base.containerIsoCodes, // DEC-195
   } as DepotState;
 }
 

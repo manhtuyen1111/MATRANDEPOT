@@ -2165,3 +2165,28 @@ describe('DEC-194: cấp vỏ Release for sale', () => {
     expect(row.detail).toContain('Sale code SL-2026-001');
   });
 });
+
+// DEC-195: mã ISO 6346 theo Size + Type (Danh mục Container) — màn hình vẫn 20DC / 40HC…
+import { containerIsoCode, setContainerIsoCode } from '../src/services/depotOperations';
+
+describe('DEC-195: mã ISO 6346', () => {
+  const admin = as(createInitialState(), 'usr-admin');
+  it('mặc định có mã thường dùng; cont có mã riêng thì ưu tiên mã riêng', () => {
+    expect(containerIsoCode(admin, { size: '20', type: 'DC' })).toBe('22G1');
+    expect(containerIsoCode(admin, { size: '40', type: 'HC' })).toBe('45G1');
+    expect(containerIsoCode(admin, { size: '45', type: 'HC' })).toBe('L5G1');
+    expect(containerIsoCode(admin, { size: '40', type: 'HC', isoCode: '4510' })).toBe('4510');
+    expect(containerIsoCode(admin, { size: '45', type: 'DC' })).toBe('');
+  });
+  it('Admin đặt / sửa / bỏ mã; từ chối sai quyền, sai mã, size / type ngoài Danh mục', () => {
+    let s = setContainerIsoCode(admin, { size: '40', type: 'hc', isoCode: '45g1 ' });
+    s = setContainerIsoCode(s, { size: '45', type: 'DC', isoCode: 'L2G1' });
+    expect(containerIsoCode(s, { size: '45', type: 'DC' })).toBe('L2G1');
+    s = setContainerIsoCode(s, { size: '45', type: 'DC', isoCode: '' });
+    expect(containerIsoCode(s, { size: '45', type: 'DC' })).toBe('');
+    expect(() => setContainerIsoCode(as(admin, 'usr-office'), { size: '40', type: 'HC', isoCode: '45G1' })).toThrow(/ADMIN/);
+    expect(() => setContainerIsoCode(admin, { size: '40', type: 'HC', isoCode: '45G' })).toThrow(/4 ký tự/);
+    expect(() => setContainerIsoCode(admin, { size: '53', type: 'HC', isoCode: '45G1' })).toThrow(/Danh mục Container/);
+  });
+});
+

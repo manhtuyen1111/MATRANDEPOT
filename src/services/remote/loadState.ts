@@ -15,7 +15,7 @@ async function rows<T>(query: PromiseLike<{ data: T[] | null; error: { message: 
 }
 
 export async function loadCatalogState(client: SupabaseClient, me: StaffSession): Promise<DepotState> {
-  const [partners, sizes, types, blocks, fees, teams, company, staff, stuffing, grades, overtime] = await Promise.all([
+  const [partners, sizes, types, blocks, fees, teams, company, staff, stuffing, grades, overtime, isoCodes] = await Promise.all([
     rows<{ id: string; code: string; name: string; is_shipping_line: boolean; is_customer: boolean; allow_tts: boolean; is_priority: boolean }>(
       client.from('partners').select('id, code, name, is_shipping_line, is_customer, allow_tts, is_priority').eq('is_active', true).order('code')
     ),
@@ -48,6 +48,8 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
     ),
     // DEC-175: vượt giờ sửa chữa (1 dòng)
     rows<{ threshold_hours: number; hourly_rate: number }>(client.from('repair_overtime_settings').select('threshold_hours, hourly_rate')),
+    // DEC-195: mã ISO 6346 theo Size + Type
+    rows<{ size: string; type: string; iso_code: string }>(client.from('container_iso_codes').select('size, type, iso_code')),
   ]);
 
   const currentUser: StaffUser = { id: me.id, staffCode: me.staffCode, fullName: me.fullName, email: me.email, roles: me.roles, isActive: me.isActive };
@@ -61,6 +63,7 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
     partners: partners.map((p): Partner => ({ id: p.id, code: p.code, name: p.name, isShippingLine: p.is_shipping_line, isCustomer: p.is_customer, allowTts: p.allow_tts, isPriority: p.is_priority })),
     containerSizes: sizes.map((s) => s.code),
     containerTypes: types.map((t) => t.code),
+    containerIsoCodes: isoCodes.map((r) => ({ size: r.size, type: r.type, isoCode: r.iso_code })),
     stuffingClasses: stuffing.map((s): StuffingClassItem => ({ id: s.id, shippingLineCode: s.shipping_line_code, code: s.code, description: s.description || undefined, isActive: s.is_active })),
     yardBlocks: blocks.map((b): YardBlock => ({
       blockCode: b.code, blockName: b.name, maxBay: b.max_bay, maxRow: b.max_row, maxTier: b.max_tier, capacity: b.capacity,

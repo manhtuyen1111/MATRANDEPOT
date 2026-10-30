@@ -153,6 +153,13 @@ export const DAMAGE_QUICK_SUGGESTIONS: string[] = [
 export type ContainerSize = string; // Mặc định: '20' | '40' | '45' (Cấu hình trong DANH MỤC CHUNG)
 export type ContainerType = string; // Mặc định: 'DC' | 'HC' | 'OT' | 'FR' | 'RF' (Cấu hình trong DANH MỤC CHUNG)
 
+// DEC-195: mã ISO 6346 theo Size + Type (Danh mục Container, Admin sửa). Màn hình / phiếu / biểu giá vẫn dùng 20DC, 40HC…
+export interface ContainerIsoCode {
+  size: ContainerSize;
+  type: ContainerType;
+  isoCode: string; // 4 ký tự, VD 22G1, 45G1, L5G1
+}
+
 export type FeeTariffCategory =
   | 'NANG_HA'      // NÂNG HẠ (theo từng Size - Type - Hãng tàu)
   | 'THU_GOM_RAC'  // THU GOM RÁC
@@ -327,6 +334,7 @@ export interface ContainerRecord {
   vesselExportItemId?: string; // Đang nằm trong danh sách XUẤT TÀU (DEC-069)
   // DEC-185: ĐỔI CONTAINER khi chờ trả chứng từ cấp vỏ — chờ Xe nâng hạ lại (xóa khi hạ xong)
   swapReturn?: { gateOutCode: string; reason: SwapReason; note?: string; toContainerNo: string; requestedBy: string; requestedAt: string };
+  isoCode?: string; // DEC-195: mã ISO 6346 riêng của cont (VD lấy từ Maersk eEIR); trống = theo Danh mục Size + Type
   releaseDamage?: boolean; // DEC-185: nhãn PHÁT SINH CẤP VỎ — hư hỏng phát hiện khi cấp vỏ (giữ cho cả lượt lưu bãi)
   gateInAt: string;
   gateOutAt?: string;
@@ -758,6 +766,7 @@ export interface VesselList {
   mode: VesselMode;
   vesselName: string;
   shippingLineCode?: string;     // NT: bắt buộc, 1 hãng cho cả danh sách
+  destinationPort?: string;      // DEC-196: XT — mã cảng / terminal đến (VD VNHPHTM), tùy tàu; gửi EDI CODECO (RFF+BN)
   plannedAt: string;             // Thời gian nhập / xuất tàu
   truckNos: string[];            // Danh sách số xe
   items: VesselListItem[];

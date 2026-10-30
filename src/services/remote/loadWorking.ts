@@ -264,6 +264,7 @@ function buildState(base: DepotState, raw: RawData): DepotState {
       outDossierCode: opt(c.out_dossier_code), officeNote: opt(c.office_note), officeNoteUpdatedBy: opt(c.office_note_by_name), officeNoteUpdatedAt: opt(c.office_note_at),
       vesselExportItemId: opt(c.vessel_export_item_id), gateInAt: c.gate_in_at, gateOutAt: opt(c.gate_out_at),
       swapReturn: opt(c.swap_return), releaseDamage: c.release_damage || undefined, // DEC-185
+      isoCode: opt(c.iso_code), // DEC-195
     };
   };
 
@@ -395,7 +396,7 @@ function buildState(base: DepotState, raw: RawData): DepotState {
   });
 
   const mapList = (l: Row): VesselList => ({
-    id: l.id, mode: l.mode, vesselName: l.vessel_name, shippingLineCode: opt(l.shipping_line_code), plannedAt: l.planned_at, truckNos: l.truck_nos || [],
+    id: l.id, mode: l.mode, vesselName: l.vessel_name, shippingLineCode: opt(l.shipping_line_code), destinationPort: opt(l.destination_port), plannedAt: l.planned_at, truckNos: l.truck_nos || [],
     items: (itemsByList.get(l.id) || []).map(mapItem), status: l.status, createdBy: l.created_by_name, createdAt: l.created_at,
     approvedBy: opt(l.approved_by_name), approvedAt: opt(l.approved_at), approveNote: opt(l.approve_note),
   });

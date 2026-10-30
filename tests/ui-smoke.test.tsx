@@ -276,7 +276,7 @@ describe('DEC-069: màn Nhập tàu / Xuất tàu', () => {
       importItems: [{ containerNo: 'TCLU1234567', size: '40', type: 'HC' }],
     }).state;
     const yardId = nt.containers.find((c) => c.status === 'IN_YARD')!.id;
-    const both = createVesselList(nt, { mode: 'XUAT_TAU', vesselName: 'Wan Hai', plannedAt: new Date().toISOString(), truckNos: ['15C-333.33'], exportContainerIds: [yardId] }).state;
+    const both = createVesselList(nt, { mode: 'XUAT_TAU', destinationPort: 'VNHPHTM', vesselName: 'Wan Hai', plannedAt: new Date().toISOString(), truckNos: ['15C-333.33'], exportContainerIds: [yardId] }).state;
     const strip = (h: string) => h.replace(/<!-- -->/g, '');
 
     const vpNt = strip(renderToString(<OfficeVesselWorkspace mode="NHAP_TAU" state={both} onUpdateState={noop} />));
@@ -530,7 +530,7 @@ describe('DEC-081: EEIR cho hồ sơ Nhập tàu / Xuất tàu', () => {
 
     // Xuất tàu: cont đang tồn bãi → lập danh sách → xuất → EEIR XUẤT TÀU
     const yardId = s.containers.find((c) => c.status === 'IN_YARD')!.id;
-    const xt = createVesselList(as(s, 'usr-office'), { mode: 'XUAT_TAU', vesselName: 'Tàu Ra', plannedAt: new Date().toISOString(), truckNos: ['15C-7'], exportContainerIds: [yardId] });
+    const xt = createVesselList(as(s, 'usr-office'), { mode: 'XUAT_TAU', destinationPort: 'VNHPHTM', vesselName: 'Tàu Ra', plannedAt: new Date().toISOString(), truckNos: ['15C-7'], exportContainerIds: [yardId] });
     s = executeVesselExport(as(xt.state, 'usr-forklift'), { listId: xt.listId, itemId: xt.state.vesselLists[0].items[0].id, truckNo: '15C-7' });
     const xtList = s.vesselLists.find((l) => l.id === xt.listId)!;
     const xtSheet = strip(renderToString(<VesselEeirPrintSheet state={s} list={xtList} item={xtList.items[0]} />));
@@ -956,7 +956,7 @@ describe('DEC-146: Văn phòng → Nhập / Xuất tàu — bảng chi tiết t�
       importItems: [{ containerNo: 'TCLU1234567', size: '40', type: 'HC' }],
     }).state;
     const yardId = nt.containers.find((c) => c.status === 'IN_YARD')!.id;
-    const both = createVesselList(nt, { mode: 'XUAT_TAU', vesselName: 'Wan Hai', plannedAt: new Date().toISOString(), truckNos: ['15C-333.33'], exportContainerIds: [yardId] }).state;
+    const both = createVesselList(nt, { mode: 'XUAT_TAU', destinationPort: 'VNHPHTM', vesselName: 'Wan Hai', plannedAt: new Date().toISOString(), truckNos: ['15C-333.33'], exportContainerIds: [yardId] }).state;
     for (const mode of ['NHAP_TAU', 'XUAT_TAU'] as const) {
       const list = both.vesselLists.find((l) => l.mode === mode)!;
       const html = renderToString(<ListDetail list={list} mode={mode} state={both} canManage run={() => true} onDeleted={noop} />).replace(/<!-- -->/g, '');
@@ -1234,3 +1234,15 @@ describe('DEC-194: Văn phòng → Cấp vỏ có ô Tác nghiệp', () => {
     expect(html).not.toContain('data-testid="sale-code"'); // chỉ hiện khi chọn Release for sale
   });
 });
+
+describe('DEC-195: Danh mục Container có mã ISO 6346', () => {
+  it('khung mã ISO hiện bảng Size - Type → mã', async () => {
+    const { ContainerIsoCodeCard } = await import('../src/features/catalog/ContainerIsoCodeCard');
+    const html = renderToString(<ContainerIsoCodeCard state={as(base, 'usr-admin')} isAdmin onUpdateState={noop} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('Mã ISO 6346 theo Size - Type');
+    expect(html).toContain('40HC');
+    expect(html).toContain('45G1');
+    expect(html).toContain('L5G1');
+  });
+});
+
