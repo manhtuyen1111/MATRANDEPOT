@@ -431,3 +431,27 @@ Gửi `eEIRSupport@maersk.com` / ticket developer portal, nêu mã depot 3 ký t
 - Truck Reg. No đang ghi `1`, Contact `NA` → app Maersk không kiểm số xe; MATRAN gửi **số xe thật** (Văn phòng đã nhập).
 - Cấp vỏ thực tế chụp **2 ảnh (cửa + bên trong)** → gợi ý hướng dẫn Giám định chụp ảnh cấp vỏ (DEC-198 cho 1–30 ảnh).
 - **Gắn PDF vào hồ sơ rất dễ:** lọc thư `from:eeirappnoreply@maersk.com has:attachment` → tiêu đề = số cont, tên file = EIR Reference No (= `inspectionId` khi gửi qua API) + giờ kiểm tra → khớp đúng lượt (mục 16). Q-066 xong phần mẫu; còn: dung lượng file PDF, và link "CLICK HERE" có tải được không cần đăng nhập không.
+
+## 19. eEIR v4.3 — đọc lại đầy đủ (người dùng gửi lại 2026-10-30) + bản chạy thử
+
+**Sửa so với tóm tắt cũ (mục 12):**
+- `bookingNo`: **9–11 ký tự chữ / số** (alphanumeric), bắt buộc khi **gate-out xuất rỗng theo booking** → DEC-199 đã nới.
+- `grade`: lấy từ API 1 `smokeTested`; không có → **"N"** (không dùng Phân loại MATRAN).
+- `damages[]` (6.1.2): không hư `0000`/tpIndicator 0 • hao mòn `0000`/3 (1–20 ảnh) • bên thứ 3: CEDEX + `damageType` 1–16 + `damageCarrierCode` 1–4 + `panelIndicatorCode` + `panelImageFilename` (`D_sketch_DX24_1`) + 1–3 ảnh / chỗ hư → DEC-200.
+- `moveStatus`: 1 IN, 2 OUT, 3 STUFFING, 4 STRIPPING • `moveType` 1 POS / 2 IMP / 3 EXP • `containerStatus` 1 rỗng • `operator` 1 Maersk • `fgStatus` luôn 1 • `stSound` luôn Y • `damage` luôn null • `submittedLocalDate` = `createdLocalDate`.
+- `containerNo`: 4 chữ + 7 số • `truckerRegno` bắt buộc ≤ 11 • email nhận PDF bắt buộc (`category` Shop).
+- Ảnh: `imageName` chữ / số / chấm / gạch dưới, **không đuôi file**, trùng tên file đính kèm; gửi `multipart/form-data` (`inspectionDetails` + `files`); JSON mẫu dùng dạng `{"id":1}` cho containerStatus / operator → **chờ file inspectionDetails mẫu** (Maersk gửi qua email khi cấp khóa).
+- API 1 **bắt buộc** gọi trước; lỗi (không phải cont Maersk / không có dữ liệu) → bỏ qua, làm tiếp.
+- Lỗi 400 / 404 / **412 (sai mã shop)** / 500 → lưu lại, gửi lại khi API chạy; báo `eEIRsupport@maersk.com` tiêu đề "API connection error".
+- Môi trường thử `api-stage.maersk.com` có **danh sách cont DRY thử** (PONU0000006, PONU0000027…). **Khóa staging in trong PDF — không chép vào repo / code.**
+- Liên hệ xin khóa: `eEIRSupport@maersk.com` (+ người phụ trách eEIR ghi trong tài liệu mục 1.1).
+
+**Phạm vi (DEC-201):** chỉ cont **MSK DRY** (DC / HC).
+
+**Đã code (chạy thử, chưa màn hình):** `src/services/edi/eeir.ts`
+- `eeirInspections(state, range)` — phiếu Hạ vỏ (IN-EMPTY-IMP) / Cấp vỏ (OUT-EMPTY-EXP) / Cấp sale (chờ) + danh sách thiếu (ảnh, số xe ≤ 11, booking, số cont, cont hư chưa phân loại, W-SURVEY);
+- `eeirInspectionDetails(i)` — JSON theo bảng trường 6.1; `eeirTypeSize` (`40DRY 45G1` / `99XXX 99X9`); `isEeirContainer`.
+- Test: `tests/acceptance.test.ts` "eEIR chạy thử".
+
+**Việc tiếp (phiên sau):** (1) tab **eEIR** trong Danh mục chung → EDI hãng tàu (lọc thời gian `DateRangeFilter`, bảng + `Pager`, bấm dòng mở `DetailDrawer` xem JSON); (2) migration chặn booking MSK ở database (DEC-199); (3) màn Giám định: cont MSK DRY có hư → chọn Hao mòn / Bên thứ 3 → CEDEX (DEC-200); (4) khi có khóa staging: Edge Function gọi API 1 / API 2.
+
