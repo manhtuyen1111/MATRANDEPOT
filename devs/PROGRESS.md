@@ -272,6 +272,24 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - **Phiên sau làm theo thứ tự:** (1) hỏi người dùng: DEC-198 ảnh cấp vỏ + DEC-199 booking có thu hẹp về cont DRY không; (2) tab **eEIR** ở Danh mục chung → EDI hãng tàu; (3) migration DEC-199 (trigger trước khi thêm `gate_out_orders`: cont MSK + CUSTOMER → booking khớp `^[A-Z0-9]{9,11}$`) + pgTAP, chạy Supabase local rồi tắt; (4) màn Giám định cont MSK DRY có hư: Hao mòn / Bên thứ 3 → CEDEX (DEC-200).
 - **Người dùng cần:** db push 7 file `20261113` → `20261119`; merge PR; gửi ticket Maersk (mục 17) xin khóa eEIR staging + JSON mẫu; lấy thông số SFTP từ AutoEDI; dung lượng PDF eEIR + 1 PDF Hạ vỏ (xác nhận IN-EMPTY-IMP); bảng mã vị trí CEDEX depot đang dùng (nếu có).
 
+**▶ MỤC TIÊU PHIÊN SAU (người dùng chốt 2026-10-30): (A) eEIR GIÁM ĐỊNH HẠ VỎ / CẤP VỎ • (B) EDI TRUYỀN DỮ LIỆU HÃNG TÀU**
+
+**(A) Form Giám định theo eEIR — CHƯA LÀM** (chỉ cont MSK DRY — DEC-201). Hiện trạng:
+- Giám định → Hạ vỏ: 1 ảnh cửa, AV / DAMAGE, remark hư nhanh — **chưa** khung Thông tin Maersk, **chưa** phân loại Không hư / Hao mòn / Bên thứ 3, **chưa** CEDEX.
+- Giám định → Cấp vỏ (DEC-198): 1–30 ảnh — eEIR **tối đa 20**; chưa phần hư hỏng.
+- Đã có: dựng phiếu + JSON (`src/services/edi/eeir.ts`), chưa màn xem, chưa gửi.
+- Form đề xuất (đã trình bày người dùng): khung THÔNG TIN MAERSK (API 1 — size/ISO, năm SX, hạng, cảnh báo cấm dùng / bán / trả hãng thuê) → ẢNH 1–20 → TÌNH TRẠNG (Không hư / Hao mòn / Bên thứ 3; bên thứ 3 mỗi chỗ hư: CEDEX 4 ký tự + loại hư 1–16 + bên gây hư 1–4 + mô tả + 1–3 ảnh, nút THÊM CHỖ HƯ) → số seal (tùy chọn). Số xe / SĐT / booking lấy từ Văn phòng.
+- **4 câu phải hỏi lại đầu phiên (người dùng đã dừng trước khi trả lời):**
+  1. Hạ vỏ cont MSK DRY: 1–20 ảnh (đề xuất) hay giữ 1 ảnh cửa?
+  2. Cấp vỏ: giảm 1–30 → 1–20 ảnh (đề xuất) hay giữ, khi gửi lấy 20 ảnh đầu?
+  3. Vị trí CEDEX: gõ tay 4 ký tự (đề xuất) hay chọn từ Danh mục (cần bảng mã)?
+  4. DEC-198 ảnh cấp vỏ + DEC-199 booking: thu hẹp về chỉ cont DRY (đề xuất) hay giữ mọi cont MSK?
+- Thứ tự làm: chốt 4 câu → form Giám định (Hạ vỏ + Cấp vỏ, dùng chung 1 khối `EeirDamageFields`) + lưu dữ liệu hư (types + service + migration + pgTAP) → tab eEIR ở EDI hãng tàu → migration DEC-199 database → khi có khóa staging: Edge Function API 1 (khung Thông tin Maersk) + API 2 (gửi phiếu, hàng chờ, gửi lại).
+
+**(B) EDI CODECO tự động — CHƯA LÀM** (bản chạy thử tạo file đã xong — DEC-197). Cần thông số gửi (mục 14) → bảng nhật ký file theo giờ + lịch HH:00 + gửi SFTP + gửi lại + cảnh báo + công tắc Chạy thử / Gửi thật + chạy song song app cũ.
+
+**Tài liệu người dùng chuẩn bị (đã liệt kê cho người dùng 2026-10-30):** xem trả lời cuối phiên trong hội thoại — tóm tắt: (A) khóa eEIR staging + JSON mẫu (ticket mục 17), 1 PDF eEIR Hạ vỏ + dung lượng PDF, email nhận PDF, bảng mã CEDEX (nếu có), ảnh chụp màn app eEIR Maersk phần nhập hư, trả lời 4 câu; (B) thông số gửi từ AutoEDI (giao thức, máy chủ, cổng, tên đăng nhập, thư mục, mật khẩu hay khóa), Maersk: giới hạn IP / file xác nhận / thư mục thử, trả lời Q-049 / Q-050 / Q-052 / Q-054 / Q-055, nơi chạy, vài file EDI app cũ cùng ngày để so. **Mật khẩu / khóa bí mật: người dùng tự nhập vào cấu hình máy chủ, không gửi agent.**
+
 **▶ EDI / eEIR MAERSK — TRẠNG THÁI ĐẦY ĐỦ ĐỂ LÀM TIẾP (tài liệu chính: `docs/EDI_MAERSK.md`):**
 - **Hiểu đúng 2 kênh:**
   - **EDI CODECO** (file text EDIFACT, mỗi giờ 1 file) = báo **lượt vào / ra bãi** cho Maersk — app cũ AutoEDI / ERPVINASHIP đang gửi. **Vẫn phải giữ** (Devy không tìm thấy API thay thế — mục 12.6).
