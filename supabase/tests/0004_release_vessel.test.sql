@@ -102,7 +102,7 @@ select throws_like($$ select public.create_release_order(gen_random_uuid(), 'BK2
 
 -- ==== 4. Xuất tàu: tự khóa + ghi chú; chặn cấp vỏ; xuất; duyệt khi chưa đủ ====
 select public.create_vessel_list('XUAT_TAU', 'msk delta', now(), array['15c-901'], null, null,
-  array[(select id from public.containers where container_no = 'MSKU2000002')]) as xt \gset
+  array[(select id from public.containers where container_no = 'MSKU2000002')], 'VNHPHTM') as xt \gset
 select is((select office_note || '|' || is_on_hold::text from public.containers where container_no = 'MSKU2000002'), 'XUẤT TÀU MSK DELTA|true',
   'Cont xuất tàu tự khóa + ghi chú (DEC-131)');
 select throws_like($$ select public.toggle_container_hold('MSKU2000002', false, 'x') $$, '%bỏ khỏi danh sách Xuất tàu%', 'Không mở khóa tay khóa Xuất tàu');
