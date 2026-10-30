@@ -317,6 +317,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
       - hỏi Maersk: **có giới hạn IP gửi không** (quyết định chạy trên Supabase hay máy có IP cố định), có file xác nhận / báo lỗi, có thư mục thử.
       - Có thông số → làm: nhật ký file theo giờ + lịch tạo file + gửi + gửi lại + cảnh báo, công tắc Chạy thử / Gửi thật, chạy song song app cũ.
     - **Chờ người dùng — eEIR API:** support ticket Maersk xin **client id / secret eEIR** (staging trước) + mẫu `inspectionDetails` JSON (Q-056) + trả lời Q-058 → Q-063 (moveType, ảnh Cấp vỏ, email nhận PDF, eEIR có thay CODECO, hư bên thứ 3, độ dài booking).
+    - **DEC-198 đã làm (2026-10-30):** Giám định chụp ảnh cấp vỏ cont MSK (Q-059) — ảnh này sẽ dùng cho eEIR gate-out. Q-060: depot đã có email nhận PDF eEIR (nhập vào cấu hình khi làm eEIR).
     - **Chưa trả lời:** Q-049 (giờ không có cont), Q-050 (Nhập tàu), Q-052 (tin hủy / sửa), Q-054 (ai xem EDI), Q-055 (nhập muộn).
   - **Migration mới chờ db push:** `20261115000001_gate_out_swap_before_lift.sql`, `20261116000001_release_purpose.sql` (cùng `20261113000001`, `20261114000001` nếu chưa đẩy).
   - **Cần thử thêm:**
@@ -752,6 +753,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-29 — Claude Code: DEC-164 chiều cao dòng bảng đồng bộ = Tồn vỏ (40px), class data-table 21 bảng + test chặn. 174 test • build PASS.
 - 2026-10-29 — Claude Code: bàn giao cuối ngày — checklist ca mới, việc chờ quyết, LƯU Ý IN ẤN (DEC-161 → 163), LƯU Ý CHO AGENT.
 - 2026-10-29 (tối) — Claude Code: DEC-177 header 1 dòng (icon Quản trị hệ thống); DEC-178 dữ liệu lớn (thử tải 200.000 lượt → sửa RLS quá 8 giây, ảnh chỉ tải khi XEM ẢNH, mở app gọn theo vai trò + hôm nay, hồ sơ tải khi mở, tìm 7 số seri, báo cáo phân trang ở database, bỏ dò lồng nhau); DEC-179 / 180 báo cáo theo bộ phận (Giám định / Vệ sinh / Xe nâng Chi tiết mới, menu chỉ bộ phận). 3 migration mới (`20261108` → `20261110`). 210 test • build PASS • pgTAP 252/252 • chạy thật 5/5. Nhánh `agent/claude/perf-large-data` đã push.
+- 2026-10-30 — Claude Code: DEC-198 **Giám định → Cấp vỏ** (mobile): cont MSK sau Xe nâng cấp phải chụp 1–30 ảnh mới Trả chứng từ (K80 thêm bước GIÁM ĐỊNH, icon máy ảnh ở Trả chứng từ, dòng hồ sơ, đổi cont chụp lại). Migration `20261119000001` (pgTAP 345/345 local, đã tắt + xóa dữ liệu). 250 test • build PASS. Chưa thử chụp trên điện thoại thật.
 - 2026-10-30 — Claude Code: EDI — đề xuất tự động mỗi giờ + gửi SFTP, 14 thông số cần có (`docs/EDI_MAERSK.md` mục 14); hướng dẫn lấy thông số từ app AutoEDI. Lưu tiến độ EDI / eEIR — **đang chờ tài liệu** (thông số gửi, khóa eEIR).
 - 2026-10-30 — Claude Code: DEC-197 **EDI CODECO chạy thử** (Danh mục chung → EDI hãng tàu, Admin): tạo file 1 giờ đúng mẫu app cũ (test dựng lại đúng file 202610290500), tải .txt so khớp; chưa gửi. 245 test • build PASS. Chưa thử với database thật.
 - 2026-10-30 — Claude Code: DEC-195 mã ISO 6346 theo Size - Type (Danh mục Container, hồ sơ hiện ISO) + DEC-196 Xuất tàu mã cảng đến (tùy tàu). Migration `20261117000001`, `20261118000001` (pgTAP 334/334 local). 240 test • build PASS.

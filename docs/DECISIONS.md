@@ -1537,6 +1537,7 @@ Quy ước trạng thái:
 - Ảnh lưu kho `door-photos`, thư mục `ANH-CAP-VO/<năm>/<tháng>/<ngày>/` (không tự xóa — DEC-176); xem qua `PhotoGallery` (DEC-178). Dùng cho eEIR gate-out sau này.
 - Giữ cỡ ảnh như hiện nay (< 200 KB, cạnh dài 1600px).
 - **Không** dùng PDF eEIR Maersk gửi về thay cho ảnh: PDF chỉ có sau khi đã gửi ảnh, chỉ về qua email, chỉ có cont MSK, không nhẹ hơn ảnh đã nén.
+- Code: `src/services/releasePhoto.ts` (`recordReleasePhotos`, `pendingReleasePhotos`, `needsReleasePhoto`, `hasReleasePhoto`), `src/features/inspector/InspectorCapVoMobile.tsx` (menu `GD_CAP_VO`, mobile). Database: migration `20261119000001_release_photos.sql` (cột `gate_out_orders.release_photo_*`, RPC `record_release_photos`, `mark_documents_returned` chặn thiếu ảnh), pgTAP `0021`.
 
 ### DEC-197 — EDI CODECO Maersk: chạy thử (chưa gửi)
 
