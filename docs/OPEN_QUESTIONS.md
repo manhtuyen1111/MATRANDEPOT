@@ -116,7 +116,7 @@ Cập nhật lần cuối: 2026-10-22.
 - [ ] Q-050: Release for sale (Sale code), Xuất tàu, Nhập tàu gửi loại tin gì, `RFF` gì — xin file mẫu từng loại. — 2026-10-30: **Release for sale đã có mẫu** (`EQD …++8+4`, `RFF+BN:<Sale code>` — `docs/EDI_MAERSK.md` 3.3). **Xuất tàu đã có mẫu** (`EQD …++8+4`, `RFF+BN:VNHPHTM` — 3.4). **Còn Nhập tàu** (có gửi không).
 - [ ] Q-051: Giờ ghi `DTM+7`: giờ xe vào / ra cổng, giờ Văn phòng GATE IN OK hay giờ Xe nâng — app cũ lấy giờ nào. — 2026-10-30: **Xuất tàu lấy giờ thực tế từng cont ra bãi** (DEC-196). Gate-in / cấp vỏ: tạm lấy giờ GATE IN OK / giờ Xe nâng cấp (dữ liệu thực tế) — đối chiếu khi chạy song song.
 - [ ] Q-052: Tin hủy / sửa (đổi container sau khi đã gửi gate-out, nhập sai số cont): app cũ làm thế nào; file mẫu.
-- [ ] Q-053: Kênh gửi — SFTP (máy chủ, cổng, thư mục, mật khẩu hay khóa) hay Gmail (gửi tới đâu, tiêu đề, đính kèm); Maersk có trả xác nhận / báo lỗi không. **Không gửi mật khẩu cho agent.**
+- [ ] Q-053: Kênh gửi — SFTP (máy chủ, cổng, thư mục, mật khẩu hay khóa) hay Gmail (gửi tới đâu, tiêu đề, đính kèm); Maersk có trả xác nhận / báo lỗi không. **Không gửi mật khẩu cho agent.** — 2026-10-30: người dùng muốn **tự động mỗi giờ tạo + gửi**; danh sách 14 thông số cần có ở `docs/EDI_MAERSK.md` mục 14 (quan trọng: giao thức FTP / SFTP, giới hạn IP).
 - [ ] Q-054: Ai xem / gửi lại EDI: chỉ Admin hay cả Văn phòng.
 - [ ] Q-055: Lượt nhập muộn (hạ 03:50, 04:10 mới nhập) đưa vào file giờ nào; Maersk có chấp nhận gửi trễ / trùng không.
 - [ ] Q-056: ~~eEIR External API v4.3~~ — **đã nhận + đọc 2026-10-30** (`docs/EDI_MAERSK.md` mục 12). Còn: **eEIR Container Assignment Integration Guide v1.6** + **file mẫu `inspectionDetails` JSON** (Maersk gửi qua email khi cấp khóa).

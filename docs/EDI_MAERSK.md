@@ -321,3 +321,31 @@ Tài liệu nhận được: **API License Terms** (sửa 31/08/2026) + OpenAPI 
 - **Cách so khớp khi chạy song song:** chọn cùng giờ → tải file → so **từng cont** (loại tin, size/type, RFF+BN, giờ) với file app cũ. Thứ tự dòng có thể khác (MATRAN sắp theo giờ); giờ có thể lệch vài phút vì MATRAN lấy giờ thao tác thật trên app (Q-051).
 - **Còn lại trước khi gửi thật:** kênh gửi (Q-053), tin hủy / sửa khi đổi container sau khi đã lên xe (Q-052), Nhập tàu (Q-050), giờ không có cont (Q-049), tự động mỗi giờ + hàng chờ / nhật ký / gửi lại.
 
+## 14. Tự động mỗi giờ + gửi qua SFTP (đề xuất 2026-10-30 — chờ thông số Q-053)
+
+**Luồng tự động:** đúng HH:00 (+ chờ vài phút cho lượt nhập muộn — Q-055) → máy chủ tạo file của giờ trước (cùng hàm `buildCodecoFile`) → **lưu file vào bảng nhật ký** (xem / tải lại trên màn EDI) → gửi SFTP → ghi ĐÃ GỬI / LỖI → lỗi thì tự gửi lại (5 / 15 / 30 phút) → vẫn lỗi thì cảnh báo đỏ (menu + màn Database).
+
+**Thông số SFTP cần có** (lấy từ cấu hình ERPVINASHIP hoặc hỏi Maersk; **mật khẩu / khóa không gửi agent** — người dùng tự nhập vào cấu hình máy chủ):
+
+| # | Thông số | Ghi chú |
+|---|---|---|
+| 1 | **Giao thức** | log app cũ ghi "UPLOAD FTP" → xác nhận là **FTP / FTPS / SFTP** |
+| 2 | **Máy chủ** (tên miền / IP) | |
+| 3 | **Cổng** | SFTP thường 22, FTP 21, FTPS 990 / 21 |
+| 4 | **Tên đăng nhập** | |
+| 5 | **Cách đăng nhập**: mật khẩu hay **khóa SSH** (+ mật khẩu khóa) | dùng khóa thì MATRAN tạo cặp khóa mới, gửi **khóa công khai** cho Maersk |
+| 6 | **Dấu vân tay máy chủ** (host key fingerprint) | để chắc đang gửi đúng máy chủ Maersk |
+| 7 | **Thư mục đích** (VD `/inbound/CODECO/`) | |
+| 8 | **Quy tắc tên file** | app cũ: `yyyyMMddHHmm.txt` — giữ hay Maersk yêu cầu khác |
+| 9 | **Có giới hạn IP gửi không** (IP whitelist) | **quan trọng:** máy chủ đám mây (Supabase / Vercel) không có IP cố định → nếu Maersk chặn theo IP thì phải gửi từ máy có IP cố định (máy chủ nhỏ / máy depot) |
+| 10 | **Xuống dòng / mã ký tự** | LF hay CRLF; UNOA = chữ không dấu |
+| 11 | **Ghi file tạm rồi đổi tên** khi xong? | một số máy nhận yêu cầu để không đọc file đang ghi dở |
+| 12 | **Giờ không có cont có gửi file rỗng không** | Q-049 |
+| 13 | **Maersk có trả file xác nhận / báo lỗi** (CONTRL / APERAK) ở thư mục nào để tải về không | nếu có → MATRAN tự tải về, hiện kết quả trên màn EDI |
+| 14 | **Có môi trường / thư mục thử** không | để gửi thử trước khi gửi thật |
+
+**Nơi chạy gửi (chọn khi có thông số):**
+- (a) Supabase (tác vụ định kỳ + Edge Function) — rẻ nhất, cần thử có kết nối SFTP / FTP được không, và không có IP cố định;
+- (b) Vercel Cron + hàm Node — cron mỗi giờ cần gói Pro, cũng không có IP cố định;
+- (c) máy chủ nhỏ / máy tính depot chạy 24/24 (như ERPVINASHIP) — có IP cố định, phải giữ máy luôn bật.
+
