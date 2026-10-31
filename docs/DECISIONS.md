@@ -1527,6 +1527,21 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-202 — Tồn vỏ: gộp TIẾN ĐỘ vào TRẠNG THÁI — mỗi cont 1 trạng thái hiện tại
+
+- Trạng thái: CONFIRMED (2026-10-31, người dùng). **Thay phần "TIẾN ĐỘ sau MÃ PHIẾU THU" của DEC-129** và cột Trạng thái AV / DAMAGE cũ.
+- **Bỏ cột TIẾN ĐỘ.** Cột **TRẠNG THÁI** chỉ hiện **1 trạng thái hiện tại** (không ghép nhiều nhãn), xét từ trên xuống — khớp điều kiện nào trước thì lấy:
+  1. **CHỜ GIÁM ĐỊNH** — cont W-SURVEY đã lên kệ (trong bãi), chưa giám định bổ sung (DEC-147);
+  2. **CHỜ VỆ SINH** — còn việc vệ sinh chưa xong;
+  3. **CHỜ XE NÂNG** — chờ hạ vỏ / hạ lại (đổi cont) / đã thu tiền chờ cấp;
+  4. **CHỜ VĂN PHÒNG** — đã lập lệnh cấp vỏ, chưa thu tiền;
+  5. **CHỜ BÁO GIÁ** — cont hư, Báo giá chưa cập nhật tình trạng sửa chữa;
+  6. **CHỜ DUYỆT SỬA CHỮA** — Báo giá đã lưu tình trạng + giờ công (bước 1 DEC-086), chưa XÁC NHẬN CHỜ SỬA CHỮA;
+  7. **CHỜ SỬA CHỮA** — đã xác nhận, chờ tổ sửa chữa;
+  8. **DAMAGE / AV** — không chờ việc gì → tình trạng vỏ.
+- Ô lọc **Trạng thái** = 9 trạng thái mới. Excel Tồn vỏ cùng cột (bỏ TIẾN ĐỘ — DEC-129 khớp màn hình). Màu: AV `success`, DAMAGE `danger`, các bước CHỜ nền `accent-soft`.
+- Code: `yardStatus` / `YARD_STATUS_LABELS` (`src/services/yardStatus.ts`), `YardFeature.tsx`, `yardStockSheet`. **Màn Đảo chuyển giữ bộ lọc Tiến độ cũ** (`getContainerProgress`) — chưa đổi. Không cần migration.
+
 ### DEC-201 — eEIR chỉ tích hợp cont MSK loại KHÔ (DRY)
 
 - Trạng thái: CONFIRMED (2026-10-30, người dùng): eEIR **chỉ áp dụng cont DRY** (Size/Type DC, HC); cont lạnh / open-top / flat **chưa tích hợp**.
@@ -2035,6 +2050,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-201 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-202 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.
