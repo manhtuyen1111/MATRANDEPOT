@@ -29,6 +29,7 @@ import {
   ContainerNo,
   CELL_MAX,
   LocationText,
+  yardStatusTone,
 } from '../../components/shared';
 import { CONTAINER_SEARCH_HINT, matchContainerNo } from '../../services/containerSearch';
 
@@ -441,14 +442,9 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
   );
 };
 
-// DEC-202: ô TRẠNG THÁI Tồn vỏ — AV xanh, DAMAGE đỏ, các bước CHỜ nền nhạt (màu token — DEC-145)
+// DEC-202: ô TRẠNG THÁI Tồn vỏ — 1 trạng thái hiện tại (màu dùng chung yardStatusTone)
 const YardStatusBadge: React.FC<{ status: YardStatus }> = ({ status }) => (
-  <span
-    data-testid="yard-status"
-    className={`inline-block rounded px-2 py-0.5 text-[11px] font-bold ${
-      status === 'AV' ? 'bg-success-bg text-success-fg' : status === 'DAMAGE' ? 'bg-danger-bg text-danger-fg' : 'bg-accent-soft text-ink'
-    }`}
-  >
+  <span data-testid="yard-status" className={`inline-block rounded px-2 py-0.5 text-[11px] font-bold ${yardStatusTone(status)}`}>
     {YARD_STATUS_LABELS[status]}
   </span>
 );

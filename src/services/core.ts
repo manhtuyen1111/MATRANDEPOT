@@ -172,35 +172,6 @@ export function validateTargetSlot(
   return { block: block.blockCode, ...value };
 }
 
-// TIẾN ĐỘ của một container trong bãi (dùng cho Tồn vỏ, Đảo chuyển, Cấp vỏ)
-export type ContainerProgress =
-  | 'CHO_HA_VO'
-  | 'CHO_VE_SINH'
-  | 'CHO_BAO_GIA'
-  | 'CHO_SUA_CHUA'
-  | 'DA_LAP_LENH_CAP'
-  | 'SAN_SANG';
-
-export const PROGRESS_LABELS: Record<ContainerProgress, string> = {
-  CHO_HA_VO: 'Chờ hạ vỏ',
-  CHO_VE_SINH: 'Chờ vệ sinh',
-  CHO_BAO_GIA: 'Chờ báo giá',
-  CHO_SUA_CHUA: 'Chờ sửa chữa',
-  DA_LAP_LENH_CAP: 'Đã lập lệnh cấp',
-  SAN_SANG: 'Sẵn sàng',
-};
-
-export function getContainerProgress(c: ContainerRecord): ContainerProgress[] {
-  const tags: ContainerProgress[] = [];
-  if (c.status === 'WAITING_PLACEMENT') tags.push('CHO_HA_VO');
-  if (c.needsCleaning) tags.push('CHO_VE_SINH');
-  if (c.needsQuotation) tags.push('CHO_BAO_GIA');
-  if (c.needsRepair) tags.push('CHO_SUA_CHUA');
-  if (c.status === 'ALLOCATED') tags.push('DA_LAP_LENH_CAP');
-  if (tags.length === 0 && c.status === 'IN_YARD') tags.push('SAN_SANG');
-  return tags;
-}
-
 export function normalizeContainerNo(raw: string): string {
   const clean = raw.trim().toUpperCase();
   if (!/^[A-Z]{4}\d{7}$/.test(clean)) {
