@@ -34,6 +34,8 @@ Tối giản, thân thiện: nền trắng, nhiều khoảng trắng, **một m�
 | `op-ha-vo` / `op-cap-vo` / `op-nhap-tau` / `op-xuat-tau` | #2c66a8 / #6650a8 / #1f7a5c / #e2a43b | Chỉ nhãn tác nghiệp (DEC-083). Xuất tàu chữ `text-ink`, còn lại chữ trắng |
 | `success-bg` / `success-fg` | #e8f5ee / #17603f | Thông báo thành công |
 | `danger-bg` / `danger-fg` | #fdecec / #a1262b | Lỗi, icon khóa container |
+| `pending` (`bg-pending`) | #e2a43b | **Việc chờ**: mọi trạng thái CHỜ … của cont (Tồn vỏ, Đảo chuyển — DEC-202), chữ `text-ink` |
+| `warn-bg` (`bg-warn-bg`) | #fdf3dc | Nền ghi chú có nội dung |
 
 Còn giữ màu Tailwind có sẵn cho trạng thái phụ (`emerald-*`, `red-*`, `rose-*`, `amber-*` — ví dụ số đếm việc chờ `amber-500` nhấp nháy, DEC-075).
 

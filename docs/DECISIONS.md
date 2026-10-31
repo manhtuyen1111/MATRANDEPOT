@@ -1527,22 +1527,22 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
-### DEC-202 — Tồn vỏ: gộp TIẾN ĐỘ vào TRẠNG THÁI — mỗi cont 1 trạng thái hiện tại
+### DEC-202 — Tồn vỏ & Đảo chuyển: giữ 2 cột TRẠNG THÁI (DAMAGE / AV) + TIẾN ĐỘ (1 tiến độ chờ thực tế, ngay cạnh Trạng thái)
 
-- Trạng thái: CONFIRMED (2026-10-31, người dùng). **Thay phần "TIẾN ĐỘ sau MÃ PHIẾU THU" của DEC-129** và cột Trạng thái AV / DAMAGE cũ.
-- **Bỏ cột TIẾN ĐỘ.** Cột **TRẠNG THÁI** chỉ hiện **1 trạng thái hiện tại** (không ghép nhiều nhãn), xét từ trên xuống — khớp điều kiện nào trước thì lấy:
-  1. **CHỜ GIÁM ĐỊNH** — cont W-SURVEY đã lên kệ (trong bãi), chưa giám định bổ sung (DEC-147);
-  2. **CHỜ VỆ SINH** — còn việc vệ sinh chưa xong;
-  3. **CHỜ XE NÂNG** — chờ hạ vỏ / hạ lại (đổi cont) / đã thu tiền chờ cấp;
-  4. **CHỜ VĂN PHÒNG** — đã lập lệnh cấp vỏ, chưa thu tiền;
-  5. **CHỜ BÁO GIÁ** — cont hư, Báo giá chưa cập nhật tình trạng sửa chữa;
-  6. **CHỜ DUYỆT SỬA CHỮA** — Báo giá đã lưu tình trạng + giờ công (bước 1 DEC-086), chưa XÁC NHẬN CHỜ SỬA CHỮA;
-  7. **CHỜ SỬA CHỮA** — đã xác nhận, chờ tổ sửa chữa;
-  8. **DAMAGE / AV** — không chờ việc gì → tình trạng vỏ.
-- Ô lọc **Trạng thái** = 9 trạng thái mới. Excel Tồn vỏ cùng cột (bỏ TIẾN ĐỘ — DEC-129 khớp màn hình). Màu: AV `success`, DAMAGE `danger`, các bước CHỜ nền `accent-soft`.
-- **Đồng bộ toàn bộ (người dùng 2026-10-31):** Xe nâng → **Đảo chuyển** cũng dùng logic này — ô TRẠNG THÁI bên trái (DEC-094) hiện 1 trạng thái hiện tại, **bỏ nhãn tiến độ** ở dòng 1 (DEC-115 nay: dòng 1 số cont | size/type; dòng 2 vị trí | ghi chú), ô lọc "Trạng thái" 9 giá trị; chi tiết cont đang chọn hiện trạng thái hiện tại.
-- Đã **xóa** logic tiến độ cũ (`ContainerProgress`, `getContainerProgress`, `PROGRESS_LABELS` trong `core.ts`) — không màn nào còn dùng.
-- Code: `yardStatus` / `YARD_STATUS_LABELS` / `YARD_STATUSES` (`src/services/yardStatus.ts`), màu dùng chung `yardStatusTone` (`shared.tsx`), `YardFeature.tsx`, `YardShiftWorkspace.tsx`, `yardStockSheet`. Không cần migration.
+- Trạng thái: CONFIRMED (2026-10-31, người dùng). **Thay vị trí cột TIẾN ĐỘ của DEC-129** và thay logic ghép nhiều nhãn tiến độ cũ.
+- **Giữ 2 cột riêng biệt `TRẠNG THÁI` + `TIẾN ĐỘ`**, trong đó **cột `TIẾN ĐỘ` nằm ngay bên cạnh (bên phải) cột `TRẠNG THÁI`** (trước cột `PHÂN LOẠI`):
+  - **Cột `TRẠNG THÁI`:** chỉ hiển thị **`DAMAGE`** hoặc **`AV`** (cont `W-SURVEY` chưa giám định bổ sung để trống `-`).
+  - **Cột `TIẾN ĐỘ`:** chỉ hiển thị **1 tiến độ chờ thực tế** (không ghép nhiều nhãn; không chờ bộ phận nào thì để trống `-`), xét từ trên xuống — khớp điều kiện nào trước thì lấy:
+    1. **CHỜ GIÁM ĐỊNH** — cont W-SURVEY đã lên kệ (trong bãi), chưa giám định bổ sung (DEC-147);
+    2. **CHỜ VỆ SINH** — còn việc vệ sinh chưa xong;
+    3. **CHỜ XE NÂNG** — chờ hạ vỏ / hạ lại (đổi cont) / đã thu tiền chờ cấp;
+    4. **CHỜ VĂN PHÒNG** — đã lập lệnh cấp vỏ, chưa thu tiền;
+    5. **CHỜ BÁO GIÁ** — cont hư, Báo giá chưa cập nhật tình trạng sửa chữa;
+    6. **CHỜ DUYỆT SỬA CHỮA** — Báo giá đã lưu tình trạng + giờ công (bước 1 DEC-086), chưa XÁC NHẬN CHỜ SỬA CHỮA;
+    7. **CHỜ SỬA CHỮA** — đã xác nhận, chờ tổ sửa chữa.
+- Ô lọc trên **Tồn vỏ**: lọc **Trạng thái** (`DAMAGE` / `AV`) và lọc **Tiến độ** (7 tiến độ chờ thực tế: `CHỜ GIÁM ĐỊNH`, `CHỜ VĂN PHÒNG`, `CHỜ VỆ SINH`, `CHỜ XE NÂNG`, `CHỜ BÁO GIÁ`, `CHỜ DUYỆT SỬA CHỮA`, `CHỜ SỬA CHỮA`). Excel Tồn vỏ cùng thứ tự cột màn hình (`TRẠNG THÁI` | `TIẾN ĐỘ` | `PHÂN LOẠI` — DEC-129). Màu: AV `success`, DAMAGE `danger`, **mọi tiến độ CHỜ màu vàng `pending`** (#e2a43b, chữ ink — token việc chờ trong `docs/design/tokens.json`; người dùng 2026-10-31).
+- **Đồng bộ Xe nâng → Đảo chuyển:** ô `TRẠNG THÁI` bên trái (DEC-094) hiển thị `DAMAGE` / `AV`, nhãn `TIẾN ĐỘ` ở cuối dòng 1 (DEC-115: dòng 1 số cont | size/type | tiến độ; dòng 2 vị trí | ghi chú), ô lọc "Tiến độ" gồm 7 tiến độ chờ thực tế.
+- Code: `yardCondition` / `YARD_CONDITIONS` / `yardProgress` / `YARD_PROGRESS_LABELS` / `YARD_PROGRESSES` (`src/services/yardStatus.ts`), màu dùng chung `yardStatusTone` (`shared.tsx`), `YardFeature.tsx`, `YardShiftWorkspace.tsx`, `yardStockSheet`. Không cần migration.
 
 ### DEC-201 — eEIR chỉ tích hợp cont MSK loại KHÔ (DRY)
 
