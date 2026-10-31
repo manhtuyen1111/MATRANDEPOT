@@ -77,7 +77,7 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).toMatch(/>Mã phiếu thu<\/th><th[^>]*>Ghi chú<\/th>/);
     expect(html).toContain('data-testid="yard-status"');
     expect(html).toContain('data-testid="yard-progress"');
-    expect(html).toMatch(/bg-pending text-ink">CHỜ /); // DEC-202: tiến độ CHỜ màu vàng việc chờ
+    expect(html).toMatch(/bg-accent-soft text-ink">CHỜ /); // DEC-202: tiến độ CHỜ màu nền nhẹ accent-soft theo DESIGN_SYSTEM
     expect(html).toContain('Tìm hàng loạt');
     expect(html).toContain('Container không khóa');
     // DEC-099: cột thanh toán
