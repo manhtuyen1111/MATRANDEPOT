@@ -124,7 +124,7 @@ Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 1. Container `DAMAGE` sau `GATE IN OK` vào hàng chờ **Báo giá**.
 2. **Bộ phận Báo giá** (vai trò `QUOTATION`) nhập hạng mục và số tiền → xác nhận → container chuyển **Chờ sửa chữa**.
 3. **Bộ phận Sửa chữa** chọn tổ + nhân viên, xác nhận hoàn tất → container chuyển **AV** (DEC-049, không còn bước QC).
-4. Xe nâng dùng ĐẢO CHUYỂN (lọc TRẠNG THÁI = Chờ sửa chữa — DEC-202) để hạ container tới khu sửa chữa.
+4. Xe nâng dùng ĐẢO CHUYỂN (lọc TIẾN ĐỘ = CHỜ SỬA CHỮA — DEC-202) để hạ container tới khu sửa chữa.
 5. Không cần hãng tàu duyệt (DEC-040). Báo giá nhập remark + giờ công (DEC-041); Sửa chữa chọn tổ + nhân viên khi hoàn tất (DEC-043).
 
 ## 8. Quy trình Booking và cấp container
