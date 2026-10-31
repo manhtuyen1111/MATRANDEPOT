@@ -24,6 +24,8 @@
   --color-success-fg: #17603f;
   --color-danger-bg: #fdecec;
   --color-danger-fg: #a1262b;
+  --color-pending: #e2a43b; /* tokens.json: việc chờ — chữ ink (DEC-075, DEC-202) */
+  --color-warn-bg: #fdf3dc; /* tokens.json: nền ghi chú có nội dung */
 }
 
 /* DEC-116: điện thoại (iPhone) tự phóng to khi chạm ô nhập có chữ < 16px → làm vỡ khung.

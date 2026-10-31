@@ -4,7 +4,13 @@ import { ArrowLeftRight, ChevronDown, ChevronUp, History, Search, X } from 'luci
 import { DepotState } from '../../services/depotStore';
 
 import { formatLocation } from '../../services/core';
-import { YARD_STATUS_LABELS, YARD_STATUSES, yardStatus, YardStatus } from '../../services/yardStatus';
+import {
+  YARD_PROGRESS_LABELS,
+  YARD_PROGRESSES,
+  yardCondition,
+  yardProgress,
+  YardProgress,
+} from '../../services/yardStatus';
 import {
   ContainerNo,
   EMPTY_SLOT,
@@ -12,7 +18,6 @@ import {
   formatViTime,
   inputCls,
   isSlotComplete,
-  labelCls,
   primaryBtn,
   secondaryBtn,
   SlotPicker,
@@ -37,7 +42,7 @@ export const YardShiftWorkspace: React.FC<{
 }> = ({ state, onUpdateState, onOpenDossier }) => {
   const [search, setSearch] = useState('');
   const [size, setSize] = useState('ALL');
-  const [status, setStatus] = useState<'ALL' | YardStatus>('ALL'); // DEC-202: lọc theo trạng thái hiện tại (như Tồn vỏ)
+  const [progress, setProgress] = useState<'ALL' | YardProgress>('ALL'); // DEC-202: lọc theo 1 tiến độ chờ thực tế
   const [shown, setShown] = useState(PAGE_SIZE);
   // DEC-092: ô tên Block rộng đúng bằng mã Block dài nhất (đơn vị ch, chữ đều nét) → các phần Bay-Row-Tier thẳng cột
   const blockCh = Math.max(4, ...state.yardBlocks.map((b) => blockLabel(b.blockCode).length)) + 2; // DEC-136: icon thay chữ BLOCK-
@@ -53,9 +58,9 @@ export const YardShiftWorkspace: React.FC<{
         .filter((c) => (c.status === 'IN_YARD' || c.status === 'ALLOCATED') && c.currentBlock)
         .filter((c) => matchContainerNo(c.containerNo, search))
         .filter((c) => size === 'ALL' || c.size === size)
-        .filter((c) => status === 'ALL' || yardStatus(state, c) === status)
+        .filter((c) => progress === 'ALL' || yardProgress(state, c) === progress)
         .sort((a, b) => a.containerNo.localeCompare(b.containerNo)),
-    [state.containers, state.gateOutOrders, search, size, status]
+    [state.containers, state.gateOutOrders, search, size, progress]
   );
   const selected = state.containers.find((c) => c.id === selectedId);
   const recent = state.locationHistory.filter((h) => h.actionType === 'YARD_SHIFT').slice(0, 10);
@@ -100,7 +105,11 @@ export const YardShiftWorkspace: React.FC<{
             <dt className="text-ink-muted">Size / Type</dt>
             <dd className="font-semibold">{selected.size}/{selected.type}</dd>
             <dt className="text-ink-muted">Trạng thái</dt>
-            <dd className="font-semibold">{YARD_STATUS_LABELS[yardStatus(state, selected)]}</dd>
+            <dd className="font-semibold">
+              {[yardCondition(selected), yardProgress(state, selected) ? YARD_PROGRESS_LABELS[yardProgress(state, selected)!] : null]
+                .filter(Boolean)
+                .join(' • ') || '-'}
+            </dd>
             <dt className="text-ink-muted">Vị trí hiện tại</dt>
             <dd className="font-mono font-bold"><LocationText loc={selected} /></dd>
           </dl>
@@ -131,9 +140,9 @@ export const YardShiftWorkspace: React.FC<{
             <option value="ALL">Size: Tất cả</option>
             {state.containerSizes.map((s) => <option key={s} value={s}>Size {s}</option>)}
           </select>
-          <select value={status} onChange={(e) => { setStatus(e.target.value as 'ALL' | YardStatus); resetPage(); }} className={inputCls} aria-label="Lọc trạng thái">
-            <option value="ALL">Trạng thái: Tất cả</option>
-            {YARD_STATUSES.map((s) => <option key={s} value={s}>{YARD_STATUS_LABELS[s]}</option>)}
+          <select value={progress} onChange={(e) => { setProgress(e.target.value as 'ALL' | YardProgress); resetPage(); }} className={inputCls} aria-label="Lọc tiến độ">
+            <option value="ALL">Tiến độ: Tất cả</option>
+            {YARD_PROGRESSES.map((p) => <option key={p} value={p}>{YARD_PROGRESS_LABELS[p]}</option>)}
           </select>
         </div>
       </div>
@@ -142,46 +151,57 @@ export const YardShiftWorkspace: React.FC<{
         {inYard.length === 0 ? (
           <li className="rounded-lg border border-dashed border-line-strong bg-white p-6 text-center text-xs text-ink-muted">Không có container phù hợp.</li>
         ) : (
-          inYard.slice(0, shown).map((c) => (
-            <li key={c.id}>
-              <button
-                type="button"
-                onClick={() => { setSelectedId(c.id); setSlot(EMPTY_SLOT); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className={`w-full rounded-lg border px-3 py-2.5 text-left text-xs ${selectedId === c.id ? 'border-navy-900 bg-navy-50' : 'border-line bg-white active:bg-canvas'}`}
-              >
-                {/* DEC-094: ô TRẠNG THÁI riêng bên trái (cùng kích thước ô tác nghiệp — DEC-096); DEC-202: 1 trạng thái hiện tại */}
-                <div className="grid grid-cols-[5rem_1fr] items-center gap-2.5" data-testid="shift-row">
-                  <span
-                    data-testid="shift-status"
-                    className={`flex w-full flex-wrap items-center justify-center rounded px-1.5 py-1 text-center text-[10px] font-black uppercase ${yardStatusTone(yardStatus(state, c))}`}
-                  >
-                    {YARD_STATUS_LABELS[yardStatus(state, c)]}
-                  </span>
-                  <span className="min-w-0">
-                    {/* DEC-115: tối ưu mobile — đúng 2 dòng, không xuống dòng:
-                        dòng 1 SỐ CONT | SIZE/TYPE; dòng 2 VỊ TRÍ (ô Block rộng cố định, thẳng cột — DEC-092) | GHI CHÚ. DEC-202: bỏ nhãn tiến độ (trạng thái ở ô bên trái) */}
-                    <span className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
-                      <span className="shrink-0"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" /></span>
-                      <span className="shrink-0 font-mono text-[11px] text-ink-muted">{c.size}/{c.type}</span>
+          inYard.slice(0, shown).map((c) => {
+            const cond = yardCondition(c);
+            const prog = yardProgress(state, c);
+            return (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedId(c.id); setSlot(EMPTY_SLOT); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className={`w-full rounded-lg border px-3 py-2.5 text-left text-xs ${selectedId === c.id ? 'border-navy-900 bg-navy-50' : 'border-line bg-white active:bg-canvas'}`}
+                >
+                  {/* DEC-094: ô TRẠNG THÁI riêng bên trái (DAMAGE / AV, cùng kích thước ô tác nghiệp — DEC-096) */}
+                  <div className="grid grid-cols-[5rem_1fr] items-center gap-2.5" data-testid="shift-row">
+                    <span
+                      data-testid="shift-status"
+                      className={`flex w-full flex-wrap items-center justify-center rounded px-1.5 py-1 text-center text-[10px] font-black uppercase ${cond ? yardStatusTone(cond) : 'bg-canvas text-ink-muted'}`}
+                    >
+                      {cond || '-'}
                     </span>
-                    <span className="mt-1 flex items-center gap-2 overflow-hidden whitespace-nowrap">
-                      <span className="flex shrink-0 font-mono text-[11px] font-bold text-ink" data-testid="shift-slot">
-                        <span className="inline-flex shrink-0 items-center gap-0.5" style={{ width: `${blockCh}ch` }}>{c.currentBlock && <BlockIcon />}{blockLabel(c.currentBlock)}</span>
-                        <span className="truncate">{slotDetail(c) ? ` / ${slotDetail(c)}` : ''}</span>
+                    <span className="min-w-0">
+                      {/* DEC-115 / DEC-202: tối ưu mobile — đúng 2 dòng, không xuống dòng:
+                          dòng 1 SỐ CONT | SIZE/TYPE | TIẾN ĐỘ (1 tiến độ chờ thực tế bên phải); dòng 2 VỊ TRÍ (ô Block rộng cố định, thẳng cột — DEC-092) | GHI CHÚ */}
+                      <span className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                        <span className="shrink-0"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" /></span>
+                        <span className="shrink-0 font-mono text-[11px] text-ink-muted">{c.size}/{c.type}</span>
+                        <span className="ml-auto flex min-w-0 justify-end gap-1 overflow-hidden" data-testid="shift-progress">
+                          {prog && (
+                            <span className={`shrink-0 whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-bold ${yardStatusTone(prog)}`}>
+                              {YARD_PROGRESS_LABELS[prog]}
+                            </span>
+                          )}
+                        </span>
                       </span>
-                      <span
-                        data-testid="shift-note"
-                        className={`min-w-0 flex-1 truncate rounded px-1.5 py-0.5 text-[11px] ${c.officeNote ? 'bg-yellow-200 font-semibold text-ink' : 'text-ink-muted'}`}
-                        title={c.officeNote || ''}
-                      >
-                        {c.officeNote ? `Ghi chú: ${c.officeNote}` : ''}
+                      <span className="mt-1 flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                        <span className="flex shrink-0 font-mono text-[11px] font-bold text-ink" data-testid="shift-slot">
+                          <span className="inline-flex shrink-0 items-center gap-0.5" style={{ width: `${blockCh}ch` }}>{c.currentBlock && <BlockIcon />}{blockLabel(c.currentBlock)}</span>
+                          <span className="truncate">{slotDetail(c) ? ` / ${slotDetail(c)}` : ''}</span>
+                        </span>
+                        <span
+                          data-testid="shift-note"
+                          className={`min-w-0 flex-1 truncate rounded px-1.5 py-0.5 text-[11px] ${c.officeNote ? 'bg-yellow-200 font-semibold text-ink' : 'text-ink-muted'}`}
+                          title={c.officeNote || ''}
+                        >
+                          {c.officeNote ? `Ghi chú: ${c.officeNote}` : ''}
+                        </span>
                       </span>
                     </span>
-                  </span>
-                </div>
-              </button>
-            </li>
-          ))
+                  </div>
+                </button>
+              </li>
+            );
+          })
         )}
       </ul>
       {inYard.length > shown && (

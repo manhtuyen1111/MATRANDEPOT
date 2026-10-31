@@ -974,7 +974,7 @@ const PhotoViewer: React.FC<{ src: string; alt: string; onClose: () => void }> =
   );
 };
 
-// DEC-202: màu TRẠNG THÁI hiện tại của cont (Tồn vỏ, Đảo chuyển) — AV xanh, DAMAGE đỏ, các bước CHỜ nền nhạt (token — DEC-145)
+// DEC-202: màu TRẠNG THÁI hiện tại của cont (Tồn vỏ, Đảo chuyển) — AV xanh, DAMAGE đỏ, mọi bước CHỜ vàng `pending` chữ ink (token — DEC-145)
 export const yardStatusTone = (status: string) =>
-  status === 'AV' ? 'bg-success-bg text-success-fg' : status === 'DAMAGE' ? 'bg-danger-bg text-danger-fg' : 'bg-accent-soft text-ink';
+  status === 'AV' ? 'bg-success-bg text-success-fg' : status === 'DAMAGE' ? 'bg-danger-bg text-danger-fg' : 'bg-pending text-ink';
 

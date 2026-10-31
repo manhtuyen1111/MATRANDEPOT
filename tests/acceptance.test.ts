@@ -886,13 +886,13 @@ describe('DEC-067: Tồn vỏ — lưu bãi, khóa / ghi chú hàng loạt', () 
     expect(noted.state.containers.filter((c) => ids.includes(c.id)).every((c) => c.officeNote === 'Kiểm tra lại')).toBe(true);
     expect(() => bulkUpdateOfficeNote(as(s0, 'usr-forklift'), { containerIds: ids, officeNote: 'x' })).toThrow(/Không đủ quyền/);
     const sheet = yardStockSheet(noted.state.containers.filter((c) => ids.includes(c.id)));
-    // DEC-128: TRẠNG THÁI → PHÂN LOẠI (đóng hàng) → LƯU BÃI
-    expect(sheet.columns.indexOf('PHÂN LOẠI')).toBe(sheet.columns.indexOf('TRẠNG THÁI') + 1);
-    expect(sheet.columns.indexOf('LƯU BÃI (NGÀY)')).toBe(sheet.columns.indexOf('TRẠNG THÁI') + 2);
+    // DEC-128, DEC-202: TRẠNG THÁI → TIẾN ĐỘ → PHÂN LOẠI (đóng hàng) → LƯU BÃI
+    expect(sheet.columns.indexOf('TIẾN ĐỘ')).toBe(sheet.columns.indexOf('TRẠNG THÁI') + 1);
+    expect(sheet.columns.indexOf('PHÂN LOẠI')).toBe(sheet.columns.indexOf('TIẾN ĐỘ') + 1);
+    expect(sheet.columns.indexOf('LƯU BÃI (NGÀY)')).toBe(sheet.columns.indexOf('TIẾN ĐỘ') + 2);
     expect(sheet.columns).toContain('VỊ TRÍ');
     for (const r of sheet.rows) expect(r.length).toBe(sheet.columns.length);
     expect(sheet.columns.slice(4, 8)).toEqual(['HÃNG TÀU', 'AGE', 'DATE IN', 'VÀO BÃI BẰNG']); // DEC-129
-    expect(sheet.columns).not.toContain('TIẾN ĐỘ'); // DEC-202: gộp vào TRẠNG THÁI
     expect(sheet.rows[0][sheet.columns.indexOf('VÀO BÃI BẰNG')]).toBe('HẠ VỎ');
     expect(sheet.columns).toContain('GHI CHÚ');
   });
@@ -2334,40 +2334,51 @@ describe('eEIR chạy thử: phiếu Hạ vỏ / Cấp vỏ cont MSK DRY', () =>
   });
 });
 
-// DEC-202: TRẠNG THÁI Tồn vỏ — 1 trạng thái hiện tại, xét theo thứ tự ưu tiên
-import { yardStatus, YARD_STATUS_LABELS } from '../src/services/yardStatus';
+// DEC-202: Tồn vỏ 2 cột TRẠNG THÁI (DAMAGE / AV) + TIẾN ĐỘ (1 tiến độ chờ thực tế, ngay bên cạnh Trạng thái)
+import { YARD_CONDITIONS, YARD_PROGRESS_LABELS, yardCondition, yardProgress } from '../src/services/yardStatus';
 import type { ContainerRecord } from '../src/types/depot';
 
-describe('DEC-202: trạng thái Tồn vỏ', () => {
+describe('DEC-202: Tồn vỏ 2 cột Trạng thái + Tiến độ', () => {
   const demo = createDemoState();
   const base = demo.containers.find((c) => c.status === 'IN_YARD' && !c.needsCleaning && !c.needsQuotation && !c.needsRepair && c.conditionClass === 'AV')!;
-  const st = (patch: Partial<ContainerRecord>, s: DepotState = demo) => yardStatus(s, { ...base, ...patch });
+  const prog = (patch: Partial<ContainerRecord>, s: DepotState = demo) => yardProgress(s, { ...base, ...patch });
 
-  it('đúng 9 trạng thái, mỗi cont đúng 1 trạng thái', () => {
-    expect(Object.values(YARD_STATUS_LABELS)).toEqual(['DAMAGE', 'AV', 'CHỜ GIÁM ĐỊNH', 'CHỜ VĂN PHÒNG', 'CHỜ VỆ SINH', 'CHỜ XE NÂNG', 'CHỜ BÁO GIÁ', 'CHỜ DUYỆT SỬA CHỮA', 'CHỜ SỬA CHỮA']);
-    for (const c of demo.containers.filter((x) => x.status !== 'GATED_OUT')) expect(YARD_STATUS_LABELS[yardStatus(demo, c)]).toBeTruthy();
+  it('Trạng thái chỉ gồm DAMAGE / AV; Tiến độ gồm đúng 7 tiến độ chờ thực tế', () => {
+    expect(YARD_CONDITIONS).toEqual(['DAMAGE', 'AV']);
+    expect(Object.values(YARD_PROGRESS_LABELS)).toEqual([
+      'CHỜ GIÁM ĐỊNH',
+      'CHỜ VĂN PHÒNG',
+      'CHỜ VỆ SINH',
+      'CHỜ XE NÂNG',
+      'CHỜ BÁO GIÁ',
+      'CHỜ DUYỆT SỬA CHỮA',
+      'CHỜ SỬA CHỮA',
+    ]);
+    expect(yardCondition({ ...base, conditionClass: 'AV' })).toBe('AV');
+    expect(yardCondition({ ...base, conditionClass: 'DAMAGE' })).toBe('DAMAGE');
+    expect(yardCondition({ ...base, conditionClass: 'W-SURVEY' })).toBeNull();
   });
 
-  it('không chờ việc gì → AV / DAMAGE theo tình trạng vỏ', () => {
-    expect(st({})).toBe('AV');
-    expect(st({ conditionClass: 'DAMAGE' })).toBe('DAMAGE');
+  it('không chờ việc gì → Tiến độ = null (để trống)', () => {
+    expect(prog({})).toBeNull();
+    expect(prog({ conditionClass: 'DAMAGE' })).toBeNull();
   });
 
-  it('thứ tự ưu tiên: Giám định > Vệ sinh > Xe nâng > Văn phòng > Báo giá > Duyệt sửa chữa > Sửa chữa', () => {
-    expect(st({ conditionClass: 'W-SURVEY', needsCleaning: true })).toBe('CHO_GIAM_DINH');
-    expect(st({ conditionClass: 'W-SURVEY', status: 'WAITING_PLACEMENT' })).toBe('CHO_XE_NANG'); // chưa lên kệ → chờ Xe nâng hạ kệ
-    expect(st({ needsCleaning: true, status: 'WAITING_PLACEMENT', needsQuotation: true })).toBe('CHO_VE_SINH');
-    expect(st({ status: 'WAITING_PLACEMENT', needsQuotation: true })).toBe('CHO_XE_NANG');
-    expect(st({ needsQuotation: true })).toBe('CHO_BAO_GIA');
-    expect(st({ needsQuotation: true, quotationItems: ['Hàn vách'], quotationLaborHours: 2 })).toBe('CHO_DUYET_SUA_CHUA');
-    expect(st({ needsRepair: true })).toBe('CHO_SUA_CHUA');
+  it('thứ tự ưu tiên Tiến độ: Giám định > Vệ sinh > Xe nâng > Văn phòng > Báo giá > Duyệt sửa chữa > Sửa chữa', () => {
+    expect(prog({ conditionClass: 'W-SURVEY', needsCleaning: true })).toBe('CHO_GIAM_DINH');
+    expect(prog({ conditionClass: 'W-SURVEY', status: 'WAITING_PLACEMENT' })).toBe('CHO_XE_NANG'); // chưa lên kệ → chờ Xe nâng hạ kệ
+    expect(prog({ needsCleaning: true, status: 'WAITING_PLACEMENT', needsQuotation: true })).toBe('CHO_VE_SINH');
+    expect(prog({ status: 'WAITING_PLACEMENT', needsQuotation: true })).toBe('CHO_XE_NANG');
+    expect(prog({ needsQuotation: true })).toBe('CHO_BAO_GIA');
+    expect(prog({ needsQuotation: true, quotationItems: ['Hàn vách'], quotationLaborHours: 2 })).toBe('CHO_DUYET_SUA_CHUA');
+    expect(prog({ needsRepair: true })).toBe('CHO_SUA_CHUA');
   });
 
   it('đã lập lệnh cấp: chưa thu tiền → CHỜ VĂN PHÒNG; đã thu tiền → CHỜ XE NÂNG', () => {
     const waitPay = demo.gateOutOrders.find((o) => o.status === 'PAYMENT_PENDING')!;
     const waitLift = demo.gateOutOrders.find((o) => o.status === 'PENDING_FORKLIFT')!;
     const contOf = (o: typeof waitPay) => demo.containers.find((c) => c.containerNo === o.containerNo && c.masterDossierCode === o.masterDossierCode)!;
-    expect(yardStatus(demo, contOf(waitPay))).toBe('CHO_VAN_PHONG');
-    expect(yardStatus(demo, contOf(waitLift))).toBe('CHO_XE_NANG');
+    expect(yardProgress(demo, contOf(waitPay))).toBe('CHO_VAN_PHONG');
+    expect(yardProgress(demo, contOf(waitLift))).toBe('CHO_XE_NANG');
   });
 });
