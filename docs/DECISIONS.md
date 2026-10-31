@@ -1540,7 +1540,9 @@ Quy ước trạng thái:
   7. **CHỜ SỬA CHỮA** — đã xác nhận, chờ tổ sửa chữa;
   8. **DAMAGE / AV** — không chờ việc gì → tình trạng vỏ.
 - Ô lọc **Trạng thái** = 9 trạng thái mới. Excel Tồn vỏ cùng cột (bỏ TIẾN ĐỘ — DEC-129 khớp màn hình). Màu: AV `success`, DAMAGE `danger`, các bước CHỜ nền `accent-soft`.
-- Code: `yardStatus` / `YARD_STATUS_LABELS` (`src/services/yardStatus.ts`), `YardFeature.tsx`, `yardStockSheet`. **Màn Đảo chuyển giữ bộ lọc Tiến độ cũ** (`getContainerProgress`) — chưa đổi. Không cần migration.
+- **Đồng bộ toàn bộ (người dùng 2026-10-31):** Xe nâng → **Đảo chuyển** cũng dùng logic này — ô TRẠNG THÁI bên trái (DEC-094) hiện 1 trạng thái hiện tại, **bỏ nhãn tiến độ** ở dòng 1 (DEC-115 nay: dòng 1 số cont | size/type; dòng 2 vị trí | ghi chú), ô lọc "Trạng thái" 9 giá trị; chi tiết cont đang chọn hiện trạng thái hiện tại.
+- Đã **xóa** logic tiến độ cũ (`ContainerProgress`, `getContainerProgress`, `PROGRESS_LABELS` trong `core.ts`) — không màn nào còn dùng.
+- Code: `yardStatus` / `YARD_STATUS_LABELS` / `YARD_STATUSES` (`src/services/yardStatus.ts`), màu dùng chung `yardStatusTone` (`shared.tsx`), `YardFeature.tsx`, `YardShiftWorkspace.tsx`, `yardStockSheet`. Không cần migration.
 
 ### DEC-201 — eEIR chỉ tích hợp cont MSK loại KHÔ (DRY)
 

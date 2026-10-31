@@ -272,6 +272,13 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - **Phiên sau làm theo thứ tự:** (1) hỏi người dùng: DEC-198 ảnh cấp vỏ + DEC-199 booking có thu hẹp về cont DRY không; (2) tab **eEIR** ở Danh mục chung → EDI hãng tàu; (3) migration DEC-199 (trigger trước khi thêm `gate_out_orders`: cont MSK + CUSTOMER → booking khớp `^[A-Z0-9]{9,11}$`) + pgTAP, chạy Supabase local rồi tắt; (4) màn Giám định cont MSK DRY có hư: Hao mòn / Bên thứ 3 → CEDEX (DEC-200).
 - **Người dùng cần:** db push 7 file `20261113` → `20261119`; merge PR; gửi ticket Maersk (mục 17) xin khóa eEIR staging + JSON mẫu; lấy thông số SFTP từ AutoEDI; dung lượng PDF eEIR + 1 PDF Hạ vỏ (xác nhận IN-EMPTY-IMP); bảng mã vị trí CEDEX depot đang dùng (nếu có).
 
+**▶ BÀN GIAO 2026-10-31 — DEC-202 TRẠNG THÁI CONT (ĐỌC TRƯỚC):**
+- **Đã làm:** Tồn vỏ + Xe nâng → Đảo chuyển: mỗi cont **1 trạng thái hiện tại** (DAMAGE / AV / CHỜ GIÁM ĐỊNH / CHỜ VĂN PHÒNG / CHỜ VỆ SINH / CHỜ XE NÂNG / CHỜ BÁO GIÁ / CHỜ DUYỆT SỬA CHỮA / CHỜ SỬA CHỮA), xét theo thứ tự ưu tiên trong `yardStatus` (`src/services/yardStatus.ts`). Bỏ cột / nhãn **Tiến độ**; ô lọc 9 trạng thái; Excel Tồn vỏ khớp màn hình. Logic tiến độ cũ đã xóa.
+- **Lưu ý cho agent:** trạng thái cont trên màn hình / Excel **chỉ** lấy từ `yardStatus` (không tự ghép conditionClass + cờ needs…); màu chỉ qua `yardStatusTone` (`shared.tsx`). `conditionClass` (AV / DAMAGE / W-SURVEY) vẫn là **tình trạng vỏ** dùng ở Giám định, hồ sơ, phiếu in, EDI — không đổi.
+- **Cần thử tay:** Tồn vỏ lọc từng trạng thái; Đảo chuyển trên điện thoại (ô trạng thái dài "CHỜ DUYỆT SỬA CHỮA" xuống 2 dòng trong ô 5rem — xem có gọn không).
+- Kiểm thử: vitest **261 pass / 14 bỏ qua** • build PASS. Không migration (DB push vẫn là 7 file `20261113` → `20261119`).
+- Mục tiêu phiên sau vẫn như khối dưới: eEIR Giám định Hạ / Cấp vỏ + EDI tự động (chờ người dùng gửi tài liệu + trả lời 4 câu).
+
 **▶ MỤC TIÊU PHIÊN SAU (người dùng chốt 2026-10-30): (A) eEIR GIÁM ĐỊNH HẠ VỎ / CẤP VỎ • (B) EDI TRUYỀN DỮ LIỆU HÃNG TÀU**
 
 **(A) Form Giám định theo eEIR — CHƯA LÀM** (chỉ cont MSK DRY — DEC-201). Hiện trạng:
@@ -812,7 +819,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-29 — Claude Code: DEC-164 chiều cao dòng bảng đồng bộ = Tồn vỏ (40px), class data-table 21 bảng + test chặn. 174 test • build PASS.
 - 2026-10-29 — Claude Code: bàn giao cuối ngày — checklist ca mới, việc chờ quyết, LƯU Ý IN ẤN (DEC-161 → 163), LƯU Ý CHO AGENT.
 - 2026-10-29 (tối) — Claude Code: DEC-177 header 1 dòng (icon Quản trị hệ thống); DEC-178 dữ liệu lớn (thử tải 200.000 lượt → sửa RLS quá 8 giây, ảnh chỉ tải khi XEM ẢNH, mở app gọn theo vai trò + hôm nay, hồ sơ tải khi mở, tìm 7 số seri, báo cáo phân trang ở database, bỏ dò lồng nhau); DEC-179 / 180 báo cáo theo bộ phận (Giám định / Vệ sinh / Xe nâng Chi tiết mới, menu chỉ bộ phận). 3 migration mới (`20261108` → `20261110`). 210 test • build PASS • pgTAP 252/252 • chạy thật 5/5. Nhánh `agent/claude/perf-large-data` đã push.
-- 2026-10-31 — Claude Code: DEC-202 Tồn vỏ gộp Tiến độ vào Trạng thái (1 trạng thái hiện tại, 9 trạng thái, ô lọc + Excel), bỏ cột Tiến độ; Đảo chuyển giữ bộ lọc cũ. 261 test • build PASS. Chưa thử trên trình duyệt.
+- 2026-10-31 — Claude Code: DEC-202 Tồn vỏ gộp Tiến độ vào Trạng thái (1 trạng thái hiện tại, 9 trạng thái, ô lọc + Excel), bỏ cột Tiến độ; **đồng bộ Đảo chuyển** (ô trạng thái + lọc, bỏ nhãn tiến độ); xóa `getContainerProgress`. 261 test • build PASS. Chưa thử trên trình duyệt.
 - 2026-10-30 — Claude Code: DEC-199 (booking MSK 9–11 chữ / số — app), DEC-200 (CEDEX chỉ bên thứ 3 — chưa code), DEC-201 (eEIR chỉ DRY), eEIR chạy thử `edi/eeir.ts` (nghiệp vụ + test, chưa màn hình); EDI_MAERSK mục 18–19. 257 test • build PASS.
 - 2026-10-30 — Claude Code: sửa lỗi Xe nâng báo **GOUT-002** (database, cont HASU9182828 / CV-261030-004 — dữ liệu đúng): đồng bộ 30 giây không kéo booking tạo ngày trước được lệnh mới dùng lại → tải bù booking / cont (`missingReleaseRefs`). 251 test • build PASS. Chưa thử trên database thật.
 - 2026-10-30 — Claude Code: DEC-198 **Giám định → Cấp vỏ** (mobile): cont MSK sau Xe nâng cấp phải chụp 1–30 ảnh mới Trả chứng từ (K80 thêm bước GIÁM ĐỊNH, icon máy ảnh ở Trả chứng từ, dòng hồ sơ, đổi cont chụp lại). Migration `20261119000001` (pgTAP 345/345 local, đã tắt + xóa dữ liệu). 250 test • build PASS. Chưa thử chụp trên điện thoại thật.

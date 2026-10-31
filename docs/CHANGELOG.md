@@ -5,7 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
-- DEC-202 (2026-10-31): **Tồn vỏ** — gộp TIẾN ĐỘ vào **TRẠNG THÁI**: mỗi cont 1 trạng thái hiện tại (DAMAGE / AV / CHỜ GIÁM ĐỊNH / CHỜ VĂN PHÒNG / CHỜ VỆ SINH / CHỜ XE NÂNG / CHỜ BÁO GIÁ / CHỜ DUYỆT SỬA CHỮA / CHỜ SỬA CHỮA), bỏ cột Tiến độ, ô lọc + Excel theo trạng thái mới. Không migration.
+- DEC-202 (2026-10-31): **Tồn vỏ** — gộp TIẾN ĐỘ vào **TRẠNG THÁI**: mỗi cont 1 trạng thái hiện tại (DAMAGE / AV / CHỜ GIÁM ĐỊNH / CHỜ VĂN PHÒNG / CHỜ VỆ SINH / CHỜ XE NÂNG / CHỜ BÁO GIÁ / CHỜ DUYỆT SỬA CHỮA / CHỜ SỬA CHỮA), bỏ cột Tiến độ, ô lọc + Excel theo trạng thái mới. **Đồng bộ Xe nâng → Đảo chuyển** (ô trạng thái + ô lọc, bỏ nhãn tiến độ); xóa logic tiến độ cũ. Không migration.
 - DEC-199 (2026-10-30): Cấp vỏ (Release for customer) cont **MSK** chặn booking không phải **9–11 ký tự chữ / số** (app; database chưa chặn). DEC-201: eEIR chỉ cont MSK **DRY**; **eEIR chạy thử** phần nghiệp vụ (`src/services/edi/eeir.ts` — dựng phiếu + JSON theo tài liệu v4.3, chưa màn hình, chưa gửi). Demo đổi booking sang 9 chữ số.
 - DEC-198 (2026-10-30): **Giám định → Cấp vỏ** (mobile) — cont **MSK** sau khi Xe nâng cấp phải được Giám định **chụp 1–30 ảnh** mới Trả chứng từ được (bước GIÁM ĐỊNH trên phiếu K80, icon máy ảnh ở Trả chứng từ, dòng hồ sơ); đổi cont thì chụp lại. **Migration mới `20261119000001_release_photos.sql`** (pgTAP 345/345 local).
 - DEC-197 (2026-10-30): **Danh mục chung → EDI hãng tàu** (Admin) — **chạy thử EDI CODECO Maersk**: tạo file 1 giờ (Hạ vỏ, Cấp vỏ, Cấp sale, Xuất tàu — cont MSK) đúng mẫu app cũ, xem tin bị bỏ ra, tải .txt để so; **chưa gửi** Maersk. Không migration.
