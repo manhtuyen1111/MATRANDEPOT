@@ -272,6 +272,31 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - **Phiên sau làm theo thứ tự:** (1) hỏi người dùng: DEC-198 ảnh cấp vỏ + DEC-199 booking có thu hẹp về cont DRY không; (2) tab **eEIR** ở Danh mục chung → EDI hãng tàu; (3) migration DEC-199 (trigger trước khi thêm `gate_out_orders`: cont MSK + CUSTOMER → booking khớp `^[A-Z0-9]{9,11}$`) + pgTAP, chạy Supabase local rồi tắt; (4) màn Giám định cont MSK DRY có hư: Hao mòn / Bên thứ 3 → CEDEX (DEC-200).
 - **Người dùng cần:** db push 7 file `20261113` → `20261119`; merge PR; gửi ticket Maersk (mục 17) xin khóa eEIR staging + JSON mẫu; lấy thông số SFTP từ AutoEDI; dung lượng PDF eEIR + 1 PDF Hạ vỏ (xác nhận IN-EMPTY-IMP); bảng mã vị trí CEDEX depot đang dùng (nếu có).
 
+**▶ BÀN GIAO 2026-10-31 — DEC-202 TRẠNG THÁI CONT (ĐỌC TRƯỚC):**
+- **Đã làm:** Tồn vỏ + Xe nâng → Đảo chuyển: mỗi cont **1 trạng thái hiện tại** (DAMAGE / AV / CHỜ GIÁM ĐỊNH / CHỜ VĂN PHÒNG / CHỜ VỆ SINH / CHỜ XE NÂNG / CHỜ BÁO GIÁ / CHỜ DUYỆT SỬA CHỮA / CHỜ SỬA CHỮA), xét theo thứ tự ưu tiên trong `yardStatus` (`src/services/yardStatus.ts`). Bỏ cột / nhãn **Tiến độ**; ô lọc 9 trạng thái; Excel Tồn vỏ khớp màn hình. Logic tiến độ cũ đã xóa.
+- **Lưu ý cho agent:** trạng thái cont trên màn hình / Excel **chỉ** lấy từ `yardStatus` (không tự ghép conditionClass + cờ needs…); màu chỉ qua `yardStatusTone` (`shared.tsx`). `conditionClass` (AV / DAMAGE / W-SURVEY) vẫn là **tình trạng vỏ** dùng ở Giám định, hồ sơ, phiếu in, EDI — không đổi.
+- **Cần thử tay:** Tồn vỏ lọc từng trạng thái; Đảo chuyển trên điện thoại (ô trạng thái dài "CHỜ DUYỆT SỬA CHỮA" xuống 2 dòng trong ô 5rem — xem có gọn không).
+- Kiểm thử: vitest **261 pass / 14 bỏ qua** • build PASS. Không migration (DB push vẫn là 7 file `20261113` → `20261119`).
+- Mục tiêu phiên sau vẫn như khối dưới: eEIR Giám định Hạ / Cấp vỏ + EDI tự động (chờ người dùng gửi tài liệu + trả lời 4 câu).
+
+**▶ MỤC TIÊU PHIÊN SAU (người dùng chốt 2026-10-30): (A) eEIR GIÁM ĐỊNH HẠ VỎ / CẤP VỎ • (B) EDI TRUYỀN DỮ LIỆU HÃNG TÀU**
+
+**(A) Form Giám định theo eEIR — CHƯA LÀM** (chỉ cont MSK DRY — DEC-201). Hiện trạng:
+- Giám định → Hạ vỏ: 1 ảnh cửa, AV / DAMAGE, remark hư nhanh — **chưa** khung Thông tin Maersk, **chưa** phân loại Không hư / Hao mòn / Bên thứ 3, **chưa** CEDEX.
+- Giám định → Cấp vỏ (DEC-198): 1–30 ảnh — eEIR **tối đa 20**; chưa phần hư hỏng.
+- Đã có: dựng phiếu + JSON (`src/services/edi/eeir.ts`), chưa màn xem, chưa gửi.
+- Form đề xuất (đã trình bày người dùng): khung THÔNG TIN MAERSK (API 1 — size/ISO, năm SX, hạng, cảnh báo cấm dùng / bán / trả hãng thuê) → ẢNH 1–20 → TÌNH TRẠNG (Không hư / Hao mòn / Bên thứ 3; bên thứ 3 mỗi chỗ hư: CEDEX 4 ký tự + loại hư 1–16 + bên gây hư 1–4 + mô tả + 1–3 ảnh, nút THÊM CHỖ HƯ) → số seal (tùy chọn). Số xe / SĐT / booking lấy từ Văn phòng.
+- **4 câu phải hỏi lại đầu phiên (người dùng đã dừng trước khi trả lời):**
+  1. Hạ vỏ cont MSK DRY: 1–20 ảnh (đề xuất) hay giữ 1 ảnh cửa?
+  2. Cấp vỏ: giảm 1–30 → 1–20 ảnh (đề xuất) hay giữ, khi gửi lấy 20 ảnh đầu?
+  3. Vị trí CEDEX: gõ tay 4 ký tự (đề xuất) hay chọn từ Danh mục (cần bảng mã)?
+  4. DEC-198 ảnh cấp vỏ + DEC-199 booking: thu hẹp về chỉ cont DRY (đề xuất) hay giữ mọi cont MSK?
+- Thứ tự làm: chốt 4 câu → form Giám định (Hạ vỏ + Cấp vỏ, dùng chung 1 khối `EeirDamageFields`) + lưu dữ liệu hư (types + service + migration + pgTAP) → tab eEIR ở EDI hãng tàu → migration DEC-199 database → khi có khóa staging: Edge Function API 1 (khung Thông tin Maersk) + API 2 (gửi phiếu, hàng chờ, gửi lại).
+
+**(B) EDI CODECO tự động — CHƯA LÀM** (bản chạy thử tạo file đã xong — DEC-197). Cần thông số gửi (mục 14) → bảng nhật ký file theo giờ + lịch HH:00 + gửi SFTP + gửi lại + cảnh báo + công tắc Chạy thử / Gửi thật + chạy song song app cũ.
+
+**Tài liệu người dùng chuẩn bị (đã liệt kê cho người dùng 2026-10-30):** xem trả lời cuối phiên trong hội thoại — tóm tắt: (A) khóa eEIR staging + JSON mẫu (ticket mục 17), 1 PDF eEIR Hạ vỏ + dung lượng PDF, email nhận PDF, bảng mã CEDEX (nếu có), ảnh chụp màn app eEIR Maersk phần nhập hư, trả lời 4 câu; (B) thông số gửi từ AutoEDI (giao thức, máy chủ, cổng, tên đăng nhập, thư mục, mật khẩu hay khóa), Maersk: giới hạn IP / file xác nhận / thư mục thử, trả lời Q-049 / Q-050 / Q-052 / Q-054 / Q-055, nơi chạy, vài file EDI app cũ cùng ngày để so. **Mật khẩu / khóa bí mật: người dùng tự nhập vào cấu hình máy chủ, không gửi agent.**
+
 **▶ EDI / eEIR MAERSK — TRẠNG THÁI ĐẦY ĐỦ ĐỂ LÀM TIẾP (tài liệu chính: `docs/EDI_MAERSK.md`):**
 - **Hiểu đúng 2 kênh:**
   - **EDI CODECO** (file text EDIFACT, mỗi giờ 1 file) = báo **lượt vào / ra bãi** cho Maersk — app cũ AutoEDI / ERPVINASHIP đang gửi. **Vẫn phải giữ** (Devy không tìm thấy API thay thế — mục 12.6).
@@ -794,6 +819,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - 2026-10-29 — Claude Code: DEC-164 chiều cao dòng bảng đồng bộ = Tồn vỏ (40px), class data-table 21 bảng + test chặn. 174 test • build PASS.
 - 2026-10-29 — Claude Code: bàn giao cuối ngày — checklist ca mới, việc chờ quyết, LƯU Ý IN ẤN (DEC-161 → 163), LƯU Ý CHO AGENT.
 - 2026-10-29 (tối) — Claude Code: DEC-177 header 1 dòng (icon Quản trị hệ thống); DEC-178 dữ liệu lớn (thử tải 200.000 lượt → sửa RLS quá 8 giây, ảnh chỉ tải khi XEM ẢNH, mở app gọn theo vai trò + hôm nay, hồ sơ tải khi mở, tìm 7 số seri, báo cáo phân trang ở database, bỏ dò lồng nhau); DEC-179 / 180 báo cáo theo bộ phận (Giám định / Vệ sinh / Xe nâng Chi tiết mới, menu chỉ bộ phận). 3 migration mới (`20261108` → `20261110`). 210 test • build PASS • pgTAP 252/252 • chạy thật 5/5. Nhánh `agent/claude/perf-large-data` đã push.
+- 2026-10-31 — Claude Code: DEC-202 Tồn vỏ gộp Tiến độ vào Trạng thái (1 trạng thái hiện tại, 9 trạng thái, ô lọc + Excel), bỏ cột Tiến độ; **đồng bộ Đảo chuyển** (ô trạng thái + lọc, bỏ nhãn tiến độ); xóa `getContainerProgress`. 261 test • build PASS. Chưa thử trên trình duyệt.
 - 2026-10-30 — Claude Code: DEC-199 (booking MSK 9–11 chữ / số — app), DEC-200 (CEDEX chỉ bên thứ 3 — chưa code), DEC-201 (eEIR chỉ DRY), eEIR chạy thử `edi/eeir.ts` (nghiệp vụ + test, chưa màn hình); EDI_MAERSK mục 18–19. 257 test • build PASS.
 - 2026-10-30 — Claude Code: sửa lỗi Xe nâng báo **GOUT-002** (database, cont HASU9182828 / CV-261030-004 — dữ liệu đúng): đồng bộ 30 giây không kéo booking tạo ngày trước được lệnh mới dùng lại → tải bù booking / cont (`missingReleaseRefs`). 251 test • build PASS. Chưa thử trên database thật.
 - 2026-10-30 — Claude Code: DEC-198 **Giám định → Cấp vỏ** (mobile): cont MSK sau Xe nâng cấp phải chụp 1–30 ảnh mới Trả chứng từ (K80 thêm bước GIÁM ĐỊNH, icon máy ảnh ở Trả chứng từ, dòng hồ sơ, đổi cont chụp lại). Migration `20261119000001` (pgTAP 345/345 local, đã tắt + xóa dữ liệu). 250 test • build PASS. Chưa thử chụp trên điện thoại thật.

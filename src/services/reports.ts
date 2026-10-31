@@ -15,7 +15,8 @@ import {
   VesselMode,
 } from '../types/depot';
 import type { DepotState } from './depotStore';
-import { formatLocation, getContainerProgress, PROGRESS_LABELS, storageDays } from './core';
+import { formatLocation, storageDays } from './core';
+import { YARD_STATUS_LABELS, yardStatus } from './yardStatus';
 import { containerPaymentInfo, masterReceiptUsage, PAYMENT_CATEGORY_FULL_LABELS, receiptOperationOf, voucherPaymentInfo } from './payments';
 import { formatDateTime, parseDateTime } from './datetime';
 import { receiptInvoiceLabel, receiptInvoiceStatus } from './invoice';
@@ -599,17 +600,17 @@ export function yardStockSheet(rows: ContainerRecord[], state?: DepotState): She
   return {
     name: 'TỒN VỎ',
     columns: [
-            // DEC-128: PHÂN LOẠI ngay sau TRẠNG THÁI; DEC-129: AGE sau HÃNG TÀU, TIẾN ĐỘ sau MÃ PHIẾU THU (cùng thứ tự màn hình)
+            // DEC-128: PHÂN LOẠI ngay sau TRẠNG THÁI; DEC-129: AGE sau HÃNG TÀU (cùng thứ tự màn hình); DEC-202: bỏ TIẾN ĐỘ, TRẠNG THÁI = 1 trạng thái hiện tại
       'MÃ HỒ SƠ', 'SỐ CONTAINER', 'SIZE', 'TYPE', 'HÃNG TÀU', 'AGE', 'DATE IN', 'VÀO BÃI BẰNG', 'TRẠNG THÁI', 'PHÂN LOẠI', 'LƯU BÃI (NGÀY)', 'VỊ TRÍ',
-      'THANH TOÁN', 'MÃ PHIẾU THU', 'TIẾN ĐỘ',
+      'THANH TOÁN', 'MÃ PHIẾU THU',
       'KHÁCH HÀNG', 'SỐ XE HẠ', 'KHÓA', 'NGƯỜI KHÓA', 'KHÓA LÚC', 'GHI CHÚ', 'GHI CHÚ BỞI', 'GHI CHÚ LÚC',
     ],
     rows: rows.map((c) => {
       const pay = state ? containerPaymentInfo(state, c) : undefined;
       return [
         c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, c.manufactureYear || '', fmt(c.gateInAt), c.masterDossierCode.startsWith('NT-') ? 'NHẬP TÀU' : 'HẠ VỎ',
-        c.conditionClass, c.stuffingClass || '', storageDays(c.gateInAt), formatLocation(c),
-        pay?.label || '', pay?.receipt || '', getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', '),
+        state ? YARD_STATUS_LABELS[yardStatus(state, c)] : c.conditionClass, c.stuffingClass || '', storageDays(c.gateInAt), formatLocation(c),
+        pay?.label || '', pay?.receipt || '',
         c.customerRep || '', c.truckNo || '', c.isOnHold ? 'ĐANG KHÓA' : '', c.holdBy || '', fmt(c.holdAt),
         c.officeNote || '', c.officeNoteUpdatedBy || '', fmt(c.officeNoteUpdatedAt),
       ];

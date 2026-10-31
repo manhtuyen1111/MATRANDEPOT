@@ -80,7 +80,7 @@ Các trường hợp từ chối, hủy Hạ vỏ đã thanh toán và sửa sai
 Quy tắc đặt tên khu, block, bay, row, tier chi tiết và sức chứa chưa được chốt.
 
 ### 4.3. ĐẢO CHUYỂN, SỬA VỊ TRÍ và KHÓA CONTAINER (DEC-030, DEC-036)
-- **ĐẢO CHUYỂN** (menu Xe nâng): tìm bất kỳ container đang tồn bãi, lọc SIZE / TIẾN ĐỘ (Chờ vệ sinh, Chờ báo giá, Chờ sửa chữa, Đã lập lệnh cấp, Sẵn sàng), chọn vị trí mới; hệ thống lưu lịch sử tác nghiệp (tên tác nghiệp, thời gian, nhân sự, vị trí trước/sau).
+- **ĐẢO CHUYỂN** (menu Xe nâng): tìm bất kỳ container đang tồn bãi, lọc SIZE / TRẠNG THÁI (1 trạng thái hiện tại như Tồn vỏ — DEC-202: DAMAGE, AV, Chờ giám định, Chờ văn phòng, Chờ vệ sinh, Chờ xe nâng, Chờ báo giá, Chờ duyệt sửa chữa, Chờ sửa chữa), chọn vị trí mới; hệ thống lưu lịch sử tác nghiệp (tên tác nghiệp, thời gian, nhân sự, vị trí trước/sau).
 - **SỬA VỊ TRÍ** (menu Tồn vỏ, Văn phòng / Quản lý): chỉnh vị trí hành chính; không tạo lịch sử ĐẢO CHUYỂN, chỉ ghi nhật ký kiểm toán.
 - Vị trí chính thức chỉ đến từ HẠ VỎ, ĐẢO CHUYỂN, SỬA VỊ TRÍ; chưa có thì hiển thị `-`.
 - **KHÓA CONTAINER** (Tồn vỏ, Văn phòng / Quản lý): bắt buộc ghi chú; container bị khóa có biểu tượng khóa, không được CẤP VỎ / XUẤT VỎ, vẫn được ĐẢO CHUYỂN và SỬA VỊ TRÍ.
@@ -124,7 +124,7 @@ Các cấp phê duyệt và quy tắc tính giá chưa được chốt.
 1. Container `DAMAGE` sau `GATE IN OK` vào hàng chờ **Báo giá**.
 2. **Bộ phận Báo giá** (vai trò `QUOTATION`) nhập hạng mục và số tiền → xác nhận → container chuyển **Chờ sửa chữa**.
 3. **Bộ phận Sửa chữa** chọn tổ + nhân viên, xác nhận hoàn tất → container chuyển **AV** (DEC-049, không còn bước QC).
-4. Xe nâng dùng ĐẢO CHUYỂN (lọc TIẾN ĐỘ = Chờ sửa chữa) để hạ container tới khu sửa chữa.
+4. Xe nâng dùng ĐẢO CHUYỂN (lọc TRẠNG THÁI = Chờ sửa chữa — DEC-202) để hạ container tới khu sửa chữa.
 5. Không cần hãng tàu duyệt (DEC-040). Báo giá nhập remark + giờ công (DEC-041); Sửa chữa chọn tổ + nhân viên khi hoàn tất (DEC-043).
 
 ## 8. Quy trình Booking và cấp container

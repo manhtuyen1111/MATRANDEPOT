@@ -16,6 +16,7 @@ import { VesselFieldMobile } from '../src/features/vessel/VesselFieldMobile';
 import { createVesselList, inspectVesselImportItem } from '../src/services/vessel';
 import { FieldQueueWorkspaces, FieldQueueMode, getFieldQueue, QueueListRow } from '../src/features/field-queues/FieldQueueWorkspaces';
 import { YardShiftWorkspace } from '../src/features/forklift/YardShiftWorkspace';
+import { yardStatus, YARD_STATUS_LABELS } from '../src/services/yardStatus';
 import { InvoiceGroupDetail, MasterUsagePanel, ReceiptsWorkspace } from '../src/features/receipts/ReceiptsWorkspace';
 import { ReportsWorkspace } from '../src/features/reports/ReportsWorkspace';
 import { MasterCatalogWorkspace } from '../src/features/catalog/MasterCatalogWorkspace';
@@ -71,7 +72,10 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).not.toContain('block text-[10px] text-ink-muted');
     // DEC-129: AGE ngay sau Hãng tàu; Date in vẫn trước Trạng thái
     expect(html).toMatch(/Hãng tàu<\/th><th[^>]*>AGE<\/th><th[^>]*>Date in<\/th><th[^>]*>Trạng thái/);
-    expect(html).toMatch(/>Mã phiếu thu<\/th><th[^>]*>Tiến độ<\/th>/);
+    // DEC-202: bỏ cột Tiến độ — Trạng thái là 1 trạng thái hiện tại
+    expect(html).not.toContain('>Tiến độ</th>');
+    expect(html).toMatch(/>Mã phiếu thu<\/th><th[^>]*>Ghi chú<\/th>/);
+    expect(html).toContain('data-testid="yard-status"');
     // DEC-128: cột Phân loại (đóng hàng) ngay bên phải Trạng thái
     expect(html).toMatch(/>Trạng thái<\/th><th[^>]*>Phân loại<\/th>/);
     expect(html).toContain('Tìm hàng loạt');
@@ -673,24 +677,24 @@ describe('DEC-090: Xe nâng → Đảo chuyển — vị trí thẳng cột', ()
     expect(html).toMatch(/<\/svg>B<\/span><span class="truncate"><\/span>/);
     expect(html).not.toContain('>BLOCK-A<');
     expect(html).not.toContain('>Tier</span>');
-    // DEC-094: ô TRẠNG THÁI đầu dòng (AV / DAMAGE), tiến độ ở cuối ô
+    // DEC-094 / DEC-202: ô TRẠNG THÁI đầu dòng = 1 trạng thái hiện tại; không còn nhãn tiến độ
     expect(html.match(/data-testid="shift-status"/g)?.length).toBe(rows);
-    expect(html.match(/data-testid="shift-progress"/g)?.length).toBe(rows);
+    expect(html).not.toContain('data-testid="shift-progress"');
+    expect(html).toContain('aria-label="Lọc trạng thái"');
     const c = base.containers.find((x) => x.containerNo === 'MSKU4089123')!;
     const at = html.indexOf(c.containerNo);
     const statusAt = html.lastIndexOf('data-testid="shift-status"', at);
-    const progressAt = html.indexOf('data-testid="shift-progress"', at);
     expect(statusAt).toBeGreaterThan(-1);
-    // DEC-115: 2 dòng — dòng 1 số cont | size/type | tiến độ; dòng 2 vị trí | ghi chú; không xuống dòng
-    expect(progressAt).toBeLessThan(html.indexOf('/ 04-02-01', at));
-    expect(html.indexOf('data-testid="shift-slot"', at)).toBeGreaterThan(progressAt);
+    expect(html.slice(statusAt, at)).toContain(`>${YARD_STATUS_LABELS[yardStatus(base, c)]}<`);
+    // DEC-115: 2 dòng — dòng 1 số cont | size/type; dòng 2 vị trí | ghi chú; không xuống dòng
+    expect(html.indexOf('data-testid="shift-slot"', at)).toBeGreaterThan(at);
     expect(html.match(/data-testid="shift-note"/g)?.length).toBe(rows);
     expect(html.indexOf('data-testid="shift-note"', at)).toBeGreaterThan(html.indexOf('data-testid="shift-slot"', at));
     expect(html.match(/flex items-center gap-2 overflow-hidden whitespace-nowrap/g)?.length).toBe(rows * 2);
     const noted = toggleContainerHold(as(base, 'usr-office'), { containerNo: 'MSKU4089123', hold: true, reason: 'Chờ hãng tàu' });
     const html2 = renderToString(<YardShiftWorkspace state={noted} onUpdateState={noop} />).replace(/<!-- -->/g, '');
     expect(html2).toMatch(/bg-yellow-200[^"]*"[^>]*>Ghi chú: Chờ hãng tàu</);
-    // DEC-096: ô AV / DAMAGE cùng kích thước ô tác nghiệp ở danh sách Xe nâng (cột 5rem, px-1.5 py-1 text-[10px])
+    // DEC-096: ô trạng thái cùng kích thước ô tác nghiệp ở danh sách Xe nâng (cột 5rem, px-1.5 py-1 text-[10px])
     expect(html).toContain('grid grid-cols-[5rem_1fr] items-center gap-2.5" data-testid="shift-row"');
     expect(html).toMatch(/data-testid="shift-status" class="[^"]*px-1\.5 py-1 text-center text-\[10px\]/);
     const row = renderToString(<QueueListRow state={base} container={c} onClick={noop} />);

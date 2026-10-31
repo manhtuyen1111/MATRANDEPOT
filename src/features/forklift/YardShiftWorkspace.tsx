@@ -3,7 +3,8 @@ import { shiftContainer } from '../../services/api';
 import { ArrowLeftRight, ChevronDown, ChevronUp, History, Search, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
 
-import { ContainerProgress, formatLocation, getContainerProgress, PROGRESS_LABELS } from '../../services/core';
+import { formatLocation } from '../../services/core';
+import { YARD_STATUS_LABELS, YARD_STATUSES, yardStatus, YardStatus } from '../../services/yardStatus';
 import {
   ContainerNo,
   EMPTY_SLOT,
@@ -19,6 +20,7 @@ import {
   LocationText,
   BlockIcon,
   blockLabel,
+  yardStatusTone,
 } from '../../components/shared';
 import { CONTAINER_SEARCH_HINT, matchContainerNo } from '../../services/containerSearch';
 
@@ -26,7 +28,6 @@ const PAGE_SIZE = 20;
 // DEC-092: phần chi tiết vị trí "17-02-02" (bỏ chiều không có) — đi sau ô tên Block rộng cố định
 const slotDetail = (c: { currentBay: string | null; currentRow: string | null; currentTier: string | null }) =>
   [c.currentBay, c.currentRow, c.currentTier].filter(Boolean).join("-");
-const PROGRESS_FILTERS: ContainerProgress[] = ['CHO_SUA_CHUA', 'CHO_BAO_GIA', 'CHO_VE_SINH', 'DA_LAP_LENH_CAP', 'SAN_SANG'];
 
 // BỘ PHẬN XE NÂNG — ĐẢO CHUYỂN (CR-01): tác nghiệp mobile (max-w-lg như các màn hiện trường), có lịch sử
 export const YardShiftWorkspace: React.FC<{
@@ -36,7 +37,7 @@ export const YardShiftWorkspace: React.FC<{
 }> = ({ state, onUpdateState, onOpenDossier }) => {
   const [search, setSearch] = useState('');
   const [size, setSize] = useState('ALL');
-  const [progress, setProgress] = useState<'ALL' | ContainerProgress>('ALL');
+  const [status, setStatus] = useState<'ALL' | YardStatus>('ALL'); // DEC-202: lọc theo trạng thái hiện tại (như Tồn vỏ)
   const [shown, setShown] = useState(PAGE_SIZE);
   // DEC-092: ô tên Block rộng đúng bằng mã Block dài nhất (đơn vị ch, chữ đều nét) → các phần Bay-Row-Tier thẳng cột
   const blockCh = Math.max(4, ...state.yardBlocks.map((b) => blockLabel(b.blockCode).length)) + 2; // DEC-136: icon thay chữ BLOCK-
@@ -52,9 +53,9 @@ export const YardShiftWorkspace: React.FC<{
         .filter((c) => (c.status === 'IN_YARD' || c.status === 'ALLOCATED') && c.currentBlock)
         .filter((c) => matchContainerNo(c.containerNo, search))
         .filter((c) => size === 'ALL' || c.size === size)
-        .filter((c) => progress === 'ALL' || getContainerProgress(c).includes(progress))
+        .filter((c) => status === 'ALL' || yardStatus(state, c) === status)
         .sort((a, b) => a.containerNo.localeCompare(b.containerNo)),
-    [state.containers, search, size, progress]
+    [state.containers, state.gateOutOrders, search, size, status]
   );
   const selected = state.containers.find((c) => c.id === selectedId);
   const recent = state.locationHistory.filter((h) => h.actionType === 'YARD_SHIFT').slice(0, 10);
@@ -99,7 +100,7 @@ export const YardShiftWorkspace: React.FC<{
             <dt className="text-ink-muted">Size / Type</dt>
             <dd className="font-semibold">{selected.size}/{selected.type}</dd>
             <dt className="text-ink-muted">Trạng thái</dt>
-            <dd className="font-semibold">{selected.conditionClass} • {getContainerProgress(selected).map((p) => PROGRESS_LABELS[p]).join(', ')}</dd>
+            <dd className="font-semibold">{YARD_STATUS_LABELS[yardStatus(state, selected)]}</dd>
             <dt className="text-ink-muted">Vị trí hiện tại</dt>
             <dd className="font-mono font-bold"><LocationText loc={selected} /></dd>
           </dl>
@@ -130,9 +131,9 @@ export const YardShiftWorkspace: React.FC<{
             <option value="ALL">Size: Tất cả</option>
             {state.containerSizes.map((s) => <option key={s} value={s}>Size {s}</option>)}
           </select>
-          <select value={progress} onChange={(e) => { setProgress(e.target.value as 'ALL' | ContainerProgress); resetPage(); }} className={inputCls} aria-label="Lọc tiến độ">
-            <option value="ALL">Tiến độ: Tất cả</option>
-            {PROGRESS_FILTERS.map((p) => <option key={p} value={p}>{PROGRESS_LABELS[p]}</option>)}
+          <select value={status} onChange={(e) => { setStatus(e.target.value as 'ALL' | YardStatus); resetPage(); }} className={inputCls} aria-label="Lọc trạng thái">
+            <option value="ALL">Trạng thái: Tất cả</option>
+            {YARD_STATUSES.map((s) => <option key={s} value={s}>{YARD_STATUS_LABELS[s]}</option>)}
           </select>
         </div>
       </div>
@@ -148,27 +149,20 @@ export const YardShiftWorkspace: React.FC<{
                 onClick={() => { setSelectedId(c.id); setSlot(EMPTY_SLOT); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className={`w-full rounded-lg border px-3 py-2.5 text-left text-xs ${selectedId === c.id ? 'border-navy-900 bg-navy-50' : 'border-line bg-white active:bg-canvas'}`}
               >
-                {/* DEC-094: ô TRẠNG THÁI riêng bên trái (cùng kích thước ô tác nghiệp — DEC-096) */}
+                {/* DEC-094: ô TRẠNG THÁI riêng bên trái (cùng kích thước ô tác nghiệp — DEC-096); DEC-202: 1 trạng thái hiện tại */}
                 <div className="grid grid-cols-[5rem_1fr] items-center gap-2.5" data-testid="shift-row">
                   <span
                     data-testid="shift-status"
-                    className={`flex w-full flex-wrap items-center justify-center rounded px-1.5 py-1 text-center text-[10px] font-black uppercase ${c.conditionClass === 'DAMAGE' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`}
+                    className={`flex w-full flex-wrap items-center justify-center rounded px-1.5 py-1 text-center text-[10px] font-black uppercase ${yardStatusTone(yardStatus(state, c))}`}
                   >
-                    {c.conditionClass}
+                    {YARD_STATUS_LABELS[yardStatus(state, c)]}
                   </span>
                   <span className="min-w-0">
                     {/* DEC-115: tối ưu mobile — đúng 2 dòng, không xuống dòng:
-                        dòng 1 SỐ CONT | SIZE/TYPE | TIẾN ĐỘ (bên phải); dòng 2 VỊ TRÍ (ô Block rộng cố định, thẳng cột — DEC-092) | GHI CHÚ */}
+                        dòng 1 SỐ CONT | SIZE/TYPE; dòng 2 VỊ TRÍ (ô Block rộng cố định, thẳng cột — DEC-092) | GHI CHÚ. DEC-202: bỏ nhãn tiến độ (trạng thái ở ô bên trái) */}
                     <span className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
                       <span className="shrink-0"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.holdReason} className="text-sm" /></span>
                       <span className="shrink-0 font-mono text-[11px] text-ink-muted">{c.size}/{c.type}</span>
-                      <span className="ml-auto flex min-w-0 justify-end gap-1 overflow-hidden" data-testid="shift-progress">
-                        {getContainerProgress(c).map((p) => (
-                          <span key={p} className={`shrink-0 whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold ${p === 'SAN_SANG' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
-                            {PROGRESS_LABELS[p]}
-                          </span>
-                        ))}
-                      </span>
                     </span>
                     <span className="mt-1 flex items-center gap-2 overflow-hidden whitespace-nowrap">
                       <span className="flex shrink-0 font-mono text-[11px] font-bold text-ink" data-testid="shift-slot">
