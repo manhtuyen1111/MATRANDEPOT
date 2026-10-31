@@ -71,7 +71,10 @@ describe('UI smoke — render các màn hình với dữ liệu mẫu', () => {
     expect(html).not.toContain('block text-[10px] text-ink-muted');
     // DEC-129: AGE ngay sau Hãng tàu; Date in vẫn trước Trạng thái
     expect(html).toMatch(/Hãng tàu<\/th><th[^>]*>AGE<\/th><th[^>]*>Date in<\/th><th[^>]*>Trạng thái/);
-    expect(html).toMatch(/>Mã phiếu thu<\/th><th[^>]*>Tiến độ<\/th>/);
+    // DEC-202: bỏ cột Tiến độ — Trạng thái là 1 trạng thái hiện tại
+    expect(html).not.toContain('>Tiến độ</th>');
+    expect(html).toMatch(/>Mã phiếu thu<\/th><th[^>]*>Ghi chú<\/th>/);
+    expect(html).toContain('data-testid="yard-status"');
     // DEC-128: cột Phân loại (đóng hàng) ngay bên phải Trạng thái
     expect(html).toMatch(/>Trạng thái<\/th><th[^>]*>Phân loại<\/th>/);
     expect(html).toContain('Tìm hàng loạt');

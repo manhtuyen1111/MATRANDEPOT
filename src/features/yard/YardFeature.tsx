@@ -3,12 +3,13 @@ import { bulkToggleContainerHold, bulkUpdateOfficeNote, correctContainerLocation
 import { Check, ListChecks, Lock, LockOpen, MessageSquarePlus, Pencil, Search, X } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
 import { BulkResult } from '../../services/depotOperations';
-import { getContainerProgress, parseContainerList, PROGRESS_LABELS, storageDays } from '../../services/core';
+import { parseContainerList, storageDays } from '../../services/core';
+import { YARD_STATUS_LABELS, YARD_STATUSES, yardStatus, YardStatus } from '../../services/yardStatus';
 import { can } from '../../services/permissions';
 import { yardStockSheet } from '../../services/reports';
 import { containerPaymentInfo } from '../../services/payments';
 import { fileStamp, formatDateTime } from '../../services/datetime';
-import { ContainerRecord, FieldConditionClass, K80InternalTicket } from '../../types/depot';
+import { ContainerRecord, K80InternalTicket } from '../../types/depot';
 import { PaymentInfoCells } from '../../components/PaymentInfoCells';
 import {
   linkCls,
@@ -50,7 +51,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
   const [bulkList, setBulkList] = useState<string[]>([]);
   const [size, setSize] = useState('ALL');
   const [type, setType] = useState('ALL');
-  const [condition, setCondition] = useState<'ALL' | FieldConditionClass>('ALL');
+  const [status, setStatus] = useState<'ALL' | YardStatus>('ALL'); // DEC-202: lọc theo trạng thái hiện tại
   const [page, setPage] = useState(1);
   const [PAGE_SIZE, setPageSize] = usePageSize("yard", 50); // DEC-080
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -78,7 +79,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
         .filter((c) => matchContainerNo(c.containerNo, search))
         .filter((c) => size === 'ALL' || c.size === size)
         .filter((c) => type === 'ALL' || c.type === type)
-        .filter((c) => condition === 'ALL' || c.conditionClass === condition)
+        .filter((c) => status === 'ALL' || yardStatus(state, c) === status)
         .sort((a, b) => {
           const an = Boolean(a.officeNote?.trim());
           const bn = Boolean(b.officeNote?.trim());
@@ -86,7 +87,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
           return b.gateInAt.localeCompare(a.gateInAt);
         }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [state.containers, bulkList, search, size, type, condition]
+    [state.containers, state.gateOutOrders, bulkList, search, size, type, status]
   );
   const notFound = bulkList.filter((no) => !active.some((c) => c.containerNo === no));
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -148,7 +149,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
     }
   };
 
-  const colCount = canBulk ? 16 : 15;
+  const colCount = canBulk ? 15 : 14;
 
   return (
     <div className="w-full space-y-3">
@@ -182,10 +183,9 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
             </label>
             <label>
               <span className={labelCls}>Trạng thái</span>
-              <select value={condition} onChange={(e) => { setCondition(e.target.value as 'ALL' | FieldConditionClass); setPage(1); }} className={inputCls}>
+              <select value={status} onChange={(e) => { setStatus(e.target.value as 'ALL' | YardStatus); setPage(1); }} className={inputCls}>
                 <option value="ALL">Tất cả</option>
-                <option value="AV">AV</option>
-                <option value="DAMAGE">DAMAGE</option>
+                {YARD_STATUSES.map((s) => <option key={s} value={s}>{YARD_STATUS_LABELS[s]}</option>)}
               </select>
             </label>
             <button type="button" onClick={() => setBulkOpen(!bulkOpen)} className={`${secondaryBtn} ${bulkList.length ? 'border-navy-900 text-navy-700' : ''}`}>
@@ -260,13 +260,12 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
               <th className="whitespace-nowrap px-2 py-2.5">Hãng tàu</th>
               <th className="w-14 px-2 py-2.5 text-center">AGE</th>{/* DEC-129 */}
               <th className="w-40 whitespace-nowrap px-2 py-2.5">Date in</th>
-              <th className="w-20 whitespace-nowrap px-2 py-2.5 text-center">Trạng thái</th>
+              <th className="w-40 whitespace-nowrap px-2 py-2.5 text-center">Trạng thái</th>{/* DEC-202: 1 trạng thái hiện tại, thay cột Tiến độ */}
               <th className="w-16 whitespace-nowrap px-2 py-2.5 text-center">Phân loại</th>{/* DEC-128: phân loại đóng hàng M / K / E */}
               <th className="w-16 whitespace-nowrap px-2 py-2.5 text-right">Lưu bãi</th>
               <th className="w-44 whitespace-nowrap px-2 py-2.5">Vị trí</th>
               <th className="w-36 whitespace-nowrap px-2 py-2.5">Thanh toán</th>
               <th className="w-40 whitespace-nowrap px-2 py-2.5">Mã phiếu thu</th>
-              <th className="w-48 whitespace-nowrap px-2 py-2.5">Tiến độ</th>{/* DEC-129: sau Mã phiếu thu */}
               <th className="min-w-[14rem] px-2 py-2.5">Ghi chú</th>
             </tr>
           </thead>
@@ -314,7 +313,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                       <td className="whitespace-nowrap px-2 py-2.5 font-mono" title="Thời gian vào bãi (Hạ vỏ / Nhập tàu)">
                         {formatDateTime(c.gateInAt).slice(0, 10)} <span className="text-ink-muted">{formatDateTime(c.gateInAt).slice(11)}</span>
                       </td>
-                      <td className={`px-2 py-2.5 text-center font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
+                      <td className="px-2 py-2.5 text-center"><YardStatusBadge status={yardStatus(state, c)} /></td>
                       <td className="px-2 py-2.5 text-center font-mono font-bold">{c.stuffingClass}</td>
                       <td className="px-2 py-2.5 text-right font-mono font-bold">{storageDays(c.gateInAt, now)}</td>
                       <td className="px-2 py-2.5 font-mono" onClick={(e) => e.stopPropagation()}>
@@ -333,9 +332,8 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                           )}
                         </div>
                       </td>
-                      {/* DEC-099, DEC-126: THANH TOÁN | MÃ PHIẾU THU (thành phần dùng chung); DEC-129: TIẾN ĐỘ đứng sau */}
+                      {/* DEC-099, DEC-126: THANH TOÁN | MÃ PHIẾU THU (thành phần dùng chung) */}
                       <PaymentInfoCells info={containerPaymentInfo(state, c)} onOpenReceipt={onOpenReceipt} />
-                      <td className="px-2 py-2.5 text-[11px]">{getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</td>
                       <td className={`px-2 py-2.5 ${hasNote && editingNoteId !== c.id ? 'bg-yellow-200' : ''}`} onClick={(e) => e.stopPropagation()}>
                         {editingNoteId === c.id ? (
                           <div className="flex items-center gap-1">
@@ -387,7 +385,7 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
                                 <dt className="text-ink-muted">Size / Type</dt>
                                 <dd className="font-semibold">{c.size}/{c.type}</dd>
                                 <dt className="text-ink-muted">Trạng thái</dt>
-                                <dd className="font-semibold">{c.conditionClass} • {getContainerProgress(c).map((p) => PROGRESS_LABELS[p]).join(', ')}</dd>
+                                <dd className="font-semibold">{YARD_STATUS_LABELS[yardStatus(state, c)]}</dd>
                                 <dt className="text-ink-muted">Vị trí hiện tại</dt>
                                 <dd className="font-mono font-bold"><LocationText loc={c} /></dd>
                               </dl>
@@ -442,3 +440,16 @@ export const YardFeature: React.FC<Props> = ({ state, onUpdateState, onOpenDossi
     </div>
   );
 };
+
+// DEC-202: ô TRẠNG THÁI Tồn vỏ — AV xanh, DAMAGE đỏ, các bước CHỜ nền nhạt (màu token — DEC-145)
+const YardStatusBadge: React.FC<{ status: YardStatus }> = ({ status }) => (
+  <span
+    data-testid="yard-status"
+    className={`inline-block rounded px-2 py-0.5 text-[11px] font-bold ${
+      status === 'AV' ? 'bg-success-bg text-success-fg' : status === 'DAMAGE' ? 'bg-danger-bg text-danger-fg' : 'bg-accent-soft text-ink'
+    }`}
+  >
+    {YARD_STATUS_LABELS[status]}
+  </span>
+);
+
