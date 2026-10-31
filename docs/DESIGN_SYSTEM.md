@@ -30,11 +30,11 @@ Tối giản, thân thiện: nền trắng, nhiều khoảng trắng, **một m�
 | `navy-700` (`text-navy-700`, `hover:bg-navy-700`) | #1f4673 | Link dữ liệu (`linkCls`), nút chính khi rê chuột |
 | `navy-50` (`bg-navy-50`) | #eaf0f7 | Dòng đang chọn, rê chuột menu, khung thêm mới |
 | `accent` (`ring-accent`, `border-accent`) | #2bb3c0 | Focus, đang mở, thanh tiến độ. **Không làm màu chữ** |
-| `accent-soft` (`bg-accent-soft`) | #e3f6f8 | Chip bộ lọc đang bật |
+| `accent-soft` (`bg-accent-soft`) | #e3f6f8 | Chip bộ lọc đang bật, nhãn **Tiến độ** (`CHỜ …`, chữ `text-ink` — DEC-202) |
 | `op-ha-vo` / `op-cap-vo` / `op-nhap-tau` / `op-xuat-tau` | #2c66a8 / #6650a8 / #1f7a5c / #e2a43b | Chỉ nhãn tác nghiệp (DEC-083). Xuất tàu chữ `text-ink`, còn lại chữ trắng |
 | `success-bg` / `success-fg` | #e8f5ee / #17603f | Thông báo thành công |
 | `danger-bg` / `danger-fg` | #fdecec / #a1262b | Lỗi, icon khóa container |
-| `pending` (`bg-pending`) | #e2a43b | **Việc chờ**: mọi trạng thái CHỜ … của cont (Tồn vỏ, Đảo chuyển — DEC-202), chữ `text-ink` |
+| `pending` (`bg-pending`) | #e2a43b | Ô số đếm menu mobile khi có việc chờ (nhấp nháy, chữ `text-ink` — DEC-075) |
 | `warn-bg` (`bg-warn-bg`) | #fdf3dc | Nền ghi chú có nội dung |
 
 Còn giữ màu Tailwind có sẵn cho trạng thái phụ (`emerald-*`, `red-*`, `rose-*`, `amber-*` — ví dụ số đếm việc chờ `amber-500` nhấp nháy, DEC-075).
