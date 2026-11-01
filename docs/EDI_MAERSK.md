@@ -461,5 +461,5 @@ Gửi `eEIRSupport@maersk.com` / ticket developer portal, nêu mã depot 3 ký t
 
 ## 21. Current Move (danh sách app eEIR thật — 2026-11-01)
 
-8 lựa chọn: IN-EMPTY-IMPORT_RETURN • IN-EMPTY-POSITION • OUT-EMPTY-POSITION • OUT-EMPTY-EXPORT • IN-FULL-EXP • STUFFING • STRIPPING • OUT-FULL-DELIVERY. MATRAN (depot cont rỗng) dùng: **Hạ vỏ** IN-EMPTY-IMPORT_RETURN (moveStatus 1 / moveType 2) • **Nhập tàu** IN-EMPTY-POSITION (1 / 1) • **Cấp vỏ** OUT-EMPTY-EXPORT (2 / 3, booking bắt buộc) • **Cấp sale** OUT-EMPTY-POSITION (2 / 1, không booking) • **Xuất tàu** OUT-EMPTY-POSITION (2 / 1). Xuất tàu hiện chưa chụp ảnh → phiếu eEIR báo thiếu ảnh (cần quyết định chụp ở bước nào).
+8 lựa chọn: IN-EMPTY-IMPORT_RETURN • IN-EMPTY-POSITION • OUT-EMPTY-POSITION • OUT-EMPTY-EXPORT • IN-FULL-EXP • STUFFING • STRIPPING • OUT-FULL-DELIVERY. MATRAN (depot cont rỗng) dùng: **Hạ vỏ** IN-EMPTY-IMPORT_RETURN (moveStatus 1 / moveType 2) • **Nhập tàu** IN-EMPTY-POSITION (1 / 1) • **Cấp vỏ** OUT-EMPTY-EXPORT (2 / 3, booking bắt buộc) • **Cấp sale** OUT-EMPTY-POSITION (2 / 1, không booking) • **Xuất tàu** OUT-EMPTY-POSITION (2 / 1). Xuất tàu chưa chụp ảnh → người dùng chốt **tạm chưa gửi eEIR cho Xuất tàu** (`EEIR_SEND_VESSEL_EXPORT = false`).
 

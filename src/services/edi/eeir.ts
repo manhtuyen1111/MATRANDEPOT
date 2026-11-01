@@ -6,7 +6,8 @@
 //   Nhập tàu (NT-)           → IN-EMPTY-POSITION       (1 IN,  1 POS)
 //   Cấp vỏ theo booking (CV-) → OUT-EMPTY-EXPORT       (2 OUT, 3 EXP — booking bắt buộc)
 //   Cấp sale (CV-)           → OUT-EMPTY-POSITION      (2 OUT, 1 POS — không cần booking)
-//   Xuất tàu (XT-)           → OUT-EMPTY-POSITION      (2 OUT, 1 POS)
+//   Xuất tàu (XT-)           → OUT-EMPTY-POSITION      (2 OUT, 1 POS) — TẠM CHƯA GỬI (người dùng 2026-11-01: Xuất tàu chưa chụp ảnh)
+export const EEIR_SEND_VESSEL_EXPORT = false;
 // Hư hỏng (mục 6.1.2): không hư → 0000 / tpIndicator 0; hao mòn → 0000 / tpIndicator 3; bên thứ 3 → mã CEDEX + loại hư +
 //   bên gây hư + 1–3 ảnh / chỗ hư — lấy từ Giám định Hạ vỏ (GateInOrder.survey — DEC-203).
 // Hạng (Grade) lấy từ API 1 (smokeTested); chưa gọi được API 1 → "N" (đúng hướng dẫn tài liệu).
@@ -149,8 +150,9 @@ export function eeirInspections(state: DepotState, range: { from: Date; to: Date
       truckRegNo: truck, driverPhone: o.driverPhone, photos, damages: damaged ? [] : [{ location: '0000', tpIndicator: 0, photos }], problems, notes: [GRADE_NOTE],
     });
   }
-  // Nhập tàu (IN-EMPTY-POSITION) / Xuất tàu (OUT-EMPTY-POSITION) — tình trạng Nhập tàu lấy từ VesselListItem.survey (DEC-203)
+  // Nhập tàu (IN-EMPTY-POSITION) / Xuất tàu (OUT-EMPTY-POSITION — tạm chưa gửi) — tình trạng Nhập tàu lấy từ VesselListItem.survey (DEC-203)
   for (const l of state.vesselLists || []) {
+    if (l.mode === 'XUAT_TAU' && !EEIR_SEND_VESSEL_EXPORT) continue;
     for (const it of l.items) {
       const imp = l.mode === 'NHAP_TAU';
       const at = imp ? it.inspectedAt : it.status === 'DONE' ? it.doneAt : undefined;

@@ -2315,9 +2315,7 @@ describe('eEIR chạy thử: phiếu Hạ vỏ / Cấp vỏ cont MSK DRY', () =>
     const nt = all.find((i) => i.source === 'NHAP_TAU')!;
     expect(eeirMoveLabel(nt)).toBe('IN-EMPTY-POSITION');
     expect(eeirInspectionDetails(nt).container).toMatchObject({ moveStatus: 1, moveType: 1 });
-    const xt = all.find((i) => i.source === 'XUAT_TAU')!;
-    expect(eeirMoveLabel(xt)).toBe('OUT-EMPTY-POSITION');
-    expect(xt.problems).toContain('Xuất tàu chưa chụp ảnh (eEIR bắt buộc ≥ 1 ảnh)');
+    expect(all.some((i) => i.source === 'XUAT_TAU')).toBe(false); // người dùng 2026-11-01: tạm chưa gửi eEIR cho Xuất tàu
     expect(all.map((i) => i.at)).toEqual([...all.map((i) => i.at)].sort());
   });
 
