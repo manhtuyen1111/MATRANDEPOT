@@ -1272,7 +1272,7 @@ import { EeirSurveyFields } from '../src/components/EeirSurveyFields';
 import { InspectionFields, EMPTY_INSPECTION } from '../src/components/InspectionFields';
 
 describe('DEC-203: tình trạng eEIR ở Giám định', () => {
-  it('3 phần Không hư / Hao mòn / Hư bên thứ 3, đủ 7 mặt, trạng thái tự tính', () => {
+  it('3 phần Không hư / Hao mòn / Hư bên thứ 3, đủ 11 mặt như app eEIR, trạng thái tự tính', () => {
     const html = renderToString(
       <EeirSurveyFields
         value={{ noDamagePhotos: ['data:a'], wearTearPhotos: [], damages: [{ id: 'd1', side: 'L', location: 'LT89', damageType: 5, source: 2, photos: ['data:b'] }] }}
@@ -1280,8 +1280,8 @@ describe('DEC-203: tình trạng eEIR ở Giám định', () => {
       />
     ).replace(/<!-- -->/g, '');
     for (const id of ['eeir-no-damage', 'eeir-wear-tear', 'eeir-third-party']) expect(html).toContain(`data-testid="${id}"`);
-    for (const side of ['Cửa (D)', 'Mặt trước (F)', 'Vách trái (L)', 'Vách phải (R)', 'Nóc (T)', 'Khung đáy (U)', 'Sàn (B)']) expect(html).toContain(side);
-    expect(html).toContain('2/10 ảnh'); // ảnh cửa + 1 ảnh không hư
+    for (const side of ['Cửa (D)', 'Mặt trước (F)', 'Vách trái (L)', 'Vách phải (R)', 'Nóc (T)', 'Khung đáy (U)', 'Sàn (B)', 'Mặt ngoài (E)', 'Bên trong (I)', 'Không xác định (N)', 'Toàn bộ cont (X)']) expect(html).toContain(side);
+    expect(html).toContain('2/20 ảnh'); // ảnh cửa + 1 ảnh không hư (app eEIR: 20)
     expect(html).toMatch(/data-testid="eeir-condition"[^>]*>DAMAGE</);
     expect(html.match(/data-testid="eeir-damage-item"/g)?.length).toBe(1);
   });

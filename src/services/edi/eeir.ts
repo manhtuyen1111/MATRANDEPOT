@@ -73,7 +73,7 @@ export function eeirTypeSize(i: Pick<EeirInspection, 'size' | 'type' | 'isoCode'
   const sub = eeirSubType(i.type);
   return sub && i.isoCode ? `${i.size}${sub} ${i.isoCode}` : '99XXX 99X9';
 }
-export const eeirMoveLabel = (i: Pick<EeirInspection, 'moveStatus' | 'moveType'>) => `${i.moveStatus}-EMPTY-${i.moveType || '?'}`;
+export const eeirMoveLabel = (i: Pick<EeirInspection, 'moveStatus' | 'moveType'>) => `${i.moveStatus}-EMPTY-${i.moveType || '?'}`; // app hiển thị IN-EMPTY-IMPORT_RETURN / OUT-EMPTY-EXP
 
 const inRange = (at: string | undefined, from: Date, to: Date) => Boolean(at) && new Date(at!) >= from && new Date(at!) < to;
 const truckOf = (no?: string) => (no || '').replace(/\s+/g, '').toUpperCase();
@@ -111,9 +111,9 @@ export function eeirInspections(state: DepotState, range: { from: Date; to: Date
     checks(problems, c.containerNo, truck, general, c.conditionClass === 'DAMAGE' && !survey?.damages.length);
     out.push({
       key: `IN-${c.id}`, source: 'HA_VO', dossierCode: c.masterDossierCode, containerNo: c.containerNo, size: c.size, type: c.type,
-      isoCode: containerIsoCode(state, c), moveStatus: 'IN', moveType: 'IMP', moveTypeConfirmed: false, at: c.gateInAt, bookingNo: '',
+      isoCode: containerIsoCode(state, c), moveStatus: 'IN', moveType: 'IMP', moveTypeConfirmed: true, at: c.gateInAt, bookingNo: '',
       grade: 'N', productionYear: c.manufactureYear, truckRegNo: truck, driverPhone: gi?.driverPhone || c.driverPhone,
-      photos: damages.flatMap((d) => d.photos), damages, problems, notes: ['moveType IMP chưa được Maersk xác nhận (Q-058)', GRADE_NOTE],
+      photos: damages.flatMap((d) => d.photos), damages, problems, notes: [GRADE_NOTE], // Hạ vỏ = IN-EMPTY-IMPORT_RETURN (app eEIR thật — Q-058)
     });
   }
 

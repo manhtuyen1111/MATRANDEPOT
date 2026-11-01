@@ -7,6 +7,9 @@ import {
   damageItemProblem,
   damageSideLabel,
   damageTypeLabel,
+  DEFAULT_DAMAGE_SOURCE,
+  DEFAULT_DAMAGE_TYPE,
+  fixedDamageLocation,
   NO_DAMAGE_PHOTO_MAX,
   surveyCondition,
   WEAR_TEAR_PHOTO_MAX,
@@ -45,7 +48,10 @@ const Group: React.FC<{ title: string; count?: string; children: React.ReactNode
 );
 
 type CameraTarget = 'NO_DAMAGE' | 'WEAR_TEAR' | 'DAMAGE' | null;
-const emptyDamage = (side: EeirDamageSide): InspectionDamageItem => ({ id: '', side, location: side, damageType: 0, source: 0, description: '', photos: [] });
+// Như app eEIR: mặc định Bẩn (Dirty) + Khách hàng; mặt E / I / N / X vị trí cố định <mặt>XXX
+const emptyDamage = (side: EeirDamageSide): InspectionDamageItem => ({
+  id: '', side, location: fixedDamageLocation(side) || side, damageType: DEFAULT_DAMAGE_TYPE, source: DEFAULT_DAMAGE_SOURCE, description: '', photos: [],
+});
 
 export const EeirSurveyFields: React.FC<{
   value: InspectionSurvey;
@@ -123,19 +129,26 @@ export const EeirSurveyFields: React.FC<{
               <span className="text-sm font-bold text-ink">{damageSideLabel(draft.side)}</span>
               <button type="button" onClick={() => setDraft(null)} aria-label="Đóng" className="text-ink-muted"><X className="h-5 w-5" /></button>
             </div>
-            <label className="block">
-              <span className={labelCls}>Vị trí hư (CEDEX 4 ký tự) *</span>
-              <div className="flex items-center gap-1">
-                <span className="rounded-lg border border-line-strong bg-canvas px-3 py-2 font-mono text-sm font-bold">{draft.side}</span>
-                <input
-                  value={draft.location.slice(1)}
-                  onChange={(e) => setDraft({ ...draft, location: draft.side + e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) })}
-                  maxLength={3}
-                  placeholder="VD T89"
-                  className={`${inputCls} font-mono uppercase`}
-                />
+            {fixedDamageLocation(draft.side) ? (
+              <div className="rounded-lg border border-line bg-canvas px-3 py-2">
+                <span className={labelCls}>Vị trí hư</span>
+                <span className="font-mono text-sm font-bold" data-testid="eeir-fixed-location">{draft.location}</span>
               </div>
-            </label>
+            ) : (
+              <label className="block">
+                <span className={labelCls}>Vị trí hư (CEDEX 4 ký tự) *</span>
+                <div className="flex items-center gap-1">
+                  <span className="rounded-lg border border-line-strong bg-canvas px-3 py-2 font-mono text-sm font-bold">{draft.side}</span>
+                  <input
+                    value={draft.location.slice(1)}
+                    onChange={(e) => setDraft({ ...draft, location: draft.side + e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) })}
+                    maxLength={3}
+                    placeholder="VD T89"
+                    className={`${inputCls} font-mono uppercase`}
+                  />
+                </div>
+              </label>
+            )}
             <label className="block">
               <span className={labelCls}>Loại hư *</span>
               <select value={draft.damageType || ''} onChange={(e) => setDraft({ ...draft, damageType: Number(e.target.value) })} className={inputCls}>
@@ -152,14 +165,28 @@ export const EeirSurveyFields: React.FC<{
             </label>
             <label className="block">
               <span className={labelCls}>Mô tả</span>
-              <input value={draft.description || ''} onChange={(e) => setDraft({ ...draft, description: e.target.value })} maxLength={DAMAGE_NOTE_MAX} className={inputCls} />
+              <textarea value={draft.description || ''} onChange={(e) => setDraft({ ...draft, description: e.target.value })} maxLength={DAMAGE_NOTE_MAX} rows={3} className={inputCls} />
+              <span className="block text-right font-mono text-[11px] text-ink-muted">{(draft.description || '').length}/{DAMAGE_NOTE_MAX}</span>
             </label>
+            {/* Như app eEIR: 3 ô ảnh — ô trống bấm để chụp, ô có ảnh bấm X để xóa */}
             <div className="space-y-1.5">
               <span className={labelCls}>Ảnh chỗ hư * ({draft.photos.length}/{DAMAGE_PHOTO_MAX})</span>
-              <Thumbs photos={draft.photos} alt="Ảnh chỗ hư" onRemove={(i) => setDraft({ ...draft, photos: draft.photos.filter((_, k) => k !== i) })} />
-              <button type="button" onClick={() => setCamera('DAMAGE')} disabled={draft.photos.length >= DAMAGE_PHOTO_MAX} className={`${secondaryBtn} w-full`}>
-                <Camera className="h-4 w-4" />CHỤP ẢNH CHỖ HƯ
-              </button>
+              <div className="grid grid-cols-3 gap-1.5" data-testid="eeir-damage-photos">
+                {Array.from({ length: DAMAGE_PHOTO_MAX }, (_, i) =>
+                  draft.photos[i] ? (
+                    <div key={i} className="relative aspect-square overflow-hidden rounded border border-line bg-canvas">
+                      <img src={draft.photos[i]} alt={`Ảnh chỗ hư ${i + 1}`} className="h-full w-full object-cover" />
+                      <button type="button" onClick={() => setDraft({ ...draft, photos: draft.photos.filter((_, k) => k !== i) })} aria-label={`Xóa ảnh chỗ hư ${i + 1}`} className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button key={i} type="button" onClick={() => setCamera('DAMAGE')} aria-label={`Chụp ảnh chỗ hư ${i + 1}`} className="flex aspect-square items-center justify-center rounded border border-line-strong bg-white text-ink-muted hover:bg-canvas">
+                      <Camera className="h-7 w-7" />
+                    </button>
+                  )
+                )}
+              </div>
             </div>
             {problem && <p className="text-[11px] text-danger-fg">{problem}</p>}
             <button type="button" onClick={saveDraft} disabled={Boolean(problem)} className={`${primaryBtn} w-full py-3`}>LƯU CHỖ HƯ</button>

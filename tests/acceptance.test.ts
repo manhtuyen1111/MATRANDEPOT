@@ -2416,7 +2416,10 @@ describe('DEC-203: tình trạng eEIR khi Giám định Hạ vỏ cont MSK', () 
     expect(() => field({ noDamagePhotos: [], wearTearPhotos: [], damages: [{ ...dmg, location: 'DX2N' }] }, 'DAMAGE')).toThrow(/bắt đầu bằng L/);
     expect(() => field({ noDamagePhotos: [], wearTearPhotos: [], damages: [{ ...dmg, photos: [] }] }, 'DAMAGE')).toThrow(/ít nhất 1 ảnh/);
     expect(() => field({ noDamagePhotos: [], wearTearPhotos: [], damages: [{ ...dmg, photos: ['a', 'b', 'c', 'd'] }] }, 'DAMAGE')).toThrow(/Tối đa 3 ảnh/);
-    expect(() => field({ noDamagePhotos: Array(NO_DAMAGE_PHOTO_MAX).fill('x'), wearTearPhotos: [], damages: [] })).toThrow(/tối đa 10 ảnh/);
+    expect(() => field({ noDamagePhotos: Array(NO_DAMAGE_PHOTO_MAX).fill('x'), wearTearPhotos: [], damages: [] })).toThrow(/tối đa 20 ảnh/);
+    // 4 mặt không có lưới (app eEIR): vị trí cố định <mặt>XXX
+    expect(field({ noDamagePhotos: [], wearTearPhotos: [], damages: [{ ...dmg, side: 'X', location: 'XXXX' }] }, 'DAMAGE').gateInOrders[0].survey?.damages[0].location).toBe('XXXX');
+    expect(() => field({ noDamagePhotos: [], wearTearPhotos: [], damages: [{ ...dmg, side: 'E', location: 'E123' }] }, 'DAMAGE')).toThrow(/vị trí cố định EXXX/);
     expect(damageItemProblem({ ...dmg, damageType: 15 })).toBe('Chọn loại hư.');
     expect(damageItemProblem({ ...dmg, source: 9 })).toBe('Chọn bên gây hư.');
   });

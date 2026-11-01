@@ -1,13 +1,13 @@
 // ============================================================================
 // DEC-203: TÌNH TRẠNG / HƯ HỎNG theo eEIR Maersk — Giám định Hạ vỏ cont MSK (thiết kế: docs/design/EEIR_GIAM_DINH.md).
-//   KHÔNG HƯ (tổng ≤ 10 ảnh, tính cả ảnh cửa cont) • HAO MÒN (≤ 20 ảnh) • HƯ DO BÊN THỨ 3 / XẾP DỠ (mỗi chỗ hư: CEDEX + loại + bên gây hư + 1–3 ảnh)
+//   KHÔNG HƯ (tổng ≤ 20 ảnh, tính cả ảnh cửa cont) • HAO MÒN (≤ 20 ảnh) • HƯ DO BÊN THỨ 3 / XẾP DỠ (mỗi chỗ hư: CEDEX + loại + bên gây hư + 1–3 ảnh)
 //   AV / DAMAGE tự suy: có ≥ 1 chỗ hư bên thứ 3 → DAMAGE, còn lại → AV.
 // Database khớp: record_gate_in_survey (migration 20261120000001).
 // ============================================================================
 import { EEIR_DAMAGE_SIDES, EEIR_DAMAGE_SOURCES, EEIR_DAMAGE_TYPES, EeirDamageSide, InspectionDamageItem, InspectionSurvey } from '../types/depot';
 import { isMaerskLine } from './edi/maersk';
 
-export const NO_DAMAGE_PHOTO_MAX = 10; // app eEIR: tối đa 10 ảnh "không hư" (tính cả ảnh cửa cont)
+export const NO_DAMAGE_PHOTO_MAX = 20; // app eEIR: tối đa 20 ảnh "không hư" (ảnh app thật 2026-11-01; tính cả ảnh cửa cont)
 export const WEAR_TEAR_PHOTO_MAX = 20;
 export const DAMAGE_PHOTO_MIN = 1;
 export const DAMAGE_PHOTO_MAX = 3;
@@ -25,6 +25,13 @@ export const damageTypeLabel = (code: number) => EEIR_DAMAGE_TYPES.find((t) => t
 export const damageSourceLabel = (code: number) => EEIR_DAMAGE_SOURCES.find((t) => t.code === code)?.label || String(code);
 export const damageSideLabel = (side: EeirDamageSide) => EEIR_DAMAGE_SIDES.find((s) => s.code === side)?.label || side;
 
+// Mặt không có lưới trên app eEIR → vị trí cố định <mặt>XXX
+export const FIXED_LOCATION_SIDES: EeirDamageSide[] = ['E', 'I', 'N', 'X'];
+export const fixedDamageLocation = (side: EeirDamageSide) => (FIXED_LOCATION_SIDES.includes(side) ? `${side}XXX` : null);
+// Mặc định như app eEIR: loại hư Bẩn (Dirty), bên gây hư Khách hàng
+export const DEFAULT_DAMAGE_TYPE = 1;
+export const DEFAULT_DAMAGE_SOURCE = 2;
+
 // Remark hư gửi Báo giá (luồng DAMAGE cũ): "LT89 Móp"
 export const surveyRemarks = (s: InspectionSurvey): string[] => s.damages.map((d) => `${d.location} ${typeLabel(d.damageType)}`);
 
@@ -32,6 +39,8 @@ export const surveyRemarks = (s: InspectionSurvey): string[] => s.damages.map((d
 export function damageItemProblem(d: Pick<InspectionDamageItem, 'side' | 'location' | 'damageType' | 'source' | 'photos' | 'description'>): string | null {
   if (!EEIR_DAMAGE_SIDES.some((s) => s.code === d.side)) return 'Chọn mặt container bị hư.';
   const loc = (d.location || '').trim().toUpperCase();
+  const fixed = fixedDamageLocation(d.side);
+  if (fixed && loc !== fixed) return `Mặt ${damageSideLabel(d.side)} có vị trí cố định ${fixed}.`;
   if (!/^[A-Z0-9]{4}$/.test(loc) || loc[0] !== d.side) return `Vị trí CEDEX phải 4 ký tự chữ / số, bắt đầu bằng ${d.side}.`;
   if (!EEIR_DAMAGE_TYPES.some((t) => t.code === d.damageType)) return 'Chọn loại hư.';
   if (!EEIR_DAMAGE_SOURCES.some((t) => t.code === d.source)) return 'Chọn bên gây hư.';

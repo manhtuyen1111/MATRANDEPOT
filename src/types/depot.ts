@@ -143,7 +143,7 @@ export const CLEANING_ITEM_OPTIONS: FieldCleaningItem[] = [
 ];
 
 // DEC-203: TÌNH TRẠNG / HƯ HỎNG theo eEIR Maersk (User Guide v3.3 trang 16–17, API v4.3 mục 6.1.2) — Giám định cont MSK
-export type EeirDamageSide = 'D' | 'F' | 'L' | 'R' | 'T' | 'U' | 'B';
+export type EeirDamageSide = 'D' | 'F' | 'L' | 'R' | 'T' | 'U' | 'B' | 'E' | 'I' | 'N' | 'X';
 export const EEIR_DAMAGE_SIDES: { code: EeirDamageSide; label: string }[] = [
   { code: 'D', label: 'Cửa (D)' },
   { code: 'F', label: 'Mặt trước (F)' },
@@ -152,6 +152,11 @@ export const EEIR_DAMAGE_SIDES: { code: EeirDamageSide; label: string }[] = [
   { code: 'T', label: 'Nóc (T)' },
   { code: 'U', label: 'Khung đáy (U)' },
   { code: 'B', label: 'Sàn (B)' },
+  // app eEIR (ảnh người dùng 2026-11-01): 4 mặt không có lưới — vị trí cố định <mặt>XXX
+  { code: 'E', label: 'Mặt ngoài (E)' },
+  { code: 'I', label: 'Bên trong (I)' },
+  { code: 'N', label: 'Không xác định (N)' },
+  { code: 'X', label: 'Toàn bộ cont (X)' },
 ];
 // damageType — mã 15 (Additional Damages) chỉ dùng cho API 3 nên không cho chọn
 export const EEIR_DAMAGE_TYPES: { code: number; label: string }[] = [
