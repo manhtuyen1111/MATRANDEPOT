@@ -72,7 +72,7 @@ export const InspectionFields: React.FC<{
   // DEC-166: mã Đóng hàng của hãng tàu (stuffingOptions trong services/stuffing.ts); rỗng → ẩn mục 2
   stuffingOptions: string[];
   // DEC-203: hãng MSK — mục 1 ghi tình trạng theo eEIR (Không hư / Hao mòn / Hư bên thứ 3), AV / DAMAGE tự tính
-  survey?: { value: InspectionSurvey; onChange: (s: InspectionSurvey) => void };
+  survey?: { value: InspectionSurvey; onChange: (s: InspectionSurvey) => void; fixedSize?: string; hasDoorPhoto?: boolean };
 }> = ({ value: v, onChange, progressive, allowDeferred, hideCleaning, stuffingOptions, survey }) => {
   const set = (patch: Partial<InspectionValue>) => onChange({ ...v, ...patch });
   const toggleCleaning = (item: FieldCleaningItem) => {
@@ -122,7 +122,7 @@ export const InspectionFields: React.FC<{
           {deferred && (
             <p className="mt-1 text-xs text-ink-muted">Chưa giám định được ngay — chỉ chọn Vệ sinh rồi gửi. Xe nâng hạ cont lên kệ; Giám định bổ sung sau.</p>
           )}
-          {v.condition && !deferred && <EeirSurveyFields value={survey.value} onChange={setSurvey} />}
+          {v.condition && !deferred && <EeirSurveyFields value={survey.value} onChange={setSurvey} fixedSize={survey.fixedSize} hasDoorPhoto={survey.hasDoorPhoto} />}
         </Section>
       ) : (
       <Section title={allowDeferred ? '1. TRẠNG THÁI : DAMAGE / AV / W-SURVEY *' : '1. TRẠNG THÁI : DAMAGE / AV *'}>

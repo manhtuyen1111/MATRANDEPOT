@@ -110,8 +110,9 @@ const emptyDamage = (side: EeirDamageSide): InspectionDamageItem => ({
 export const EeirSurveyFields: React.FC<{
   value: InspectionSurvey;
   onChange: (s: InspectionSurvey) => void;
-  hasDoorPhoto?: boolean; // ảnh cửa cont đã chụp ở bước 1 → tính vào nhóm KHÔNG HƯ
-}> = ({ value: v, onChange, hasDoorPhoto = true }) => {
+  hasDoorPhoto?: boolean; // ảnh cửa cont đã chụp ở bước 1 → tính vào nhóm KHÔNG HƯ (Nhập tàu: không có — DEC-156)
+  fixedSize?: string;     // Nhập tàu: size theo danh sách tàu — không cho chọn
+}> = ({ value: v, onChange, hasDoorPhoto = true, fixedSize }) => {
   const [camera, setCamera] = useState<CameraTarget>(null);
   const [draft, setDraft] = useState<InspectionDamageItem | null>(null);
   const noDamageMax = NO_DAMAGE_PHOTO_MAX - (hasDoorPhoto ? 1 : 0);
@@ -135,6 +136,9 @@ export const EeirSurveyFields: React.FC<{
 
       {/* Người dùng 2026-11-01: chọn SIZE CONT trước khi giám định — quyết định số ô sơ đồ (20' 5 ô, 40' / 45' 10 ô) */}
       <Group title="SIZE CONT *" testId="eeir-size">
+        {fixedSize ? (
+          <p className="font-mono text-sm font-bold text-ink" data-testid="eeir-fixed-size">{fixedSize}' <span className="font-sans text-[11px] font-normal text-ink-muted">(theo danh sách tàu)</span></p>
+        ) : (
         <div className="grid grid-cols-3 gap-2">
           {SURVEY_SIZES.map((size) => (
             <button
@@ -148,13 +152,14 @@ export const EeirSurveyFields: React.FC<{
             </button>
           ))}
         </div>
+        )}
         {!v.size && <p className="text-[11px] text-ink-muted">Chọn size cont trước để giám định.</p>}
       </Group>
 
       {v.size && (
       <>
       <Group title="1. KHÔNG HƯ" count={`${(hasDoorPhoto ? 1 : 0) + v.noDamagePhotos.length}/${NO_DAMAGE_PHOTO_MAX} ảnh`} testId="eeir-no-damage">
-        <p className="text-[11px] text-ink-muted">Ảnh cửa cont đã chụp được tính vào mục này. Chụp thêm ảnh cont tốt (VD bên trong) làm bằng chứng.</p>
+        <p className="text-[11px] text-ink-muted">{hasDoorPhoto ? 'Ảnh cửa cont đã chụp được tính vào mục này. ' : ''}Chụp ảnh cont tốt (VD cửa, bên trong) làm bằng chứng.</p>
         <Thumbs photos={v.noDamagePhotos} alt="Ảnh không hư" onRemove={(i) => onChange({ ...v, noDamagePhotos: v.noDamagePhotos.filter((_, k) => k !== i) })} />
         <button type="button" onClick={() => setCamera('NO_DAMAGE')} disabled={v.noDamagePhotos.length >= noDamageMax} className={`${secondaryBtn} w-full`}>
           <Camera className="h-4 w-4" />THÊM ẢNH

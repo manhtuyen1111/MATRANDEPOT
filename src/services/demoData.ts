@@ -104,6 +104,12 @@ interface GateInCase {
   truckNo: string;
 }
 
+// DEC-203: Nhập tàu hãng MSK — tình trạng eEIR (size lấy theo danh sách tàu; cont hư: 1 chỗ hư bên thứ 3 ở cửa)
+const ntSurvey = (damage: boolean) => ({
+  noDamagePhotos: [PHOTO], wearTearPhotos: [],
+  damages: damage ? [{ id: 'dmg-nt', side: 'D' as const, location: 'DB2N', damageType: 5, source: 3, description: 'Móp vách sau', photos: [PHOTO] }] : [],
+});
+
 // Hạ vỏ: Giám định → Văn phòng lập chứng từ → thanh toán theo hình thức
 function gateIn(state: DepotState, c: GateInCase): DepotState {
   let s = recordGateInFieldStep(as(state, 'usr-inspector'), {
@@ -274,6 +280,7 @@ function bulkData(state: DepotState): DepotState {
         listId: r.listId, itemId: it.id, actualContainerNo: it.containerNo, truckNo: trucks[j % 2],
         conditionClass: dmg ? 'DAMAGE' : 'AV', damageRemarks: dmg ? ['Móp vách sau'] : [], stuffingClass: (['E', 'M', 'K'] as const)[j % 3],
         cleaningItems: j % 4 === 0 ? ['WP - QUÉT'] : ['KHÔNG VỆ SINH'], manufactureYear: 2012 + (j % 10),
+        survey: ntSurvey(dmg), // DEC-203: hãng MSK
       });
       const c = s.containers.find((x) => x.containerNo === it.containerNo && x.status === 'WAITING_PLACEMENT');
       if (v === 0 && c && !c.needsCleaning) s = place(s, it.containerNo, 'BLOCK-B');
@@ -386,12 +393,12 @@ export function createDemoState(): DepotState {
   const ntItem = (no: string) => ntItems.find((i) => i.containerNo === no)!;
   s = inspectVesselImportItem(as(s, 'usr-inspector'), {
     listId: nt.listId, itemId: ntItem('MSKU4000011').id, actualContainerNo: 'MSKU4000011', truckNo: '15C-401.01',
-    conditionClass: 'AV', damageRemarks: [], stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2020,
+    conditionClass: 'AV', damageRemarks: [], stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2020, survey: ntSurvey(false),
   });
   s = place(s, 'MSKU4000011', 'BLOCK-A', '03', '01', '01');
   s = inspectVesselImportItem(as(s, 'usr-inspector'), {
     listId: nt.listId, itemId: ntItem('MSKU4000022').id, actualContainerNo: 'MSKU4000022', truckNo: '15C-402.02',
-    conditionClass: 'DAMAGE', damageRemarks: ['Móp vách sau'], stuffingClass: 'E', cleaningItems: ['WW - RỬA NƯỚC'], manufactureYear: 2016,
+    conditionClass: 'DAMAGE', damageRemarks: ['Móp vách sau'], stuffingClass: 'E', cleaningItems: ['WW - RỬA NƯỚC'], manufactureYear: 2016, survey: ntSurvey(true),
   });
 
   // ── XUẤT TÀU: 1 cont đã xuất, 1 cont chờ xuất

@@ -16,6 +16,8 @@ import { linkCls, EMPTY_SLOT, Feedback, inputCls, isSlotComplete, labelCls, prim
 import { ChoiceButtons } from './VesselShared';
 import { EMPTY_INSPECTION, InspectionFields, InspectionValue, inspectionRemarks, isInspectionComplete } from '../../components/InspectionFields';
 import { CONTAINER_SEARCH_HINT, containerSerial as containerSerialOf, matchContainerNo } from '../../services/containerSearch';
+import { EMPTY_SURVEY, usesInspectionSurvey } from '../../services/inspectionSurvey';
+import type { InspectionSurvey } from '../../types/depot';
 
 export type VesselFieldMode = 'GD_NHAP_TAU' | 'GD_XUAT_TAU' | 'XN_NHAP_TAU' | 'XN_XUAT_TAU';
 
@@ -51,6 +53,7 @@ export const VesselFieldMobile: React.FC<{
   const [recent, setRecent] = useState<{ no: string; truck?: string; at: string; code?: string }[]>([]);
   const [truckNo, setTruckNo] = useState('');
   const [insp, setInsp] = useState<InspectionValue>(EMPTY_INSPECTION); // UI-02: form Giám định dùng chung
+  const [survey, setSurvey] = useState<InspectionSurvey>(EMPTY_SURVEY); // DEC-203: hãng MSK — tình trạng eEIR như Hạ vỏ
   const [slot, setSlot] = useState<SlotValue>(EMPTY_SLOT);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +70,7 @@ export const VesselFieldMobile: React.FC<{
     setCode('');
     setTruckNo('');
     setInsp(EMPTY_INSPECTION);
+    setSurvey(EMPTY_SURVEY);
     setSlot(EMPTY_SLOT);
   };
 
@@ -106,6 +110,7 @@ export const VesselFieldMobile: React.FC<{
   };
 
   const remarks = inspectionRemarks(insp);
+  const surveyMode = isInspect && usesInspectionSurvey(list?.shippingLineCode); // DEC-203
   const ready = Boolean(
     item &&
       (isPlace
@@ -123,6 +128,7 @@ export const VesselFieldMobile: React.FC<{
           listId: list.id, itemId: item.id, actualContainerNo: code, truckNo,
           conditionClass: insp.condition as FieldConditionClass, damageRemarks: remarks, stuffingClass: insp.stuffing || undefined,
           cleaningItems: insp.cleaning, manufactureYear: Number(insp.year),
+          survey: surveyMode ? { ...survey, size: item.size } : undefined, // DEC-203: size theo danh sách tàu
         });
       } else if (isPlace) {
         next = updateContainerLocation(state, { containerNo: item.containerNo, ...slot, reason: `Xe nâng hạ cont NHẬP TÀU (tàu ${list.vesselName})` });
@@ -247,7 +253,14 @@ export const VesselFieldMobile: React.FC<{
                 </div>
               )}
 
-              {isInspect && <InspectionFields value={insp} onChange={setInsp} stuffingOptions={stuffingOptions(state, list?.shippingLineCode)} />}
+              {isInspect && (
+                <InspectionFields
+                  value={insp}
+                  onChange={setInsp}
+                  stuffingOptions={stuffingOptions(state, list?.shippingLineCode)}
+                  survey={surveyMode && item ? { value: { ...survey, size: item.size }, onChange: setSurvey, fixedSize: item.size, hasDoorPhoto: false } : undefined}
+                />
+              )}
 
               <button type="button" onClick={confirm} disabled={!ready} className={`${primaryBtn} w-full py-3 text-sm`}>
                 <CheckCircle2 className="h-4 w-4" />

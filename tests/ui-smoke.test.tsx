@@ -1304,6 +1304,13 @@ describe('DEC-203: sơ đồ lưới vị trí hư', () => {
     expect(html).toContain('data-testid="eeir-size"');
     expect(html).not.toContain('data-testid="eeir-no-damage"');
   });
+  it('Nhập tàu: size cố định theo danh sách tàu, không có ảnh cửa (0/20)', () => {
+    const html = renderToString(<EeirSurveyFields value={{ size: '20', noDamagePhotos: [], wearTearPhotos: [], damages: [] }} onChange={noop} fixedSize="20" hasDoorPhoto={false} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('data-testid="eeir-fixed-size"');
+    expect(html).toContain('(theo danh sách tàu)');
+    expect(html).toContain('0/20 ảnh');
+    expect(html).not.toContain('aria-pressed');
+  });
   it('vách trái 40 = 10 cột × 4 hàng (H T B G), nóc 2 hàng, cửa 4 cột; mặt E không có lưới', () => {
     const cellsOf = (h: string) => (h.match(/aria-label="Ô /g) || []).length;
     expect(cellsOf(renderToString(<CedexGridPicker side="L" location="L" onChange={noop} />))).toBe(40);

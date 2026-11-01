@@ -2506,3 +2506,34 @@ describe('DEC-203: SIZE CONT trước khi giám định', () => {
     expect(validateSurvey({ size: '45', noDamagePhotos: [], wearTearPhotos: [], damages: [d('LT90')] }).size).toBe('45');
   });
 });
+
+// DEC-203: Giám định NHẬP TÀU cont MSK — tình trạng eEIR như Hạ vỏ; size theo danh sách tàu; không ảnh cửa
+import { inspectVesselImportItem as inspectNT } from '../src/services/vessel';
+
+describe('DEC-203: Nhập tàu ghi tình trạng eEIR', () => {
+  const demo = createDemoState();
+  const list = demo.vesselLists.find((l) => l.mode === 'NHAP_TAU' && l.items.some((i) => i.status === 'PENDING'))!;
+  const item = list.items.find((i) => i.status === 'PENDING')!;
+  const inspect = (survey: InspectionSurvey | undefined, conditionClass: 'AV' | 'DAMAGE' = 'AV') =>
+    inspectNT(as(demo, 'usr-inspector'), {
+      listId: list.id, itemId: item.id, actualContainerNo: item.containerNo, truckNo: list.truckNos[0], conditionClass,
+      stuffingClass: 'E', cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2018, survey,
+    });
+
+  it('lưu tình trạng eEIR, size lấy theo danh sách (bỏ qua size gửi lên); có hư bên thứ 3 → DAMAGE', () => {
+    const s = inspect({ size: '20', noDamagePhotos: Array(20).fill('data:a'), wearTearPhotos: [], damages: [] });
+    const it = s.vesselLists.find((l) => l.id === list.id)!.items.find((i) => i.id === item.id)!;
+    expect(it.survey?.size).toBe(item.size);
+    expect(it.survey?.noDamagePhotos).toHaveLength(20); // không có ảnh cửa → đủ 20 ảnh
+    const dmg = inspect({ noDamagePhotos: [], wearTearPhotos: [], damages: [{ id: 'd', side: 'D', location: 'DB2N', damageType: 5, source: 3, photos: ['data:b'] }] }, 'DAMAGE');
+    const it2 = dmg.vesselLists.find((l) => l.id === list.id)!.items.find((i) => i.id === item.id)!;
+    expect(it2.damageRemarks).toEqual(['DB2N Móp']);
+    expect(dossierHistory(dmg, resolveDossier(dmg, it2.dossierCode!)!).rows.some((r) => r.operation === 'Giám định — Tình trạng eEIR')).toBe(true);
+  });
+
+  it('từ chối: thiếu phần eEIR, trạng thái sai so với hư hỏng, quá 20 ảnh không hư', () => {
+    expect(() => inspect(undefined)).toThrow(/TÌNH TRẠNG theo eEIR/);
+    expect(() => inspect({ noDamagePhotos: [], wearTearPhotos: [], damages: [] }, 'DAMAGE')).toThrow(/phải là AV/);
+    expect(() => inspect({ noDamagePhotos: Array(21).fill('x'), wearTearPhotos: [], damages: [] })).toThrow(/tối đa 20 ảnh/);
+  });
+});

@@ -10,6 +10,7 @@ import {
   VesselListItem,
   VesselMode,
   VESSEL_MODE_LABELS,
+  InspectionSurvey,
 } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { allocateCode } from './codes';
@@ -25,6 +26,7 @@ import {
 import { gateInContainerConflict, normalizeCleaningItems } from './depotOperations';
 import { formatDateTime } from './datetime';
 import { resolveStuffing } from './stuffing';
+import { surveyCondition, surveyRemarks, usesInspectionSurvey, validateSurvey } from './inspectionSurvey';
 
 // ============================================================================
 // NHẬP TÀU / XUẤT TÀU (DEC-069)
@@ -311,6 +313,7 @@ export function inspectVesselImportItem(
     stuffingClass?: FieldStuffingClass;
     cleaningItems: (FieldCleaningItem | string)[];
     manufactureYear: number;
+    survey?: InspectionSurvey; // DEC-203: hãng MSK — tình trạng eEIR như Hạ vỏ
   }
 ): DepotState {
   assertPermission(state, 'VESSEL_IMPORT_INSPECT', 'chỉ Bộ phận Giám định / Quản lý được xác nhận container NHẬP TÀU.');
@@ -333,13 +336,20 @@ export function inspectVesselImportItem(
   }
   const conflict = gateInContainerConflict(state, actual);
   if (conflict) throw new Error(conflict);
+  // DEC-203: cont Maersk — tình trạng eEIR như Hạ vỏ; SIZE lấy theo danh sách tàu; không có ảnh cửa (DEC-156)
+  const survey = usesInspectionSurvey(list.shippingLineCode)
+    ? validateSurvey(input.survey && { ...input.survey, size: item.size }, { hasDoorPhoto: false })
+    : undefined;
+  if (survey && input.conditionClass !== surveyCondition(survey)) {
+    throw new Error(`Trạng thái phải là ${surveyCondition(survey)} theo tình trạng eEIR (có hư do bên thứ 3 → DAMAGE, còn lại → AV).`);
+  }
 
   const allocated = allocateCode(state, 'NT');
   const code = allocated.code;
   const now = nowIso();
   const actor = state.currentUser.fullName;
   const isDamage = input.conditionClass === 'DAMAGE';
-  const remarks = isDamage ? (input.damageRemarks || []).map((r) => r.trim()).filter(Boolean) : [];
+  const remarks = survey ? surveyRemarks(survey) : isDamage ? (input.damageRemarks || []).map((r) => r.trim()).filter(Boolean) : [];
   const requiresCleaning = cleaningItems.some((i) => i !== 'KHÔNG VỆ SINH');
   const qr = `QR-${code}`;
 
@@ -392,6 +402,7 @@ export function inspectVesselImportItem(
   next = patchItem(next, list.id, item.id, {
     status: 'INSPECTED', dossierCode: code, containerId: container.id, truckNo, conditionClass: input.conditionClass,
     stuffingClass: stuffing, cleaningItems, damageRemarks: remarks, manufactureYear: year, inspectedBy: actor, inspectedAt: now,
+    ...(survey ? { survey } : {}),
   });
   return appendAudit(
     next,

@@ -94,12 +94,14 @@ export function damageItemProblem(d: Pick<InspectionDamageItem, 'side' | 'locati
 }
 
 // Kiểm tra + chuẩn hóa (ảnh cửa cont đã chụp ở bước 1 → tính vào nhóm KHÔNG HƯ)
-export function validateSurvey(s: InspectionSurvey | undefined): InspectionSurvey {
+// hasDoorPhoto: Hạ vỏ có ảnh cửa cont tính vào nhóm KHÔNG HƯ; Nhập tàu không chụp ảnh cửa (DEC-156)
+export function validateSurvey(s: InspectionSurvey | undefined, opts: { hasDoorPhoto?: boolean } = {}): InspectionSurvey {
+  const door = opts.hasDoorPhoto === false ? 0 : 1;
   if (!s) throw new Error('Cont hãng Maersk: vui lòng ghi TÌNH TRẠNG theo eEIR (Không hư / Hao mòn / Hư do bên thứ 3).');
   if (!SURVEY_SIZES.includes(s.size || '')) throw new Error('Vui lòng chọn SIZE CONT (20 / 40 / 45) trước khi giám định.');
   const noDamagePhotos = (s.noDamagePhotos || []).filter(Boolean);
   const wearTearPhotos = (s.wearTearPhotos || []).filter(Boolean);
-  if (noDamagePhotos.length + 1 > NO_DAMAGE_PHOTO_MAX) throw new Error(`KHÔNG HƯ: tối đa ${NO_DAMAGE_PHOTO_MAX} ảnh (tính cả ảnh cửa cont).`);
+  if (noDamagePhotos.length + door > NO_DAMAGE_PHOTO_MAX) throw new Error(`KHÔNG HƯ: tối đa ${NO_DAMAGE_PHOTO_MAX} ảnh${door ? ' (tính cả ảnh cửa cont)' : ''}.`);
   if (wearTearPhotos.length > WEAR_TEAR_PHOTO_MAX) throw new Error(`HAO MÒN: tối đa ${WEAR_TEAR_PHOTO_MAX} ảnh.`);
   const damages = (s.damages || []).map((d) => {
     const problem = damageItemProblem(d);

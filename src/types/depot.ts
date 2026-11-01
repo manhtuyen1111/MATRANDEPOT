@@ -820,6 +820,7 @@ export interface VesselListItem {
   cleaningItems?: FieldCleaningItem[];
   damageRemarks?: string[];
   doorPhotoUrl?: string;
+  survey?: InspectionSurvey; // DEC-203: Giám định Nhập tàu cont MSK — tình trạng eEIR (size theo danh sách)
   inspectedBy?: string;
   inspectedAt?: string;
   doneBy?: string;
