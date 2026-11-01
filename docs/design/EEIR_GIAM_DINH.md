@@ -98,3 +98,7 @@ Số cont, hãng, size / type (ISO), năm SX, hạng Maersk • tóm tắt 3 m�
 - Offline: MATRAN đã có hàng chờ đồng bộ — phiếu eEIR vào hàng chờ gửi, lỗi thì gửi lại (API v4.3 mục 8).
 - Cấp vỏ (DEC-198) dùng **cùng khối Tình trạng / Hư hỏng** (`EeirDamageFields`), gate move OUT.
 - Thiết lập shop (User Guide trang 10–11): **Shop code 3HY**, **RKEM location code** (7–8 ký tự — cần người dùng cung cấp), email shop, EDI carrier code của nhà xe — để ở cấu hình máy chủ / Danh mục, không viết cứng.
+
+## 7. Nhập tàu (người dùng 2026-11-01)
+
+Nhập tàu dùng **cùng form** như Hạ vỏ (`InspectionFields` + `EeirSurveyFields`): số cont và size đã có trong danh sách tàu → mục SIZE CONT hiện cố định "(theo danh sách tàu)"; không có ảnh cửa cont (DEC-156) nên KHÔNG HƯ được 20 ảnh. Còn: Current Move của cont nhập tàu trên app eEIR (Q-058) để đưa Nhập tàu vào phiếu eEIR.

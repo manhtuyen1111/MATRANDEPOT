@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-203 (2026-11-01): **Giám định Nhập tàu cont MSK dùng form eEIR như Hạ vỏ** — size theo danh sách tàu, không ảnh cửa (Không hư 20 ảnh), hồ sơ NT- có dòng Tình trạng eEIR. **Migration mới `20261123000001_vessel_import_survey.sql`** (pgTAP 369/369, chạy thật 5/5).
 - DEC-203 bổ sung (2026-11-01): Giám định cont MSK **chọn SIZE CONT (20 / 40 / 45) trước khi giám định** — sơ đồ 20' 5 ô, 40' / 45' 10 ô; bỏ nút chọn 20/40 trên sơ đồ. **Migration mới `20261122000001_gate_in_survey_size.sql`** (pgTAP 363/363, chạy thật 5/5).
 - DEC-203 bổ sung (2026-11-01): **sơ đồ lưới vị trí hư** như app eEIR — chạm ô, mã CEDEX tự điền (VD DB2N, TX14), chọn cont 40' (10 ô) / 20' (5 ô); bỏ ô gõ tay. Không migration.
 - DEC-203 bổ sung (2026-11-01, theo ảnh app eEIR thật): Không hư tối đa **20** ảnh; thêm 4 mặt **E / I / N / X** (vị trí cố định <mặt>XXX); chi tiết hư mặc định Bẩn + Khách hàng, mô tả 0/255, 3 ô ảnh; Hạ vỏ = IN-EMPTY-IMPORT_RETURN. **Migration mới `20261121000001_gate_in_survey_faces.sql`**.
