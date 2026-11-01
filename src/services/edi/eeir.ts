@@ -1,17 +1,21 @@
 // ============================================================================
 // eEIR MAERSK — CHẠY THỬ (tài liệu eEIR External API v4.3 — docs/EDI_MAERSK.md mục 12, 15, 18, 19). CHƯA GỬI Maersk.
 // Phạm vi: chỉ cont hãng MSK loại KHÔ (DRY: DC / HC) — cont khác chưa tích hợp (người dùng 2026-10-30).
-//   Gate-in : Hạ vỏ (HV-)                → moveStatus 1 IN,  moveType 2 IMP (dự đoán — Q-058)
-//   Gate-out: Cấp vỏ theo booking (CV-)   → moveStatus 2 OUT, moveType 3 EXP (xác nhận từ PDF mẫu OUT-EMPTY-EXP)
-//             Cấp sale                   → chờ Maersk (Q-058)
+// Current Move (danh sách trên app eEIR thật — người dùng chốt 2026-11-01, Q-058):
+//   Hạ vỏ (HV-)              → IN-EMPTY-IMPORT_RETURN  (moveStatus 1 IN,  moveType 2 IMP)
+//   Nhập tàu (NT-)           → IN-EMPTY-POSITION       (1 IN,  1 POS)
+//   Cấp vỏ theo booking (CV-) → OUT-EMPTY-EXPORT       (2 OUT, 3 EXP — booking bắt buộc)
+//   Cấp sale (CV-)           → OUT-EMPTY-POSITION      (2 OUT, 1 POS — không cần booking)
+//   Xuất tàu (XT-)           → OUT-EMPTY-POSITION      (2 OUT, 1 POS)
 // Hư hỏng (mục 6.1.2): không hư → 0000 / tpIndicator 0; hao mòn → 0000 / tpIndicator 3; bên thứ 3 → mã CEDEX + loại hư +
 //   bên gây hư + 1–3 ảnh / chỗ hư — lấy từ Giám định Hạ vỏ (GateInOrder.survey — DEC-203).
 // Hạng (Grade) lấy từ API 1 (smokeTested); chưa gọi được API 1 → "N" (đúng hướng dẫn tài liệu).
-// Chưa đưa: Nhập tàu / Xuất tàu (Q-065). JSON là KHUNG theo bảng trường v4.3 — chỉnh khi có file inspectionDetails mẫu (Q-056).
+// JSON là KHUNG theo bảng trường v4.3 — chỉnh khi có file inspectionDetails mẫu (Q-056).
 // ============================================================================
 import type { DepotState } from '../depotStore';
 import { containerIsoCode } from '../depotOperations';
 import { isMaerskBooking, isMaerskLine, MAERSK_BOOKING_ERROR } from './maersk';
+import type { InspectionSurvey } from '../../types/depot';
 
 export interface EeirConfig {
   depotCode: string;    // Shop trên PDF (3HY - MATRAN)
@@ -26,8 +30,8 @@ export const EEIR_SUB_TYPES = ['DRY'];
 export const eeirSubType = (type: string) => SUB_TYPE[type] || '';
 export const isEeirContainer = (c: { shippingLineCode?: string; type: string }) => isMaerskLine(c.shippingLineCode) && EEIR_SUB_TYPES.includes(eeirSubType(c.type));
 
-export type EeirSource = 'HA_VO' | 'CAP_VO' | 'CAP_SALE';
-export const EEIR_SOURCE_LABELS: Record<EeirSource, string> = { HA_VO: 'Hạ vỏ', CAP_VO: 'Cấp vỏ', CAP_SALE: 'Cấp sale' };
+export type EeirSource = 'HA_VO' | 'NHAP_TAU' | 'CAP_VO' | 'CAP_SALE' | 'XUAT_TAU';
+export const EEIR_SOURCE_LABELS: Record<EeirSource, string> = { HA_VO: 'Hạ vỏ', NHAP_TAU: 'Nhập tàu', CAP_VO: 'Cấp vỏ', CAP_SALE: 'Cấp sale', XUAT_TAU: 'Xuất tàu' };
 export type EeirMoveType = 'POS' | 'IMP' | 'EXP';
 const MOVE_TYPE_CODE: Record<EeirMoveType, number> = { POS: 1, IMP: 2, EXP: 3 };
 
@@ -73,7 +77,9 @@ export function eeirTypeSize(i: Pick<EeirInspection, 'size' | 'type' | 'isoCode'
   const sub = eeirSubType(i.type);
   return sub && i.isoCode ? `${i.size}${sub} ${i.isoCode}` : '99XXX 99X9';
 }
-export const eeirMoveLabel = (i: Pick<EeirInspection, 'moveStatus' | 'moveType'>) => `${i.moveStatus}-EMPTY-${i.moveType || '?'}`; // app hiển thị IN-EMPTY-IMPORT_RETURN / OUT-EMPTY-EXP
+// Tên Current Move như app eEIR
+const MOVE_NAME: Record<EeirMoveType, string> = { IMP: 'IMPORT_RETURN', EXP: 'EXPORT', POS: 'POSITION' };
+export const eeirMoveLabel = (i: Pick<EeirInspection, 'moveStatus' | 'moveType'>) => `${i.moveStatus}-EMPTY-${i.moveType ? MOVE_NAME[i.moveType] : '?'}`;
 
 const inRange = (at: string | undefined, from: Date, to: Date) => Boolean(at) && new Date(at!) >= from && new Date(at!) < to;
 const truckOf = (no?: string) => (no || '').replace(/\s+/g, '').toUpperCase();
@@ -89,6 +95,18 @@ function checks(problems: string[], containerNo: string, truck: string, photos: 
   if (damaged) problems.push('Cont hư chưa ghi tình trạng theo eEIR (Hao mòn / Bên thứ 3 + CEDEX — DEC-203)');
 }
 
+// DEC-203: nhóm ảnh chung (ảnh cửa nếu có + KHÔNG HƯ + HAO MÒN; có ảnh hao mòn → tpIndicator 3) + mỗi chỗ hư bên thứ 3 1 mục riêng
+function surveyDamages(survey: InspectionSurvey | undefined, doorPhoto?: string): { general: string[]; damages: EeirDamage[] } {
+  const general = [doorPhoto, ...(survey?.noDamagePhotos || []), ...(survey?.wearTearPhotos || [])].filter((x): x is string => Boolean(x));
+  return {
+    general,
+    damages: [
+      { location: '0000', tpIndicator: survey?.wearTearPhotos.length ? 3 : 0, photos: general },
+      ...(survey?.damages || []).map((d) => ({ location: d.location, tpIndicator: 2 as const, damageType: d.damageType, source: d.source, description: d.description, photos: d.photos })),
+    ],
+  };
+}
+
 // Phiếu eEIR của các lượt cont Maersk DRY trong khoảng [from, to) — sắp theo giờ
 export function eeirInspections(state: DepotState, range: { from: Date; to: Date }): EeirInspection[] {
   const { from, to } = range;
@@ -98,13 +116,8 @@ export function eeirInspections(state: DepotState, range: { from: Date; to: Date
   for (const c of state.containers) {
     if (!c.masterDossierCode.startsWith('HV-') || !isEeirContainer(c) || !inRange(c.gateInAt, from, to)) continue;
     const gi = state.gateInOrders.find((g) => g.masterDossierCode === c.masterDossierCode);
-    // DEC-203: nhóm ảnh chung = ảnh cửa + KHÔNG HƯ + HAO MÒN (có ảnh hao mòn → tpIndicator 3); mỗi chỗ hư bên thứ 3 1 mục riêng
     const survey = gi?.survey;
-    const general = [gi?.doorPhotoUrl, ...(survey?.noDamagePhotos || []), ...(survey?.wearTearPhotos || [])].filter((x): x is string => Boolean(x));
-    const damages: EeirDamage[] = [
-      { location: '0000', tpIndicator: survey?.wearTearPhotos.length ? 3 : 0, photos: general },
-      ...(survey?.damages || []).map((d) => ({ location: d.location, tpIndicator: 2 as const, damageType: d.damageType, source: d.source, description: d.description, photos: d.photos })),
-    ];
+    const { general, damages } = surveyDamages(survey, gi?.doorPhotoUrl);
     const truck = truckOf(gi?.truckNo || c.truckNo);
     const problems: string[] = [];
     if (c.conditionClass === 'W-SURVEY') problems.push('Chưa giám định (W-SURVEY)');
@@ -127,15 +140,35 @@ export function eeirInspections(state: DepotState, range: { from: Date; to: Date
     const truck = truckOf(o.truckNo);
     const damaged = c.conditionClass === 'DAMAGE';
     const problems: string[] = [];
-    if (sale) problems.push('Cấp sale: chờ Maersk xác nhận moveType / booking (Q-058)');
-    else if (!isMaerskBooking(o.bookingNo)) problems.push(MAERSK_BOOKING_ERROR);
+    if (!sale && !isMaerskBooking(o.bookingNo)) problems.push(MAERSK_BOOKING_ERROR); // cấp sale (POSITION) không cần booking
     checks(problems, c.containerNo, truck, photos, damaged, 'Chưa có ảnh cấp vỏ của Giám định (DEC-198)');
     out.push({
       key: `OUT-${o.id}`, source: sale ? 'CAP_SALE' : 'CAP_VO', dossierCode: o.gateOutCode, containerNo: o.containerNo, size: c.size, type: c.type,
-      isoCode: containerIsoCode(state, c), moveStatus: 'OUT', moveType: sale ? '' : 'EXP', moveTypeConfirmed: !sale,
+      isoCode: containerIsoCode(state, c), moveStatus: 'OUT', moveType: sale ? 'POS' : 'EXP', moveTypeConfirmed: true,
       at: o.releasePhotosAt || o.confirmedAt!, bookingNo: sale ? '' : o.bookingNo, grade: 'N', productionYear: c.manufactureYear,
       truckRegNo: truck, driverPhone: o.driverPhone, photos, damages: damaged ? [] : [{ location: '0000', tpIndicator: 0, photos }], problems, notes: [GRADE_NOTE],
     });
+  }
+  // Nhập tàu (IN-EMPTY-POSITION) / Xuất tàu (OUT-EMPTY-POSITION) — tình trạng Nhập tàu lấy từ VesselListItem.survey (DEC-203)
+  for (const l of state.vesselLists || []) {
+    for (const it of l.items) {
+      const imp = l.mode === 'NHAP_TAU';
+      const at = imp ? it.inspectedAt : it.status === 'DONE' ? it.doneAt : undefined;
+      if (!inRange(at, from, to)) continue;
+      const c = state.containers.find((x) => x.id === it.containerId);
+      if (!c || !isEeirContainer(c)) continue;
+      const { general, damages } = surveyDamages(imp ? it.survey : undefined);
+      const truck = truckOf(it.truckNo);
+      const problems: string[] = [];
+      checks(problems, c.containerNo, truck, general, imp && it.conditionClass === 'DAMAGE' && !it.survey?.damages.length,
+        imp ? 'Thiếu ảnh (eEIR bắt buộc ≥ 1 ảnh)' : 'Xuất tàu chưa chụp ảnh (eEIR bắt buộc ≥ 1 ảnh)');
+      out.push({
+        key: `${imp ? 'NT' : 'XT'}-${it.id}`, source: imp ? 'NHAP_TAU' : 'XUAT_TAU', dossierCode: it.dossierCode || c.masterDossierCode,
+        containerNo: c.containerNo, size: c.size, type: c.type, isoCode: containerIsoCode(state, c), moveStatus: imp ? 'IN' : 'OUT',
+        moveType: 'POS', moveTypeConfirmed: true, at: at!, bookingNo: '', grade: 'N', productionYear: c.manufactureYear, truckRegNo: truck,
+        photos: damages.flatMap((d) => d.photos), damages, problems, notes: [GRADE_NOTE],
+      });
+    }
   }
   return out.sort((a, b) => a.at.localeCompare(b.at));
 }

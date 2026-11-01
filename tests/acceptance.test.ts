@@ -2304,13 +2304,20 @@ describe('eEIR chạy thử: phiếu Hạ vỏ / Cấp vỏ cont MSK DRY', () =>
   const demo = createDemoState();
   const all = eeirInspections(demo, { from: new Date('2000-01-01'), to: new Date('2100-01-01') });
 
-  it('chỉ cont MSK DRY; gate-in IN-EMPTY-IMP, gate-out OUT-EMPTY-EXP; sắp theo giờ', () => {
+  it('chỉ cont MSK DRY; Current Move đúng tên app eEIR cho 5 loại lượt; sắp theo giờ', () => {
     expect(all.length).toBeGreaterThan(0);
     for (const i of all) expect(isEeirContainer({ shippingLineCode: 'MSK', type: i.type })).toBe(true);
     expect(isEeirContainer({ shippingLineCode: 'MSK', type: 'RF' })).toBe(false);
     expect(isEeirContainer({ shippingLineCode: 'ONE', type: 'DC' })).toBe(false);
-    expect(all.some((i) => eeirMoveLabel(i) === 'IN-EMPTY-IMP')).toBe(true);
-    expect(all.some((i) => eeirMoveLabel(i) === 'OUT-EMPTY-EXP')).toBe(true);
+    expect(all.some((i) => eeirMoveLabel(i) === 'IN-EMPTY-IMPORT_RETURN')).toBe(true);
+    expect(all.some((i) => eeirMoveLabel(i) === 'OUT-EMPTY-EXPORT')).toBe(true);
+    // Current Move theo app eEIR (người dùng chốt): Nhập tàu IN-EMPTY-POSITION, Xuất tàu / Cấp sale OUT-EMPTY-POSITION
+    const nt = all.find((i) => i.source === 'NHAP_TAU')!;
+    expect(eeirMoveLabel(nt)).toBe('IN-EMPTY-POSITION');
+    expect(eeirInspectionDetails(nt).container).toMatchObject({ moveStatus: 1, moveType: 1 });
+    const xt = all.find((i) => i.source === 'XUAT_TAU')!;
+    expect(eeirMoveLabel(xt)).toBe('OUT-EMPTY-POSITION');
+    expect(xt.problems).toContain('Xuất tàu chưa chụp ảnh (eEIR bắt buộc ≥ 1 ảnh)');
     expect(all.map((i) => i.at)).toEqual([...all.map((i) => i.at)].sort());
   });
 
@@ -2535,5 +2542,21 @@ describe('DEC-203: Nhập tàu ghi tình trạng eEIR', () => {
     expect(() => inspect(undefined)).toThrow(/TÌNH TRẠNG theo eEIR/);
     expect(() => inspect({ noDamagePhotos: [], wearTearPhotos: [], damages: [] }, 'DAMAGE')).toThrow(/phải là AV/);
     expect(() => inspect({ noDamagePhotos: Array(21).fill('x'), wearTearPhotos: [], damages: [] })).toThrow(/tối đa 20 ảnh/);
+  });
+});
+
+describe('eEIR: cấp sale = OUT-EMPTY-POSITION, không cần booking', () => {
+  it('phiếu cấp sale có moveType 1 POS, không báo thiếu booking', () => {
+    let s = createDemoState();
+    const cont = s.containers.find((c) => c.status === 'IN_YARD' && c.shippingLineCode === 'MSK' && !releaseBlocker(c))!;
+    s = createReleaseOrder(as(s, 'usr-office'), { bookingNo: 'BK-SALE-1', customerName: 'Khách hàng 01', containerNo: cont.containerNo, truckNo: '15H-1', driverPhone: '0912345678', feeCatalogIds: [s.feeCatalog[0].id], releasePurpose: 'SALE', saleCode: 'SALEO26VN51' });
+    const o = s.gateOutOrders[0];
+    s = confirmReleasePayment(as(s, 'usr-office'), { gateOutOrderId: o.id, paymentCategory: 'TTS', ttsNote: 'x' });
+    s = executeGateOut(as(s, 'usr-forklift'), { containerNo: cont.containerNo });
+    const sale = eeirInspections(s, { from: new Date('2000-01-01'), to: new Date('2100-01-01') }).find((i) => i.dossierCode === o.gateOutCode)!;
+    expect(eeirMoveLabel(sale)).toBe('OUT-EMPTY-POSITION');
+    expect(sale.bookingNo).toBe('');
+    expect(sale.problems.some((p) => p.includes('Booking'))).toBe(false);
+    expect(eeirInspectionDetails(sale).container).toMatchObject({ moveStatus: 2, moveType: 1 });
   });
 });
