@@ -6,7 +6,15 @@ import {
   DAMAGE_PHOTO_MAX,
   damageItemProblem,
   damageSideLabel,
+  cedexGrid,
+  cedexLocation,
+  ContainerLength,
+  SURVEY_SIZES,
+  surveyLength,
   damageTypeLabel,
+  DEFAULT_DAMAGE_SOURCE,
+  DEFAULT_DAMAGE_TYPE,
+  fixedDamageLocation,
   NO_DAMAGE_PHOTO_MAX,
   surveyCondition,
   WEAR_TEAR_PHOTO_MAX,
@@ -44,14 +52,67 @@ const Group: React.FC<{ title: string; count?: string; children: React.ReactNode
   </div>
 );
 
+// SƠ ĐỒ LƯỚI VỊ TRÍ (như app eEIR): chạm ô để chọn / bỏ — mã CEDEX tự tính (cedexLocation, services/inspectionSurvey.ts).
+//   Vách / nóc / đáy / sàn: số ô theo SIZE CONT Giám định chọn trước (20' → 5 ô, 40' / 45' → 10 ô).
+export const CedexGridPicker: React.FC<{ side: EeirDamageSide; location: string; length?: ContainerLength; onChange: (location: string) => void }> = ({
+  side,
+  location,
+  length = '40',
+  onChange,
+}) => {
+  const [cells, setCells] = useState<string[]>([]); // "hàng:cột"
+  const grid = cedexGrid(side, length);
+  if (!grid) return null;
+  const toggle = (row: string, col: number) => {
+    const key = `${row}:${col}`;
+    const next = cells.includes(key) ? cells.filter((c) => c !== key) : [...cells, key];
+    setCells(next);
+    onChange(cedexLocation(side, next.map((c) => c.split(':')[0]), next.map((c) => Number(c.split(':')[1]))) || side);
+  };
+  const doorCols = side === 'D' || side === 'F';
+  const colTemplate = doorCols ? '1fr 3fr 3fr 1fr' : `repeat(${grid.cols}, minmax(0, 1fr))`;
+  return (
+    <div className="space-y-1.5" data-testid="cedex-grid">
+      <div className="grid gap-px border border-ink bg-ink" style={{ gridTemplateColumns: colTemplate }}>
+        {grid.rows.map((r) =>
+          Array.from({ length: grid.cols }, (_, i) => {
+            const col = i + 1;
+            const on = cells.includes(`${r.code}:${col}`);
+            return (
+              <button
+                key={`${r.code}${col}`}
+                type="button"
+                onClick={() => toggle(r.code, col)}
+                aria-label={`Ô ${r.code}${col % 10}`}
+                aria-pressed={on}
+                className={`${r.thin ? 'h-5' : 'h-11'} text-[9px] font-mono ${on ? 'bg-accent text-white' : 'bg-white text-ink-muted'}`}
+              >
+                {r.thin ? '' : `${r.code}${col % 10}`}
+              </button>
+            );
+          })
+        )}
+      </div>
+      <div className="rounded-lg border border-line bg-canvas px-3 py-2">
+        <span className={labelCls}>Vị trí hư *</span>
+        <span className="font-mono text-sm font-bold" data-testid="cedex-location">{location.length === 4 ? location : 'Chạm ô trên sơ đồ'}</span>
+      </div>
+    </div>
+  );
+};
+
 type CameraTarget = 'NO_DAMAGE' | 'WEAR_TEAR' | 'DAMAGE' | null;
-const emptyDamage = (side: EeirDamageSide): InspectionDamageItem => ({ id: '', side, location: side, damageType: 0, source: 0, description: '', photos: [] });
+// Như app eEIR: mặc định Bẩn (Dirty) + Khách hàng; mặt E / I / N / X vị trí cố định <mặt>XXX
+const emptyDamage = (side: EeirDamageSide): InspectionDamageItem => ({
+  id: '', side, location: fixedDamageLocation(side) || side, damageType: DEFAULT_DAMAGE_TYPE, source: DEFAULT_DAMAGE_SOURCE, description: '', photos: [],
+});
 
 export const EeirSurveyFields: React.FC<{
   value: InspectionSurvey;
   onChange: (s: InspectionSurvey) => void;
-  hasDoorPhoto?: boolean; // ảnh cửa cont đã chụp ở bước 1 → tính vào nhóm KHÔNG HƯ
-}> = ({ value: v, onChange, hasDoorPhoto = true }) => {
+  hasDoorPhoto?: boolean; // ảnh cửa cont đã chụp ở bước 1 → tính vào nhóm KHÔNG HƯ (Nhập tàu: không có — DEC-156)
+  fixedSize?: string;     // Nhập tàu: size theo danh sách tàu — không cho chọn
+}> = ({ value: v, onChange, hasDoorPhoto = true, fixedSize }) => {
   const [camera, setCamera] = useState<CameraTarget>(null);
   const [draft, setDraft] = useState<InspectionDamageItem | null>(null);
   const noDamageMax = NO_DAMAGE_PHOTO_MAX - (hasDoorPhoto ? 1 : 0);
@@ -73,8 +134,32 @@ export const EeirSurveyFields: React.FC<{
         {condition === 'AV' ? ' (không có hư do bên thứ 3)' : ' (có hư do bên thứ 3 → Báo giá)'}
       </p>
 
+      {/* Người dùng 2026-11-01: chọn SIZE CONT trước khi giám định — quyết định số ô sơ đồ (20' 5 ô, 40' / 45' 10 ô) */}
+      <Group title="SIZE CONT *" testId="eeir-size">
+        {fixedSize ? (
+          <p className="font-mono text-sm font-bold text-ink" data-testid="eeir-fixed-size">{fixedSize}' <span className="font-sans text-[11px] font-normal text-ink-muted">(theo danh sách tàu)</span></p>
+        ) : (
+        <div className="grid grid-cols-3 gap-2">
+          {SURVEY_SIZES.map((size) => (
+            <button
+              key={size}
+              type="button"
+              onClick={() => onChange({ ...v, size })}
+              aria-pressed={v.size === size}
+              className={`rounded-lg border py-2.5 text-sm font-bold ${v.size === size ? 'border-navy-900 bg-navy-900 text-white' : 'border-line-strong bg-white text-ink hover:bg-canvas'}`}
+            >
+              {size}'
+            </button>
+          ))}
+        </div>
+        )}
+        {!v.size && <p className="text-[11px] text-ink-muted">Chọn size cont trước để giám định.</p>}
+      </Group>
+
+      {v.size && (
+      <>
       <Group title="1. KHÔNG HƯ" count={`${(hasDoorPhoto ? 1 : 0) + v.noDamagePhotos.length}/${NO_DAMAGE_PHOTO_MAX} ảnh`} testId="eeir-no-damage">
-        <p className="text-[11px] text-ink-muted">Ảnh cửa cont đã chụp được tính vào mục này. Chụp thêm ảnh cont tốt (VD bên trong) làm bằng chứng.</p>
+        <p className="text-[11px] text-ink-muted">{hasDoorPhoto ? 'Ảnh cửa cont đã chụp được tính vào mục này. ' : ''}Chụp ảnh cont tốt (VD cửa, bên trong) làm bằng chứng.</p>
         <Thumbs photos={v.noDamagePhotos} alt="Ảnh không hư" onRemove={(i) => onChange({ ...v, noDamagePhotos: v.noDamagePhotos.filter((_, k) => k !== i) })} />
         <button type="button" onClick={() => setCamera('NO_DAMAGE')} disabled={v.noDamagePhotos.length >= noDamageMax} className={`${secondaryBtn} w-full`}>
           <Camera className="h-4 w-4" />THÊM ẢNH
@@ -114,6 +199,8 @@ export const EeirSurveyFields: React.FC<{
           })}
         </ul>
       </Group>
+      </>
+      )}
 
       {/* Màn CHI TIẾT HƯ (User Guide trang 17) — mỗi lần lưu 1 chỗ hư */}
       {draft && (
@@ -123,19 +210,14 @@ export const EeirSurveyFields: React.FC<{
               <span className="text-sm font-bold text-ink">{damageSideLabel(draft.side)}</span>
               <button type="button" onClick={() => setDraft(null)} aria-label="Đóng" className="text-ink-muted"><X className="h-5 w-5" /></button>
             </div>
-            <label className="block">
-              <span className={labelCls}>Vị trí hư (CEDEX 4 ký tự) *</span>
-              <div className="flex items-center gap-1">
-                <span className="rounded-lg border border-line-strong bg-canvas px-3 py-2 font-mono text-sm font-bold">{draft.side}</span>
-                <input
-                  value={draft.location.slice(1)}
-                  onChange={(e) => setDraft({ ...draft, location: draft.side + e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) })}
-                  maxLength={3}
-                  placeholder="VD T89"
-                  className={`${inputCls} font-mono uppercase`}
-                />
+            {fixedDamageLocation(draft.side) ? (
+              <div className="rounded-lg border border-line bg-canvas px-3 py-2">
+                <span className={labelCls}>Vị trí hư</span>
+                <span className="font-mono text-sm font-bold" data-testid="eeir-fixed-location">{draft.location}</span>
               </div>
-            </label>
+            ) : (
+              <CedexGridPicker side={draft.side} location={draft.location} length={surveyLength(v.size)} onChange={(location) => setDraft({ ...draft, location })} />
+            )}
             <label className="block">
               <span className={labelCls}>Loại hư *</span>
               <select value={draft.damageType || ''} onChange={(e) => setDraft({ ...draft, damageType: Number(e.target.value) })} className={inputCls}>
@@ -152,14 +234,28 @@ export const EeirSurveyFields: React.FC<{
             </label>
             <label className="block">
               <span className={labelCls}>Mô tả</span>
-              <input value={draft.description || ''} onChange={(e) => setDraft({ ...draft, description: e.target.value })} maxLength={DAMAGE_NOTE_MAX} className={inputCls} />
+              <textarea value={draft.description || ''} onChange={(e) => setDraft({ ...draft, description: e.target.value })} maxLength={DAMAGE_NOTE_MAX} rows={3} className={inputCls} />
+              <span className="block text-right font-mono text-[11px] text-ink-muted">{(draft.description || '').length}/{DAMAGE_NOTE_MAX}</span>
             </label>
+            {/* Như app eEIR: 3 ô ảnh — ô trống bấm để chụp, ô có ảnh bấm X để xóa */}
             <div className="space-y-1.5">
               <span className={labelCls}>Ảnh chỗ hư * ({draft.photos.length}/{DAMAGE_PHOTO_MAX})</span>
-              <Thumbs photos={draft.photos} alt="Ảnh chỗ hư" onRemove={(i) => setDraft({ ...draft, photos: draft.photos.filter((_, k) => k !== i) })} />
-              <button type="button" onClick={() => setCamera('DAMAGE')} disabled={draft.photos.length >= DAMAGE_PHOTO_MAX} className={`${secondaryBtn} w-full`}>
-                <Camera className="h-4 w-4" />CHỤP ẢNH CHỖ HƯ
-              </button>
+              <div className="grid grid-cols-3 gap-1.5" data-testid="eeir-damage-photos">
+                {Array.from({ length: DAMAGE_PHOTO_MAX }, (_, i) =>
+                  draft.photos[i] ? (
+                    <div key={i} className="relative aspect-square overflow-hidden rounded border border-line bg-canvas">
+                      <img src={draft.photos[i]} alt={`Ảnh chỗ hư ${i + 1}`} className="h-full w-full object-cover" />
+                      <button type="button" onClick={() => setDraft({ ...draft, photos: draft.photos.filter((_, k) => k !== i) })} aria-label={`Xóa ảnh chỗ hư ${i + 1}`} className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button key={i} type="button" onClick={() => setCamera('DAMAGE')} aria-label={`Chụp ảnh chỗ hư ${i + 1}`} className="flex aspect-square items-center justify-center rounded border border-line-strong bg-white text-ink-muted hover:bg-canvas">
+                      <Camera className="h-7 w-7" />
+                    </button>
+                  )
+                )}
+              </div>
             </div>
             {problem && <p className="text-[11px] text-danger-fg">{problem}</p>}
             <button type="button" onClick={saveDraft} disabled={Boolean(problem)} className={`${primaryBtn} w-full py-3`}>LƯU CHỖ HƯ</button>

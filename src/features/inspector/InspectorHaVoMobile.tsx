@@ -210,7 +210,8 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
       lineCode &&
       conditionClass &&
       cleaningItems.length > 0 &&
-      (isDeferred || (isDamageValid && isStuffingValid && isYearValid))
+      (isDeferred || (isDamageValid && isStuffingValid && isYearValid)) &&
+      (!surveyMode || isDeferred || Boolean(survey.size)) // cont MSK: chọn SIZE CONT trước khi giám định
   );
 
   const handleNextToConfirm = () => {
@@ -889,7 +890,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                       <div className="col-span-2 space-y-1 rounded bg-white p-2 border border-line" data-testid="eeir-summary">
                         <span className="text-[10px] text-ink-muted block">TÌNH TRẠNG eEIR</span>
                         <span className="block font-semibold text-ink">
-                          Không hư {1 + survey.noDamagePhotos.length} ảnh • Hao mòn {survey.wearTearPhotos.length} ảnh • Hư bên thứ 3 {survey.damages.length} chỗ
+                          Size {survey.size}' • Không hư {1 + survey.noDamagePhotos.length} ảnh • Hao mòn {survey.wearTearPhotos.length} ảnh • Hư bên thứ 3 {survey.damages.length} chỗ
                         </span>
                         {survey.damages.map((d) => (
                           <span key={d.id} className="block text-[11px] text-danger-fg">

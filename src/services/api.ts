@@ -206,12 +206,17 @@ export const deleteVesselList = wrap(ves.deleteVesselList, ([, i]) => async (c) 
 export const removeVesselListItem = wrap(ves.removeVesselListItem, ([, i]) => async (c) => {
   await rpc(c, 'remove_vessel_list_item', { p_list_id: i.listId, p_item_id: i.itemId, p_mode: i.mode });
 });
-export const inspectVesselImportItem = wrap(ves.inspectVesselImportItem, ([, i]) => async (c) => {
-  await rpc(c, 'inspect_vessel_import_item', {
-    p_request_id: requestId(), p_list_id: i.listId, p_item_id: i.itemId, p_actual_container_no: i.actualContainerNo, p_truck_no: i.truckNo,
-    p_condition: i.conditionClass, p_stuffing: nul(i.stuffingClass), p_cleaning_items: i.cleaningItems, p_manufacture_year: i.manufactureYear,
-    p_damage_remarks: i.damageRemarks || [], p_door_photo_path: null,
-  });
+export const inspectVesselImportItem = wrap(ves.inspectVesselImportItem, ([, i], next) => {
+  const item = next.vesselLists.find((l) => l.id === i.listId)?.items.find((x) => x.id === i.itemId);
+  return async (c) => {
+    await rpc(c, 'inspect_vessel_import_item', {
+      p_request_id: requestId(), p_list_id: i.listId, p_item_id: i.itemId, p_actual_container_no: i.actualContainerNo, p_truck_no: i.truckNo,
+      p_condition: i.conditionClass, p_stuffing: nul(i.stuffingClass), p_cleaning_items: i.cleaningItems, p_manufacture_year: i.manufactureYear,
+      p_damage_remarks: item?.damageRemarks || i.damageRemarks || [], p_door_photo_path: null,
+    });
+    // DEC-203: cont MSK — tải ảnh tình trạng eEIR lên kho rồi ghi (hàm gốc đã kiểm tra + chuẩn hóa)
+    if (item?.survey) await rpc(c, 'record_vessel_import_survey', { p_item_id: i.itemId, p_survey: await uploadSurveyPhotos(c, item.survey, item.dossierCode || 'NT') });
+  };
 });
 export const executeVesselExport = wrap(ves.executeVesselExport, ([, i]) => async (c) => {
   await rpc(c, 'execute_vessel_export', { p_request_id: requestId(), p_list_id: i.listId, p_item_id: i.itemId, p_truck_no: i.truckNo });

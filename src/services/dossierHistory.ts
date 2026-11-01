@@ -3,7 +3,7 @@
 // THỜI GIAN | BỘ PHẬN | NỘI DUNG (TẠO MỚI / SỬA / XÓA) | CHI TIẾT | NHÂN VIÊN — cũ trên, mới dưới (DEC-184: cột Bộ phận).
 // Bước chưa làm: mỗi việc 1 dòng ĐANG CHỜ cuối bảng, kèm bộ phận phụ trách.
 import { RELEASE_PURPOSE_LABELS, SWAP_REASON_LABELS } from '../types/depot';
-import type { ContainerRecord, GateInOrder, GateOutOrder, LocationHistoryItem, PaymentVoucher, ServiceWorkOrder, VesselList, VesselListItem } from '../types/depot';
+import type { ContainerRecord, GateInOrder, InspectionSurvey, GateOutOrder, LocationHistoryItem, PaymentVoucher, ServiceWorkOrder, VesselList, VesselListItem } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { formatVnd } from './depotStore';
 import { paymentLabelOf } from './payments';
@@ -137,6 +137,25 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
     if (row.at) rows.push({ ...row, id: `h${rows.length}`, dept: deptOf(row.operation), task: row.task || taskOf(row.operation), staff: row.staff || '-' });
   };
   const { gateIn, container, importHit, inVoucher } = d;
+  // DEC-203: dòng "Giám định — Tình trạng eEIR" (Hạ vỏ / Nhập tàu cont MSK); door = số ảnh cửa tính vào KHÔNG HƯ
+  const surveyRow = (sv: InspectionSurvey, at: string, staff: string | undefined, door: number) =>
+    add({
+      at,
+      operation: 'Giám định — Tình trạng eEIR',
+      action: 'TẠO MỚI',
+      detail: join([
+        sv.size && `Size ${sv.size}'`,
+        `Không hư ${door + sv.noDamagePhotos.length} ảnh`,
+        `Hao mòn ${sv.wearTearPhotos.length} ảnh`,
+        sv.damages.length
+          ? `Hư bên thứ 3: ${sv.damages.map((x) => `${x.location} ${damageTypeLabel(x.damageType).split(' (')[0]} (${damageSourceLabel(x.source).split(' (')[0]}${x.description ? ` — ${x.description}` : ''})`).join('; ')}`
+          : 'Không có hư bên thứ 3',
+      ]),
+      staff,
+      photos: [...sv.noDamagePhotos, ...sv.wearTearPhotos, ...sv.damages.flatMap((x) => x.photos)],
+      photoAlt: 'Ảnh tình trạng eEIR',
+    });
+
 
   // THANH TOÁN (1 dòng / chứng từ) — đã thu / TTS / hủy; chưa xong → ĐANG CHỜ
   const payment = (voucher: PaymentVoucher | undefined, op: string) => {
@@ -190,24 +209,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
       showPhotos: true,
     });
     // DEC-203: tình trạng eEIR (cont MSK) — 1 dòng riêng, ảnh bấm XEM ẢNH (DEC-178; ảnh cửa vẫn hiện luôn ở dòng trên — DEC-182)
-    if (gateIn.survey) {
-      const sv = gateIn.survey;
-      add({
-        at: gateIn.fieldRecordedAt,
-        operation: 'Giám định — Tình trạng eEIR',
-        action: 'TẠO MỚI',
-        detail: join([
-          `Không hư ${1 + sv.noDamagePhotos.length} ảnh`,
-          `Hao mòn ${sv.wearTearPhotos.length} ảnh`,
-          sv.damages.length
-            ? `Hư bên thứ 3: ${sv.damages.map((d) => `${d.location} ${damageTypeLabel(d.damageType).split(' (')[0]} (${damageSourceLabel(d.source).split(' (')[0]}${d.description ? ` — ${d.description}` : ''})`).join('; ')}`
-            : 'Không có hư bên thứ 3',
-        ]),
-        staff: gateIn.fieldStaffName,
-        photos: [...sv.noDamagePhotos, ...sv.wearTearPhotos, ...sv.damages.flatMap((d) => d.photos)],
-        photoAlt: 'Ảnh tình trạng eEIR',
-      });
-    }
+    if (gateIn.survey) surveyRow(gateIn.survey, gateIn.fieldRecordedAt, gateIn.fieldStaffName, 1);
     if (gateIn.toInspectionRack) {
       if (gateIn.rackInspectedAt) {
         add({
@@ -271,6 +273,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
         photoAlt: 'Ảnh cửa container',
         showPhotos: true,
       });
+      if (item.survey) surveyRow(item.survey, item.inspectedAt, item.inspectedBy, 0); // DEC-203: Nhập tàu không có ảnh cửa
     } else pend('Giám định', 'Nhập tàu', 'Chờ xe về — Giám định nhập tàu');
   }
 

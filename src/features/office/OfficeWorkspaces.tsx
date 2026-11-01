@@ -65,7 +65,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
 
   const blankForm = (o?: GateInOrder) => ({
     contNo: o?.containerNo || '',
-    size: o?.size || '',
+    size: o?.size || o?.survey?.size || '', // DEC-203: cont MSK — size do Giám định chọn
     type: o?.type || '',
     shippingLineCode: o?.shippingLineCode || '',
     customerName: o?.customerRep || '',
@@ -260,8 +260,8 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                     {contConflict && <span role="alert" className="mt-1 block text-[11px] font-semibold text-red-700">{contConflict}</span>}
                   </label>
                   <label>
-                    <span className={labelCls}>Size *</span>
-                    <select value={form.size} onChange={(e) => set({ size: e.target.value })} className={inputCls}>
+                    <span className={labelCls}>Size *{order?.survey?.size ? ' (Giám định chọn)' : ''}</span>
+                    <select value={form.size} onChange={(e) => set({ size: e.target.value })} disabled={Boolean(order?.survey?.size)} className={inputCls} data-testid="office-size">
                       <option value="">-- Chọn --</option>
                       {state.containerSizes.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>

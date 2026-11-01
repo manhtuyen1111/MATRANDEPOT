@@ -1268,20 +1268,20 @@ describe('DEC-197: Danh mục chung → EDI hãng tàu (chạy thử)', () => {
 
 
 // DEC-203: Giám định Hạ vỏ cont MSK — khối tình trạng eEIR (3 phần như app Maersk, 7 mặt cont)
-import { EeirSurveyFields } from '../src/components/EeirSurveyFields';
+import { CedexGridPicker, EeirSurveyFields } from '../src/components/EeirSurveyFields';
 import { InspectionFields, EMPTY_INSPECTION } from '../src/components/InspectionFields';
 
 describe('DEC-203: tình trạng eEIR ở Giám định', () => {
-  it('3 phần Không hư / Hao mòn / Hư bên thứ 3, đủ 7 mặt, trạng thái tự tính', () => {
+  it('3 phần Không hư / Hao mòn / Hư bên thứ 3, đủ 11 mặt như app eEIR, trạng thái tự tính', () => {
     const html = renderToString(
       <EeirSurveyFields
-        value={{ noDamagePhotos: ['data:a'], wearTearPhotos: [], damages: [{ id: 'd1', side: 'L', location: 'LT89', damageType: 5, source: 2, photos: ['data:b'] }] }}
+        value={{ size: '40', noDamagePhotos: ['data:a'], wearTearPhotos: [], damages: [{ id: 'd1', side: 'L', location: 'LT89', damageType: 5, source: 2, photos: ['data:b'] }] }}
         onChange={noop}
       />
     ).replace(/<!-- -->/g, '');
     for (const id of ['eeir-no-damage', 'eeir-wear-tear', 'eeir-third-party']) expect(html).toContain(`data-testid="${id}"`);
-    for (const side of ['Cửa (D)', 'Mặt trước (F)', 'Vách trái (L)', 'Vách phải (R)', 'Nóc (T)', 'Khung đáy (U)', 'Sàn (B)']) expect(html).toContain(side);
-    expect(html).toContain('2/10 ảnh'); // ảnh cửa + 1 ảnh không hư
+    for (const side of ['Cửa (D)', 'Mặt trước (F)', 'Vách trái (L)', 'Vách phải (R)', 'Nóc (T)', 'Khung đáy (U)', 'Sàn (B)', 'Mặt ngoài (E)', 'Bên trong (I)', 'Không xác định (N)', 'Toàn bộ cont (X)']) expect(html).toContain(side);
+    expect(html).toContain('2/20 ảnh'); // ảnh cửa + 1 ảnh không hư (app eEIR: 20)
     expect(html).toMatch(/data-testid="eeir-condition"[^>]*>DAMAGE</);
     expect(html.match(/data-testid="eeir-damage-item"/g)?.length).toBe(1);
   });
@@ -1293,5 +1293,30 @@ describe('DEC-203: tình trạng eEIR ở Giám định', () => {
     expect(html).toContain('data-testid="condition-eeir"');
     expect(html).toContain('data-testid="condition-deferred"');
     expect(html).not.toContain('>AV<');
+  });
+});
+
+describe('DEC-203: sơ đồ lưới vị trí hư', () => {
+  it('form chi tiết hư mở được, không còn ô gõ tay mã CEDEX', () => {
+    const html = renderToString(<EeirSurveyFields value={{ noDamagePhotos: [], wearTearPhotos: [], damages: [] }} onChange={noop} />);
+    expect(html).not.toContain('VD T89');
+    // chưa chọn SIZE CONT → chỉ hiện ô chọn size, chưa hiện 3 phần
+    expect(html).toContain('data-testid="eeir-size"');
+    expect(html).not.toContain('data-testid="eeir-no-damage"');
+  });
+  it('Nhập tàu: size cố định theo danh sách tàu, không có ảnh cửa (0/20)', () => {
+    const html = renderToString(<EeirSurveyFields value={{ size: '20', noDamagePhotos: [], wearTearPhotos: [], damages: [] }} onChange={noop} fixedSize="20" hasDoorPhoto={false} />).replace(/<!-- -->/g, '');
+    expect(html).toContain('data-testid="eeir-fixed-size"');
+    expect(html).toContain('(theo danh sách tàu)');
+    expect(html).toContain('0/20 ảnh');
+    expect(html).not.toContain('aria-pressed');
+  });
+  it('vách trái 40 = 10 cột × 4 hàng (H T B G), nóc 2 hàng, cửa 4 cột; mặt E không có lưới', () => {
+    const cellsOf = (h: string) => (h.match(/aria-label="Ô /g) || []).length;
+    expect(cellsOf(renderToString(<CedexGridPicker side="L" location="L" onChange={noop} />))).toBe(40);
+    expect(cellsOf(renderToString(<CedexGridPicker side="T" location="T" onChange={noop} />))).toBe(20);
+    expect(cellsOf(renderToString(<CedexGridPicker side="D" location="D" onChange={noop} />))).toBe(16);
+    expect(renderToString(<CedexGridPicker side="E" location="EXXX" onChange={noop} />)).toBe('');
+    expect(renderToString(<CedexGridPicker side="L" location="LT89" onChange={noop} />)).toContain('>LT89<');
   });
 });

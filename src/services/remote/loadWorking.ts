@@ -430,7 +430,7 @@ function buildState(base: DepotState, raw: RawData): DepotState {
     id: i.id, containerNo: i.container_no, size: i.size, type: i.type, status: i.status, dossierCode: opt(i.dossier_code), containerId: opt(i.container_id),
     truckNo: opt(i.truck_no), conditionClass: opt(i.condition_class), stuffingClass: opt(i.stuffing_class), locationAtList: opt(i.location_at_list),
     manufactureYear: opt(i.manufacture_year), cleaningItems: i.cleaning_items || undefined, damageRemarks: i.damage_remarks?.length ? i.damage_remarks : undefined,
-    doorPhotoUrl: i.door_photo_path ? photo(i.door_photo_path) : undefined, inspectedBy: opt(i.inspected_by_name), inspectedAt: opt(i.inspected_at), doneBy: opt(i.done_by_name), doneAt: opt(i.done_at),
+    doorPhotoUrl: i.door_photo_path ? photo(i.door_photo_path) : undefined, survey: i.survey || undefined, // DEC-203 inspectedBy: opt(i.inspected_by_name), inspectedAt: opt(i.inspected_at), doneBy: opt(i.done_by_name), doneAt: opt(i.done_at),
   });
 
   const mapList = (l: Row): VesselList => ({
