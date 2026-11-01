@@ -76,6 +76,22 @@ Số cont, hãng, size / type (ISO), năm SX, hạng Maersk • tóm tắt 3 m�
 3. **Vị trí CEDEX**: app Maersk chọn trên **sơ đồ lưới** từng mặt (VD `LT89`, `DB2N`, `LB34`) — MATRAN cần **bảng lưới CEDEX** (hàng, cột từng mặt) để vẽ đúng. Chưa có bảng → tạm: chọn mặt (chữ đầu tự điền) + gõ 3 ký tự còn lại.
 4. **Chữ ký lái xe** trên điện thoại Giám định (app Maersk có, API không bắt buộc): làm hay bỏ.
 
+## 5b. Đối chiếu ảnh app eEIR thật (người dùng gửi 2026-11-01, 18 ảnh)
+
+| Màn app | Nội dung | MATRAN |
+|---|---|---|
+| Container Search | Cont Type/Size `40DRY 45G1`, Production Year, Global Hunt Flag, Redelivery Loc, Marked For Sale, **Grade (sửa được — bút chì)**, Do not move/use, Sound, Ownership Type, Sub-sub Code, Container Warranty | khung Thông tin Maersk — khi có khóa API 1 |
+| Moves | Last Move / Last Location (API 1); **Current Move** chọn (VD `IN-EMPTY-IMPORT_RETURN`); Booking No. (gợi ý 9 số); Commodity; Brand; Seal Number (Full Containers) | Hạ vỏ = IMPORT_RETURN (IMP) ✅; booking / seal: chưa |
+| Damage Report | No Damage • Wear & Tear • **Floor Cleaning** • 3P & Handling **11 mặt** (D F L R T U B **E I N X**) | ✅ 3 phần + 11 mặt; Floor Cleaning: chờ |
+| No Damage / Wear & Tear Images | "You can add **20** more Images" | ✅ 20 |
+| Floor Cleaning | **Cleaning needs** (mặc định Not required), 1 ô ảnh, Damage type = Dirty (cố định), Description 0/255 | chờ danh sách lựa chọn |
+| Chi tiết mặt D / F | lưới **4 cột** (hẹp – rộng – rộng – hẹp) × **4 hàng** (mỏng – cao – cao – mỏng) | gõ tay — chờ mã ô |
+| Chi tiết mặt L / R | lưới **10 cột × 4 hàng** | gõ tay — chờ mã ô |
+| Chi tiết mặt T / U / B | lưới **10 cột × 2 hàng** | gõ tay — chờ mã ô |
+| Chi tiết mặt E / I / N | không lưới, vị trí `EXXX` / `IXXX` / `NXXX` | ✅ |
+| Chi tiết chung | Damage location (tự điền) • Damage type (mặc định Dirty) • Description 0/255 • Damage source (mặc định Customer) • 3 ô ảnh • Save | ✅ |
+| Trucker Details | Name • EDI Carrier Code • Company Name • **Vehicle Registration No.*** • Contact Number • Contact Email | lấy từ Văn phòng (số xe, SĐT) |
+
 ## 6. Lưu ý cho eEIR API sau này
 
 - Trùng phiếu: Maersk tự gộp phiếu cùng cont / cùng shop trong **7 ngày** (User Guide trang 24) — MATRAN chỉ gửi 1 phiếu / lượt; thêm ảnh sau dùng API 3.
