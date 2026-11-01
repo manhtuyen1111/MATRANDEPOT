@@ -6,6 +6,9 @@ import {
   FieldConditionClass,
 } from '../types/depot';
 import { normalizeCleaningItems } from '../services/depotOperations';
+import { InspectionSurvey } from '../types/depot';
+import { surveyCondition, surveyRemarks } from '../services/inspectionSurvey';
+import { EeirSurveyFields } from './EeirSurveyFields';
 
 // ============================================================================
 // FORM GIÁM ĐỊNH DÙNG CHUNG (UI-02): Trạng thái DAMAGE / AV → Đóng hàng (theo Danh mục hãng tàu — DEC-166) → Vệ sinh → AGE
@@ -68,7 +71,9 @@ export const InspectionFields: React.FC<{
   hideCleaning?: boolean;
   // DEC-166: mã Đóng hàng của hãng tàu (stuffingOptions trong services/stuffing.ts); rỗng → ẩn mục 2
   stuffingOptions: string[];
-}> = ({ value: v, onChange, progressive, allowDeferred, hideCleaning, stuffingOptions }) => {
+  // DEC-203: hãng MSK — mục 1 ghi tình trạng theo eEIR (Không hư / Hao mòn / Hư bên thứ 3), AV / DAMAGE tự tính
+  survey?: { value: InspectionSurvey; onChange: (s: InspectionSurvey) => void };
+}> = ({ value: v, onChange, progressive, allowDeferred, hideCleaning, stuffingOptions, survey }) => {
   const set = (patch: Partial<InspectionValue>) => onChange({ ...v, ...patch });
   const toggleCleaning = (item: FieldCleaningItem) => {
     if (item === 'KHÔNG VỆ SINH') return set({ cleaning: ['KHÔNG VỆ SINH'] });
@@ -84,8 +89,42 @@ export const InspectionFields: React.FC<{
   const show4 = !deferred && (!progressive || (step1 && stuffingDone && (hideCleaning || v.cleaning.length > 0)));
   const choices: FieldConditionClass[] = allowDeferred ? ['AV', 'DAMAGE', 'W-SURVEY'] : ['AV', 'DAMAGE'];
 
+  // DEC-203: cập nhật tình trạng eEIR → trạng thái + remark hư tự tính
+  const setSurvey = (s: InspectionSurvey) => {
+    survey?.onChange(s);
+    set({ condition: surveyCondition(s), damage: surveyRemarks(s), damageNote: '' });
+  };
+
   return (
     <div className="space-y-3">
+      {survey ? (
+        <Section title={allowDeferred ? '1. TÌNH TRẠNG (eEIR Maersk) / W-SURVEY *' : '1. TÌNH TRẠNG (eEIR Maersk) *'}>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              data-testid="condition-eeir"
+              onClick={() => setSurvey(survey.value)}
+              className={`${allowDeferred ? '' : 'col-span-2 '}${choiceCls(Boolean(v.condition) && !deferred)}`}
+            >
+              GIÁM ĐỊNH THEO eEIR
+            </button>
+            {allowDeferred && (
+              <button
+                type="button"
+                data-testid="condition-deferred"
+                onClick={() => set({ condition: 'W-SURVEY', damage: [], damageNote: '', stuffing: '', year: '' })}
+                className={choiceCls(deferred, 'border-amber-500 bg-amber-500 text-ink')}
+              >
+                W-SURVEY (LÊN KỆ)
+              </button>
+            )}
+          </div>
+          {deferred && (
+            <p className="mt-1 text-xs text-ink-muted">Chưa giám định được ngay — chỉ chọn Vệ sinh rồi gửi. Xe nâng hạ cont lên kệ; Giám định bổ sung sau.</p>
+          )}
+          {v.condition && !deferred && <EeirSurveyFields value={survey.value} onChange={setSurvey} />}
+        </Section>
+      ) : (
       <Section title={allowDeferred ? '1. TRẠNG THÁI : DAMAGE / AV / W-SURVEY *' : '1. TRẠNG THÁI : DAMAGE / AV *'}>
         <div className="grid grid-cols-2 gap-2">
           {choices.map((cls) => (
@@ -134,6 +173,7 @@ export const InspectionFields: React.FC<{
           </div>
         )}
       </Section>
+      )}
 
       {show2 && (
         <Section title={`2. PHÂN LOẠI ĐÓNG HÀNG : ${stuffingOptions.join(' / ')} *`}>
