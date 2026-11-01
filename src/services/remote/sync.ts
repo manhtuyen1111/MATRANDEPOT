@@ -6,6 +6,7 @@
 //   Database từ chối → báo lỗi + tải lại (không mất gì). Không có hàng chờ (Demo) → hàm bọc chỉ chạy hàm gốc.
 // ============================================================================
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { InspectionSurvey } from '../../types/depot';
 import { gateInPhotoPath, photoBlob, releasePhotoPath, repairPhotoPath } from '../photo';
 
 export type RemoteOp = (client: SupabaseClient) => Promise<void>;
@@ -114,3 +115,16 @@ export async function uploadReleasePhotos(client: SupabaseClient, photos: string
   }
   return paths;
 }
+
+// DEC-203: ảnh tình trạng eEIR (Giám định Hạ vỏ cont MSK) — kho door-photos, thư mục ANH-GATE-IN (cùng ảnh cửa); giữ nguyên thứ tự
+export async function uploadSurveyPhotos(client: SupabaseClient, survey: InspectionSurvey, label: string): Promise<InspectionSurvey> {
+  const up = async (list: string[]) => {
+    const out: string[] = [];
+    for (const p of list) out.push(await uploadDoorPhoto(client, p, label));
+    return out;
+  };
+  const damages = [];
+  for (const d of survey.damages) damages.push({ ...d, photos: await up(d.photos) });
+  return { noDamagePhotos: await up(survey.noDamagePhotos), wearTearPhotos: await up(survey.wearTearPhotos), damages };
+}
+

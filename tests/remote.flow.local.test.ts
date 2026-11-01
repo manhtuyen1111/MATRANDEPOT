@@ -61,7 +61,7 @@ describe.skipIf(!run)('N2–N6 — luồng Hạ vỏ → Bãi → Cấp vỏ ch�
 
     // 0. N8: hồ sơ bị xóa trên database → lần đồng bộ sau biến mất khỏi dữ liệu (sync_deletions)
     s = api.recordGateInFieldStep(s, {
-      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MSK', doorPhotoUrl: 'https://example.invalid/door.jpg', conditionClass: 'AV', stuffingClass: 'E',
+      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MSK', doorPhotoUrl: 'https://example.invalid/door.jpg', conditionClass: 'AV', stuffingClass: 'E', survey: { noDamagePhotos: [], wearTearPhotos: [], damages: [] }, // DEC-203
       cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
     });
     s = await flush();
@@ -72,12 +72,13 @@ describe.skipIf(!run)('N2–N6 — luồng Hạ vỏ → Bãi → Cấp vỏ ch�
 
     // 1. Giám định: ảnh dạng link (không cần nén), AV, không vệ sinh
     s = api.recordGateInFieldStep(s, {
-      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MSK', doorPhotoUrl: 'https://example.invalid/door.jpg', conditionClass: 'AV', stuffingClass: 'E',
+      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MSK', doorPhotoUrl: 'https://example.invalid/door.jpg', conditionClass: 'AV', stuffingClass: 'E', survey: { noDamagePhotos: [], wearTearPhotos: [], damages: [] }, // DEC-203
       cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
     });
     expect(queue).toHaveLength(1);
     s = await flush();
     const order = s.gateInOrders.find((o) => !o.containerNo && o.status !== 'GATE_IN_OK')!;
+    expect(order.survey).toEqual({ noDamagePhotos: [], wearTearPhotos: [], damages: [] }); // DEC-203: lưu + đọc lại từ database
     expect(order.masterDossierCode).toMatch(/^HV-/);
 
     // 2. Văn phòng xác nhận + TTS
@@ -101,7 +102,7 @@ describe.skipIf(!run)('N2–N6 — luồng Hạ vỏ → Bãi → Cấp vỏ ch�
     await expect(flush()).rejects.toThrow(/container/i);
 
     // 5. Cấp vỏ: lập lệnh + TTS trong cùng 1 lần bấm (id tạm → id thật) → xe nâng cấp → GATE OUT
-    s = api.createReleaseOrder(s, { bookingNo: `BK-${stamp}`, customerName: 'MAERSK', containerNo, truckNo: '15C-999.99', driverPhone: '0912000000', feeCatalogIds: [fee] });
+    s = api.createReleaseOrder(s, { bookingNo: `BK${stamp}`.slice(0, 11) /* DEC-199: 9–11 ký tự chữ / số */, customerName: 'MAERSK', containerNo, truckNo: '15C-999.99', driverPhone: '0912000000', feeCatalogIds: [fee] });
     const localOut = s.gateOutOrders.find((o) => o.containerNo === containerNo)!;
     s = api.confirmReleasePayment(s, { gateOutOrderId: localOut.id, paymentCategory: 'TTS', ttsNote: 'Thử luồng' });
     expect(queue).toHaveLength(2);
@@ -113,12 +114,14 @@ describe.skipIf(!run)('N2–N6 — luồng Hạ vỏ → Bãi → Cấp vỏ ch�
     expect(s.gateOutOrders.find((o) => o.id === out.id)!.status).toBe('GATE_OUT_OK');
     expect(s.containers.find((c) => c.id === cont.id)?.gateOutAt).toBeTruthy();
 
-    // N7: tải theo khoảng lọc — khoảng cũ không có cont đã OUT hôm nay, khoảng có hôm nay thì có
+    // N7: tải theo khoảng lọc — khoảng có hôm nay thì có.
+    // DEC-198 / sửa GOUT-002 (2026-10-30): lệnh đã OUT nhưng CHƯA trả chứng từ luôn được tải (kèm cont) dù ngoài khoảng —
+    // Văn phòng (Trả chứng từ) và Giám định (ảnh cấp vỏ) cần thấy; trả chứng từ xong thì theo khoảng như cũ.
     const me = (await loadStaffSession(client))!;
     const day = 86_400_000;
     const old = await loadWorkingState(client, me, { from: new Date(Date.now() - 200 * day).toISOString(), to: new Date(Date.now() - 150 * day).toISOString() });
-    expect(old.containers.some((c) => c.id === cont.id)).toBe(false);
-    expect(old.gateOutOrders.some((o) => o.id === out.id)).toBe(false);
+    expect(old.gateOutOrders.some((o) => o.id === out.id)).toBe(true);
+    expect(old.containers.some((c) => c.id === cont.id)).toBe(true);
     const recent = await loadWorkingState(client, me, { from: new Date(Date.now() - day).toISOString(), to: new Date(Date.now() + day).toISOString() });
     expect(recent.containers.some((c) => c.id === cont.id)).toBe(true);
     expect(recent.gateOutOrders.some((o) => o.id === out.id)).toBe(true);

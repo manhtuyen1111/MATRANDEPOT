@@ -305,6 +305,7 @@ function buildState(base: DepotState, raw: RawData): DepotState {
 
   const mapGateIn = (g: Row): GateInOrder => ({
     id: g.id, masterDossierCode: g.code, orderCode: g.code, gateInType: g.gate_in_type, doorPhotoUrl: photo(g.door_photo_path),
+    survey: g.survey || undefined, // DEC-203: đường dẫn ảnh kho — xem bằng PhotoGallery
     initialContainerHint: opt(g.initial_container_hint), conditionClass: g.condition_class, damageRemarks: g.damage_remarks || [],
     stuffingClass: opt(g.stuffing_class), cleaningItems: g.cleaning_items || [], manufactureYear: opt(g.manufacture_year),
     toInspectionRack: g.to_inspection_rack, rackInspectedBy: opt(g.rack_inspected_by_name), rackInspectedAt: opt(g.rack_inspected_at),
