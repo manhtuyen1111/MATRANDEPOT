@@ -82,9 +82,9 @@ Số cont, hãng, size / type (ISO), năm SX, hạng Maersk • tóm tắt 3 m�
 |---|---|---|
 | Container Search | Cont Type/Size `40DRY 45G1`, Production Year, Global Hunt Flag, Redelivery Loc, Marked For Sale, **Grade (sửa được — bút chì)**, Do not move/use, Sound, Ownership Type, Sub-sub Code, Container Warranty | khung Thông tin Maersk — khi có khóa API 1 |
 | Moves | Last Move / Last Location (API 1); **Current Move** chọn (VD `IN-EMPTY-IMPORT_RETURN`); Booking No. (gợi ý 9 số); Commodity; Brand; Seal Number (Full Containers) | Hạ vỏ = IMPORT_RETURN (IMP) ✅; booking / seal: chưa |
-| Damage Report | No Damage • Wear & Tear • **Floor Cleaning** • 3P & Handling **11 mặt** (D F L R T U B **E I N X**) | ✅ 3 phần + 11 mặt; Floor Cleaning: chờ |
+| Damage Report | No Damage • Wear & Tear • **Floor Cleaning** • 3P & Handling **11 mặt** (D F L R T U B **E I N X**) | ✅ 3 phần + 11 mặt; Floor Cleaning: không làm mục riêng |
 | No Damage / Wear & Tear Images | "You can add **20** more Images" | ✅ 20 |
-| Floor Cleaning | **Cleaning needs** (mặc định Not required), 1 ô ảnh, Damage type = Dirty (cố định), Description 0/255 | chờ danh sách lựa chọn |
+| Floor Cleaning | **Cleaning needs** (mặc định Not required), 1 ô ảnh, Damage type = Dirty (cố định), Description 0/255 | **Không làm mục riêng** (người dùng 2026-11-01): ảnh sàn bẩn ghi ở mặt Sàn (B), loại Bẩn; nhu cầu vệ sinh theo mục Vệ sinh MATRAN |
 | Chi tiết mặt D / F | lưới **4 cột** (hẹp – rộng – rộng – hẹp) × **4 hàng** (mỏng – cao – cao – mỏng) | gõ tay — chờ mã ô |
 | Chi tiết mặt L / R | lưới **10 cột × 4 hàng** | gõ tay — chờ mã ô |
 | Chi tiết mặt T / U / B | lưới **10 cột × 2 hàng** | gõ tay — chờ mã ô |

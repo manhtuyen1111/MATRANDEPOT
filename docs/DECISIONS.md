@@ -1539,7 +1539,7 @@ Quy ước trạng thái:
 - **Không** bắt Giám định nhập số container (Văn phòng nhập như cũ). **Không** lấy chữ ký lái xe trên điện thoại.
 - Kiểm tra ở service (`src/services/inspectionSurvey.ts`, gọi trong `recordGateInFieldStep`); database `record_gate_in_survey` (migration `20261120000001`).
 - **Bổ sung 2026-11-01 theo ảnh app eEIR thật (18 ảnh người dùng gửi):** KHÔNG HƯ tối đa **20** ảnh (gồm ảnh cửa); thêm 4 mặt **E Mặt ngoài • I Bên trong • N Không xác định • X Toàn bộ cont** — không có lưới, vị trí cố định `EXXX` / `IXXX` / `NXXX` / `XXXX`; chi tiết hư mặc định **Bẩn (Dirty)** + **Khách hàng**, mô tả nhiều dòng 0/255, 3 ô ảnh; Hạ vỏ = `IN-EMPTY-IMPORT_RETURN` (moveType IMP — Q-058 phần Hạ vỏ xong). Migration `20261121000001`.
-- **Chờ người dùng:** (1) mã ô lưới CEDEX (Cửa / Mặt trước 4×4, Vách trái / phải 10×4, Nóc / Khung đáy / Sàn 10×2) — thử chạm ô trên app Maersk; (2) mục **Floor Cleaning** (Cleaning needs) — danh sách lựa chọn + quan hệ với Vệ sinh MATRAN; (3) áp dụng cho **Nhập tàu** (moveType của tàu).
+- **Chờ người dùng:** (1) mã ô lưới CEDEX (Cửa / Mặt trước 4×4, Vách trái / phải 10×4, Nóc / Khung đáy / Sàn 10×2) — thử chạm ô trên app Maersk; (2) ~~Floor Cleaning~~ — **người dùng chốt 2026-11-01: KHÔNG làm mục riêng**; ảnh sàn bẩn trước vệ sinh ghi trong phần hư hỏng (mặt **Sàn (B)**, loại **Bẩn**) — Vệ sinh vẫn theo mục Vệ sinh MATRAN; (3) áp dụng cho **Nhập tàu** (moveType của tàu).
 - Chưa làm: Giám định bổ sung trên kệ (W-SURVEY → AV / DAMAGE) và Cấp vỏ (DEC-198) dùng cùng khối — bước sau.
 
 ### DEC-202 — Tồn vỏ & Đảo chuyển: giữ 2 cột TRẠNG THÁI (DAMAGE / AV) + TIẾN ĐỘ (1 tiến độ chờ thực tế, ngay cạnh Trạng thái)
