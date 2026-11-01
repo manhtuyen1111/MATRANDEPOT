@@ -2560,3 +2560,22 @@ describe('eEIR: cấp sale = OUT-EMPTY-POSITION, không cần booking', () => {
     expect(eeirInspectionDetails(sale).container).toMatchObject({ moveStatus: 2, moveType: 1 });
   });
 });
+
+// Người dùng 2026-11-01: SIZE cont do Giám định chọn (cont MSK, giám định eEIR) — Văn phòng không đổi
+describe('DEC-203: Văn phòng dùng size Giám định chọn', () => {
+  it('nhập size khác Giám định → chặn; đúng size → qua', () => {
+    const demo = createDemoState();
+    const s0 = recordGateInFieldStep(as(demo, 'usr-inspector'), {
+      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MSK', doorPhotoUrl: 'data:door', conditionClass: 'AV', stuffingClass: 'E',
+      cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019, survey: { size: '20', noDamagePhotos: [], wearTearPhotos: [], damages: [] },
+    });
+    const gi = s0.gateInOrders[0];
+    const verify = (size: string) =>
+      verifyGateInOfficeAndCreatePayment(as(s0, 'usr-office'), {
+        gateInId: gi.id, containerNo: 'MSKU7700123', size, type: 'DC', truckNo: '15C-111.11', driverPhone: '0912345678',
+        customerName: 'Khách hàng 01', shippingLineCode: 'MSK', orderDocNo: '', feeCatalogIds: [s0.feeCatalog[0].id], stuffingClass: 'E',
+      });
+    expect(() => verify('40')).toThrow("SIZE cont do Giám định chọn (20') — Văn phòng không đổi được.");
+    expect(verify('20').gateInOrders.find((g) => g.id === gi.id)!.size).toBe('20');
+  });
+});

@@ -337,6 +337,9 @@ export function verifyGateInOfficeAndCreatePayment(
 
   const contNo = normalizeContainerNo(input.containerNo);
   if (!state.containerSizes.includes(input.size)) throw new Error('SIZE không có trong Danh mục chung.');
+  // DEC-203 (người dùng 2026-11-01): cont MSK — SIZE do Giám định chọn khi giám định eEIR, Văn phòng không đổi
+  const surveySize = order.survey?.size;
+  if (surveySize && input.size !== surveySize) throw new Error(`SIZE cont do Giám định chọn (${surveySize}') — Văn phòng không đổi được.`);
   if (!state.containerTypes.includes(input.type)) throw new Error('TYPE không có trong Danh mục chung.');
   if (!state.partners.some((p) => p.isShippingLine && p.code === input.shippingLineCode)) {
     throw new Error('Vui lòng chọn HÃNG TÀU theo Danh mục chung.');
