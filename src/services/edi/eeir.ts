@@ -5,7 +5,7 @@
 //   Gate-out: Cấp vỏ theo booking (CV-)   → moveStatus 2 OUT, moveType 3 EXP (xác nhận từ PDF mẫu OUT-EMPTY-EXP)
 //             Cấp sale                   → chờ Maersk (Q-058)
 // Hư hỏng (mục 6.1.2): không hư → 0000 / tpIndicator 0; hao mòn → 0000 / tpIndicator 3; bên thứ 3 → mã CEDEX + loại hư +
-//   bên gây hư + 1–3 ảnh / chỗ hư (DEC-200 — chưa có màn nhập → cont DAMAGE báo thiếu).
+//   bên gây hư + 1–3 ảnh / chỗ hư — lấy từ Giám định Hạ vỏ (GateInOrder.survey — DEC-203).
 // Hạng (Grade) lấy từ API 1 (smokeTested); chưa gọi được API 1 → "N" (đúng hướng dẫn tài liệu).
 // Chưa đưa: Nhập tàu / Xuất tàu (Q-065). JSON là KHUNG theo bảng trường v4.3 — chỉnh khi có file inspectionDetails mẫu (Q-056).
 // ============================================================================
@@ -31,11 +31,14 @@ export const EEIR_SOURCE_LABELS: Record<EeirSource, string> = { HA_VO: 'Hạ v�
 export type EeirMoveType = 'POS' | 'IMP' | 'EXP';
 const MOVE_TYPE_CODE: Record<EeirMoveType, number> = { POS: 1, IMP: 2, EXP: 3 };
 
-// tpIndicator (6.1.2): 0 không hư • 2 bên thứ 3 • 3 hao mòn
+// tpIndicator (6.1.2): 0 không hư • 2 bên thứ 3 • 3 hao mòn. Mỗi mục có ảnh riêng (không hư / hao mòn 1–20; bên thứ 3 1–3)
 export interface EeirDamage {
   location: string;     // CEDEX 4 ký tự (bên thứ 3) — '0000' khi không hư / hao mòn
   tpIndicator: 0 | 2 | 3;
-  note: string;
+  damageType?: number;  // bên thứ 3 (DEC-203)
+  source?: number;      // damageCarrierCode
+  description?: string;
+  photos: string[];
 }
 
 export interface EeirInspection {
@@ -74,16 +77,16 @@ export const eeirMoveLabel = (i: Pick<EeirInspection, 'moveStatus' | 'moveType'>
 
 const inRange = (at: string | undefined, from: Date, to: Date) => Boolean(at) && new Date(at!) >= from && new Date(at!) < to;
 const truckOf = (no?: string) => (no || '').replace(/\s+/g, '').toUpperCase();
-const NO_DAMAGE: EeirDamage = { location: '0000', tpIndicator: 0, note: 'Không hư' };
 const GRADE_NOTE = 'Hạng (Grade) = N cho tới khi gọi được API 1 (smokeTested)';
 
+// photos = nhóm ảnh chung (không hư / hao mòn, 1–20); damaged = cont DAMAGE chưa ghi hư theo eEIR (DEC-203)
 function checks(problems: string[], containerNo: string, truck: string, photos: string[], damaged: boolean, noPhoto = 'Thiếu ảnh (eEIR bắt buộc ≥ 1 ảnh)') {
   if (!CONTAINER_NO_RE.test(containerNo)) problems.push('Số cont phải 4 chữ + 7 số');
   if (!truck) problems.push('Thiếu số xe');
   else if (truck.length > TRUCK_REG_MAX) problems.push(`Số xe quá ${TRUCK_REG_MAX} ký tự`);
   if (!photos.length) problems.push(noPhoto);
   else if (photos.length > EEIR_PHOTO_MAX) problems.push(`Quá ${EEIR_PHOTO_MAX} ảnh / phiếu`);
-  if (damaged) problems.push('Cont hư: chưa phân loại Hao mòn / Bên thứ 3 + mã CEDEX (DEC-200)');
+  if (damaged) problems.push('Cont hư chưa ghi tình trạng theo eEIR (Hao mòn / Bên thứ 3 + CEDEX — DEC-203)');
 }
 
 // Phiếu eEIR của các lượt cont Maersk DRY trong khoảng [from, to) — sắp theo giờ
@@ -95,17 +98,22 @@ export function eeirInspections(state: DepotState, range: { from: Date; to: Date
   for (const c of state.containers) {
     if (!c.masterDossierCode.startsWith('HV-') || !isEeirContainer(c) || !inRange(c.gateInAt, from, to)) continue;
     const gi = state.gateInOrders.find((g) => g.masterDossierCode === c.masterDossierCode);
-    const photos = gi?.doorPhotoUrl ? [gi.doorPhotoUrl] : [];
+    // DEC-203: nhóm ảnh chung = ảnh cửa + KHÔNG HƯ + HAO MÒN (có ảnh hao mòn → tpIndicator 3); mỗi chỗ hư bên thứ 3 1 mục riêng
+    const survey = gi?.survey;
+    const general = [gi?.doorPhotoUrl, ...(survey?.noDamagePhotos || []), ...(survey?.wearTearPhotos || [])].filter((x): x is string => Boolean(x));
+    const damages: EeirDamage[] = [
+      { location: '0000', tpIndicator: survey?.wearTearPhotos.length ? 3 : 0, photos: general },
+      ...(survey?.damages || []).map((d) => ({ location: d.location, tpIndicator: 2 as const, damageType: d.damageType, source: d.source, description: d.description, photos: d.photos })),
+    ];
     const truck = truckOf(gi?.truckNo || c.truckNo);
-    const damaged = c.conditionClass === 'DAMAGE';
     const problems: string[] = [];
     if (c.conditionClass === 'W-SURVEY') problems.push('Chưa giám định (W-SURVEY)');
-    checks(problems, c.containerNo, truck, photos, damaged);
+    checks(problems, c.containerNo, truck, general, c.conditionClass === 'DAMAGE' && !survey?.damages.length);
     out.push({
       key: `IN-${c.id}`, source: 'HA_VO', dossierCode: c.masterDossierCode, containerNo: c.containerNo, size: c.size, type: c.type,
       isoCode: containerIsoCode(state, c), moveStatus: 'IN', moveType: 'IMP', moveTypeConfirmed: false, at: c.gateInAt, bookingNo: '',
-      grade: 'N', productionYear: c.manufactureYear, truckRegNo: truck, driverPhone: gi?.driverPhone || c.driverPhone, photos,
-      damages: damaged ? [] : [NO_DAMAGE], problems, notes: ['moveType IMP chưa được Maersk xác nhận (Q-058)', GRADE_NOTE],
+      grade: 'N', productionYear: c.manufactureYear, truckRegNo: truck, driverPhone: gi?.driverPhone || c.driverPhone,
+      photos: damages.flatMap((d) => d.photos), damages, problems, notes: ['moveType IMP chưa được Maersk xác nhận (Q-058)', GRADE_NOTE],
     });
   }
 
@@ -126,7 +134,7 @@ export function eeirInspections(state: DepotState, range: { from: Date; to: Date
       key: `OUT-${o.id}`, source: sale ? 'CAP_SALE' : 'CAP_VO', dossierCode: o.gateOutCode, containerNo: o.containerNo, size: c.size, type: c.type,
       isoCode: containerIsoCode(state, c), moveStatus: 'OUT', moveType: sale ? '' : 'EXP', moveTypeConfirmed: !sale,
       at: o.releasePhotosAt || o.confirmedAt!, bookingNo: sale ? '' : o.bookingNo, grade: 'N', productionYear: c.manufactureYear,
-      truckRegNo: truck, driverPhone: o.driverPhone, photos, damages: damaged ? [] : [NO_DAMAGE], problems, notes: [GRADE_NOTE],
+      truckRegNo: truck, driverPhone: o.driverPhone, photos, damages: damaged ? [] : [{ location: '0000', tpIndicator: 0, photos }], problems, notes: [GRADE_NOTE],
     });
   }
   return out.sort((a, b) => a.at.localeCompare(b.at));
@@ -153,7 +161,9 @@ export const eeirImageName = (containerNo: string, n: number) => `${containerNo}
 
 // `inspectionDetails` gửi kèm ảnh (multipart/form-data) — theo bảng trường v4.3 mục 6.1
 export function eeirInspectionDetails(i: EeirInspection, cfg: EeirConfig = MAERSK_EEIR) {
-  const images = i.photos.map((_, n) => ({ imageName: eeirImageName(i.containerNo, n) }));
+  // Tên ảnh đánh số liên tục qua mọi mục (trùng tên file đính kèm)
+  let n = 0;
+  const imagesOf = i.damages.map((d) => d.photos.map(() => ({ imageName: eeirImageName(i.containerNo, n++) })));
   const local = eeirLocalDate(i.at);
   return {
     createdLocalDate: local,
@@ -175,7 +185,16 @@ export function eeirInspectionDetails(i: EeirInspection, cfg: EeirConfig = MAERS
       stSound: 'Y', // tài liệu: luôn Y
       damage: null, // tài liệu: luôn null
     },
-    damages: i.damages.map((d) => ({ damageLocation: d.location, tpIndicator: d.tpIndicator, isDamage: d.tpIndicator !== 0, images })),
+    // 6.1.2: bên thứ 3 thêm damageType, damageCarrierCode, panelIndicatorCode (chữ đầu vị trí), panelImageFilename (giá trị cố định)
+    damages: i.damages.map((d, k) => ({
+      damageLocation: d.location,
+      tpIndicator: d.tpIndicator,
+      isDamage: d.tpIndicator !== 0,
+      ...(d.tpIndicator === 2
+        ? { damageType: d.damageType, damageCarrierCode: d.source, panelIndicatorCode: d.location[0], panelImageFilename: 'D_sketch_DX24_1', ...(d.description ? { description: d.description } : {}) }
+        : {}),
+      images: imagesOf[k],
+    })),
     truckers: { truckerRegno: i.truckRegNo, ...(i.driverPhone ? { truckerContactNo: i.driverPhone } : {}) },
     emails: cfg.emails.map((email) => ({ email, category: 'Shop' })),
   };

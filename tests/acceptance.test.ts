@@ -2382,3 +2382,67 @@ describe('DEC-202: Tồn vỏ 2 cột Trạng thái + Tiến độ', () => {
     expect(yardProgress(demo, contOf(waitLift))).toBe('CHO_XE_NANG');
   });
 });
+
+// DEC-203: Giám định Hạ vỏ cont MSK — tình trạng / hư hỏng theo eEIR (Không hư / Hao mòn / Hư bên thứ 3), AV / DAMAGE tự suy
+import { surveyCondition, surveyRemarks, damageItemProblem, NO_DAMAGE_PHOTO_MAX } from '../src/services/inspectionSurvey';
+import type { InspectionSurvey } from '../src/types/depot';
+import { addPartnerCatalogItem } from '../src/services/depotOperations';
+
+describe('DEC-203: tình trạng eEIR khi Giám định Hạ vỏ cont MSK', () => {
+  const demo = createDemoState();
+  const dmg = { id: 'd1', side: 'L' as const, location: 'lt89', damageType: 5, source: 2, description: 'Móp vách', photos: ['data:a'] };
+  const field = (survey: InspectionSurvey | undefined, conditionClass: 'AV' | 'DAMAGE' = 'AV', line = 'MSK') =>
+    recordGateInFieldStep(as(demo, 'usr-inspector'), {
+      gateInType: 'CUSTOMER_RETURN', shippingLineCode: line, doorPhotoUrl: 'data:door', conditionClass, stuffingClass: 'E',
+      cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019, survey,
+    });
+
+  it('không hư / hao mòn → AV; có hư bên thứ 3 → DAMAGE, remark = vị trí + loại hư', () => {
+    const av = field({ noDamagePhotos: ['data:1'], wearTearPhotos: ['data:2'], damages: [] });
+    expect(av.gateInOrders[0].survey?.wearTearPhotos).toEqual(['data:2']);
+    const s = field({ noDamagePhotos: [], wearTearPhotos: [], damages: [dmg] }, 'DAMAGE');
+    const o = s.gateInOrders[0];
+    expect(o.conditionClass).toBe('DAMAGE');
+    expect(o.survey?.damages[0].location).toBe('LT89');
+    expect(o.damageRemarks).toEqual(['LT89 Móp']);
+    expect(surveyCondition(o.survey!)).toBe('DAMAGE');
+    expect(surveyRemarks(o.survey!)).toEqual(['LT89 Móp']);
+  });
+
+  it('từ chối: thiếu phần eEIR, trạng thái sai so với hư hỏng, CEDEX sai, thiếu ảnh chỗ hư, quá ảnh', () => {
+    expect(() => field(undefined)).toThrow(/TÌNH TRẠNG theo eEIR/);
+    expect(() => field({ noDamagePhotos: [], wearTearPhotos: [], damages: [dmg] }, 'AV')).toThrow(/phải là DAMAGE/);
+    expect(() => field({ noDamagePhotos: [], wearTearPhotos: [], damages: [] }, 'DAMAGE')).toThrow(/phải là AV/);
+    expect(() => field({ noDamagePhotos: [], wearTearPhotos: [], damages: [{ ...dmg, location: 'DX2N' }] }, 'DAMAGE')).toThrow(/bắt đầu bằng L/);
+    expect(() => field({ noDamagePhotos: [], wearTearPhotos: [], damages: [{ ...dmg, photos: [] }] }, 'DAMAGE')).toThrow(/ít nhất 1 ảnh/);
+    expect(() => field({ noDamagePhotos: [], wearTearPhotos: [], damages: [{ ...dmg, photos: ['a', 'b', 'c', 'd'] }] }, 'DAMAGE')).toThrow(/Tối đa 3 ảnh/);
+    expect(() => field({ noDamagePhotos: Array(NO_DAMAGE_PHOTO_MAX).fill('x'), wearTearPhotos: [], damages: [] })).toThrow(/tối đa 10 ảnh/);
+    expect(damageItemProblem({ ...dmg, damageType: 15 })).toBe('Chọn loại hư.');
+    expect(damageItemProblem({ ...dmg, source: 9 })).toBe('Chọn bên gây hư.');
+  });
+
+  it('hãng khác và W-SURVEY giữ luồng cũ (không cần phần eEIR)', () => {
+    let s = as(demo, 'usr-admin');
+    s = addPartnerCatalogItem(s, { code: 'ONE', name: 'ONE', partnerType: 'SHIPPING_LINE', allowTts: true });
+    const one = recordGateInFieldStep(as(s, 'usr-inspector'), {
+      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'ONE', doorPhotoUrl: 'data:door', conditionClass: 'DAMAGE', damageRemarks: ['Thủng'], stuffingClass: 'E',
+      cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
+    });
+    expect(one.gateInOrders[0].survey).toBeUndefined();
+    expect(one.gateInOrders[0].damageRemarks).toEqual(['Thủng']);
+    const rack = recordGateInFieldStep(as(demo, 'usr-inspector'), { gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MSK', doorPhotoUrl: 'data:door', conditionClass: 'W-SURVEY', cleaningItems: ['KHÔNG VỆ SINH'] });
+    expect(rack.gateInOrders[0].survey).toBeUndefined();
+  });
+
+  it('phiếu eEIR: nhóm ảnh chung (cửa + không hư + hao mòn → tpIndicator 3) + mỗi chỗ hư bên thứ 3 đủ trường tài liệu', () => {
+    const insp = eeirInspections(demo, { from: new Date('2000-01-01'), to: new Date('2100-01-01') }).find((i) => i.source === 'HA_VO' && i.damages.some((d) => d.tpIndicator === 2))!;
+    expect(insp).toBeTruthy();
+    expect(insp.problems).not.toContain('Cont hư chưa ghi tình trạng theo eEIR (Hao mòn / Bên thứ 3 + CEDEX — DEC-203)');
+    const j = eeirInspectionDetails(insp);
+    const third = j.damages.find((d) => d.tpIndicator === 2)!;
+    expect(third).toMatchObject({ damageLocation: 'LB34', isDamage: true, damageType: 5, damageCarrierCode: 2, panelIndicatorCode: 'L', panelImageFilename: 'D_sketch_DX24_1' });
+    expect(j.damages[0]).toMatchObject({ damageLocation: '0000', tpIndicator: 0, isDamage: false });
+    const names = j.damages.flatMap((d) => d.images.map((x) => x.imageName));
+    expect(new Set(names).size).toBe(names.length); // tên ảnh không trùng
+  });
+});

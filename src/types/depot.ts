@@ -142,6 +142,57 @@ export const CLEANING_ITEM_OPTIONS: FieldCleaningItem[] = [
   'ML - BÓC TEM',
 ];
 
+// DEC-203: TÌNH TRẠNG / HƯ HỎNG theo eEIR Maersk (User Guide v3.3 trang 16–17, API v4.3 mục 6.1.2) — Giám định cont MSK
+export type EeirDamageSide = 'D' | 'F' | 'L' | 'R' | 'T' | 'U' | 'B';
+export const EEIR_DAMAGE_SIDES: { code: EeirDamageSide; label: string }[] = [
+  { code: 'D', label: 'Cửa (D)' },
+  { code: 'F', label: 'Mặt trước (F)' },
+  { code: 'L', label: 'Vách trái (L)' },
+  { code: 'R', label: 'Vách phải (R)' },
+  { code: 'T', label: 'Nóc (T)' },
+  { code: 'U', label: 'Khung đáy (U)' },
+  { code: 'B', label: 'Sàn (B)' },
+];
+// damageType — mã 15 (Additional Damages) chỉ dùng cho API 3 nên không cho chọn
+export const EEIR_DAMAGE_TYPES: { code: number; label: string }[] = [
+  { code: 1, label: 'Bẩn (Dirty)' },
+  { code: 2, label: 'Gãy / toác (Broken/Split)' },
+  { code: 3, label: 'Rách / cắt (Cut)' },
+  { code: 4, label: 'Gỉ sét (Corroded/Rusty)' },
+  { code: 5, label: 'Móp (Dented)' },
+  { code: 6, label: 'Mất (Missing/Lost)' },
+  { code: 7, label: 'Lỏng (Loose)' },
+  { code: 8, label: 'Hao mòn (Wear and Tear)' },
+  { code: 9, label: 'Vết dầu (Oil Stains)' },
+  { code: 10, label: 'Nhãn / ký hiệu (Markings/Labels)' },
+  { code: 11, label: 'Nứt (Cracked)' },
+  { code: 12, label: 'Rác / hư (Debris/Damage)' },
+  { code: 13, label: 'Cong (Bowed)' },
+  { code: 14, label: 'Bong tách (Delaminated)' },
+  { code: 16, label: 'Khác (Others)' },
+];
+// damageCarrierCode — bên gây hư
+export const EEIR_DAMAGE_SOURCES: { code: number; label: string }[] = [
+  { code: 1, label: 'Lái xe (Trucker)' },
+  { code: 2, label: 'Khách hàng (Customer)' },
+  { code: 3, label: 'Xếp dỡ (Handling)' },
+  { code: 4, label: 'Không rõ (Unknown)' },
+];
+export interface InspectionDamageItem {
+  id: string;
+  side: EeirDamageSide;
+  location: string;      // CEDEX 4 ký tự, chữ đầu = mặt (VD LT89, DB2N)
+  damageType: number;
+  source: number;
+  description?: string;
+  photos: string[];      // 1–3 ảnh / chỗ hư
+}
+export interface InspectionSurvey {
+  noDamagePhotos: string[];  // KHÔNG HƯ — ảnh thêm (ngoài ảnh cửa cont)
+  wearTearPhotos: string[];  // HAO MÒN
+  damages: InspectionDamageItem[]; // HƯ DO BÊN THỨ 3 / XẾP DỠ
+}
+
 export const DAMAGE_QUICK_SUGGESTIONS: string[] = [
   'Móp vách',
   'Thủng vách/nóc',
@@ -523,6 +574,7 @@ export interface GateInOrder {
   initialContainerHint?: string;
   conditionClass: FieldConditionClass; // DAMAGE | AV | W-SURVEY (DEC-147)
   damageRemarks: string[];             // Remark nhanh hư hỏng
+  survey?: InspectionSurvey;           // DEC-203: tình trạng / hư hỏng theo eEIR (cont MSK)
   stuffingClass?: FieldStuffingClass;  // M | K | E — trống khi W-SURVEY
   cleaningItems: FieldCleaningItem[];  // KHÔNG VỆ SINH / WP / WW / CC / RM / ML
   manufactureYear?: number;            // AGE: 2001, 2002... — trống khi W-SURVEY
