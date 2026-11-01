@@ -432,6 +432,10 @@ Gửi `eEIRSupport@maersk.com` / ticket developer portal, nêu mã depot 3 ký t
 - Cấp vỏ thực tế chụp **2 ảnh (cửa + bên trong)** → gợi ý hướng dẫn Giám định chụp ảnh cấp vỏ (DEC-198 cho 1–30 ảnh).
 - **Gắn PDF vào hồ sơ rất dễ:** lọc thư `from:eeirappnoreply@maersk.com has:attachment` → tiêu đề = số cont, tên file = EIR Reference No (= `inspectionId` khi gửi qua API) + giờ kiểm tra → khớp đúng lượt (mục 16). Q-066 xong phần mẫu; còn: dung lượng file PDF, và link "CLICK HERE" có tải được không cần đăng nhập không.
 
+## 20. Giám định theo app eEIR (DEC-203 — 2026-11-01)
+
+Đã làm Giám định Hạ vỏ cont MSK theo **eEIR v3.3 User Guide**: thiết kế + đối chiếu từng màn ở `docs/design/EEIR_GIAM_DINH.md`. Phiếu eEIR chạy thử (`eeir.ts`) lấy `GateInOrder.survey`: nhóm ảnh chung (ảnh cửa + không hư + hao mòn → tpIndicator 0 / 3) + mỗi chỗ hư bên thứ 3 (tpIndicator 2, damageType, damageCarrierCode, panelIndicatorCode, panelImageFilename). Còn: sơ đồ lưới CEDEX (chờ ảnh 7 mặt từ app Maersk), Giám định trên kệ + Cấp vỏ dùng cùng khối.
+
 ## 19. eEIR v4.3 — đọc lại đầy đủ (người dùng gửi lại 2026-10-30) + bản chạy thử
 
 **Sửa so với tóm tắt cũ (mục 12):**

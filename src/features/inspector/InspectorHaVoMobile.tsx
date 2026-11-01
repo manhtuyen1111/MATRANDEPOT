@@ -27,6 +27,8 @@ import { pendingRackInspections } from '../../services/depotOperations';
 import { peekNextCode } from '../../services/codes';
 import { formatDateTime } from '../../services/datetime';
 import { priorityShippingLine, stuffingOptions } from '../../services/stuffing';
+import { damageSourceLabel, damageTypeLabel, EMPTY_SURVEY, usesInspectionSurvey } from '../../services/inspectionSurvey';
+import type { InspectionSurvey } from '../../types/depot';
 
 interface Props {
   state: DepotState;
@@ -81,6 +83,9 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
   const lineStuffing = stuffingOptions(state, lineCode);
   const [cleaningItems, setCleaningItems] = useState<FieldCleaningItem[]>([]);
   const [manufactureYear, setManufactureYear] = useState<string>('');
+  // DEC-203: hãng MSK — tình trạng / hư hỏng theo eEIR Maersk
+  const [survey, setSurvey] = useState<InspectionSurvey>(EMPTY_SURVEY);
+  const surveyMode = usesInspectionSurvey(lineCode);
   const isDeferred = conditionClass === 'W-SURVEY'; // DEC-147: W-SURVEY (LÊN KỆ)
   // DEC-147: tab Chờ giám định trên kệ
   const [tab, setTab] = useState<'HA_VO' | 'TREN_KE'>('HA_VO');
@@ -153,6 +158,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     setLineCode(priorityShippingLine(state)); // DEC-166: hồ sơ mới chọn sẵn hãng ƯU TIÊN
     setCleaningItems([]);
     setManufactureYear('');
+    setSurvey(EMPTY_SURVEY);
     setIsReadyToConfirmStep(false);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -266,6 +272,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
         stuffingClass: isDeferred || lineStuffing.length === 0 ? undefined : stuffingClass || undefined,
         cleaningItems,
         manufactureYear: isDeferred ? undefined : parsedYear,
+        survey: surveyMode && !isDeferred ? survey : undefined, // DEC-203
       });
 
       onUpdateState(next);
@@ -779,7 +786,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   <select
                     data-testid="inspector-line"
                     value={lineCode}
-                    onChange={(e) => { setLineCode(e.target.value); setStuffingClass(null); }}
+                    onChange={(e) => { setLineCode(e.target.value); setStuffingClass(null); setConditionClass(null); setSurvey(EMPTY_SURVEY); }}
                     className="w-full rounded-lg border border-line-strong bg-white px-3 py-2.5 text-sm font-bold text-ink"
                   >
                     <option value="">-- Chọn hãng tàu --</option>
@@ -792,6 +799,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   progressive
                   allowDeferred
                   stuffingOptions={lineStuffing}
+                  survey={surveyMode ? { value: survey, onChange: setSurvey } : undefined}
                   value={{
                     condition: conditionClass || '',
                     damage: selectedDamageRemarks,
@@ -876,6 +884,20 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                         {cleaningItems.join(', ')}
                       </span>
                     </div>
+                    {/* DEC-203: tóm tắt tình trạng eEIR (cont MSK) */}
+                    {surveyMode && !isDeferred && (
+                      <div className="col-span-2 space-y-1 rounded bg-white p-2 border border-line" data-testid="eeir-summary">
+                        <span className="text-[10px] text-ink-muted block">TÌNH TRẠNG eEIR</span>
+                        <span className="block font-semibold text-ink">
+                          Không hư {1 + survey.noDamagePhotos.length} ảnh • Hao mòn {survey.wearTearPhotos.length} ảnh • Hư bên thứ 3 {survey.damages.length} chỗ
+                        </span>
+                        {survey.damages.map((d) => (
+                          <span key={d.id} className="block text-[11px] text-danger-fg">
+                            <span className="font-mono font-bold">{d.location}</span> {damageTypeLabel(d.damageType)} • {damageSourceLabel(d.source)} • {d.photos.length} ảnh
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {isDeferred && (
                       <div className="col-span-2 rounded border border-amber-500 bg-amber-50 p-2 text-center text-sm font-black text-amber-800">
                         HẠ KỆ GIÁM ĐỊNH

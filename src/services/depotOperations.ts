@@ -20,6 +20,7 @@ import {
   ServiceWorkOrder,
   RELEASE_PURPOSE_LABELS,
   ReleasePurpose,
+  InspectionSurvey,
   STAFF_GENDER_LABELS,
   StaffGender,
   SWAP_REASON_LABELS,
@@ -32,6 +33,7 @@ import { markVesselImportPlaced } from './vessel';
 import { resolveStuffing } from './stuffing';
 import { ASSIGNABLE_ROLES } from './permissions';
 import { isMaerskBooking, isMaerskLine, MAERSK_BOOKING_ERROR } from './edi/maersk';
+import { surveyCondition, surveyRemarks, usesInspectionSurvey, validateSurvey } from './inspectionSurvey';
 import {
   appendAudit,
   assertPermission,
@@ -143,6 +145,7 @@ export function recordGateInFieldStep(
     stuffingClass?: FieldStuffingClass;
     cleaningItems: (FieldCleaningItem | string)[];
     manufactureYear?: number;
+    survey?: InspectionSurvey; // DEC-203: hãng MSK — tình trạng / hư hỏng theo eEIR
   }
 ): DepotState {
   assertPermission(
@@ -164,8 +167,13 @@ export function recordGateInFieldStep(
     year = assertManufactureYear(input.manufactureYear);
   }
 
+  // DEC-203: cont Maersk ghi tình trạng theo eEIR — AV / DAMAGE tự suy (có hư bên thứ 3 → DAMAGE), remark hư lấy từ từng chỗ hư
+  const survey = !deferred && usesInspectionSurvey(lineCode) ? validateSurvey(input.survey) : undefined;
+  if (survey && input.conditionClass !== surveyCondition(survey)) {
+    throw new Error(`Trạng thái phải là ${surveyCondition(survey)} theo tình trạng eEIR (có hư do bên thứ 3 → DAMAGE, còn lại → AV).`);
+  }
   const normalizedCleaning = normalizeCleaningItems(input.cleaningItems);
-  const remarks = input.conditionClass === 'DAMAGE' ? input.damageRemarks || [] : [];
+  const remarks = survey ? surveyRemarks(survey) : input.conditionClass === 'DAMAGE' ? input.damageRemarks || [] : [];
   // Mã hồ sơ do hệ thống cấp, không nhận mã sinh ở giao diện (CR-07)
   const allocated = allocateCode(state, 'HV');
   const code = allocated.code;
@@ -180,6 +188,7 @@ export function recordGateInFieldStep(
     initialContainerHint: hint && !/^(HS|GD|IN)-/.test(hint) ? hint : undefined,
     conditionClass: input.conditionClass,
     damageRemarks: remarks,
+    ...(survey ? { survey } : {}),
     shippingLineCode: lineCode,
     stuffingClass: stuffing,
     cleaningItems: normalizedCleaning,
@@ -201,7 +210,9 @@ export function recordGateInFieldStep(
       ? `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: W-SURVEY (LÊN KỆ), Vệ sinh [${normalizedCleaning.join(', ')}] — HẠ KỆ GIÁM ĐỊNH`
       : `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: Trạng thái ${input.conditionClass}${
           remarks.length ? ` (${remarks.join(', ')})` : ''
-        }, Hãng ${lineCode}, Đóng hàng ${stuffing || '-'}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}`,
+        }, Hãng ${lineCode}, Đóng hàng ${stuffing || '-'}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}${
+          survey ? ` • eEIR: ${1 + survey.noDamagePhotos.length} ảnh không hư, ${survey.wearTearPhotos.length} ảnh hao mòn, ${survey.damages.length} chỗ hư bên thứ 3` : ''
+        }`,
     code
   );
 }

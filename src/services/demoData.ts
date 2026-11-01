@@ -115,6 +115,14 @@ function gateIn(state: DepotState, c: GateInCase): DepotState {
     stuffingClass: c.rack ? undefined : 'E',
     cleaningItems: c.cleaning || ['KHÔNG VỆ SINH'],
     manufactureYear: c.rack ? undefined : 2019,
+    // DEC-203: hãng MSK — tình trạng theo eEIR (cont hư: 1 chỗ hư bên thứ 3 ở vách trái, mô tả = remark mẫu)
+    survey: c.rack
+      ? undefined
+      : {
+          noDamagePhotos: [],
+          wearTearPhotos: [],
+          damages: c.damage ? [{ id: `dmg-${c.containerNo}`, side: 'L', location: 'LB34', damageType: 5, source: 2, description: c.damage.join(', '), photos: [PHOTO] }] : [],
+        },
   });
   const order = s.gateInOrders[0];
   s = verifyGateInOfficeAndCreatePayment(as(s, 'usr-office'), {

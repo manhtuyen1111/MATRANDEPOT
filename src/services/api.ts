@@ -13,7 +13,7 @@ import * as fb from './feedback';
 import * as route from './driverRoute';
 import * as rp from './releasePhoto';
 import type { DepotState } from './depotStore';
-import { enqueue, isRemoteMode, mapId, realId, requestId, rpc, uploadDoorPhoto, uploadReleasePhotos, uploadRepairPhotos, type RemoteOp } from './remote/sync';
+import { enqueue, isRemoteMode, mapId, realId, requestId, rpc, uploadDoorPhoto, uploadReleasePhotos, uploadRepairPhotos, uploadSurveyPhotos, type RemoteOp } from './remote/sync';
 import { callEdgeFunction } from './remote/edge';
 
 function wrap<A extends unknown[], R>(fn: (...args: A) => R, remote: (args: A, result: R) => RemoteOp): (...args: A) => R {
@@ -37,11 +37,15 @@ const containerNoOf = (s: DepotState, id: string) => s.containers.find((c) => c.
 // HẠ VỎ — Giám định / Văn phòng / thanh toán
 // ---------------------------------------------------------------------------
 export const recordGateInFieldStep = wrap(ops.recordGateInFieldStep, ([, i], next) => async (c) => {
-  const path = await uploadDoorPhoto(c, i.doorPhotoUrl, next.gateInOrders[0]?.masterDossierCode || 'HV');
-  await rpc(c, 'record_gate_in_field_step', {
+  const created = next.gateInOrders[0];
+  const label = created?.masterDossierCode || 'HV';
+  const path = await uploadDoorPhoto(c, i.doorPhotoUrl, label);
+  const res = await rpc<{ id: string }>(c, 'record_gate_in_field_step', {
     p_request_id: requestId(), p_door_photo_path: path, p_shipping_line_code: i.shippingLineCode, p_condition: i.conditionClass, p_cleaning_items: i.cleaningItems,
-    p_damage_remarks: i.damageRemarks || [], p_stuffing: nul(i.stuffingClass), p_manufacture_year: nul(i.manufactureYear), p_container_hint: nul(i.initialContainerHint),
+    p_damage_remarks: created?.damageRemarks || [], p_stuffing: nul(i.stuffingClass), p_manufacture_year: nul(i.manufactureYear), p_container_hint: nul(i.initialContainerHint),
   });
+  // DEC-203: cont MSK — tải ảnh tình trạng eEIR lên kho rồi ghi (hàm gốc đã kiểm tra + chuẩn hóa vào created.survey)
+  if (created?.survey) await rpc(c, 'record_gate_in_survey', { p_gate_in_id: res.id, p_survey: await uploadSurveyPhotos(c, created.survey, label) });
 });
 export const deleteGateInFieldRecord = wrap(ops.deleteGateInFieldRecord, ([, i]) => async (c) => {
   await rpc(c, 'delete_gate_in_field_record', { p_gate_in_id: i.gateInId });

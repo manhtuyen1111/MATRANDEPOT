@@ -1527,6 +1527,19 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-203 — Giám định Hạ vỏ cont MSK: tình trạng / hư hỏng theo eEIR Maersk
+
+- Trạng thái: CONFIRMED (2026-11-01, người dùng — theo **eEIR v3.3 User Guide** + API v4.3). Thiết kế: `docs/design/EEIR_GIAM_DINH.md`.
+- **Áp dụng:** Giám định → Hạ vỏ, hãng **MSK**, không chọn W-SURVEY. (Giám định không nhập số cont → chưa biết size / type; lọc cont DRY khi dựng phiếu eEIR — DEC-201.) Hãng khác giữ form cũ.
+- **Mục 1 TRẠNG THÁI thay bằng 3 phần như app Maersk:**
+  1. **KHÔNG HƯ** — ảnh, tổng tối đa **10** (tính cả ảnh cửa cont bắt buộc — DEC-182);
+  2. **HAO MÒN (Wear & Tear)** — tối đa **20** ảnh;
+  3. **HƯ DO BÊN THỨ 3 / XẾP DỠ** — 7 mặt **D Cửa • F Mặt trước • L Vách trái • R Vách phải • T Nóc • U Khung đáy • B Sàn**; mỗi chỗ hư: **vị trí CEDEX 4 ký tự** (chữ đầu = mặt, tự điền; 3 ký tự sau gõ tay — sơ đồ lưới làm sau khi người dùng gửi ảnh sơ đồ 7 mặt), **loại hư** (16 mã API v4.3: 1 Bẩn … 16 Khác, bỏ 15), **bên gây hư** (1 Lái xe, 2 Khách hàng, 3 Xếp dỡ, 4 Không rõ), mô tả (tùy chọn), **1–3 ảnh**.
+- **AV / DAMAGE tự suy:** có ≥ 1 chỗ hư bên thứ 3 → **DAMAGE** (đi Báo giá như cũ; remark hư = "vị trí + loại hư" từng chỗ); chỉ Không hư / Hao mòn → **AV**.
+- **Không** bắt Giám định nhập số container (Văn phòng nhập như cũ). **Không** lấy chữ ký lái xe trên điện thoại.
+- Kiểm tra ở service (`src/services/inspectionSurvey.ts`, gọi trong `recordGateInFieldStep`); database `record_gate_in_survey` (migration `20261120000001`).
+- Chưa làm: Giám định bổ sung trên kệ (W-SURVEY → AV / DAMAGE) và Cấp vỏ (DEC-198) dùng cùng khối — bước sau.
+
 ### DEC-202 — Tồn vỏ & Đảo chuyển: giữ 2 cột TRẠNG THÁI (DAMAGE / AV) + TIẾN ĐỘ (1 tiến độ chờ thực tế, ngay cạnh Trạng thái)
 
 - Trạng thái: CONFIRMED (2026-10-31, người dùng). **Thay vị trí cột TIẾN ĐỘ của DEC-129** và thay logic ghép nhiều nhãn tiến độ cũ.
@@ -2052,6 +2065,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-202 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-203 đã xác nhận (cập nhật 2026-10-29).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

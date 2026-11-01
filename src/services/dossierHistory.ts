@@ -11,6 +11,7 @@ import { formatDateTime } from './datetime';
 import { findVesselItemByCode, vesselListProgress } from './vessel';
 import { LOCATION_ACTION_LABELS } from './reports';
 import { hasReleasePhoto, needsReleasePhoto } from './releasePhoto';
+import { damageSourceLabel, damageTypeLabel } from './inspectionSurvey';
 
 export type HistoryAction = 'TẠO MỚI' | 'SỬA' | 'XÓA';
 
@@ -188,6 +189,25 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
       photoAlt: 'Ảnh cửa container',
       showPhotos: true,
     });
+    // DEC-203: tình trạng eEIR (cont MSK) — 1 dòng riêng, ảnh bấm XEM ẢNH (DEC-178; ảnh cửa vẫn hiện luôn ở dòng trên — DEC-182)
+    if (gateIn.survey) {
+      const sv = gateIn.survey;
+      add({
+        at: gateIn.fieldRecordedAt,
+        operation: 'Giám định — Tình trạng eEIR',
+        action: 'TẠO MỚI',
+        detail: join([
+          `Không hư ${1 + sv.noDamagePhotos.length} ảnh`,
+          `Hao mòn ${sv.wearTearPhotos.length} ảnh`,
+          sv.damages.length
+            ? `Hư bên thứ 3: ${sv.damages.map((d) => `${d.location} ${damageTypeLabel(d.damageType).split(' (')[0]} (${damageSourceLabel(d.source).split(' (')[0]}${d.description ? ` — ${d.description}` : ''})`).join('; ')}`
+            : 'Không có hư bên thứ 3',
+        ]),
+        staff: gateIn.fieldStaffName,
+        photos: [...sv.noDamagePhotos, ...sv.wearTearPhotos, ...sv.damages.flatMap((d) => d.photos)],
+        photoAlt: 'Ảnh tình trạng eEIR',
+      });
+    }
     if (gateIn.toInspectionRack) {
       if (gateIn.rackInspectedAt) {
         add({

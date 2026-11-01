@@ -1266,3 +1266,32 @@ describe('DEC-197: Danh mục chung → EDI hãng tàu (chạy thử)', () => {
   });
 });
 
+
+// DEC-203: Giám định Hạ vỏ cont MSK — khối tình trạng eEIR (3 phần như app Maersk, 7 mặt cont)
+import { EeirSurveyFields } from '../src/components/EeirSurveyFields';
+import { InspectionFields, EMPTY_INSPECTION } from '../src/components/InspectionFields';
+
+describe('DEC-203: tình trạng eEIR ở Giám định', () => {
+  it('3 phần Không hư / Hao mòn / Hư bên thứ 3, đủ 7 mặt, trạng thái tự tính', () => {
+    const html = renderToString(
+      <EeirSurveyFields
+        value={{ noDamagePhotos: ['data:a'], wearTearPhotos: [], damages: [{ id: 'd1', side: 'L', location: 'LT89', damageType: 5, source: 2, photos: ['data:b'] }] }}
+        onChange={noop}
+      />
+    ).replace(/<!-- -->/g, '');
+    for (const id of ['eeir-no-damage', 'eeir-wear-tear', 'eeir-third-party']) expect(html).toContain(`data-testid="${id}"`);
+    for (const side of ['Cửa (D)', 'Mặt trước (F)', 'Vách trái (L)', 'Vách phải (R)', 'Nóc (T)', 'Khung đáy (U)', 'Sàn (B)']) expect(html).toContain(side);
+    expect(html).toContain('2/10 ảnh'); // ảnh cửa + 1 ảnh không hư
+    expect(html).toMatch(/data-testid="eeir-condition"[^>]*>DAMAGE</);
+    expect(html.match(/data-testid="eeir-damage-item"/g)?.length).toBe(1);
+  });
+
+  it('form Giám định: hãng MSK thay mục 1 bằng nút GIÁM ĐỊNH THEO eEIR + W-SURVEY', () => {
+    const html = renderToString(
+      <InspectionFields value={EMPTY_INSPECTION} onChange={noop} progressive allowDeferred stuffingOptions={['M', 'K', 'E']} survey={{ value: { noDamagePhotos: [], wearTearPhotos: [], damages: [] }, onChange: noop }} />
+    );
+    expect(html).toContain('data-testid="condition-eeir"');
+    expect(html).toContain('data-testid="condition-deferred"');
+    expect(html).not.toContain('>AV<');
+  });
+});
