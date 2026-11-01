@@ -2446,3 +2446,15 @@ describe('DEC-203: tình trạng eEIR khi Giám định Hạ vỏ cont MSK', () 
     expect(new Set(names).size).toBe(names.length); // tên ảnh không trùng
   });
 });
+
+describe('DEC-203: hồ sơ container có dòng Tình trạng eEIR', () => {
+  it('dòng riêng, đủ chi tiết hư bên thứ 3 + ảnh (không tự hiện — bấm XEM ẢNH)', () => {
+    const demo = createDemoState();
+    const gi = demo.gateInOrders.find((g) => g.survey?.damages.length)!;
+    const row = dossierHistory(demo, resolveDossier(demo, gi.masterDossierCode)!).rows.find((r) => r.operation === 'Giám định — Tình trạng eEIR')!;
+    expect(row.dept).toBe('Giám định');
+    expect(row.detail).toContain('LB34 Móp (Khách hàng — ');
+    expect(row.photos).toEqual(gi.survey!.damages.flatMap((d) => d.photos));
+    expect(row.showPhotos).toBeFalsy();
+  });
+});
