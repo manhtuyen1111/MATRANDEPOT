@@ -101,7 +101,7 @@ describe.skipIf(!run)('DEC-176 — ảnh hoàn thành sửa chữa chạy thật
   it('ảnh cửa Gate in vào thư mục ANH-GATE-IN/năm/tháng/ngày', async () => {
     let s = await flush();
     s = api.recordGateInFieldStep(s, {
-      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MSK', doorPhotoUrl: jpeg(80_000), conditionClass: 'AV', stuffingClass: 'E', survey: { noDamagePhotos: [], wearTearPhotos: [], damages: [] }, // DEC-203
+      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MSK', doorPhotoUrl: jpeg(80_000), conditionClass: 'AV', stuffingClass: 'E', survey: { size: '40', noDamagePhotos: [], wearTearPhotos: [], damages: [] }, // DEC-203
       cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
     });
     await flush();

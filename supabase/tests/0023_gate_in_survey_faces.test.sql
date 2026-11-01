@@ -16,16 +16,16 @@ create temp table t as select
 grant select on t to authenticated;
 
 select lives_ok($$ select public.record_gate_in_survey((select av from t),
-  jsonb_build_object('noDamagePhotos', (select jsonb_agg('ANH-GATE-IN/' || g || '.jpg') from generate_series(1, 19) g), 'wearTearPhotos', '[]'::jsonb, 'damages', '[]'::jsonb)) $$,
+  jsonb_build_object('size', '40', 'noDamagePhotos', (select jsonb_agg('ANH-GATE-IN/' || g || '.jpg') from generate_series(1, 19) g), 'wearTearPhotos', '[]'::jsonb, 'damages', '[]'::jsonb)) $$,
   'Không hư: 19 ảnh thêm + ảnh cửa = 20 ảnh');
 select throws_like($$ select public.record_gate_in_survey((select av from t),
-  jsonb_build_object('noDamagePhotos', (select jsonb_agg('ANH-GATE-IN/' || g || '.jpg') from generate_series(1, 20) g), 'wearTearPhotos', '[]'::jsonb, 'damages', '[]'::jsonb)) $$,
+  jsonb_build_object('size', '40', 'noDamagePhotos', (select jsonb_agg('ANH-GATE-IN/' || g || '.jpg') from generate_series(1, 20) g), 'wearTearPhotos', '[]'::jsonb, 'damages', '[]'::jsonb)) $$,
   '%tối đa 20 ảnh%', 'Quá 20 ảnh không hư → chặn');
 select lives_ok($$ select public.record_gate_in_survey((select dmg from t),
-  '{"noDamagePhotos":[],"wearTearPhotos":[],"damages":[{"side":"X","location":"XXXX","damageType":1,"source":2,"photos":["ANH-GATE-IN/x.jpg"]}]}') $$,
+  '{"size":"40","noDamagePhotos":[],"wearTearPhotos":[],"damages":[{"side":"X","location":"XXXX","damageType":1,"source":2,"photos":["ANH-GATE-IN/x.jpg"]}]}') $$,
   'Mặt X (toàn bộ cont): vị trí XXXX');
 select throws_like($$ select public.record_gate_in_survey((select dmg from t),
-  '{"noDamagePhotos":[],"wearTearPhotos":[],"damages":[{"side":"E","location":"E123","damageType":1,"source":2,"photos":["ANH-GATE-IN/x.jpg"]}]}') $$,
+  '{"size":"40","noDamagePhotos":[],"wearTearPhotos":[],"damages":[{"side":"E","location":"E123","damageType":1,"source":2,"photos":["ANH-GATE-IN/x.jpg"]}]}') $$,
   '%vị trí cố định EXXX%', 'Mặt E phải là EXXX');
 
 select * from finish();

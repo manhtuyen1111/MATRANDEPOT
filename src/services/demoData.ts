@@ -119,6 +119,7 @@ function gateIn(state: DepotState, c: GateInCase): DepotState {
     survey: c.rack
       ? undefined
       : {
+          size: c.size,
           noDamagePhotos: [],
           wearTearPhotos: [],
           damages: c.damage ? [{ id: `dmg-${c.containerNo}`, side: 'L', location: 'LB34', damageType: 5, source: 2, description: c.damage.join(', '), photos: [PHOTO] }] : [],

@@ -1275,7 +1275,7 @@ describe('DEC-203: tình trạng eEIR ở Giám định', () => {
   it('3 phần Không hư / Hao mòn / Hư bên thứ 3, đủ 11 mặt như app eEIR, trạng thái tự tính', () => {
     const html = renderToString(
       <EeirSurveyFields
-        value={{ noDamagePhotos: ['data:a'], wearTearPhotos: [], damages: [{ id: 'd1', side: 'L', location: 'LT89', damageType: 5, source: 2, photos: ['data:b'] }] }}
+        value={{ size: '40', noDamagePhotos: ['data:a'], wearTearPhotos: [], damages: [{ id: 'd1', side: 'L', location: 'LT89', damageType: 5, source: 2, photos: ['data:b'] }] }}
         onChange={noop}
       />
     ).replace(/<!-- -->/g, '');
@@ -1300,6 +1300,9 @@ describe('DEC-203: sơ đồ lưới vị trí hư', () => {
   it('form chi tiết hư mở được, không còn ô gõ tay mã CEDEX', () => {
     const html = renderToString(<EeirSurveyFields value={{ noDamagePhotos: [], wearTearPhotos: [], damages: [] }} onChange={noop} />);
     expect(html).not.toContain('VD T89');
+    // chưa chọn SIZE CONT → chỉ hiện ô chọn size, chưa hiện 3 phần
+    expect(html).toContain('data-testid="eeir-size"');
+    expect(html).not.toContain('data-testid="eeir-no-damage"');
   });
   it('vách trái 40 = 10 cột × 4 hàng (H T B G), nóc 2 hàng, cửa 4 cột; mặt E không có lưới', () => {
     const cellsOf = (h: string) => (h.match(/aria-label="Ô /g) || []).length;

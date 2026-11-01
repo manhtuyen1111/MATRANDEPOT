@@ -38,6 +38,10 @@ export const DEFAULT_DAMAGE_SOURCE = 2;
 //   Cột: vách / nóc / đáy / sàn 10 ô (cont 40') hoặc 5 ô (cont 20'), số 1…9, 0; cửa / mặt trước 4 cột 1–4
 //   VD DB2N, DX3N, TL1N, TX1N, TX14, LT89, LB34
 export type ContainerLength = '20' | '40';
+// Giám định chọn SIZE CONT trước khi giám định (người dùng 2026-11-01): 20' → 5 ô; 40' / 45' → 10 ô
+export const SURVEY_SIZES = ['20', '40', '45'];
+export const surveyLength = (size?: string): ContainerLength => (size === '20' ? '20' : '40');
+const SIZED_SIDES: EeirDamageSide[] = ['L', 'R', 'T', 'U', 'B'];
 export interface CedexGrid {
   rows: { code: string; thin?: boolean }[];
   cols: number;
@@ -92,6 +96,7 @@ export function damageItemProblem(d: Pick<InspectionDamageItem, 'side' | 'locati
 // Kiểm tra + chuẩn hóa (ảnh cửa cont đã chụp ở bước 1 → tính vào nhóm KHÔNG HƯ)
 export function validateSurvey(s: InspectionSurvey | undefined): InspectionSurvey {
   if (!s) throw new Error('Cont hãng Maersk: vui lòng ghi TÌNH TRẠNG theo eEIR (Không hư / Hao mòn / Hư do bên thứ 3).');
+  if (!SURVEY_SIZES.includes(s.size || '')) throw new Error('Vui lòng chọn SIZE CONT (20 / 40 / 45) trước khi giám định.');
   const noDamagePhotos = (s.noDamagePhotos || []).filter(Boolean);
   const wearTearPhotos = (s.wearTearPhotos || []).filter(Boolean);
   if (noDamagePhotos.length + 1 > NO_DAMAGE_PHOTO_MAX) throw new Error(`KHÔNG HƯ: tối đa ${NO_DAMAGE_PHOTO_MAX} ảnh (tính cả ảnh cửa cont).`);
@@ -99,8 +104,13 @@ export function validateSurvey(s: InspectionSurvey | undefined): InspectionSurve
   const damages = (s.damages || []).map((d) => {
     const problem = damageItemProblem(d);
     if (problem) throw new Error(`Hư bên thứ 3 (${d.location || damageSideLabel(d.side)}): ${problem}`);
+    // Cont 20': vách / nóc / đáy / sàn chỉ có 5 ô (cột 1–5)
+    const loc = d.location.trim().toUpperCase();
+    if (s.size === '20' && SIZED_SIDES.includes(d.side) && ![loc[2], loc[3]].every((c) => c === 'N' || (c >= '1' && c <= '5'))) {
+      throw new Error(`Hư bên thứ 3 (${loc}): cont 20' chỉ có 5 ô (cột 1–5).`);
+    }
     const description = d.description?.trim();
     return { ...d, location: d.location.trim().toUpperCase(), photos: d.photos.filter(Boolean), description: description || undefined };
   });
-  return { noDamagePhotos, wearTearPhotos, damages };
+  return { size: s.size, noDamagePhotos, wearTearPhotos, damages };
 }

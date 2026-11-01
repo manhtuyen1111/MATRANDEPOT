@@ -2391,10 +2391,10 @@ import { addPartnerCatalogItem } from '../src/services/depotOperations';
 describe('DEC-203: tình trạng eEIR khi Giám định Hạ vỏ cont MSK', () => {
   const demo = createDemoState();
   const dmg = { id: 'd1', side: 'L' as const, location: 'lt89', damageType: 5, source: 2, description: 'Móp vách', photos: ['data:a'] };
-  const field = (survey: InspectionSurvey | undefined, conditionClass: 'AV' | 'DAMAGE' = 'AV', line = 'MSK') =>
+  const field = (survey0: InspectionSurvey | undefined, conditionClass: 'AV' | 'DAMAGE' = 'AV', line = 'MSK') =>
     recordGateInFieldStep(as(demo, 'usr-inspector'), {
       gateInType: 'CUSTOMER_RETURN', shippingLineCode: line, doorPhotoUrl: 'data:door', conditionClass, stuffingClass: 'E',
-      cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019, survey,
+      cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019, survey: survey0 && { size: '40', ...survey0 },
     });
 
   it('không hư / hao mòn → AV; có hư bên thứ 3 → DAMAGE, remark = vị trí + loại hư', () => {
@@ -2488,5 +2488,21 @@ describe('DEC-203: mã vị trí CEDEX từ lưới', () => {
     expect(damageItemProblem({ ...base, location: 'TX14' })).toBeNull();
     expect(damageItemProblem({ ...base, location: 'TH1N' })).toMatch(/không đúng lưới/); // nóc không có hàng H
     expect(damageItemProblem({ ...base, side: 'D', location: 'DB5N' })).toMatch(/không đúng lưới/); // cửa chỉ 4 cột
+  });
+});
+
+// Người dùng 2026-11-01: Giám định chọn SIZE CONT trước khi giám định (số ô sơ đồ: 20' 5 ô, 40' / 45' 10 ô)
+import { validateSurvey } from '../src/services/inspectionSurvey';
+
+describe('DEC-203: SIZE CONT trước khi giám định', () => {
+  const d = (location: string, side: 'L' | 'T' | 'D' = 'L') => ({ id: 'x', side, location, damageType: 1, source: 2, photos: ['data:a'] });
+  it('bắt buộc chọn size; cont 20 chỉ có cột 1–5 ở vách / nóc / đáy / sàn; cửa không bị ảnh hưởng', () => {
+    expect(() => validateSurvey({ noDamagePhotos: [], wearTearPhotos: [], damages: [] })).toThrow(/chọn SIZE CONT/);
+    expect(() => validateSurvey({ size: '30', noDamagePhotos: [], wearTearPhotos: [], damages: [] })).toThrow(/chọn SIZE CONT/);
+    expect(validateSurvey({ size: '20', noDamagePhotos: [], wearTearPhotos: [], damages: [d('LT45')] }).size).toBe('20');
+    expect(() => validateSurvey({ size: '20', noDamagePhotos: [], wearTearPhotos: [], damages: [d('LT56')] })).toThrow(/cont 20' chỉ có 5 ô/);
+    expect(() => validateSurvey({ size: '20', noDamagePhotos: [], wearTearPhotos: [], damages: [d('TL0N', 'T')] })).toThrow(/cont 20' chỉ có 5 ô/);
+    expect(validateSurvey({ size: '20', noDamagePhotos: [], wearTearPhotos: [], damages: [d('DB4N', 'D')] }).damages).toHaveLength(1);
+    expect(validateSurvey({ size: '45', noDamagePhotos: [], wearTearPhotos: [], damages: [d('LT90')] }).size).toBe('45');
   });
 });

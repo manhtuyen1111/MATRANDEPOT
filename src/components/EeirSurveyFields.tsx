@@ -9,6 +9,8 @@ import {
   cedexGrid,
   cedexLocation,
   ContainerLength,
+  SURVEY_SIZES,
+  surveyLength,
   damageTypeLabel,
   DEFAULT_DAMAGE_SOURCE,
   DEFAULT_DAMAGE_TYPE,
@@ -51,9 +53,13 @@ const Group: React.FC<{ title: string; count?: string; children: React.ReactNode
 );
 
 // SƠ ĐỒ LƯỚI VỊ TRÍ (như app eEIR): chạm ô để chọn / bỏ — mã CEDEX tự tính (cedexLocation, services/inspectionSurvey.ts).
-//   Vách / nóc / đáy / sàn: chọn cont 40' (10 ô) hoặc 20' (5 ô) — Giám định chưa biết size (Văn phòng nhập).
-export const CedexGridPicker: React.FC<{ side: EeirDamageSide; location: string; onChange: (location: string) => void }> = ({ side, location, onChange }) => {
-  const [length, setLength] = useState<ContainerLength>('40');
+//   Vách / nóc / đáy / sàn: số ô theo SIZE CONT Giám định chọn trước (20' → 5 ô, 40' / 45' → 10 ô).
+export const CedexGridPicker: React.FC<{ side: EeirDamageSide; location: string; length?: ContainerLength; onChange: (location: string) => void }> = ({
+  side,
+  location,
+  length = '40',
+  onChange,
+}) => {
   const [cells, setCells] = useState<string[]>([]); // "hàng:cột"
   const grid = cedexGrid(side, length);
   if (!grid) return null;
@@ -63,24 +69,10 @@ export const CedexGridPicker: React.FC<{ side: EeirDamageSide; location: string;
     setCells(next);
     onChange(cedexLocation(side, next.map((c) => c.split(':')[0]), next.map((c) => Number(c.split(':')[1]))) || side);
   };
-  const changeLength = (l: ContainerLength) => {
-    setLength(l);
-    setCells([]);
-    onChange(side);
-  };
   const doorCols = side === 'D' || side === 'F';
   const colTemplate = doorCols ? '1fr 3fr 3fr 1fr' : `repeat(${grid.cols}, minmax(0, 1fr))`;
   return (
     <div className="space-y-1.5" data-testid="cedex-grid">
-      {!doorCols && (
-        <div className="grid grid-cols-2 gap-1.5">
-          {(['40', '20'] as ContainerLength[]).map((l) => (
-            <button key={l} type="button" onClick={() => changeLength(l)} className={`rounded-lg border py-1.5 text-xs font-bold ${length === l ? 'border-navy-900 bg-navy-900 text-white' : 'border-line-strong bg-white text-ink'}`}>
-              Cont {l}' ({l === '40' ? 10 : 5} ô)
-            </button>
-          ))}
-        </div>
-      )}
       <div className="grid gap-px border border-ink bg-ink" style={{ gridTemplateColumns: colTemplate }}>
         {grid.rows.map((r) =>
           Array.from({ length: grid.cols }, (_, i) => {
@@ -141,6 +133,26 @@ export const EeirSurveyFields: React.FC<{
         {condition === 'AV' ? ' (không có hư do bên thứ 3)' : ' (có hư do bên thứ 3 → Báo giá)'}
       </p>
 
+      {/* Người dùng 2026-11-01: chọn SIZE CONT trước khi giám định — quyết định số ô sơ đồ (20' 5 ô, 40' / 45' 10 ô) */}
+      <Group title="SIZE CONT *" testId="eeir-size">
+        <div className="grid grid-cols-3 gap-2">
+          {SURVEY_SIZES.map((size) => (
+            <button
+              key={size}
+              type="button"
+              onClick={() => onChange({ ...v, size })}
+              aria-pressed={v.size === size}
+              className={`rounded-lg border py-2.5 text-sm font-bold ${v.size === size ? 'border-navy-900 bg-navy-900 text-white' : 'border-line-strong bg-white text-ink hover:bg-canvas'}`}
+            >
+              {size}'
+            </button>
+          ))}
+        </div>
+        {!v.size && <p className="text-[11px] text-ink-muted">Chọn size cont trước để giám định.</p>}
+      </Group>
+
+      {v.size && (
+      <>
       <Group title="1. KHÔNG HƯ" count={`${(hasDoorPhoto ? 1 : 0) + v.noDamagePhotos.length}/${NO_DAMAGE_PHOTO_MAX} ảnh`} testId="eeir-no-damage">
         <p className="text-[11px] text-ink-muted">Ảnh cửa cont đã chụp được tính vào mục này. Chụp thêm ảnh cont tốt (VD bên trong) làm bằng chứng.</p>
         <Thumbs photos={v.noDamagePhotos} alt="Ảnh không hư" onRemove={(i) => onChange({ ...v, noDamagePhotos: v.noDamagePhotos.filter((_, k) => k !== i) })} />
@@ -182,6 +194,8 @@ export const EeirSurveyFields: React.FC<{
           })}
         </ul>
       </Group>
+      </>
+      )}
 
       {/* Màn CHI TIẾT HƯ (User Guide trang 17) — mỗi lần lưu 1 chỗ hư */}
       {draft && (
@@ -197,7 +211,7 @@ export const EeirSurveyFields: React.FC<{
                 <span className="font-mono text-sm font-bold" data-testid="eeir-fixed-location">{draft.location}</span>
               </div>
             ) : (
-              <CedexGridPicker side={draft.side} location={draft.location} onChange={(location) => setDraft({ ...draft, location })} />
+              <CedexGridPicker side={draft.side} location={draft.location} length={surveyLength(v.size)} onChange={(location) => setDraft({ ...draft, location })} />
             )}
             <label className="block">
               <span className={labelCls}>Loại hư *</span>

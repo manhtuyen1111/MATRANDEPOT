@@ -125,6 +125,6 @@ export async function uploadSurveyPhotos(client: SupabaseClient, survey: Inspect
   };
   const damages = [];
   for (const d of survey.damages) damages.push({ ...d, photos: await up(d.photos) });
-  return { noDamagePhotos: await up(survey.noDamagePhotos), wearTearPhotos: await up(survey.wearTearPhotos), damages };
+  return { ...survey, noDamagePhotos: await up(survey.noDamagePhotos), wearTearPhotos: await up(survey.wearTearPhotos), damages };
 }
 

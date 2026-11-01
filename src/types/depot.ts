@@ -193,6 +193,7 @@ export interface InspectionDamageItem {
   photos: string[];      // 1–3 ảnh / chỗ hư
 }
 export interface InspectionSurvey {
+  size?: string;             // SIZE CONT Giám định chọn trước khi giám định (20 / 40 / 45) — số ô sơ đồ lưới (người dùng 2026-11-01)
   noDamagePhotos: string[];  // KHÔNG HƯ — ảnh thêm (ngoài ảnh cửa cont)
   wearTearPhotos: string[];  // HAO MÒN
   damages: InspectionDamageItem[]; // HƯ DO BÊN THỨ 3 / XẾP DỠ

@@ -61,7 +61,7 @@ describe.skipIf(!run)('N2–N6 — luồng Hạ vỏ → Bãi → Cấp vỏ ch�
 
     // 0. N8: hồ sơ bị xóa trên database → lần đồng bộ sau biến mất khỏi dữ liệu (sync_deletions)
     s = api.recordGateInFieldStep(s, {
-      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MSK', doorPhotoUrl: 'https://example.invalid/door.jpg', conditionClass: 'AV', stuffingClass: 'E', survey: { noDamagePhotos: [], wearTearPhotos: [], damages: [] }, // DEC-203
+      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MSK', doorPhotoUrl: 'https://example.invalid/door.jpg', conditionClass: 'AV', stuffingClass: 'E', survey: { size: '40', noDamagePhotos: [], wearTearPhotos: [], damages: [] }, // DEC-203
       cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
     });
     s = await flush();
@@ -72,13 +72,13 @@ describe.skipIf(!run)('N2–N6 — luồng Hạ vỏ → Bãi → Cấp vỏ ch�
 
     // 1. Giám định: ảnh dạng link (không cần nén), AV, không vệ sinh
     s = api.recordGateInFieldStep(s, {
-      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MSK', doorPhotoUrl: 'https://example.invalid/door.jpg', conditionClass: 'AV', stuffingClass: 'E', survey: { noDamagePhotos: [], wearTearPhotos: [], damages: [] }, // DEC-203
+      gateInType: 'CUSTOMER_RETURN', shippingLineCode: 'MSK', doorPhotoUrl: 'https://example.invalid/door.jpg', conditionClass: 'AV', stuffingClass: 'E', survey: { size: '40', noDamagePhotos: [], wearTearPhotos: [], damages: [] }, // DEC-203
       cleaningItems: ['KHÔNG VỆ SINH'], manufactureYear: 2019,
     });
     expect(queue).toHaveLength(1);
     s = await flush();
     const order = s.gateInOrders.find((o) => !o.containerNo && o.status !== 'GATE_IN_OK')!;
-    expect(order.survey).toEqual({ noDamagePhotos: [], wearTearPhotos: [], damages: [] }); // DEC-203: lưu + đọc lại từ database
+    expect(order.survey).toEqual({ size: '40', noDamagePhotos: [], wearTearPhotos: [], damages: [] }); // DEC-203: lưu + đọc lại từ database
     expect(order.masterDossierCode).toMatch(/^HV-/);
 
     // 2. Văn phòng xác nhận + TTS
