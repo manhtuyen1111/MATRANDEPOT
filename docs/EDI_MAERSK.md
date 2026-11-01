@@ -459,3 +459,7 @@ Gửi `eEIRSupport@maersk.com` / ticket developer portal, nêu mã depot 3 ký t
 
 **Việc tiếp (phiên sau):** (1) tab **eEIR** trong Danh mục chung → EDI hãng tàu (lọc thời gian `DateRangeFilter`, bảng + `Pager`, bấm dòng mở `DetailDrawer` xem JSON); (2) migration chặn booking MSK ở database (DEC-199); (3) màn Giám định: cont MSK DRY có hư → chọn Hao mòn / Bên thứ 3 → CEDEX (DEC-200); (4) khi có khóa staging: Edge Function gọi API 1 / API 2.
 
+## 21. Current Move (danh sách app eEIR thật — 2026-11-01)
+
+8 lựa chọn: IN-EMPTY-IMPORT_RETURN • IN-EMPTY-POSITION • OUT-EMPTY-POSITION • OUT-EMPTY-EXPORT • IN-FULL-EXP • STUFFING • STRIPPING • OUT-FULL-DELIVERY. MATRAN (depot cont rỗng) dùng: **Hạ vỏ** IN-EMPTY-IMPORT_RETURN (moveStatus 1 / moveType 2) • **Nhập tàu** IN-EMPTY-POSITION (1 / 1) • **Cấp vỏ** OUT-EMPTY-EXPORT (2 / 3, booking bắt buộc) • **Cấp sale** OUT-EMPTY-POSITION (2 / 1, không booking) • **Xuất tàu** OUT-EMPTY-POSITION (2 / 1). Xuất tàu hiện chưa chụp ảnh → phiếu eEIR báo thiếu ảnh (cần quyết định chụp ở bước nào).
+
