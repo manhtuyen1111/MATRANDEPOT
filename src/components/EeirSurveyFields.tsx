@@ -6,6 +6,9 @@ import {
   DAMAGE_PHOTO_MAX,
   damageItemProblem,
   damageSideLabel,
+  cedexGrid,
+  cedexLocation,
+  ContainerLength,
   damageTypeLabel,
   DEFAULT_DAMAGE_SOURCE,
   DEFAULT_DAMAGE_TYPE,
@@ -46,6 +49,65 @@ const Group: React.FC<{ title: string; count?: string; children: React.ReactNode
     {children}
   </div>
 );
+
+// SƠ ĐỒ LƯỚI VỊ TRÍ (như app eEIR): chạm ô để chọn / bỏ — mã CEDEX tự tính (cedexLocation, services/inspectionSurvey.ts).
+//   Vách / nóc / đáy / sàn: chọn cont 40' (10 ô) hoặc 20' (5 ô) — Giám định chưa biết size (Văn phòng nhập).
+export const CedexGridPicker: React.FC<{ side: EeirDamageSide; location: string; onChange: (location: string) => void }> = ({ side, location, onChange }) => {
+  const [length, setLength] = useState<ContainerLength>('40');
+  const [cells, setCells] = useState<string[]>([]); // "hàng:cột"
+  const grid = cedexGrid(side, length);
+  if (!grid) return null;
+  const toggle = (row: string, col: number) => {
+    const key = `${row}:${col}`;
+    const next = cells.includes(key) ? cells.filter((c) => c !== key) : [...cells, key];
+    setCells(next);
+    onChange(cedexLocation(side, next.map((c) => c.split(':')[0]), next.map((c) => Number(c.split(':')[1]))) || side);
+  };
+  const changeLength = (l: ContainerLength) => {
+    setLength(l);
+    setCells([]);
+    onChange(side);
+  };
+  const doorCols = side === 'D' || side === 'F';
+  const colTemplate = doorCols ? '1fr 3fr 3fr 1fr' : `repeat(${grid.cols}, minmax(0, 1fr))`;
+  return (
+    <div className="space-y-1.5" data-testid="cedex-grid">
+      {!doorCols && (
+        <div className="grid grid-cols-2 gap-1.5">
+          {(['40', '20'] as ContainerLength[]).map((l) => (
+            <button key={l} type="button" onClick={() => changeLength(l)} className={`rounded-lg border py-1.5 text-xs font-bold ${length === l ? 'border-navy-900 bg-navy-900 text-white' : 'border-line-strong bg-white text-ink'}`}>
+              Cont {l}' ({l === '40' ? 10 : 5} ô)
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="grid gap-px border border-ink bg-ink" style={{ gridTemplateColumns: colTemplate }}>
+        {grid.rows.map((r) =>
+          Array.from({ length: grid.cols }, (_, i) => {
+            const col = i + 1;
+            const on = cells.includes(`${r.code}:${col}`);
+            return (
+              <button
+                key={`${r.code}${col}`}
+                type="button"
+                onClick={() => toggle(r.code, col)}
+                aria-label={`Ô ${r.code}${col % 10}`}
+                aria-pressed={on}
+                className={`${r.thin ? 'h-5' : 'h-11'} text-[9px] font-mono ${on ? 'bg-accent text-white' : 'bg-white text-ink-muted'}`}
+              >
+                {r.thin ? '' : `${r.code}${col % 10}`}
+              </button>
+            );
+          })
+        )}
+      </div>
+      <div className="rounded-lg border border-line bg-canvas px-3 py-2">
+        <span className={labelCls}>Vị trí hư *</span>
+        <span className="font-mono text-sm font-bold" data-testid="cedex-location">{location.length === 4 ? location : 'Chạm ô trên sơ đồ'}</span>
+      </div>
+    </div>
+  );
+};
 
 type CameraTarget = 'NO_DAMAGE' | 'WEAR_TEAR' | 'DAMAGE' | null;
 // Như app eEIR: mặc định Bẩn (Dirty) + Khách hàng; mặt E / I / N / X vị trí cố định <mặt>XXX
@@ -135,19 +197,7 @@ export const EeirSurveyFields: React.FC<{
                 <span className="font-mono text-sm font-bold" data-testid="eeir-fixed-location">{draft.location}</span>
               </div>
             ) : (
-              <label className="block">
-                <span className={labelCls}>Vị trí hư (CEDEX 4 ký tự) *</span>
-                <div className="flex items-center gap-1">
-                  <span className="rounded-lg border border-line-strong bg-canvas px-3 py-2 font-mono text-sm font-bold">{draft.side}</span>
-                  <input
-                    value={draft.location.slice(1)}
-                    onChange={(e) => setDraft({ ...draft, location: draft.side + e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) })}
-                    maxLength={3}
-                    placeholder="VD T89"
-                    className={`${inputCls} font-mono uppercase`}
-                  />
-                </div>
-              </label>
+              <CedexGridPicker side={draft.side} location={draft.location} onChange={(location) => setDraft({ ...draft, location })} />
             )}
             <label className="block">
               <span className={labelCls}>Loại hư *</span>

@@ -2461,3 +2461,32 @@ describe('DEC-203: hồ sơ container có dòng Tình trạng eEIR', () => {
     expect(row.showPhotos).toBeFalsy();
   });
 });
+
+// DEC-203: lưới vị trí CEDEX theo mô tả người dùng (app eEIR) — mặt + hàng + cột đầu + (cột cuối | N)
+import { cedexGrid, cedexLocation } from '../src/services/inspectionSurvey';
+
+describe('DEC-203: mã vị trí CEDEX từ lưới', () => {
+  it('ví dụ người dùng: nóc TL1N / TR1N / TX1N / TX14; cửa DB2N / DX3N; vách 40 = 10 ô, 20 = 5 ô', () => {
+    expect(cedexLocation('T', ['L'], [1])).toBe('TL1N');
+    expect(cedexLocation('T', ['R'], [1])).toBe('TR1N');
+    expect(cedexLocation('T', ['L', 'R'], [1, 1])).toBe('TX1N');
+    expect(cedexLocation('T', ['L', 'R', 'L', 'R'], [1, 4, 4, 1])).toBe('TX14');
+    expect(cedexLocation('T', ['L'], [10])).toBe('TL0N');
+    expect(cedexLocation('D', ['B'], [2])).toBe('DB2N');
+    expect(cedexLocation('D', ['T', 'B'], [3, 3])).toBe('DX3N');
+    expect(cedexLocation('L', ['T'], [8, 9])).toBe('LT89');
+    expect(cedexLocation('L', [], [])).toBeNull();
+    expect(cedexGrid('L', '40')).toMatchObject({ cols: 10, rows: [{ code: 'H' }, { code: 'T' }, { code: 'B' }, { code: 'G' }] });
+    expect(cedexGrid('R', '20')!.cols).toBe(5);
+    expect(cedexGrid('B', '40')!.rows.map((r) => r.code)).toEqual(['L', 'R']);
+    expect(cedexGrid('D')!.cols).toBe(4);
+    expect(cedexGrid('X')).toBeNull();
+  });
+
+  it('chặn mã không đúng lưới của mặt', () => {
+    const base = { side: 'T' as const, damageType: 1, source: 2, photos: ['data:a'] };
+    expect(damageItemProblem({ ...base, location: 'TX14' })).toBeNull();
+    expect(damageItemProblem({ ...base, location: 'TH1N' })).toMatch(/không đúng lưới/); // nóc không có hàng H
+    expect(damageItemProblem({ ...base, side: 'D', location: 'DB5N' })).toMatch(/không đúng lưới/); // cửa chỉ 4 cột
+  });
+});

@@ -32,6 +32,42 @@ export const fixedDamageLocation = (side: EeirDamageSide) => (FIXED_LOCATION_SID
 export const DEFAULT_DAMAGE_TYPE = 1;
 export const DEFAULT_DAMAGE_SOURCE = 2;
 
+// LƯỚI VỊ TRÍ CEDEX (người dùng mô tả theo app eEIR, 2026-11-01). Mã = mặt + hàng + cột đầu + (cột cuối | N khi 1 cột):
+//   Vách L / R, Cửa D, Mặt trước F: hàng H trên cùng • T trên • B dưới • G dưới cùng; nhiều hàng → X
+//   Nóc T, Khung đáy U, Sàn B: hàng L (trên) • R (dưới); cả 2 → X
+//   Cột: vách / nóc / đáy / sàn 10 ô (cont 40') hoặc 5 ô (cont 20'), số 1…9, 0; cửa / mặt trước 4 cột 1–4
+//   VD DB2N, DX3N, TL1N, TX1N, TX14, LT89, LB34
+export type ContainerLength = '20' | '40';
+export interface CedexGrid {
+  rows: { code: string; thin?: boolean }[];
+  cols: number;
+}
+export function cedexGrid(side: EeirDamageSide, length: ContainerLength = '40'): CedexGrid | null {
+  const sideRows = [{ code: 'H', thin: true }, { code: 'T' }, { code: 'B' }, { code: 'G', thin: true }];
+  if (side === 'D' || side === 'F') return { rows: sideRows, cols: 4 };
+  if (side === 'L' || side === 'R') return { rows: sideRows, cols: length === '20' ? 5 : 10 };
+  if (side === 'T' || side === 'U' || side === 'B') return { rows: [{ code: 'L' }, { code: 'R' }], cols: length === '20' ? 5 : 10 };
+  return null; // E / I / N / X: vị trí cố định
+}
+const colDigit = (n: number) => String(n % 10); // cột 10 → 0
+export function cedexLocation(side: EeirDamageSide, rows: string[], cols: number[]): string | null {
+  if (!rows.length || !cols.length) return null;
+  const row = new Set(rows).size === 1 ? rows[0] : 'X';
+  const min = Math.min(...cols);
+  const max = Math.max(...cols);
+  return `${side}${row}${colDigit(min)}${max > min ? colDigit(max) : 'N'}`;
+}
+// Mã khớp lưới của mặt (không bắt buộc đúng số cột 20' / 40' vì Giám định chưa biết size)
+const CEDEX_PATTERN: Partial<Record<EeirDamageSide, RegExp>> = {
+  D: /^D[HTBGX][1-4][1-4N]$/,
+  F: /^F[HTBGX][1-4][1-4N]$/,
+  L: /^L[HTBGX][0-9][0-9N]$/,
+  R: /^R[HTBGX][0-9][0-9N]$/,
+  T: /^T[LRX][0-9][0-9N]$/,
+  U: /^U[LRX][0-9][0-9N]$/,
+  B: /^B[LRX][0-9][0-9N]$/,
+};
+
 // Remark hư gửi Báo giá (luồng DAMAGE cũ): "LT89 Móp"
 export const surveyRemarks = (s: InspectionSurvey): string[] => s.damages.map((d) => `${d.location} ${typeLabel(d.damageType)}`);
 
@@ -42,6 +78,8 @@ export function damageItemProblem(d: Pick<InspectionDamageItem, 'side' | 'locati
   const fixed = fixedDamageLocation(d.side);
   if (fixed && loc !== fixed) return `Mặt ${damageSideLabel(d.side)} có vị trí cố định ${fixed}.`;
   if (!/^[A-Z0-9]{4}$/.test(loc) || loc[0] !== d.side) return `Vị trí CEDEX phải 4 ký tự chữ / số, bắt đầu bằng ${d.side}.`;
+  const pattern = CEDEX_PATTERN[d.side];
+  if (pattern && !pattern.test(loc)) return `Vị trí ${loc} không đúng lưới ${damageSideLabel(d.side)} — chọn ô trên sơ đồ.`;
   if (!EEIR_DAMAGE_TYPES.some((t) => t.code === d.damageType)) return 'Chọn loại hư.';
   if (!EEIR_DAMAGE_SOURCES.some((t) => t.code === d.source)) return 'Chọn bên gây hư.';
   if ((d.description || '').length > DAMAGE_NOTE_MAX) return `Mô tả tối đa ${DAMAGE_NOTE_MAX} ký tự.`;

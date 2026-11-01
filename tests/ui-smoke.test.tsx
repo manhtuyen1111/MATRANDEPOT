@@ -1268,7 +1268,7 @@ describe('DEC-197: Danh mục chung → EDI hãng tàu (chạy thử)', () => {
 
 
 // DEC-203: Giám định Hạ vỏ cont MSK — khối tình trạng eEIR (3 phần như app Maersk, 7 mặt cont)
-import { EeirSurveyFields } from '../src/components/EeirSurveyFields';
+import { CedexGridPicker, EeirSurveyFields } from '../src/components/EeirSurveyFields';
 import { InspectionFields, EMPTY_INSPECTION } from '../src/components/InspectionFields';
 
 describe('DEC-203: tình trạng eEIR ở Giám định', () => {
@@ -1293,5 +1293,20 @@ describe('DEC-203: tình trạng eEIR ở Giám định', () => {
     expect(html).toContain('data-testid="condition-eeir"');
     expect(html).toContain('data-testid="condition-deferred"');
     expect(html).not.toContain('>AV<');
+  });
+});
+
+describe('DEC-203: sơ đồ lưới vị trí hư', () => {
+  it('form chi tiết hư mở được, không còn ô gõ tay mã CEDEX', () => {
+    const html = renderToString(<EeirSurveyFields value={{ noDamagePhotos: [], wearTearPhotos: [], damages: [] }} onChange={noop} />);
+    expect(html).not.toContain('VD T89');
+  });
+  it('vách trái 40 = 10 cột × 4 hàng (H T B G), nóc 2 hàng, cửa 4 cột; mặt E không có lưới', () => {
+    const cellsOf = (h: string) => (h.match(/aria-label="Ô /g) || []).length;
+    expect(cellsOf(renderToString(<CedexGridPicker side="L" location="L" onChange={noop} />))).toBe(40);
+    expect(cellsOf(renderToString(<CedexGridPicker side="T" location="T" onChange={noop} />))).toBe(20);
+    expect(cellsOf(renderToString(<CedexGridPicker side="D" location="D" onChange={noop} />))).toBe(16);
+    expect(renderToString(<CedexGridPicker side="E" location="EXXX" onChange={noop} />)).toBe('');
+    expect(renderToString(<CedexGridPicker side="L" location="LT89" onChange={noop} />)).toContain('>LT89<');
   });
 });
