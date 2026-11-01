@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-203 bổ sung (2026-11-01): **sơ đồ lưới vị trí hư** như app eEIR — chạm ô, mã CEDEX tự điền (VD DB2N, TX14), chọn cont 40' (10 ô) / 20' (5 ô); bỏ ô gõ tay. Không migration.
 - DEC-203 bổ sung (2026-11-01, theo ảnh app eEIR thật): Không hư tối đa **20** ảnh; thêm 4 mặt **E / I / N / X** (vị trí cố định <mặt>XXX); chi tiết hư mặc định Bẩn + Khách hàng, mô tả 0/255, 3 ô ảnh; Hạ vỏ = IN-EMPTY-IMPORT_RETURN. **Migration mới `20261121000001_gate_in_survey_faces.sql`**.
 - DEC-203 (2026-11-01): **Giám định Hạ vỏ cont MSK theo app eEIR Maersk** — mục Trạng thái thay bằng 3 phần **Không hư** (≤ 10 ảnh gồm ảnh cửa) / **Hao mòn** (≤ 20 ảnh) / **Hư do bên thứ 3** (7 mặt D F L R T U B; mỗi chỗ hư: CEDEX 4 ký tự, loại hư, bên gây hư, mô tả, 1–3 ảnh); AV / DAMAGE tự suy; hồ sơ container có dòng Tình trạng eEIR; phiếu eEIR chạy thử dùng đúng `damages[]`. **Migration mới `20261120000001_gate_in_survey.sql`** (pgTAP 355/355, chạy thật 5/5 local).
 - DEC-202 (2026-10-31): **Tồn vỏ & Đảo chuyển** — giữ **2 cột `TRẠNG THÁI` (`DAMAGE` / `AV`) + `TIẾN ĐỘ` (1 tiến độ chờ thực tế: `CHỜ GIÁM ĐỊNH`, `CHỜ VĂN PHÒNG`, `CHỜ VỆ SINH`, `CHỜ XE NÂNG`, `CHỜ BÁO GIÁ`, `CHỜ DUYỆT SỬA CHỮA`, `CHỜ SỬA CHỮA`)**; cột `TIẾN ĐỘ` nằm ngay bên cạnh cột `TRẠNG THÁI` (trước `PHÂN LOẠI`), màu nền nhẹ `accent-soft` (`#e3f6f8`, chữ `text-ink`) theo `DESIGN_SYSTEM.md`; ô lọc + Excel khớp màn hình; đồng bộ Xe nâng → Đảo chuyển. Không migration.

@@ -278,7 +278,7 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - **Database:** migration mới **`20261120000001_gate_in_survey.sql`** (cột `gate_in_orders.survey`, RPC `record_gate_in_survey`) — pgTAP **355/355**, chạy thật **5/5** (đã sửa 2 bài thử thật cũ: thêm phần eEIR + booking 9–11 ký tự; bài N7 cập nhật theo việc luôn tải lệnh chưa trả chứng từ — từ bản sửa GOUT-002 30/10). Đã tắt + xóa Supabase local. **DB push giờ là 8 file `20261113` → `20261120`.**
 - Kiểm thử: vitest **268 pass / 14 bỏ qua** • build PASS. **Chưa thử trên điện thoại thật** (camera nhiều ảnh, form chi tiết hư).
 - **Bổ sung (ảnh app eEIR thật):** Không hư 20 ảnh, 11 mặt (thêm E / I / N / X cố định <mặt>XXX), mặc định Bẩn + Khách hàng, 3 ô ảnh, Hạ vỏ = IN-EMPTY-IMPORT_RETURN. Migration **`20261121000001`** (pgTAP 359/359). **DB push giờ là 9 file `20261113` → `20261121`.** Đối chiếu từng màn: `docs/design/EEIR_GIAM_DINH.md` mục 5b.
-- **Chờ người dùng:** mã ô lưới CEDEX (chạm ô góc trên-trái / dưới-phải từng mặt trên app Maersk, chụp ô Damage location); Nhập tàu dùng form này + Current Move của tàu.
+- **Lưới CEDEX đã làm** theo mô tả người dùng (chạm ô, mã tự điền; giả định nhiều hàng bất kỳ = X, chờ xác nhận). **Chờ người dùng:** Nhập tàu dùng form này + Current Move của tàu.
 - **Việc tiếp:** (1) sơ đồ lưới CEDEX khi có ảnh; (2) Giám định bổ sung trên kệ (W-SURVEY → eEIR) và Cấp vỏ (DEC-198) dùng cùng `EeirSurveyFields`; (3) 4 câu cũ còn treo: Cấp vỏ 1–30 → 1–20 ảnh?, DEC-198/199 chỉ DRY?; (4) tab eEIR ở EDI hãng tàu; (5) EDI tự động (chờ thông số SFTP).
 
 **▶ BÀN GIAO 2026-10-31 — DEC-202 TRẠNG THÁI & TIẾN ĐỘ CONT (ĐỌC TRƯỚC):**

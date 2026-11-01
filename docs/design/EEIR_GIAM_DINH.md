@@ -85,9 +85,9 @@ Số cont, hãng, size / type (ISO), năm SX, hạng Maersk • tóm tắt 3 m�
 | Damage Report | No Damage • Wear & Tear • **Floor Cleaning** • 3P & Handling **11 mặt** (D F L R T U B **E I N X**) | ✅ 3 phần + 11 mặt; Floor Cleaning: không làm mục riêng |
 | No Damage / Wear & Tear Images | "You can add **20** more Images" | ✅ 20 |
 | Floor Cleaning | **Cleaning needs** (mặc định Not required), 1 ô ảnh, Damage type = Dirty (cố định), Description 0/255 | **Không làm mục riêng** (người dùng 2026-11-01): ảnh sàn bẩn ghi ở mặt Sàn (B), loại Bẩn; nhu cầu vệ sinh theo mục Vệ sinh MATRAN |
-| Chi tiết mặt D / F | lưới **4 cột** (hẹp – rộng – rộng – hẹp) × **4 hàng** (mỏng – cao – cao – mỏng) | gõ tay — chờ mã ô |
-| Chi tiết mặt L / R | lưới **10 cột × 4 hàng** | gõ tay — chờ mã ô |
-| Chi tiết mặt T / U / B | lưới **10 cột × 2 hàng** | gõ tay — chờ mã ô |
+| Chi tiết mặt D / F | lưới **4 cột** (hẹp – rộng – rộng – hẹp) × **4 hàng** (mỏng – cao – cao – mỏng) | ✅ lưới chạm chọn (hàng H/T/B/G hoặc L/R, nhiều hàng = X; cột 1…0; 40' 10 ô / 20' 5 ô) |
+| Chi tiết mặt L / R | lưới **10 cột × 4 hàng** | ✅ lưới chạm chọn (hàng H/T/B/G hoặc L/R, nhiều hàng = X; cột 1…0; 40' 10 ô / 20' 5 ô) |
+| Chi tiết mặt T / U / B | lưới **10 cột × 2 hàng** | ✅ lưới chạm chọn (hàng H/T/B/G hoặc L/R, nhiều hàng = X; cột 1…0; 40' 10 ô / 20' 5 ô) |
 | Chi tiết mặt E / I / N | không lưới, vị trí `EXXX` / `IXXX` / `NXXX` | ✅ |
 | Chi tiết chung | Damage location (tự điền) • Damage type (mặc định Dirty) • Description 0/255 • Damage source (mặc định Customer) • 3 ô ảnh • Save | ✅ |
 | Trucker Details | Name • EDI Carrier Code • Company Name • **Vehicle Registration No.*** • Contact Number • Contact Email | lấy từ Văn phòng (số xe, SĐT) |
