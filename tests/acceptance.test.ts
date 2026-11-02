@@ -2714,6 +2714,22 @@ describe('DEC-206: danh mục CODE CEDEX theo hãng tàu', () => {
     expect(back.rows.map((r) => [r.itemName, r.repairCode, r.manHour, r.materialRate])).toEqual([['DR001', '-', 1, 28000], ['DR008', '0003', 0.1, 9215.85]]);
   });
 
+  it('Material Rate lưu nhiều số lẻ (ô chỉ hiển thị 0.00, có cả ô công thức) → làm tròn 2 số lẻ như Excel hiển thị + báo dòng', async () => {
+    const { default: ExcelJS } = await import('exceljs');
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('S');
+    ws.addRow(REPAIR_COLUMNS.slice(0, 7));
+    ws.addRow(['DR372', '03', 'Plain', 1, 0.1, '0901', 9215.85]);
+    ws.addRow(['DR373', '03', 'Many decimals', 1, 0.1, '0902', 1234.5678]);
+    ws.addRow(['DR374', '03', 'Formula', 1, 0.1, '0903', { formula: '1000/3', result: 333.3333333 }]);
+    for (const r of [2, 3, 4]) ws.getCell(`G${r}`).numFmt = '#,##0.00';
+    const back = await readRepairExcel((await wb.xlsx.writeBuffer()) as ArrayBuffer);
+    expect(back.errors).toEqual([]);
+    expect(back.rows.map((r) => r.materialRate)).toEqual([9215.85, 1234.57, 333.33]);
+    expect(back.rounded).toEqual([3, 4]);
+    expect(() => upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: back.rows })).not.toThrow();
+  });
+
   it('Repair Code lưu dạng số + định dạng 0000 trong Excel → vẫn đọc 0003', async () => {
     const { default: ExcelJS } = await import('exceljs');
     const wb = new ExcelJS.Workbook();

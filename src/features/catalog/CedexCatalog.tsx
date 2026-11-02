@@ -209,6 +209,11 @@ export const CedexCatalog: React.FC<{ state: DepotState; isAdmin: boolean; run: 
               File <b>{preview.file}</b>: <b className="text-success-fg">{preview.data.rows.length} dòng hợp lệ</b>
               {preview.data.errors.length > 0 && <>, <b className="text-danger-fg">{preview.data.errors.length} dòng lỗi</b> (bỏ qua — sửa file rồi nhập lại)</>}.
             </p>
+            {(preview.data.rounded?.length || 0) > 0 && (
+              <p className="rounded-md bg-amber-50 px-3 py-2 text-amber-900" data-testid="cedex-import-rounded">
+                {preview.data.rounded!.length} dòng có số nhiều hơn 2 số lẻ (Excel chỉ hiển thị làm tròn) — đã làm tròn 2 số lẻ đúng như Excel hiển thị: dòng {preview.data.rounded!.slice(0, 20).join(', ')}{preview.data.rounded!.length > 20 ? '…' : ''}.
+              </p>
+            )}
             {preview.data.errors.length > 0 && (
               <ul className="max-h-60 space-y-1 overflow-y-auto rounded-md border border-line bg-canvas p-2">
                 {preview.data.errors.slice(0, 200).map((e) => <li key={e.row}>Dòng {e.row}: {e.message}</li>)}

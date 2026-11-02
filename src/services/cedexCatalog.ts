@@ -147,6 +147,7 @@ const REPAIR_HEADERS: Record<string, string[]> = {
 export interface ImportPreview<T> {
   rows: T[];
   errors: { row: number; message: string }[]; // row = số dòng trong file Excel
+  rounded?: number[]; // dòng Excel có số > 2 số lẻ (ô chỉ HIỂN THỊ làm tròn) → đã làm tròn 2 số lẻ như Excel hiển thị
 }
 
 const parseStatus = (s: string) => !/^(ngung|ngungdung|inactive|n|0|khong)$/.test(norm(s));
@@ -214,7 +215,13 @@ export function parseRepairGrid(grid: Grid): ImportPreview<RepairCodeInput> {
   const found = locate(grid, REPAIR_HEADERS, ['itemName', 'repairName', 'repairCode']);
   if (!found) throw new Error(`Không thấy dòng tiêu đề — file cần các cột: ${REPAIR_COLUMNS.slice(0, 7).join(' | ')}.`);
   const { headerRow, idx } = found;
-  const out: ImportPreview<RepairCodeInput> = { rows: [], errors: [] };
+  const out: ImportPreview<RepairCodeInput> = { rows: [], errors: [], rounded: [] };
+  // Excel thường lưu số đầy đủ (VD công thức 1234.5678) nhưng ô định dạng 0.00 chỉ hiện 1,234.57 → lấy đúng số đang hiển thị
+  const round2 = (v: number, n: number) => {
+    const r = Math.round(v * 100) / 100;
+    if (Number.isFinite(v) && Math.abs(r - v) > 1e-9 && !out.rounded!.includes(n)) out.rounded!.push(n);
+    return r;
+  };
   const get = (r: string[], f: string) => (idx[f] === undefined ? '' : r[idx[f]] || '');
   for (let n = headerRow + 1; n < grid.length; n++) {
     const r = grid[n] || [];
@@ -222,8 +229,8 @@ export function parseRepairGrid(grid: Grid): ImportPreview<RepairCodeInput> {
     const qty = get(r, 'maxQty');
     const row: RepairCodeInput = {
       itemName: up(get(r, 'itemName')), repairMode: up(get(r, 'repairMode')) || '-', repairName: get(r, 'repairName'),
-      maxQty: qty ? parseNumber(qty) : null, manHour: parseNumber(get(r, 'manHour') || '0'), repairCode: up(get(r, 'repairCode')) || '-',
-      materialRate: parseNumber(get(r, 'materialRate') || '0'), isActive: parseStatus(get(r, 'status')),
+      maxQty: qty ? parseNumber(qty) : null, manHour: round2(parseNumber(get(r, 'manHour') || '0'), n + 1), repairCode: up(get(r, 'repairCode')) || '-',
+      materialRate: round2(parseNumber(get(r, 'materialRate') || '0'), n + 1), isActive: parseStatus(get(r, 'status')),
     };
     const p = repairCodeProblem(row);
     if (p) out.errors.push({ row: n + 1, message: `${row.itemName || '-'}: ${p}` });
