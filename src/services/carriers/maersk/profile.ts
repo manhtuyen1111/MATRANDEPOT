@@ -12,6 +12,7 @@ export const MAERSK: CarrierProfile = {
   features: {
     inspectionSurvey: true, // DEC-203
     releasePhoto: true, // DEC-198
+    aemsQuotation: true, // DEC-207
   },
   bookingRule: { test: isMaerskBooking, message: MAERSK_BOOKING_ERROR }, // DEC-199
   // DEC-204: API 1 getEquipmentDetails — CHƯA CÓ KHÓA → chưa kết nối (bật khi có Edge Function + khóa staging)

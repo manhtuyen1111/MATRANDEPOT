@@ -34,6 +34,7 @@ import { markVesselImportPlaced } from './vessel';
 import { resolveStuffing } from './stuffing';
 import { ASSIGNABLE_ROLES } from './permissions';
 import { carrierBookingProblem } from './carriers/registry';
+import { aemsRepairBlocker, usesAemsQuotation } from './aemsQuotation';
 import { surveyCondition, surveyRemarks, usesInspectionSurvey, validateSurvey } from './inspectionSurvey';
 import {
   appendAudit,
@@ -942,6 +943,7 @@ export function saveQuotationDraft(
   assertPermission(state, 'QUOTATION', 'chỉ Bộ phận Báo giá được cập nhật báo giá.');
   const container = findActiveContainer(state, input.containerNo);
   if (!container || !container.needsQuotation) throw new Error('Container không nằm trong hàng chờ Báo giá.');
+  if (usesAemsQuotation(container.shippingLineCode)) throw new Error(`Cont hãng ${container.shippingLineCode} báo giá theo AEMS (DEC-207).`);
   const items = input.quotationItems.map((i) => i.trim()).filter(Boolean);
   if (items.length === 0) throw new Error('Vui lòng nhập TÌNH TRẠNG SỬA CHỮA.');
   const laborHours = Number(input.laborHours);
@@ -971,6 +973,8 @@ export function confirmQuotationToRepair(state: DepotState, input: { containerNo
   if (!container.quotationItems?.length || !(Number(container.quotationLaborHours) > 0)) {
     throw new Error(`Chưa cập nhật TÌNH TRẠNG SỬA CHỮA / GIỜ CÔNG cho ${container.containerNo} — bấm "Cập nhật" trước.`);
   }
+  const aems = aemsRepairBlocker(container); // DEC-207: hãng báo giá AEMS → chờ Maersk Approved mới sửa
+  if (aems) throw new Error(`${container.containerNo}: ${aems} — chưa chuyển Sửa chữa.`);
   return approveDamageQuotation(state, {
     containerNo: container.containerNo,
     quotationItems: container.quotationItems,
@@ -2656,6 +2660,11 @@ export function bulkConfirmQuotationToRepair(state: DepotState, input: { contain
     }
     if (!c.quotationItems?.length || !(Number(c.quotationLaborHours) > 0)) {
       skipped.push({ containerNo: c.containerNo, reason: 'Chưa cập nhật tình trạng sửa chữa / giờ công' });
+      continue;
+    }
+    const aems = aemsRepairBlocker(c); // DEC-207
+    if (aems) {
+      skipped.push({ containerNo: c.containerNo, reason: aems });
       continue;
     }
     next = confirmQuotationToRepair(next, { containerNo: c.containerNo });

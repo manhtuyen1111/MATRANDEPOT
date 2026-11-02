@@ -2648,7 +2648,7 @@ describe('eEIR: CURRENT MOVE • LOCATION theo tác nghiệp', () => {
 // DEC-206: CODE CEDEX + MÃ SỬA CHỮA theo hãng tàu (Danh mục chung → Sửa chữa)
 import { parseRepairGrid, parseCedexGrid, readRepairExcel, REPAIR_COLUMNS, repairSheetRows, upsertCedexCodes, upsertRepairCodes } from '../src/services/cedexCatalog';
 describe('DEC-206: danh mục CODE CEDEX theo hãng tàu', () => {
-  const demo = createDemoState();
+  const demo = { ...createDemoState(), cedexCodes: [], repairCodes: [] }; // danh mục trống để kiểm tra thêm / cập nhật
   const admin = as(demo, 'usr-admin');
   const DR001 = { itemName: 'dr001', repairMode: '-', repairName: 'Man hour rate for dry repair', manHour: 1, repairCode: '-', materialRate: 28000 };
   const DR008 = { itemName: 'DR008', repairMode: '03', repairName: 'General - Replace missing rivets', maxQty: 7, manHour: 0.1, repairCode: '0804', materialRate: 9215.85 };
@@ -2744,3 +2744,81 @@ describe('Hồ sơ hãng tàu (carriers/registry)', () => {
     expect(new Set(CARRIERS.map((c) => c.key)).size).toBe(CARRIERS.length);
   });
 });
+
+// DEC-207: Báo giá theo AEMS Maersk (dòng Damage / Repair / Loc / TPI…), chờ Maersk Approved mới sửa
+import { aemsPreparation, computeAemsQuote, preparationRange, type AemsCatalog } from '../src/services/carriers/maersk/aems';
+import { aemsDraftLines, aemsRepairBlocker, saveAemsQuotation, setAemsApproval } from '../src/services/aemsQuotation';
+import { bulkConfirmQuotationToRepair, confirmQuotationToRepair, saveQuotationDraft } from '../src/services/depotOperations';
+describe('DEC-207: Báo giá AEMS', () => {
+  const demo = createDemoState();
+  const cat: AemsCatalog = {
+    repairCodes: [
+      ...demo.repairCodes,
+      { id: 'x1', shippingLineCode: 'MSK', itemName: 'DR100', repairMode: '03', repairName: 'Inside - remove', manHour: 0, repairCode: '0912', materialRate: 0, isActive: true },
+      { id: 'x2', shippingLineCode: 'MSK', itemName: 'DR101', repairMode: '03', repairName: 'Floor - cut & insert', manHour: 0.8, repairCode: '6620', materialRate: 6000, isActive: true },
+    ],
+    damageCodes: demo.cedexCodes.filter((c) => c.kind === 'DAMAGE'),
+  };
+  let n = 0;
+  const id = () => `t${n++}`;
+
+  it('dựng lại đúng phiếu AEMS mẫu: 0.8 giờ sửa + 0.1 chuẩn bị = 0.9 giờ → 25,200 + 6,000 = 31,200 (T 6,000)', () => {
+    const q = computeAemsQuote(cat, { lines: [
+      { damageCode: 'br', repairCode: '0912', locCode: 'ixxx', tpi: 'W', pcs: 1 },
+      { damageCode: 'CU', repairCode: '6620', locCode: 'BR5N', tpi: 'T', pcs: 1 },
+    ] }, id);
+    expect(q).toMatchObject({ mode: '03', repairHours: 0.8, preparationHours: 0.1, totalHours: 0.9, laborRate: 28000, laborCost: 25200, materialCost: 6000,
+      wearTearTotal: 0, thirdPartyTotal: 6000, totalExclVat: 31200, totalInclVat: 31200, cause: 'Third Party' });
+    expect(q.lines[0]).toMatchObject({ damageCode: 'BR', locCode: 'IXXX', manHours: 0, itemTotal: 0 });
+  });
+
+  it('Preparation theo khoảng giờ đọc từ tên mã DR002–DR006 (≤2 / 2–8 / 8–24 / 24–40 / >40)', () => {
+    expect(preparationRange('PREPARATION - FOR TOTAL REPAIR TIME BETWEEN 2 & 8 HRS.')).toEqual({ min: 2, max: 8 });
+    expect(preparationRange('Preparation - For total repair time exceeding 40 hrs.')).toEqual({ min: 40, max: Infinity });
+    expect([0, 0.5, 2, 2.1, 8, 8.5, 24, 30, 40, 40.5].map((h) => aemsPreparation(cat, h))).toEqual([0, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.5, 0.5, 0.8]);
+  });
+
+  it('từ chối dòng sai: mã hư / mã sửa không có trong danh mục, Loc sai, vượt Max Qty, không có dòng', () => {
+    const L = { damageCode: 'CU', repairCode: '0804', locCode: 'LB34', tpi: 'T' as const, pcs: 1 };
+    expect(() => computeAemsQuote(cat, { lines: [{ ...L, damageCode: 'ZZ' }] }, id)).toThrow(/Damage Code ZZ/);
+    expect(() => computeAemsQuote(cat, { lines: [{ ...L, repairCode: '9999' }] }, id)).toThrow(/Repair Code 9999/);
+    expect(() => computeAemsQuote(cat, { lines: [{ ...L, repairCode: '0003' }] }, id)).toThrow(/Repair Code 0003/); // mã PREPARATION tự tính, không chọn tay
+    expect(() => computeAemsQuote(cat, { lines: [{ ...L, locCode: 'LB3' }] }, id)).toThrow(/4 ký tự/);
+    expect(() => computeAemsQuote(cat, { lines: [{ ...L, pcs: 8 }] }, id)).toThrow(/tối đa 7/);
+    expect(() => computeAemsQuote(cat, { lines: [] }, id)).toThrow(/ít nhất 1 dòng/);
+    expect(() => computeAemsQuote({ ...cat, repairCodes: cat.repairCodes.filter((c) => c.itemName !== 'DR001') }, { lines: [L] }, id)).toThrow(/Man hour rate/);
+  });
+
+  it('luồng: dòng tạo sẵn từ Giám định → lưu (Draft) → chỉ Approved mới sang Sửa chữa; cách cũ bị chặn với MSK', () => {
+    const c = pendingQuotation(demo);
+    const q = as(demo, 'usr-quotation');
+    const draft = aemsDraftLines(q, c);
+    expect(draft[0]).toMatchObject({ tpi: 'T', locCode: expect.stringMatching(/^[A-Z0-9]{4}$/) });
+    expect(() => saveQuotationDraft(q, { containerNo: c.containerNo, quotationItems: ['x'], laborHours: 1 })).toThrow(/AEMS/);
+    let s = saveAemsQuotation(q, { containerNo: c.containerNo, lines: draft.map((l) => ({ ...l, damageCode: 'CU', repairCode: '0804', pcs: 2 })) });
+    const saved = s.containers.find((x) => x.id === c.id)!;
+    expect(saved.aemsQuote).toMatchObject({ approval: 'DRAFT', repairHours: 0.2, preparationHours: 0.1, totalHours: 0.3 });
+    expect(saved).toMatchObject({ quotationLaborHours: 0.3, quotationAmount: saved.aemsQuote!.totalExclVat });
+    expect(() => confirmQuotationToRepair(s, { containerNo: c.containerNo })).toThrow(/Maersk chưa duyệt \(Draft\)/);
+    expect(bulkConfirmQuotationToRepair(s, { containerIds: [c.id] }).skipped[0].reason).toMatch(/chưa duyệt/);
+    s = setAemsApproval(s, { containerNo: c.containerNo, approval: 'REJECTED', workOrderNo: '513325391' });
+    expect(aemsRepairBlocker(s.containers.find((x) => x.id === c.id)!)).toMatch(/Rejected/);
+    s = saveAemsQuotation(s, { containerNo: c.containerNo, lines: draft.map((l) => ({ ...l, damageCode: 'CU', repairCode: '0804', pcs: 1 })) }); // sửa lại → Draft, giữ số WO
+    expect(s.containers.find((x) => x.id === c.id)!.aemsQuote).toMatchObject({ approval: 'DRAFT', workOrderNo: '513325391' });
+    s = setAemsApproval(s, { containerNo: c.containerNo, approval: 'APPROVED' });
+    expect(() => saveAemsQuotation(s, { containerNo: c.containerNo, lines: draft })).toThrow(/đã duyệt/);
+    s = confirmQuotationToRepair(s, { containerNo: c.containerNo });
+    expect(s.containers.find((x) => x.id === c.id)).toMatchObject({ needsQuotation: false, needsRepair: true });
+  });
+
+  it('từ chối: sai quyền, trạng thái duyệt khi chưa lưu phiếu, đặt Draft bằng tay', () => {
+    const c = pendingQuotation(demo);
+    expect(() => saveAemsQuotation(as(demo, 'usr-office'), { containerNo: c.containerNo, lines: [] })).toThrow(/Báo giá/);
+    expect(() => setAemsApproval(as(demo, 'usr-quotation'), { containerNo: c.containerNo, approval: 'APPROVED' })).toThrow(/chưa LƯU/);
+    const s = saveAemsQuotation(as(demo, 'usr-quotation'), { containerNo: c.containerNo, lines: [{ damageCode: 'CU', repairCode: '0804', locCode: 'LB34', tpi: 'T', pcs: 1 }] });
+    expect(() => setAemsApproval(s, { containerNo: c.containerNo, approval: 'DRAFT' })).toThrow(/không hợp lệ/);
+  });
+});
+function pendingQuotation(s: DepotState) {
+  return s.containers.find((x) => x.needsQuotation && x.status !== 'GATED_OUT' && x.shippingLineCode === 'MSK' && !x.aemsQuote)!;
+}

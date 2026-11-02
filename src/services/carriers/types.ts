@@ -10,6 +10,7 @@ import type { CodecoConfig } from './standards/codeco';
 export interface CarrierFeatures {
   inspectionSurvey: boolean; // DEC-203: Giám định theo form eEIR (Không hư / Hao mòn / Hư bên thứ 3 + CEDEX)
   releasePhoto: boolean;     // DEC-198: Giám định chụp ảnh cấp vỏ trước khi trả chứng từ
+  aemsQuotation: boolean;    // DEC-207: Báo giá theo AEMS (dòng Damage / Repair / Loc / TPI…), chờ hãng duyệt mới sửa
 }
 
 // Kiểm tra số booking riêng của hãng (DEC-199) — null = hợp lệ
