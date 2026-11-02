@@ -92,7 +92,7 @@ export function codecoEvents(state: DepotState, range: { from: Date; to: Date },
     out.push({
       key: `IN-${c.id}`, source: 'HA_VO', gateIn: true, containerNo: c.containerNo, size: c.size, type: c.type, isoCode: iso(c),
       at: c.gateInAt, ref: `GRADE${grade}`, eqdStatus: '', damage: damaged ? '2' : '6', dossierCode: c.masterDossierCode,
-      problem: c.conditionClass === 'W-SURVEY' ? 'Chưa giám định (W-SURVEY) — chưa có hạng vỏ' : !grade ? 'Thiếu phân loại (hạng vỏ)' : undefined,
+      problem: c.conditionClass === 'W-SURVEY' ? 'Chưa giám định (GIÁM ĐỊNH SAU) — chưa có hạng vỏ' : !grade ? 'Thiếu phân loại (hạng vỏ)' : undefined,
     });
   }
 

@@ -121,7 +121,7 @@ export function eeirInspections(state: DepotState, range: { from: Date; to: Date
     const { general, damages } = surveyDamages(survey, gi?.doorPhotoUrl);
     const truck = truckOf(gi?.truckNo || c.truckNo);
     const problems: string[] = [];
-    if (c.conditionClass === 'W-SURVEY') problems.push('Chưa giám định (W-SURVEY)');
+    if (c.conditionClass === 'W-SURVEY') problems.push('Chưa giám định (GIÁM ĐỊNH SAU)');
     checks(problems, c.containerNo, truck, general, c.conditionClass === 'DAMAGE' && !survey?.damages.length);
     out.push({
       key: `IN-${c.id}`, source: 'HA_VO', dossierCode: c.masterDossierCode, containerNo: c.containerNo, size: c.size, type: c.type,
