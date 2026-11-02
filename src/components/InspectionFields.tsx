@@ -100,7 +100,7 @@ export const InspectionFields: React.FC<{
   return (
     <div className="space-y-3">
       {hideCondition ? null : survey ? (
-        <Section title={allowDeferred ? '1. TÌNH TRẠNG (eEIR Maersk) / W-SURVEY *' : '1. TÌNH TRẠNG (eEIR Maersk) *'}>
+        <Section title={allowDeferred ? '1. TÌNH TRẠNG (eEIR Maersk) / GIÁM ĐỊNH SAU *' : '1. TÌNH TRẠNG (eEIR Maersk) *'}>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -117,7 +117,7 @@ export const InspectionFields: React.FC<{
                 onClick={() => set({ condition: 'W-SURVEY', damage: [], damageNote: '', stuffing: '', year: '' })}
                 className={choiceCls(deferred, 'border-amber-500 bg-amber-500 text-ink')}
               >
-                W-SURVEY (LÊN KỆ)
+                GIÁM ĐỊNH SAU (LÊN KỆ)
               </button>
             )}
           </div>
@@ -127,7 +127,7 @@ export const InspectionFields: React.FC<{
           {v.condition && !deferred && <EeirSurveyFields value={survey.value} onChange={setSurvey} fixedSize={survey.fixedSize} hasDoorPhoto={survey.hasDoorPhoto} />}
         </Section>
       ) : (
-      <Section title={allowDeferred ? '1. TRẠNG THÁI : DAMAGE / AV / W-SURVEY *' : '1. TRẠNG THÁI : DAMAGE / AV *'}>
+      <Section title={allowDeferred ? '1. TRẠNG THÁI : DAMAGE / AV / GIÁM ĐỊNH SAU *' : '1. TRẠNG THÁI : DAMAGE / AV *'}>
         <div className="grid grid-cols-2 gap-2">
           {choices.map((cls) => (
             <button
@@ -140,7 +140,7 @@ export const InspectionFields: React.FC<{
                 cls === 'DAMAGE' ? 'border-rose-600 bg-rose-600 text-white' : cls === 'AV' ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-amber-500 bg-amber-500 text-ink'
               )}`}
             >
-              {cls === 'W-SURVEY' ? 'W-SURVEY (LÊN KỆ)' : cls}
+              {cls === 'W-SURVEY' ? 'GIÁM ĐỊNH SAU (LÊN KỆ)' : cls}
             </button>
           ))}
         </div>

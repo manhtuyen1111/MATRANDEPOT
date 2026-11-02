@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle2, Clock, Eye, EyeOff, FileDown, FileText, Printer, ReceiptText, X } from 'lucide-react';
 import { ContainerStatus, K80InternalTicket, VesselList, VesselListItem } from '../types/depot';
+import { conditionLabel } from '../types/depot';
 import { DepotState } from '../services/depotStore';
 import { formatLocation } from '../services/core';
 import { containerIsoCode } from '../services/depotOperations';
@@ -246,7 +247,7 @@ export const MasterDossierModal: React.FC<Props> = ({ masterDossierCode, state, 
           <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-white/20 pt-3 text-xs sm:grid-cols-4 [&_dd]:text-white [&_dt]:text-slate-300">
             <Field label="Size / Type (ISO)" value={`${container?.size || gateIn?.size || '-'} / ${container?.type || gateIn?.type || '-'}${isoCode ? ` (${isoCode})` : ''}`} />
             <Field label="Hãng tàu" value={container?.shippingLineCode || gateIn?.shippingLineCode} />
-            <Field label="Trạng thái • Đóng hàng" value={`${container?.conditionClass || gateIn?.conditionClass || '-'} • ${container?.stuffingClass || gateIn?.stuffingClass || '-'}`} />
+            <Field label="Trạng thái • Đóng hàng" value={`${conditionLabel(container?.conditionClass || gateIn?.conditionClass) || '-'} • ${container?.stuffingClass || gateIn?.stuffingClass || '-'}`} />
             <Field label="AGE" value={container?.manufactureYear || gateIn?.manufactureYear} />
             <Field label="Vị trí hiện tại" value={container ? formatLocation(container) : '-'} mono />
             <Field label={importHit ? "Tàu" : "Khách hàng"} value={importHit ? importHit.list.vesselName : gateIn?.customerRep || container?.customerRep} />

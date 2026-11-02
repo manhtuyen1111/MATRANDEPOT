@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Database, IdCard, KeyRound, LogOut, RefreshCw, ShieldCheck, UserCheck, X } from 'lucide-react';
+import { Database, Download, IdCard, KeyRound, LogOut, RefreshCw, ShieldCheck, Smartphone, UserCheck, X } from 'lucide-react';
+import { promptInstall, useInstallOption } from '../lib/pwa';
 import { ROLE_LABELS, STAFF_GENDER_LABELS, StaffUser } from '../types/depot';
 
 // Icon QUẢN TRỊ HỆ THỐNG góc phải header: bấm mở danh mục THÔNG TIN NHÂN VIÊN + thao tác tài khoản
@@ -18,6 +19,8 @@ const itemCls = 'flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-left
 export const AccountMenu: React.FC<AccountMenuProps> = ({ currentUser, remote, demo, defaultOpen = false }) => {
   const [open, setOpen] = useState(defaultOpen);
   const [showProfile, setShowProfile] = useState(false); // DEC-191: Thông tin chi tiết của chính mình
+  const install = useInstallOption(); // DEC-205: cài ứng dụng lên điện thoại
+  const [iosHelp, setIosHelp] = useState(false);
   const act = (fn: () => void) => () => {
     setOpen(false);
     fn();
@@ -73,6 +76,18 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ currentUser, remote, d
                 <IdCard className="h-4 w-4 text-ink-muted" />
                 Thông tin chi tiết
               </button>
+              {install && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={act(() => (install === 'INSTALL' ? void promptInstall() : setIosHelp(true)))}
+                  className={itemCls}
+                  data-testid="install-app"
+                >
+                  <Download className="h-4 w-4 text-ink-muted" />
+                  Cài ứng dụng
+                </button>
+              )}
               {remote?.onReload && (
                 <button type="button" role="menuitem" onClick={act(remote.onReload)} className={itemCls} data-testid="reload-data">
                   <RefreshCw className="h-4 w-4 text-ink-muted" />
@@ -106,6 +121,22 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ currentUser, remote, d
             </div>
           </div>
         </>
+      )}
+      {iosHelp && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center" role="dialog" aria-modal="true" aria-label="Cài ứng dụng trên iPhone" onClick={() => setIosHelp(false)}>
+          <div className="w-full max-w-sm rounded-lg bg-white p-5 text-sm shadow-xl" onClick={(e) => e.stopPropagation()} data-testid="install-ios-help">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 font-bold text-ink"><Smartphone className="h-4 w-4" />Cài ứng dụng trên iPhone</h2>
+              <button type="button" onClick={() => setIosHelp(false)} aria-label="Đóng" className="rounded-md border border-line p-1 text-ink-muted hover:bg-canvas"><X className="h-4 w-4" /></button>
+            </div>
+            <ol className="list-decimal space-y-1.5 pl-5 text-ink">
+              <li>Mở trang này bằng <b>Safari</b>.</li>
+              <li>Bấm nút <b>Chia sẻ</b> (ô vuông có mũi tên lên).</li>
+              <li>Chọn <b>Thêm vào Màn hình chính</b> → <b>Thêm</b>.</li>
+            </ol>
+            <p className="mt-3 text-xs text-ink-muted">Sau đó mở MATRAN từ biểu tượng trên màn hình như một ứng dụng.</p>
+          </div>
+        </div>
       )}
       {showProfile && <MyProfile user={currentUser} username={remote?.username} onClose={() => setShowProfile(false)} />}
     </div>

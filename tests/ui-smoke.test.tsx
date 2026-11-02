@@ -1330,3 +1330,30 @@ describe('DEC-203: sơ đồ lưới vị trí hư', () => {
     expect(renderToString(<CedexGridPicker side="L" location="LT89" onChange={noop} />)).toContain('>LT89<');
   });
 });
+
+// DEC-205: PWA — cài lên điện thoại như ứng dụng; trên máy tính mở bằng link như cũ
+import { existsSync, readFileSync } from 'node:fs';
+import { isIosSafari } from '../src/lib/pwa';
+describe('DEC-205: PWA cài như ứng dụng', () => {
+  it('manifest đủ trường cài đặt + icon 192 / 512 / maskable tồn tại; index.html gắn manifest', () => {
+    const m = JSON.parse(readFileSync('public/manifest.webmanifest', 'utf-8'));
+    expect(m).toMatchObject({ name: 'MATRAN DEPOT', start_url: '/', scope: '/', display: 'standalone' });
+    expect(m.icons.map((i: { sizes: string; purpose: string }) => `${i.sizes}:${i.purpose}`)).toEqual(['192x192:any', '512x512:any', '512x512:maskable']);
+    for (const i of m.icons) expect(existsSync(`public${i.src}`)).toBe(true);
+    const html = readFileSync('index.html', 'utf-8');
+    expect(html).toContain('rel="manifest" href="/manifest.webmanifest"');
+    expect(html).toContain('rel="apple-touch-icon"');
+  });
+
+  it('service worker không lưu dữ liệu nghiệp vụ: bỏ qua tên miền khác (Supabase / ảnh kho) và lệnh ghi', () => {
+    const sw = readFileSync('public/sw.js', 'utf-8');
+    expect(sw).toContain("if (req.method !== 'GET') return;");
+    expect(sw).toContain('if (url.origin !== self.location.origin) return;');
+  });
+
+  it('nhận đúng iPhone Safari (hiện hướng dẫn Thêm vào Màn hình chính)', () => {
+    expect(isIosSafari('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1')).toBe(true);
+    expect(isIosSafari('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) CriOS/120.0 Mobile Safari/604.1')).toBe(false);
+    expect(isIosSafari('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0 Safari/537.36')).toBe(false);
+  });
+});

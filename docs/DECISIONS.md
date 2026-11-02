@@ -1527,6 +1527,14 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-205 — PWA: cài MATRAN DEPOT lên điện thoại như ứng dụng
+
+- Trạng thái: CONFIRMED (2026-11-02, người dùng): "thiết kế app với tính năng PWA để cài như 1 ứng dụng trên mobile; dùng link thì dùng PC như bình thường".
+- **Cùng 1 trang web, không tách app riêng:** máy tính mở bằng đường link như cũ; điện thoại cài lên Màn hình chính → mở toàn màn hình (không thanh địa chỉ), biểu tượng chữ **M** nền navy.
+- **Cài đặt:** menu **Quản trị hệ thống → Cài ứng dụng** (Android / Chrome / Edge: hộp cài của trình duyệt). iPhone: hướng dẫn Safari → Chia sẻ → Thêm vào Màn hình chính. Đã cài thì ẩn mục này. Không thêm nút ra header (DEC-177).
+- **Service worker (`public/sw.js`):** chỉ lưu "vỏ" ứng dụng cùng tên miền (trang, JS / CSS, icon) để mở nhanh khi sóng yếu; trang luôn lấy mạng trước (bản mới có hiệu lực ngay). **Không lưu dữ liệu nghiệp vụ / ảnh kho** — Supabase là tên miền khác, đi thẳng mạng; không làm chế độ ngoại tuyến cho tác nghiệp. Chỉ đăng ký ở bản build thật (`src/lib/pwa.ts`).
+- File: `public/manifest.webmanifest`, `public/icons/*`, `index.html` (manifest, apple-touch-icon). Không cài thêm package.
+
 ### DEC-204 — Giám định Hạ vỏ: SỐ CONT trước + API hãng tàu; chọn GIÁM ĐỊNH TRỰC TIẾP / GIÁM ĐỊNH SAU
 
 - Trạng thái: CONFIRMED (2026-11-02, người dùng). Thay một phần DEC-203 ("Giám định không nhập số cont") và cách chọn W-SURVEY ở DEC-147.
@@ -1535,6 +1543,7 @@ Quy ước trạng thái:
 - **Phân loại theo hạng vỏ của hãng:** hạng vỏ API trả về dùng thẳng làm mã **PHÂN LOẠI** nếu mã đó có trong Danh mục Phân loại của hãng (DEC-166). Danh mục MSK bổ sung đủ hạng Maersk **M / S / K / E / Q / N** (Demo đã có; database: Admin thêm ở Danh mục chung → Phân loại). Thiết kế chung — hãng mới chỉ cần thêm nguồn API (`EQUIPMENT_SOURCES`) + Danh mục Phân loại.
 - **Bước 2 — chọn cách giám định:** **GIÁM ĐỊNH TRỰC TIẾP** = giám định ngay (cont MSK: form eEIR DEC-203; hãng khác: AV / DAMAGE + Đóng hàng + AGE). **GIÁM ĐỊNH SAU** = W-SURVEY lên kệ (DEC-147): chỉ chọn **Vệ sinh** rồi xác nhận; Xe nâng hạ lên kệ.
 - **Giám định trên kệ cont MSK theo eEIR:** tab Chờ giám định trên kệ dùng form eEIR như Giám định trực tiếp; **size theo cont Văn phòng đã nhập** (không chọn lại); ảnh cửa lúc hạ vỏ tính vào KHÔNG HƯ. Lưu vào `GateInOrder.survey`; database `record_rack_survey` (migration `20261125000001`). Hồ sơ: dòng Tình trạng eEIR theo giờ giám định trên kệ.
+- **Đổi tên hiển thị (người dùng 2026-11-02):** trạng thái **W-SURVEY hiển thị là "GIÁM ĐỊNH SAU"** ở mọi nơi (màn hình, phiếu EEIR K80, hồ sơ, báo cáo, Excel, nhật ký, thông báo lỗi). Mã dữ liệu `W-SURVEY` **giữ nguyên** (database / dữ liệu cũ). Chỉ hiển thị bằng `conditionLabel` / `DEFERRED_LABEL` (`src/types/depot.ts`) — không in thẳng `conditionClass`. Database: migration `20261126000001_deferred_label` (chữ nhật ký + lỗi).
 - Kiểm tra ở service: `recordGateInFieldStep` (định dạng số cont — `normalizeContainerNo`), `completeRackInspection` (`validateSurvey`, trạng thái = `surveyCondition`).
 - Chưa làm: gọi API thật (chờ khóa staging Maersk); lưu thông tin API (ISO, hạng) vào hồ sơ; cảnh báo `stBlock` / cont bán (EDI_MAERSK 15.1).
 
@@ -2083,6 +2092,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-204 đã xác nhận (cập nhật 2026-11-02).
+- Quyết định nghiệp vụ: DEC-001 → DEC-205 đã xác nhận (cập nhật 2026-11-02).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

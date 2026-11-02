@@ -3,6 +3,7 @@ import { ScanField } from '../../components/Qr';
 import { completeCleaningTask, completeRepairTask, executeGateOut, updateContainerLocation } from '../../services/api';
 import { Camera, CheckCircle2, ChevronDown, ChevronUp, MapPin, QrCode, Search, X } from 'lucide-react';
 import { ContainerRecord, SWAP_REASON_LABELS } from '../../types/depot';
+import { conditionLabel } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import { REPAIR_PHOTO_MAX, REPAIR_PHOTO_MIN, swapPlacementBlocker } from '../../services/depotOperations';
 import { PhotoCamera } from '../../components/PhotoCamera';
@@ -291,7 +292,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                   <div className="text-right">
                     <span className="block text-[10px] font-semibold uppercase text-slate-300">Trạng thái / Đóng hàng</span>
                     <span className={`font-mono text-lg font-black ${scanned.conditionClass === 'DAMAGE' ? 'text-rose-300' : 'text-emerald-300'}`}>
-                      {scanned.conditionClass} / {scanned.stuffingClass}
+                      {conditionLabel(scanned.conditionClass)} / {scanned.stuffingClass}
                     </span>
                   </div>
                 ) : (
@@ -332,7 +333,7 @@ export const FieldQueueWorkspaces: React.FC<Props> = ({ mode, state, onUpdateSta
                 <dt className="text-ink-muted">Size / Type / AGE</dt>
                 <dd className="font-semibold">{scanned.size}/{scanned.type} • {scanned.manufactureYear}</dd>
                 <dt className="text-ink-muted">Trạng thái / Đóng hàng</dt>
-                <dd className="font-semibold">{scanned.conditionClass} • {scanned.stuffingClass}</dd>
+                <dd className="font-semibold">{conditionLabel(scanned.conditionClass)} • {scanned.stuffingClass}</dd>
               </>
             )}
             <dt className="text-ink-muted">Vệ sinh</dt>

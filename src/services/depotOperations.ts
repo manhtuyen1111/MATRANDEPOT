@@ -27,6 +27,7 @@ import {
   SwapReason,
   CONDITION_DEFERRED,
 } from '../types/depot';
+import { conditionLabel } from '../types/depot';
 import { DepotState, hasRolePermission } from './depotStore';
 import { allocateCode } from './codes';
 import { markVesselImportPlaced } from './vessel';
@@ -209,7 +210,7 @@ export function recordGateInFieldStep(
     'GATE_IN',
     code,
     deferred
-      ? `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: W-SURVEY (LÊN KỆ), Vệ sinh [${normalizedCleaning.join(', ')}] — HẠ KỆ GIÁM ĐỊNH`
+      ? `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: GIÁM ĐỊNH SAU (LÊN KỆ), Vệ sinh [${normalizedCleaning.join(', ')}] — HẠ KỆ GIÁM ĐỊNH`
       : `[Hồ sơ ${code}] Giám định xác nhận Hạ vỏ: Trạng thái ${input.conditionClass}${
           remarks.length ? ` (${remarks.join(', ')})` : ''
         }, Hãng ${lineCode}, Đóng hàng ${stuffing || '-'}, Vệ sinh [${normalizedCleaning.join(', ')}], AGE ${year}${
@@ -251,7 +252,7 @@ export function completeRackInspection(
   assertPermission(state, 'GATE_IN_FIELD', 'chỉ Bộ phận Giám định / Hiện trường / Quản lý mới được giám định bổ sung trên kệ.');
   const c = state.containers.find((x) => x.id === input.containerId);
   if (!c || c.status === 'GATED_OUT') throw new Error('Không tìm thấy container đang lưu bãi.');
-  if (c.conditionClass !== CONDITION_DEFERRED) throw new Error(`Container ${c.containerNo} không ở trạng thái W-SURVEY (đã giám định).`);
+  if (c.conditionClass !== CONDITION_DEFERRED) throw new Error(`Container ${c.containerNo} không ở trạng thái GIÁM ĐỊNH SAU (đã giám định).`);
   if (c.status !== 'IN_YARD') throw new Error(`Container ${c.containerNo} chưa được Xe nâng hạ lên kệ — chưa giám định bổ sung được.`);
   if (input.conditionClass !== 'AV' && input.conditionClass !== 'DAMAGE') throw new Error('Vui lòng chọn TRẠNG THÁI AV hoặc DAMAGE.');
   const stuffing = resolveStuffing(state, c.shippingLineCode, input.stuffingClass); // DEC-166
@@ -1094,7 +1095,7 @@ export function releaseBlocker(c: ContainerRecord): string | null {
   if (c.vesselExportItemId) return 'Đang trong danh sách XUẤT TÀU';
   if (c.isOnHold) return 'Container đang bị KHÓA';
   if (c.needsCleaning) return 'Chưa xác nhận vệ sinh';
-  if (c.conditionClass === CONDITION_DEFERRED) return 'Chưa giám định (W-SURVEY)'; // DEC-147
+  if (c.conditionClass === CONDITION_DEFERRED) return 'Chưa giám định (GIÁM ĐỊNH SAU)'; // DEC-147
   if (c.conditionClass === 'AV' && (c.needsQuotation || c.needsRepair)) return 'Chưa hoàn tất báo giá / sửa chữa';
   return null;
 }
@@ -1262,7 +1263,7 @@ export function createReleaseOrder(
     'RELEASE_ORDER_CREATED',
     'GATE_OUT',
     outCode.code,
-    `[Hồ sơ ${outCode.code}] Lập lệnh CẤP VỎ ${container.containerNo} (${container.conditionClass}) theo booking ${bookingNo}, xe ${truckNo}${purpose === 'SALE' ? `, Release for sale — Sale code ${saleCode}` : ''}; chứng từ ${voucher.voucherNo}: ${amount.toLocaleString('vi-VN')}đ`,
+    `[Hồ sơ ${outCode.code}] Lập lệnh CẤP VỎ ${container.containerNo} (${conditionLabel(container.conditionClass)}) theo booking ${bookingNo}, xe ${truckNo}${purpose === 'SALE' ? `, Release for sale — Sale code ${saleCode}` : ''}; chứng từ ${voucher.voucherNo}: ${amount.toLocaleString('vi-VN')}đ`,
     container.masterDossierCode
   );
 }
@@ -1729,7 +1730,7 @@ export function executeGateOut(
     'GATE_OUT_OK',
     'GATE_OUT',
     order.gateOutCode,
-    `[Hồ sơ ${order.gateOutCode}] Xuất bãi ${container.containerNo} (${container.conditionClass}) từ ${prevLoc}${
+    `[Hồ sơ ${order.gateOutCode}] Xuất bãi ${container.containerNo} (${conditionLabel(container.conditionClass)}) từ ${prevLoc}${
       input.pickupBlock ? ` (xác nhận lấy tại ${input.pickupBlock})` : ''
     } theo booking ${booking.bookingNo}, xe ${order.truckNo}`,
     container.masterDossierCode

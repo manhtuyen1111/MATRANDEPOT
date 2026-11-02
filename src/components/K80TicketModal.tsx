@@ -5,6 +5,7 @@ import { printNow } from './printNow';
 import { PrintFooter, PrintPortal, ReceiptPaymentBody, Signatures } from './ReceiptPrint';
 import { receiptCollectorName } from '../services/payments';
 import { K80InternalTicket, PaymentReceipt, VesselList, VesselListItem } from '../types/depot';
+import { conditionLabel } from '../types/depot';
 import { getVesselRoute, vesselQrCode } from '../services/vessel';
 import type { DepotState } from '../services/depotStore';
 import { getDriverRoute, isTicketClosed } from '../services/driverRoute';
@@ -107,7 +108,7 @@ const TicketInfoRows: React.FC<{ ticket: K80InternalTicket }> = ({ ticket }) => 
     <Row label="SIZE / TYPE" value={`${ticket.size} / ${ticket.type}${ticket.manufactureYear ? ` • AGE ${ticket.manufactureYear}` : ''}`} />
     <Row label="SỐ XE" value={ticket.truckNo} big />
     <Row label="SĐT LÁI XE" value={ticket.driverPhone} />
-    <Row label="TRẠNG THÁI" value={ticket.stuffingClass ? `${ticket.conditionClass} • Đóng hàng ${ticket.stuffingClass}` : ticket.conditionClass} />
+    <Row label="TRẠNG THÁI" value={ticket.stuffingClass ? `${conditionLabel(ticket.conditionClass)} • Đóng hàng ${ticket.stuffingClass}` : conditionLabel(ticket.conditionClass)} />
     {ticket.damageRemarks && ticket.damageRemarks.length > 0 && <Row label="HƯ HỎNG" value={ticket.damageRemarks.join(', ')} />}
     <Row label="VỆ SINH" value={ticket.cleaningItems.join(' + ')} />
     <Row label="THANH TOÁN" value={`${ticket.isPaid ? '✓' : '✗'} ${ticket.paymentLabel}`} />
@@ -211,7 +212,7 @@ export const VesselEeirPrintSheet: React.FC<{ state: DepotState; list: VesselLis
         <Row label={isImport ? 'VÀO BÃI' : 'OUT'} value={formatDateTime(isImport ? container?.gateInAt : item.doneAt)} />
         {!isImport && <Row label="DATE IN" value={formatDateTime(container?.gateInAt)} />}
         <Row label={isImport ? 'VỊ TRÍ HẠ' : 'VỊ TRÍ LẤY'} value={location} />
-        <Row label="TRẠNG THÁI" value={cond.stuffing ? `${cond.condition || '-'} • Đóng hàng ${cond.stuffing}` : cond.condition} />
+        <Row label="TRẠNG THÁI" value={cond.stuffing ? `${conditionLabel(cond.condition) || '-'} • Đóng hàng ${cond.stuffing}` : conditionLabel(cond.condition)} />
         {cond.damage && cond.damage.length > 0 && <Row label="HƯ HỎNG" value={cond.damage.join(', ')} />}
         <Row label="VỆ SINH" value={(cond.cleaning || []).join(' + ')} />
         <Row label="GIÁM ĐỊNH" value={cond.by ? `${cond.by} • ${formatDateTime(cond.at)}` : '-'} />

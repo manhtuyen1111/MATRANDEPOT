@@ -3,7 +3,10 @@ import ReactDOM from 'react-dom/client';
 import { isSupabaseConfigured } from './lib/env';
 import { INVOICE_PORTAL_HASH } from './services/invoice';
 import { AppLoading } from './components/LoadingScreens';
+import { registerPwa } from './lib/pwa';
 import './index.css';
+
+registerPwa(); // DEC-205: cài lên điện thoại như ứng dụng (chỉ bản build thật)
 
 // Chỉ tải phần cần dùng: bản database (kèm thư viện Supabase) / bản Demo / trang hóa đơn khách
 const App = lazy(async () => ({ default: (await import('./app/App')).App }));
