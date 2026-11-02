@@ -294,6 +294,8 @@ function buildState(base: DepotState, raw: RawData): DepotState {
       holdSource: opt(c.hold_source), quotationItems: c.quotation_items?.length ? c.quotation_items : undefined,
       quotationLaborHours: c.quotation_labor_hours === null ? undefined : num(c.quotation_labor_hours),
       quotationUpdatedBy: opt(c.quotation_by_name), quotationUpdatedAt: opt(c.quotation_at),
+      aemsQuote: c.aems_quote || undefined, // DEC-207: phiếu AEMS (database tính, cùng cấu trúc AemsQuote)
+      quotationAmount: c.aems_quote ? num(c.aems_quote.totalExclVat) : undefined,
       isOnHold: c.is_on_hold, holdReason: opt(c.hold_reason), holdBy: opt(c.hold_by_name), holdAt: opt(c.hold_at),
       allocatedBookingNo: go?.booking_no, allocatedTruckNo: go?.truck_no, allocatedDriverPhone: opt(go?.driver_phone), allocatedAt: go?.created_at,
       outDossierCode: opt(c.out_dossier_code), officeNote: opt(c.office_note), officeNoteUpdatedBy: opt(c.office_note_by_name), officeNoteUpdatedAt: opt(c.office_note_at),
