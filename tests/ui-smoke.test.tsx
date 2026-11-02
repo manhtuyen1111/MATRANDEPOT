@@ -1370,3 +1370,19 @@ describe('eEIR: dòng CURRENT MOVE trên màn Giám định', () => {
     expect(renderToString(<EeirMoveLine state={st} source="CAP_SALE" />)).toContain('OUT-EMPTY-POSITION');
   });
 });
+
+// DEC-206: Danh mục chung → Sửa chữa → CODE CEDEX
+import { CedexCatalog } from '../src/features/catalog/CedexCatalog';
+import { upsertRepairCodes } from '../src/services/cedexCatalog';
+describe('DEC-206: tab CODE CEDEX', () => {
+  it('Admin thấy NHẬP EXCEL / THÊM MÃ + bảng MÃ SỬA CHỮA đúng cột mẫu; Văn phòng chỉ xem', () => {
+    const base = createDemoState();
+    const s = upsertRepairCodes(as(base, 'usr-admin'), { shippingLineCode: 'MSK', rows: [{ itemName: 'DR008', repairMode: '03', repairName: 'General - Replace missing rivets', maxQty: 7, manHour: 0.1, repairCode: '0804', materialRate: 9215.85 }] });
+    const html = renderToString(<CedexCatalog state={s} isAdmin run={() => true} />).replace(/<!-- -->/g, '');
+    for (const t of ['MÃ VỊ TRÍ', 'MÃ HƯ HỎNG', 'MÃ VẬT LIỆU', 'MÃ SỬA CHỮA', 'NHẬP EXCEL', 'THÊM MÃ', 'Material Rate (Excluding VAT)', '9,215.85', '0804']) expect(html).toContain(t);
+    expect(html).toContain('data-table');
+    const view = renderToString(<CedexCatalog state={as(s, 'usr-office')} isAdmin={false} run={() => true} />);
+    expect(view).not.toContain('NHẬP EXCEL');
+    expect(view).toContain('DR008');
+  });
+});

@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-206 (2026-11-02): **Danh mục chung → Sửa chữa → CODE CEDEX** theo hãng tàu — Mã vị trí / hư hỏng / vật liệu + **Mã sửa chữa** (mẫu bảng giá AEMS), nhập Excel có xem trước lỗi, xuất Excel, Admin sửa. **Migration mới `20261127000001_cedex_catalog`** (pgTAP `0029`) — pgTAP 390/390, chạy thật 5/5 local. Phân tích màn Báo giá AEMS: `docs/design/BAO_GIA_AEMS.md`.
 - 2026-11-02 (người dùng duyệt): màn Giám định cont MSK (Hạ vỏ, Giám định trên kệ, Nhập tàu, Cấp vỏ) có dòng chỉ đọc **CURRENT MOVE • LOCATION** như app eEIR (VD `IN-EMPTY-IMPORT_RETURN` • `3HY - MATRAN DEPOT`) — tự gán theo tác nghiệp từ `EEIR_SOURCE_MOVE` (cùng nguồn với phiếu eEIR). Không migration.
 - DEC-204 bổ sung (2026-11-02): **W-SURVEY hiển thị "GIÁM ĐỊNH SAU"** khắp app (màn hình, phiếu K80, hồ sơ, báo cáo, Excel, nhật ký) — mã dữ liệu giữ W-SURVEY; hàm `conditionLabel`. **Migration mới `20261126000001_deferred_label`** (chữ nhật ký / lỗi của `record_gate_in_field_step`, `complete_rack_inspection`; pgTAP `0028`) — pgTAP 381/381, chạy thật 4/4 local.
 - DEC-205 (2026-11-02): **PWA** — cài MATRAN DEPOT lên điện thoại như ứng dụng (menu Quản trị hệ thống → **Cài ứng dụng**; iPhone có hướng dẫn); máy tính dùng link như cũ. `public/manifest.webmanifest`, `public/sw.js` (chỉ lưu vỏ ứng dụng, không lưu dữ liệu Supabase), icon `public/icons/`. Không migration, không package mới.

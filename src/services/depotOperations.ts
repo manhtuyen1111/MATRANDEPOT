@@ -1775,7 +1775,7 @@ export function simulateDemoBankTransfer(state: DepotState, input: { transaction
 // ============================================================================
 // 13. CẤU HÌNH DANH MỤC CHUNG (CHỈ ADMIN CÓ QUYỀN CẤU HÌNH)
 // ============================================================================
-function assertAdmin(state: DepotState): void {
+export function assertAdmin(state: DepotState): void {
   if (!hasRolePermission(state.currentUser, ['ADMIN'])) {
     throw new Error(
       'Từ chối quyền: Chỉ tài khoản Quản trị hệ thống (ADMIN) mới có quyền cấu hình DANH MỤC CHUNG.'

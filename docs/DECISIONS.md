@@ -1527,6 +1527,15 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-206 — Danh mục CODE CEDEX theo hãng tàu (Danh mục chung → Sửa chữa)
+
+- Trạng thái: CONFIRMED (2026-11-02, người dùng).
+- Tab **CODE CEDEX** trong Danh mục chung → Sửa chữa. Chọn **hãng tàu** → 4 bảng: **MÃ VỊ TRÍ • MÃ HƯ HỎNG • MÃ VẬT LIỆU** (Mã | Tên | Ghi chú | Trạng thái) và **MÃ SỬA CHỮA** đúng mẫu bảng giá hãng: Item Name | Repair Mode | Repair Name | Max Qty per work order | Fixed man hour applicable per work order | Repair Code | Material Rate (Excluding VAT) (+ Trạng thái).
+- **Nhập Excel + sửa tay:** NHẬP EXCEL tìm dòng tiêu đề trong 10 dòng đầu (tên cột tiếng Anh / Việt, không phân biệt hoa thường, xuống dòng) → **xem trước** số dòng hợp lệ / dòng lỗi → LƯU dòng hợp lệ (mã đã có thì cập nhật). Giữ số 0 đầu (0003). THÊM MÃ / bấm dòng sửa / ngừng dùng. Xuất Excel cùng cột màn hình (DEC-129).
+- **Quyền:** chỉ **Admin** thêm / sửa / nhập; khối Văn phòng xem. Database chỉ tải danh mục này cho người xem được Danh mục Sửa chữa (máy hiện trường không tải).
+- Nghiệp vụ: `src/services/cedexCatalog.ts`; database `cedex_codes`, `repair_codes`, RPC `catalog_upsert_cedex_codes` / `catalog_upsert_repair_codes` (migration `20261127000001`).
+- **Bước sau (chưa code):** nối Giám định → Báo giá theo AEMS (Damage Code + Repair Code + Repair Loc code + TPI…) — phân tích + câu hỏi ở `docs/design/BAO_GIA_AEMS.md`.
+
 ### DEC-205 — PWA: cài MATRAN DEPOT lên điện thoại như ứng dụng
 
 - Trạng thái: CONFIRMED (2026-11-02, người dùng): "thiết kế app với tính năng PWA để cài như 1 ứng dụng trên mobile; dùng link thì dùng PC như bình thường".
@@ -2093,6 +2102,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-205 đã xác nhận (cập nhật 2026-11-02).
+- Quyết định nghiệp vụ: DEC-001 → DEC-206 đã xác nhận (cập nhật 2026-11-02).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

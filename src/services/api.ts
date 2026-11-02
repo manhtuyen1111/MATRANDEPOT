@@ -12,6 +12,7 @@ import * as inv from './invoice';
 import * as fb from './feedback';
 import * as route from './driverRoute';
 import * as rp from './releasePhoto';
+import * as cdx from './cedexCatalog';
 import type { DepotState } from './depotStore';
 import { enqueue, isRemoteMode, mapId, realId, requestId, rpc, uploadDoorPhoto, uploadReleasePhotos, uploadRepairPhotos, uploadSurveyPhotos, type RemoteOp } from './remote/sync';
 import { callEdgeFunction } from './remote/edge';
@@ -323,6 +324,13 @@ export const setShippingLinePriority = wrap(ops.setShippingLinePriority, ([, i])
 });
 export const addStuffingClassCatalogItem = wrap(ops.addStuffingClassCatalogItem, ([, i]) => async (c) => {
   await rpc(c, 'catalog_upsert_stuffing_class', { p_shipping_line_code: i.shippingLineCode, p_code: i.code.trim().toUpperCase(), p_description: nul(i.description?.trim()) });
+});
+// DEC-206: CODE CEDEX + MÃ SỬA CHỮA theo hãng tàu (1 dòng hay nhập Excel — gửi theo lô)
+export const upsertCedexCodes = wrap(cdx.upsertCedexCodes, ([, i]) => async (c) => {
+  await rpc(c, 'catalog_upsert_cedex_codes', { p_shipping_line_code: i.shippingLineCode, p_kind: i.kind, p_rows: i.rows });
+});
+export const upsertRepairCodes = wrap(cdx.upsertRepairCodes, ([, i]) => async (c) => {
+  await rpc(c, 'catalog_upsert_repair_codes', { p_shipping_line_code: i.shippingLineCode, p_rows: i.rows });
 });
 export const setStuffingClassActive = wrap(ops.setStuffingClassActive, ([, i]) => async (c) => {
   await rpc(c, 'catalog_set_stuffing_class_active', { p_shipping_line_code: i.shippingLineCode, p_code: i.code, p_active: i.isActive });

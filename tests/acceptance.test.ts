@@ -2644,3 +2644,84 @@ describe('eEIR: CURRENT MOVE • LOCATION theo tác nghiệp', () => {
     expect(eeirLocationLabel({ companyProfile: { shortName: '' } } as never)).toBe('3HY');
   });
 });
+
+// DEC-206: CODE CEDEX + MÃ SỬA CHỮA theo hãng tàu (Danh mục chung → Sửa chữa)
+import { parseRepairGrid, parseCedexGrid, readRepairExcel, REPAIR_COLUMNS, repairSheetRows, upsertCedexCodes, upsertRepairCodes } from '../src/services/cedexCatalog';
+describe('DEC-206: danh mục CODE CEDEX theo hãng tàu', () => {
+  const demo = createDemoState();
+  const admin = as(demo, 'usr-admin');
+  const DR001 = { itemName: 'dr001', repairMode: '-', repairName: 'Man hour rate for dry repair', manHour: 1, repairCode: '-', materialRate: 28000 };
+  const DR008 = { itemName: 'DR008', repairMode: '03', repairName: 'General - Replace missing rivets', maxQty: 7, manHour: 0.1, repairCode: '0804', materialRate: 9215.85 };
+
+  it('Admin lưu mã vị trí / hư hỏng; lưu lại cùng mã → cập nhật, ngừng dùng được', () => {
+    let s = upsertCedexCodes(admin, { shippingLineCode: 'MSK', kind: 'DAMAGE', rows: [{ code: 'br', name: 'Broken' }, { code: 'CU', name: 'Cut' }] });
+    expect(s.cedexCodes.filter((c) => c.kind === 'DAMAGE').map((c) => c.code)).toEqual(['BR', 'CU']);
+    s = upsertCedexCodes(s, { shippingLineCode: 'MSK', kind: 'DAMAGE', rows: [{ code: 'BR', name: 'Bent', note: 'Cong', isActive: false }] });
+    expect(s.cedexCodes.filter((c) => c.kind === 'DAMAGE')).toHaveLength(2);
+    expect(s.cedexCodes.find((c) => c.code === 'BR')).toMatchObject({ name: 'Bent', note: 'Cong', isActive: false });
+    s = upsertCedexCodes(s, { shippingLineCode: 'MSK', kind: 'LOCATION', rows: [{ code: 'BR5N', name: 'Sàn phải ô 5' }] });
+    expect(s.cedexCodes.filter((c) => c.kind === 'LOCATION').map((c) => c.code)).toEqual(['BR5N']);
+    expect(s.auditLogs[0].actionCode).toBe('ADMIN_UPSERT_CEDEX');
+  });
+
+  it('Admin lưu MÃ SỬA CHỮA đúng mẫu (DR001 / DR008); lưu lại cùng Item Name → cập nhật', () => {
+    let s = upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: [DR001, DR008] });
+    expect(s.repairCodes.find((c) => c.itemName === 'DR001')).toMatchObject({ repairMode: '-', repairCode: '-', materialRate: 28000, manHour: 1 });
+    expect(s.repairCodes.find((c) => c.itemName === 'DR008')).toMatchObject({ repairMode: '03', repairCode: '0804', maxQty: 7, materialRate: 9215.85 });
+    s = upsertRepairCodes(s, { shippingLineCode: 'MSK', rows: [{ ...DR008, materialRate: 9300 }] });
+    expect(s.repairCodes).toHaveLength(2);
+    expect(s.repairCodes.find((c) => c.itemName === 'DR008')!.materialRate).toBe(9300);
+  });
+
+  it('từ chối: không phải Admin, hãng không có, mã sai, số sai, trùng trong lô', () => {
+    expect(() => upsertCedexCodes(as(demo, 'usr-office'), { shippingLineCode: 'MSK', kind: 'DAMAGE', rows: [{ code: 'BR', name: 'Broken' }] })).toThrow(/ADMIN/);
+    expect(() => upsertCedexCodes(admin, { shippingLineCode: 'XXX', kind: 'DAMAGE', rows: [{ code: 'BR', name: 'Broken' }] })).toThrow(/HÃNG TÀU/);
+    expect(() => upsertCedexCodes(admin, { shippingLineCode: 'MSK', kind: 'DAMAGE', rows: [{ code: 'B R', name: 'x' }] })).toThrow(/1–10 chữ/);
+    expect(() => upsertCedexCodes(admin, { shippingLineCode: 'MSK', kind: 'DAMAGE', rows: [{ code: 'BR', name: '' }] })).toThrow(/Thiếu tên/);
+    expect(() => upsertCedexCodes(admin, { shippingLineCode: 'MSK', kind: 'DAMAGE', rows: [{ code: 'BR', name: 'a' }, { code: 'br', name: 'b' }] })).toThrow(/trùng/);
+    expect(() => upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: [{ ...DR008, manHour: 0.123 }] })).toThrow(/2 số lẻ/);
+    expect(() => upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: [{ ...DR008, maxQty: 0 }] })).toThrow(/Max Qty/);
+    expect(() => upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: [{ ...DR008, repairCode: '' }] })).toThrow(/Repair Code/);
+    expect(() => upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: [] })).toThrow(/Không có dòng/);
+  });
+
+  it('đọc bảng Excel theo mẫu: dòng tiêu đề không ở dòng 1, giữ số 0 đầu, số có dấu phẩy nghìn; dòng lỗi báo riêng', () => {
+    const grid = [
+      ['BẢNG GIÁ SỬA CHỮA MSK'],
+      ['Item\nName', 'Repair\nMode', 'Repair Name', 'Max Qty\nper work order', 'Fixed man hour\napplicable per\nwork order', 'Repair\nCode', 'Material Rate\n(Excluding VAT)'],
+      ['DR001', '-', 'Man hour rate for dry repair', '', '1.0', '-', '28,000.00'],
+      ['DR002', '03', 'PREPARATION - FOR TOTAL REPAIR TIME', '1', '0.1', '0003', '0.00'],
+      ['DR008', '03', 'General - Replace missing rivets', '7', '0.1', '0804', '9,215.85'],
+      ['DR009', '03', '', '1', '0.1', '0806', '0.00'],
+      ['DR002', '03', 'trùng', '1', '0.1', '0003', '0'],
+      [],
+    ];
+    const p = parseRepairGrid(grid);
+    expect(p.rows.map((r) => [r.itemName, r.repairCode, r.materialRate, r.maxQty])).toEqual([
+      ['DR001', '-', 28000, null], ['DR002', '0003', 0, 1], ['DR008', '0804', 9215.85, 7],
+    ]);
+    expect(p.errors.map((e) => e.row)).toEqual([6, 7]);
+    expect(() => parseRepairGrid([['abc']])).toThrow(/dòng tiêu đề/);
+    const c = parseCedexGrid([['Mã', 'Tên', 'Ghi chú', 'Trạng thái'], ['BR', 'Broken', 'Gãy', 'Đang dùng'], ['CU', 'Cut', '', 'Ngừng dùng']]);
+    expect(c.rows).toEqual([{ code: 'BR', name: 'Broken', note: 'Gãy', isActive: true }, { code: 'CU', name: 'Cut', note: undefined, isActive: false }]);
+  });
+
+  it('Xuất Excel → nhập lại được nguyên (cùng cột với màn hình — DEC-129)', async () => {
+    const s = upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: [DR001, { ...DR008, repairCode: '0003' }] });
+    const buf = await toXlsxBuffer([{ name: 'MA SUA CHUA', columns: REPAIR_COLUMNS, rows: repairSheetRows(s.repairCodes) }]);
+    const back = await readRepairExcel(buf);
+    expect(back.errors).toEqual([]);
+    expect(back.rows.map((r) => [r.itemName, r.repairCode, r.manHour, r.materialRate])).toEqual([['DR001', '-', 1, 28000], ['DR008', '0003', 0.1, 9215.85]]);
+  });
+
+  it('Repair Code lưu dạng số + định dạng 0000 trong Excel → vẫn đọc 0003', async () => {
+    const { default: ExcelJS } = await import('exceljs');
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('S');
+    ws.addRow(REPAIR_COLUMNS.slice(0, 7));
+    ws.addRow(['DR002', '03', 'PREPARATION', 1, 0.1, 3, 0]);
+    ws.getCell('F2').numFmt = '0000';
+    const back = await readRepairExcel((await wb.xlsx.writeBuffer()) as ArrayBuffer);
+    expect(back.rows[0]).toMatchObject({ itemName: 'DR002', repairCode: '0003', manHour: 0.1 });
+  });
+});
