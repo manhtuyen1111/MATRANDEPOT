@@ -50,11 +50,19 @@ export const recordGateInFieldStep = wrap(ops.recordGateInFieldStep, ([, i], nex
 export const deleteGateInFieldRecord = wrap(ops.deleteGateInFieldRecord, ([, i]) => async (c) => {
   await rpc(c, 'delete_gate_in_field_record', { p_gate_in_id: i.gateInId });
 });
-export const completeRackInspection = wrap(ops.completeRackInspection, ([, i]) => async (c) => {
-  await rpc(c, 'complete_rack_inspection', {
-    p_request_id: requestId(), p_container_id: i.containerId, p_condition: i.conditionClass, p_stuffing: nul(i.stuffingClass),
-    p_manufacture_year: i.manufactureYear, p_damage_remarks: i.damageRemarks || [],
-  });
+export const completeRackInspection = wrap(ops.completeRackInspection, ([, i], next) => {
+  const ct = next.containers.find((x) => x.id === i.containerId);
+  const gi = next.gateInOrders.find((o) => o.masterDossierCode === ct?.masterDossierCode);
+  return async (c) => {
+    await rpc(c, 'complete_rack_inspection', {
+      p_request_id: requestId(), p_container_id: i.containerId, p_condition: i.conditionClass, p_stuffing: nul(i.stuffingClass),
+      p_manufacture_year: i.manufactureYear, p_damage_remarks: ct?.damageRemarks || i.damageRemarks || [],
+    });
+    // Cont MSK giám định trên kệ theo eEIR — tải ảnh lên kho rồi ghi (hàm gốc đã kiểm tra + chuẩn hóa vào gi.survey)
+    if (i.survey && gi?.survey) {
+      await rpc(c, 'record_rack_survey', { p_container_id: i.containerId, p_survey: await uploadSurveyPhotos(c, gi.survey, gi.masterDossierCode) });
+    }
+  };
 });
 export const verifyGateInOfficeAndCreatePayment = wrap(ops.verifyGateInOfficeAndCreatePayment, ([, i]) => async (c) => {
   await rpc(c, 'verify_gate_in_office', {

@@ -177,7 +177,9 @@ export function recordGateInFieldStep(
   // Mã hồ sơ do hệ thống cấp, không nhận mã sinh ở giao diện (CR-07)
   const allocated = allocateCode(state, 'HV');
   const code = allocated.code;
-  const hint = input.initialContainerHint?.trim().toUpperCase();
+  // Người dùng 2026-11-02: Giám định nhập SỐ CONT trước (mọi hãng; bỏ trống được — Văn phòng đọc từ ảnh cửa)
+  const rawHint = input.initialContainerHint?.trim().toUpperCase();
+  const hint = rawHint && !/^(HS|GD|IN)-/.test(rawHint) ? normalizeContainerNo(rawHint) : undefined;
 
   const newOrder = {
     id: newId('gin'),
@@ -185,7 +187,7 @@ export function recordGateInFieldStep(
     orderCode: code,
     gateInType: input.gateInType,
     doorPhotoUrl: input.doorPhotoUrl.trim(),
-    initialContainerHint: hint && !/^(HS|GD|IN)-/.test(hint) ? hint : undefined,
+    initialContainerHint: hint,
     conditionClass: input.conditionClass,
     damageRemarks: remarks,
     ...(survey ? { survey } : {}),
@@ -243,6 +245,7 @@ export function completeRackInspection(
     damageRemarks?: string[];
     stuffingClass?: FieldStuffingClass;
     manufactureYear: number;
+    survey?: InspectionSurvey; // người dùng 2026-11-02: cont MSK giám định trên kệ cũng theo eEIR (như GIÁM ĐỊNH TRỰC TIẾP)
   }
 ): DepotState {
   assertPermission(state, 'GATE_IN_FIELD', 'chỉ Bộ phận Giám định / Hiện trường / Quản lý mới được giám định bổ sung trên kệ.');
@@ -254,7 +257,12 @@ export function completeRackInspection(
   const stuffing = resolveStuffing(state, c.shippingLineCode, input.stuffingClass); // DEC-166
   const year = assertManufactureYear(input.manufactureYear);
   const isDamage = input.conditionClass === 'DAMAGE';
-  const remarks = isDamage ? (input.damageRemarks || []).map((r) => r.trim()).filter(Boolean) : [];
+  // DEC-203: cont MSK — size theo cont đã nhập ở Văn phòng, ảnh cửa cont đã chụp lúc hạ vỏ tính vào KHÔNG HƯ
+  const survey = usesInspectionSurvey(c.shippingLineCode) ? validateSurvey(input.survey && { ...input.survey, size: c.size }) : undefined;
+  if (survey && input.conditionClass !== surveyCondition(survey)) {
+    throw new Error(`Trạng thái phải là ${surveyCondition(survey)} theo tình trạng eEIR (có hư do bên thứ 3 → DAMAGE, còn lại → AV).`);
+  }
+  const remarks = survey ? surveyRemarks(survey) : isDamage ? (input.damageRemarks || []).map((r) => r.trim()).filter(Boolean) : [];
   if (isDamage && remarks.length === 0) throw new Error('Container DAMAGE: chọn ít nhất 1 lỗi hư hỏng hoặc nhập ghi chú.');
 
   const patch = { conditionClass: input.conditionClass, damageRemarks: remarks, stuffingClass: stuffing, manufactureYear: year };
@@ -264,7 +272,7 @@ export function completeRackInspection(
   next = {
     ...next,
     gateInOrders: next.gateInOrders.map((o) =>
-      o.masterDossierCode === c.masterDossierCode ? { ...o, ...patch, rackInspectedBy: actor, rackInspectedAt: now } : o
+      o.masterDossierCode === c.masterDossierCode ? { ...o, ...patch, ...(survey ? { survey } : {}), rackInspectedBy: actor, rackInspectedAt: now } : o
     ),
     k80Tickets: next.k80Tickets.map((t) => (t.masterDossierCode === c.masterDossierCode ? { ...t, ...patch } : t)),
     // Như Hạ vỏ thường: DAMAGE → hàng chờ Báo giá

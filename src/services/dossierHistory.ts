@@ -209,7 +209,11 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
       showPhotos: true,
     });
     // DEC-203: tình trạng eEIR (cont MSK) — 1 dòng riêng, ảnh bấm XEM ẢNH (DEC-178; ảnh cửa vẫn hiện luôn ở dòng trên — DEC-182)
-    if (gateIn.survey) surveyRow(gateIn.survey, gateIn.fieldRecordedAt, gateIn.fieldStaffName, 1);
+    // Giám định trên kệ (cont MSK): tình trạng eEIR ghi lúc giám định bổ sung → dòng eEIR đặt theo giờ trên kệ
+    if (gateIn.survey) {
+      if (gateIn.rackInspectedAt) surveyRow(gateIn.survey, gateIn.rackInspectedAt, gateIn.rackInspectedBy, 1);
+      else surveyRow(gateIn.survey, gateIn.fieldRecordedAt, gateIn.fieldStaffName, 1);
+    }
     if (gateIn.toInspectionRack) {
       if (gateIn.rackInspectedAt) {
         add({

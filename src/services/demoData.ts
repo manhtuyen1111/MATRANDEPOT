@@ -59,6 +59,14 @@ const RAC = [
   { name: 'THU GOM RÁC LV2', amount: 500_000 },
 ];
 let FEES: Record<string, string[]> = {};
+const MSK_GRADES: [string, string][] = [
+  ['M', 'Food grade'],
+  ['S', 'Flexi-bag / premium food'],
+  ['K', 'General cargo sạch / premium'],
+  ['E', 'General cargo'],
+  ['Q', 'Scrap cargo'],
+  ['N', 'Chưa phân loại'],
+];
 
 // Danh mục: hãng tàu, khách hàng, công ty, biểu giá — qua hàm Danh mục của Admin
 function seedCatalog(state: DepotState): DepotState {
@@ -66,7 +74,8 @@ function seedCatalog(state: DepotState): DepotState {
   for (const p of s.partners) s = deletePartnerCatalogItem(s, p.id);
   for (const f of s.feeCatalog) s = deleteDepotFeeCatalogItem(s, f.id);
   s = addPartnerCatalogItem(s, { code: LINE, name: 'MSK', partnerType: 'SHIPPING_LINE', allowTts: true });
-  for (const code of ['M', 'K', 'E']) s = addStuffingClassCatalogItem(s, { shippingLineCode: LINE, code }); // DEC-166
+  // DEC-166 + DEC-204: đủ hạng vỏ Maersk (smokeTested — docs/EDI_MAERSK.md 12.2) để API điền thẳng Phân loại
+  for (const [code, description] of MSK_GRADES) s = addStuffingClassCatalogItem(s, { shippingLineCode: LINE, code, description });
   for (const c of CUSTOMERS) s = addPartnerCatalogItem(s, { code: c.code, name: c.name, partnerType: 'CUSTOMER', allowTts: c.allowTts });
   s = updateCompanyProfile(s, {
     name: 'CÔNG TY CỔ PHẦN MATRAN',
@@ -116,6 +125,7 @@ function gateIn(state: DepotState, c: GateInCase): DepotState {
     gateInType: 'CUSTOMER_RETURN',
     shippingLineCode: LINE,
     doorPhotoUrl: 'data:image/jpeg;base64,AAA',
+    initialContainerHint: c.containerNo, // DEC-204: Giám định nhập số cont trước
     conditionClass: c.rack ? 'W-SURVEY' : c.damage ? 'DAMAGE' : 'AV',
     damageRemarks: c.damage,
     stuffingClass: c.rack ? undefined : 'E',
@@ -232,7 +242,7 @@ function bulkData(state: DepotState): DepotState {
   placed.filter((m) => m.rack).forEach((m, k) => {
     if (k % 2) return;
     const c = s.containers.find((x) => x.containerNo === m.no && x.status === 'IN_YARD')!;
-    s = completeRackInspection(as(s, 'usr-inspector'), { containerId: c.id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2017 });
+    s = completeRackInspection(as(s, 'usr-inspector'), { containerId: c.id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2017, survey: ntSurvey(false) }); // DEC-204: MSK trên kệ theo eEIR
   });
 
   // Khóa vài cont; đảo chuyển vài cont
