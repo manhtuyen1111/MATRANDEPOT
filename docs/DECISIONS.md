@@ -1527,6 +1527,17 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-204 — Giám định Hạ vỏ: SỐ CONT trước + API hãng tàu; chọn GIÁM ĐỊNH TRỰC TIẾP / GIÁM ĐỊNH SAU
+
+- Trạng thái: CONFIRMED (2026-11-02, người dùng). Thay một phần DEC-203 ("Giám định không nhập số cont") và cách chọn W-SURVEY ở DEC-147.
+- **Bước 1 — Số cont + Hãng tàu + Ảnh cửa:** Giám định nhập **SỐ CONTAINER** đầu tiên (**mọi hãng**; 4 chữ + 7 số). **Bỏ trống được** — chụp ảnh cửa rõ số cont, Văn phòng nhập sau. Ảnh cửa cont vẫn bắt buộc (DEC-182). Số cont Giám định nhập lưu `GateInOrder.initialContainerHint` (database `initial_container_hint` — đã có); Văn phòng Hạ vỏ **được điền sẵn, sửa được**.
+- **API hãng tàu (`src/services/equipmentInfo.ts`):** có số cont + hãng có nguồn API → nút **LẤY THÔNG TIN TỪ HÃNG TÀU**. Ô nào API trả được (Size, Type, ISO, AGE, hạng vỏ) thì tự điền — Giám định không phải nhập lại; Văn phòng sửa được sau. **Chưa kết nối / API lỗi / cont không có dữ liệu → Giám định tự nhập như cũ** (không chặn tác nghiệp). Maersk: API 1 `getEquipmentDetails` — **chưa có khóa → hiện "chưa kết nối"**; khóa chỉ ở máy chủ. Không tạo dữ liệu giả.
+- **Phân loại theo hạng vỏ của hãng:** hạng vỏ API trả về dùng thẳng làm mã **PHÂN LOẠI** nếu mã đó có trong Danh mục Phân loại của hãng (DEC-166). Danh mục MSK bổ sung đủ hạng Maersk **M / S / K / E / Q / N** (Demo đã có; database: Admin thêm ở Danh mục chung → Phân loại). Thiết kế chung — hãng mới chỉ cần thêm nguồn API (`EQUIPMENT_SOURCES`) + Danh mục Phân loại.
+- **Bước 2 — chọn cách giám định:** **GIÁM ĐỊNH TRỰC TIẾP** = giám định ngay (cont MSK: form eEIR DEC-203; hãng khác: AV / DAMAGE + Đóng hàng + AGE). **GIÁM ĐỊNH SAU** = W-SURVEY lên kệ (DEC-147): chỉ chọn **Vệ sinh** rồi xác nhận; Xe nâng hạ lên kệ.
+- **Giám định trên kệ cont MSK theo eEIR:** tab Chờ giám định trên kệ dùng form eEIR như Giám định trực tiếp; **size theo cont Văn phòng đã nhập** (không chọn lại); ảnh cửa lúc hạ vỏ tính vào KHÔNG HƯ. Lưu vào `GateInOrder.survey`; database `record_rack_survey` (migration `20261125000001`). Hồ sơ: dòng Tình trạng eEIR theo giờ giám định trên kệ.
+- Kiểm tra ở service: `recordGateInFieldStep` (định dạng số cont — `normalizeContainerNo`), `completeRackInspection` (`validateSurvey`, trạng thái = `surveyCondition`).
+- Chưa làm: gọi API thật (chờ khóa staging Maersk); lưu thông tin API (ISO, hạng) vào hồ sơ; cảnh báo `stBlock` / cont bán (EDI_MAERSK 15.1).
+
 ### DEC-203 — Giám định Hạ vỏ cont MSK: tình trạng / hư hỏng theo eEIR Maersk
 
 - Trạng thái: CONFIRMED (2026-11-01, người dùng — theo **eEIR v3.3 User Guide** + API v4.3). Thiết kế: `docs/design/EEIR_GIAM_DINH.md`.
@@ -1545,7 +1556,7 @@ Quy ước trạng thái:
 - **Current Move (danh sách app eEIR thật, người dùng chốt 2026-11-01 — Q-058 xong):** Hạ vỏ `IN-EMPTY-IMPORT_RETURN` • Nhập tàu `IN-EMPTY-POSITION` • Cấp vỏ theo booking `OUT-EMPTY-EXPORT` • Cấp sale `OUT-EMPTY-POSITION` (không cần booking) • Xuất tàu `OUT-EMPTY-POSITION` — **tạm chưa gửi eEIR** (người dùng 2026-11-01: Xuất tàu chưa chụp ảnh; bật lại bằng `EEIR_SEND_VESSEL_EXPORT`). Không dùng: IN-FULL-EXP, STUFFING, STRIPPING, OUT-FULL-DELIVERY (cont có hàng).
 - **SIZE cont do Giám định chọn** (người dùng 2026-11-01): cont MSK giám định eEIR → Văn phòng Hạ vỏ tự điền size Giám định, ô Size khóa; service + trigger database `gate_in_survey_size_guard` chặn ghi size khác (migration `20261124000001`).
 - **Chờ người dùng:** (1) ~~mã ô lưới~~ — đã làm theo mô tả; (2) ~~Floor Cleaning~~ — **người dùng chốt 2026-11-01: KHÔNG làm mục riêng**; ảnh sàn bẩn trước vệ sinh ghi trong phần hư hỏng (mặt **Sàn (B)**, loại **Bẩn**) — Vệ sinh vẫn theo mục Vệ sinh MATRAN; (3) áp dụng cho **Nhập tàu** (moveType của tàu).
-- Chưa làm: Giám định bổ sung trên kệ (W-SURVEY → AV / DAMAGE) và Cấp vỏ (DEC-198) dùng cùng khối — bước sau.
+- ~~Chưa làm: Giám định bổ sung trên kệ~~ — **đã làm 2026-11-02 (DEC-204)**. Còn: Cấp vỏ (DEC-198) dùng cùng khối — bước sau.
 
 ### DEC-202 — Tồn vỏ & Đảo chuyển: giữ 2 cột TRẠNG THÁI (DAMAGE / AV) + TIẾN ĐỘ (1 tiến độ chờ thực tế, ngay cạnh Trạng thái)
 
@@ -2072,6 +2083,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-203 đã xác nhận (cập nhật 2026-10-29).
+- Quyết định nghiệp vụ: DEC-001 → DEC-204 đã xác nhận (cập nhật 2026-11-02).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

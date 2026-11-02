@@ -2577,3 +2577,56 @@ describe('DEC-203: Văn phòng dùng size Giám định chọn', () => {
     expect(verify('20').gateInOrders.find((g) => g.id === gi.id)!.size).toBe('20');
   });
 });
+
+// DEC-204: Giám định Hạ vỏ nhập số cont trước + API hãng tàu; GIÁM ĐỊNH SAU (trên kệ) cont MSK theo eEIR
+import { equipmentPrefill, lookupEquipment } from '../src/services/equipmentInfo';
+import { stuffingOptions as lineStuffing } from '../src/services/stuffing';
+describe('DEC-204: số cont Giám định + thông tin API hãng tàu', () => {
+  it('số cont Giám định nhập lưu vào hồ sơ (chữ hoa); sai định dạng → chặn; bỏ trống được', () => {
+    expect(fieldStep(createInitialState(), { initialContainerHint: ' mscu1234565 ' }).gateInOrders[0].initialContainerHint).toBe('MSCU1234565');
+    expect(() => fieldStep(createInitialState(), { initialContainerHint: 'MSCU12' })).toThrow(/SỐ CONTAINER không hợp lệ/);
+    expect(fieldStep(createInitialState()).gateInOrders[0].initialContainerHint).toBeUndefined();
+  });
+
+  it('API chưa kết nối → không có dữ liệu (Giám định tự nhập); số cont sai → báo lỗi', async () => {
+    expect(await lookupEquipment('MSK', 'MSKU1234567')).toMatchObject({ status: 'NOT_CONNECTED' });
+    expect(await lookupEquipment('ONE', 'ONEU1234567')).toMatchObject({ status: 'NOT_CONNECTED' });
+    expect(await lookupEquipment('MSK', 'MSKU12')).toMatchObject({ status: 'ERROR' });
+  });
+
+  it('tự điền: hạng vỏ có trong Danh mục Phân loại của hãng → Phân loại; giá trị không hợp lệ bỏ qua', () => {
+    const demo = createDemoState();
+    expect(lineStuffing(demo, 'MSK')).toEqual(['M', 'S', 'K', 'E', 'Q', 'N']);
+    expect(equipmentPrefill(demo, 'MSK', { size: '40', type: 'hc', isoCode: '45G1', manufactureYear: 2018, grade: 's' }))
+      .toEqual({ size: '40', type: 'HC', isoCode: '45G1', manufactureYear: 2018, stuffingClass: 'S' });
+    expect(equipmentPrefill(demo, 'MSK', { size: '50', isoCode: '45G', manufactureYear: 1900, grade: 'Z' }))
+      .toEqual({ size: undefined, type: undefined, isoCode: undefined, manufactureYear: undefined, stuffingClass: undefined });
+    expect(equipmentPrefill(demo, 'MSK', undefined)).toEqual({});
+  });
+});
+
+describe('DEC-204: Giám định trên kệ cont MSK theo eEIR', () => {
+  const demo = createDemoState();
+  const c = pendingRackInspections(demo).find((x) => x.status === 'IN_YARD' && x.shippingLineCode === 'MSK')!;
+  const insp = as(demo, 'usr-inspector');
+  const dmg = { id: 'k1', side: 'L' as const, location: 'LT34', damageType: 5, source: 2, photos: ['data:a'] };
+  const rack = (conditionClass: 'AV' | 'DAMAGE', survey?: InspectionSurvey) =>
+    completeRackInspection(insp, { containerId: c.id, conditionClass, stuffingClass: 'E', manufactureYear: 2018, damageRemarks: ['x'], survey });
+
+  it('lưu tình trạng eEIR vào hồ sơ Hạ vỏ, size theo cont; DAMAGE → remark theo chỗ hư + chờ Báo giá', () => {
+    expect(c).toBeTruthy();
+    const s = rack('DAMAGE', { size: '20', noDamagePhotos: [], wearTearPhotos: [], damages: [dmg] });
+    const gi = s.gateInOrders.find((o) => o.masterDossierCode === c.masterDossierCode)!;
+    expect(gi.survey?.size).toBe(c.size);
+    expect(gi.damageRemarks).toEqual(['LT34 Móp']);
+    expect(s.containers.find((x) => x.id === c.id)).toMatchObject({ conditionClass: 'DAMAGE', needsQuotation: true });
+    const av = rack('AV', { noDamagePhotos: ['data:1'], wearTearPhotos: [], damages: [] });
+    expect(av.gateInOrders.find((o) => o.masterDossierCode === c.masterDossierCode)!.survey?.noDamagePhotos).toEqual(['data:1']);
+  });
+
+  it('từ chối: thiếu tình trạng eEIR, trạng thái khác hư hỏng', () => {
+    expect(() => rack('AV')).toThrow(/TÌNH TRẠNG theo eEIR/);
+    expect(() => rack('AV', { noDamagePhotos: [], wearTearPhotos: [], damages: [dmg] })).toThrow(/phải là DAMAGE/);
+    expect(() => rack('DAMAGE', { noDamagePhotos: [], wearTearPhotos: [], damages: [] })).toThrow(/phải là AV/);
+  });
+});

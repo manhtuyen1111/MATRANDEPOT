@@ -1294,6 +1294,16 @@ describe('DEC-203: tình trạng eEIR ở Giám định', () => {
     expect(html).toContain('data-testid="condition-deferred"');
     expect(html).not.toContain('>AV<');
   });
+
+  it('DEC-204: GIÁM ĐỊNH SAU — ẩn mục 1, chỉ còn Vệ sinh', () => {
+    const html = renderToString(
+      <InspectionFields value={{ ...EMPTY_INSPECTION, condition: 'W-SURVEY' }} onChange={noop} progressive hideCondition stuffingOptions={['M', 'K', 'E']} survey={{ value: { noDamagePhotos: [], wearTearPhotos: [], damages: [] }, onChange: noop }} />
+    );
+    expect(html).not.toContain('data-testid="condition-eeir"');
+    expect(html).not.toContain('1. TÌNH TRẠNG');
+    expect(html).toContain('3. TÌNH TRẠNG VỆ SINH');
+    expect(html).not.toContain('4. AGE');
+  });
 });
 
 describe('DEC-203: sơ đồ lưới vị trí hư', () => {

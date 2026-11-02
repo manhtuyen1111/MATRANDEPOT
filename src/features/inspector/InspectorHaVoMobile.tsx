@@ -27,7 +27,8 @@ import { pendingRackInspections } from '../../services/depotOperations';
 import { peekNextCode } from '../../services/codes';
 import { formatDateTime } from '../../services/datetime';
 import { priorityShippingLine, stuffingOptions } from '../../services/stuffing';
-import { damageSourceLabel, damageTypeLabel, EMPTY_SURVEY, usesInspectionSurvey } from '../../services/inspectionSurvey';
+import { damageSourceLabel, damageTypeLabel, EMPTY_SURVEY, surveyCondition, usesInspectionSurvey } from '../../services/inspectionSurvey';
+import { equipmentPrefill, EquipmentLookup, hasEquipmentSource, isContainerNoFormat, lookupEquipment, cleanContainerNo } from '../../services/equipmentInfo';
 import type { InspectionSurvey } from '../../types/depot';
 
 interface Props {
@@ -87,11 +88,19 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
   const [survey, setSurvey] = useState<InspectionSurvey>(EMPTY_SURVEY);
   const surveyMode = usesInspectionSurvey(lineCode);
   const isDeferred = conditionClass === 'W-SURVEY'; // DEC-147: W-SURVEY (LÊN KỆ)
+  // DEC-204: bước 1 nhập SỐ CONT (mọi hãng, bỏ trống được) + hỏi API hãng tàu; bước 2 chọn GIÁM ĐỊNH TRỰC TIẾP / GIÁM ĐỊNH SAU
+  const [containerNo, setContainerNo] = useState('');
+  const [lookup, setLookup] = useState<EquipmentLookup | null>(null);
+  const [lookingUp, setLookingUp] = useState(false);
+  const [infoDone, setInfoDone] = useState(false);
+  const [mode, setMode] = useState<'DIRECT' | 'DEFERRED' | null>(null);
+  const contNoOk = !containerNo || isContainerNoFormat(containerNo);
   // DEC-147: tab Chờ giám định trên kệ
   const [tab, setTab] = useState<'HA_VO' | 'TREN_KE'>('HA_VO');
   const rackQueue = pendingRackInspections(state);
   const [rackId, setRackId] = useState<string | null>(null);
   const [rackInsp, setRackInsp] = useState<InspectionValue>(EMPTY_INSPECTION);
+  const [rackSurvey, setRackSurvey] = useState<InspectionSurvey>(EMPTY_SURVEY); // DEC-204: cont MSK trên kệ theo eEIR
 
   // Bước xác nhận cuối sau khi đã nhập đủ và bấm NEXT
   const [isReadyToConfirmStep, setIsReadyToConfirmStep] =
@@ -159,9 +168,34 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
     setCleaningItems([]);
     setManufactureYear('');
     setSurvey(EMPTY_SURVEY);
+    setContainerNo('');
+    setLookup(null);
+    setInfoDone(false);
+    setMode(null);
     setIsReadyToConfirmStep(false);
     setErrorMsg(null);
     setSuccessMsg(null);
+  };
+
+  // DEC-204: hỏi API hãng tàu theo số cont — ô nào API trả được thì tự điền (chưa kết nối / lỗi → Giám định tự nhập)
+  const handleLookup = async () => {
+    setLookingUp(true);
+    const res = await lookupEquipment(lineCode, containerNo);
+    setLookingUp(false);
+    setLookup(res);
+    if (res.status !== 'OK') return;
+    const pre = equipmentPrefill(state, lineCode, res.info);
+    if (pre.size) setSurvey((s) => ({ ...s, size: pre.size }));
+    if (pre.manufactureYear) setManufactureYear(String(pre.manufactureYear));
+    if (pre.stuffingClass) setStuffingClass(pre.stuffingClass);
+  };
+
+  // GIÁM ĐỊNH SAU = W-SURVEY (lên kệ, DEC-147): chỉ chọn Vệ sinh rồi xác nhận
+  const chooseMode = (m: 'DIRECT' | 'DEFERRED') => {
+    setMode(m);
+    setConditionClass(m === 'DEFERRED' ? 'W-SURVEY' : surveyMode ? surveyCondition(survey) : null);
+    setSelectedDamageRemarks([]);
+    setCustomDamageNote('');
   };
 
   // Chụp khung hình từ Camera trực tiếp trên màn hình App
@@ -207,6 +241,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
   const isStuffingValid = lineStuffing.length === 0 || (stuffingClass !== null && lineStuffing.includes(stuffingClass));
   const isAllFieldsValid = Boolean(
     doorPhotoDataUrl &&
+      contNoOk &&
       lineCode &&
       conditionClass &&
       cleaningItems.length > 0 &&
@@ -267,6 +302,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
       const next = recordGateInFieldStep(state, {
         gateInType: 'CUSTOMER_RETURN',
         doorPhotoUrl: doorPhotoDataUrl,
+        initialContainerHint: containerNo || undefined, // DEC-204: Văn phòng được điền sẵn, sửa được
         shippingLineCode: lineCode,
         conditionClass,
         damageRemarks: remarks,
@@ -321,7 +357,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
             const onRack = c.status === 'IN_YARD';
             return (
               <div key={c.id} className={`rounded-lg border bg-white ${open ? 'border-navy-900' : 'border-line'}`}>
-                <button type="button" onClick={() => { setRackId(open ? null : c.id); setRackInsp(EMPTY_INSPECTION); setErrorMsg(null); }} className="grid w-full grid-cols-[1fr_auto] items-center gap-2 p-3 text-left text-xs">
+                <button type="button" onClick={() => { setRackId(open ? null : c.id); setRackInsp(EMPTY_INSPECTION); setRackSurvey({ ...EMPTY_SURVEY, size: c.size }); setErrorMsg(null); }} className="grid w-full grid-cols-[1fr_auto] items-center gap-2 p-3 text-left text-xs">
                   <span className="space-y-0.5">
                     <span className="flex items-center gap-2"><ContainerNo no={c.containerNo} className="text-sm" /><span className="font-semibold">{c.size} {c.type}</span></span>
                     <span className="block font-mono text-ink-muted">{c.masterDossierCode}</span>
@@ -333,7 +369,13 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                 {open && (
                   <div className="space-y-3 border-t border-line p-3">
                     {onDossierLink(c.masterDossierCode)}
-                    <InspectionFields value={rackInsp} onChange={setRackInsp} hideCleaning stuffingOptions={stuffingOptions(state, c.shippingLineCode)} />
+                    <InspectionFields
+                      value={rackInsp}
+                      onChange={setRackInsp}
+                      hideCleaning
+                      stuffingOptions={stuffingOptions(state, c.shippingLineCode)}
+                      survey={usesInspectionSurvey(c.shippingLineCode) ? { value: rackSurvey, onChange: setRackSurvey, fixedSize: c.size, hasDoorPhoto: true } : undefined}
+                    />
                     {errorMsg && <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-800">{errorMsg}</div>}
                     <button
                       type="button"
@@ -347,6 +389,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                             damageRemarks: inspectionRemarks(rackInsp),
                             stuffingClass: rackInsp.stuffing || undefined,
                             manufactureYear: Number(rackInsp.year),
+                            survey: usesInspectionSurvey(c.shippingLineCode) ? rackSurvey : undefined, // DEC-204
                           }));
                           setSuccessMsg(`Đã giám định bổ sung ${c.containerNo} (${rackInsp.condition}).`);
                           setRackId(null);
@@ -630,23 +673,23 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
             <div className="grid grid-cols-3 gap-1.5 text-center text-[11px] font-bold">
               <div
                 className={`rounded py-1.5 ${
-                  !doorPhotoDataUrl
+                  !infoDone
                     ? 'bg-navy-900 text-white'
                     : 'bg-emerald-100 text-emerald-800'
                 }`}
               >
-                1. Chụp Cửa Cont
+                1. Số cont + Ảnh
               </div>
               <div
                 className={`rounded py-1.5 ${
-                  doorPhotoDataUrl && !isReadyToConfirmStep
+                  infoDone && !isReadyToConfirmStep
                     ? 'bg-navy-900 text-white'
                     : isReadyToConfirmStep
                     ? 'bg-emerald-100 text-emerald-800'
                     : 'bg-navy-50 text-ink-muted'
                 }`}
               >
-                2. Chọn Thông Tin
+                2. Giám định
               </div>
               <div
                 className={`rounded py-1.5 ${
@@ -679,13 +722,80 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
             {/* ==============================================================
                 BƯỚC 1: KHI CHƯA CHỤP ẢNH -> CHỈ HIỂN THỊ MÀN CHỤP ẢNH CỬA CONT
                ============================================================== */}
-            {!doorPhotoDataUrl ? (
+            {!infoDone ? (
               <div className="space-y-3 py-2">
+                {/* DEC-204: SỐ CONT trước (bỏ trống được — Văn phòng đọc từ ảnh cửa) → API hãng tàu điền sẵn thông tin */}
+                <div className="space-y-1.5 rounded-lg border border-line bg-white p-3">
+                  <span className="block text-xs font-bold text-ink">SỐ CONTAINER</span>
+                  <input
+                    data-testid="inspector-cont-no"
+                    value={containerNo}
+                    onChange={(e) => { setContainerNo(cleanContainerNo(e.target.value).slice(0, 11)); setLookup(null); }}
+                    placeholder="VD MSKU1234567"
+                    autoCapitalize="characters"
+                    className="w-full rounded-lg border border-line-strong bg-white px-3 py-2.5 font-mono text-lg font-bold tracking-wider text-ink"
+                  />
+                  {!containerNo && <p className="text-[11px] text-ink-muted">Bỏ trống được — chụp ảnh cửa rõ số cont, Văn phòng nhập sau.</p>}
+                  {containerNo && !contNoOk && <p className="text-[11px] text-danger-fg">Số cont gồm 4 chữ + 7 số.</p>}
+                </div>
+
+                {/* DEC-166: chọn HÃNG TÀU — quyết định bộ Phân loại đóng hàng + nguồn API */}
+                <div className="space-y-1.5 rounded-lg border border-line bg-white p-3">
+                  <span className="block text-xs font-bold text-ink">HÃNG TÀU *</span>
+                  <select
+                    data-testid="inspector-line"
+                    value={lineCode}
+                    onChange={(e) => { setLineCode(e.target.value); setStuffingClass(null); setConditionClass(null); setSurvey(EMPTY_SURVEY); setLookup(null); setMode(null); }}
+                    className="w-full rounded-lg border border-line-strong bg-white px-3 py-2.5 text-sm font-bold text-ink"
+                  >
+                    <option value="">-- Chọn hãng tàu --</option>
+                    {shippingLines.map((p) => <option key={p.code} value={p.code}>{p.code} — {p.name}{p.isPriority ? ' (ưu tiên)' : ''}</option>)}
+                  </select>
+                  {containerNo && contNoOk && lineCode && hasEquipmentSource(lineCode) && (
+                    <button type="button" data-testid="inspector-lookup" disabled={lookingUp} onClick={handleLookup}
+                      className="w-full rounded-lg border border-navy-900 bg-white py-2 text-xs font-bold text-navy-900 hover:bg-navy-50 disabled:opacity-45">
+                      {lookingUp ? 'Đang lấy thông tin…' : 'LẤY THÔNG TIN TỪ HÃNG TÀU'}
+                    </button>
+                  )}
+                  {lookup && (
+                    <p data-testid="inspector-lookup-result" className={`rounded border px-2 py-1.5 text-[11px] ${lookup.status === 'OK' ? 'border-success-fg bg-success-bg text-success-fg' : 'border-line bg-canvas text-ink-muted'}`}>
+                      {lookup.status === 'OK'
+                        ? `Đã lấy thông tin: ${[lookup.info.size && `Size ${lookup.info.size}`, lookup.info.type, lookup.info.isoCode, lookup.info.manufactureYear && `AGE ${lookup.info.manufactureYear}`, lookup.info.grade && `Hạng ${lookup.info.grade}`].filter(Boolean).join(' • ')}`
+                        : lookup.message}
+                    </p>
+                  )}
+                </div>
+
                 <p className="text-center text-xs font-bold text-ink">
-                  Bước 1: Chụp ảnh cửa Container (Nhìn rõ số Cont) để bắt đầu tác nghiệp
+                  Chụp ảnh cửa Container (nhìn rõ số cont)
                 </p>
 
-                {cameraOpen ? (
+                {doorPhotoDataUrl ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between rounded-lg border border-line bg-canvas p-2">
+                      <img src={doorPhotoDataUrl} alt="Ảnh cửa container" className="h-14 w-20 rounded border border-line-strong object-cover" />
+                      <span className="text-xs font-bold text-emerald-700">✓ Đã chụp ảnh cửa Cont</span>
+                      <button
+                        type="button"
+                        onClick={() => setDoorPhotoDataUrl('')}
+                        className="inline-flex items-center gap-1 rounded border border-line-strong bg-white px-2.5 py-1.5 text-xs font-semibold text-ink hover:bg-navy-50"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        Chụp lại
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      data-testid="inspector-info-next"
+                      disabled={!lineCode || !contNoOk}
+                      onClick={() => setInfoDone(true)}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-sm font-bold text-white hover:bg-navy-700 disabled:opacity-45"
+                    >
+                      <span>TIẾP TỤC GIÁM ĐỊNH</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : cameraOpen ? (
                   <div className="space-y-2 rounded-lg border border-line-strong bg-black p-2">
                     <video
                       ref={videoRef}
@@ -747,58 +857,52 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
               </div>
             ) : !isReadyToConfirmStep ? (
               /* ==============================================================
-                 BƯỚC 2: ĐÃ CHỤP ẢNH XONG -> MỚI HIỂN THỊ CÁC TÁC NGHIỆP CHỌN TIẾP THEO
+                 BƯỚC 2: CHỌN GIÁM ĐỊNH TRỰC TIẾP / GIÁM ĐỊNH SAU (DEC-204)
                  YÊU CẦU NHẬP ĐỦ MỚI BẤM NEXT ĐẾN XÁC NHẬN TÁC NGHIỆP
                  ============================================================== */
               <div className="space-y-4">
-                {/* ẢNH ĐÃ CHỤP GỌN Ở TRÊN + NÚT CHỤP LẠI */}
-                <div className="flex items-center justify-between rounded-lg border border-line bg-canvas p-2">
+                {/* TÓM TẮT BƯỚC 1 + NÚT SỬA */}
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-canvas p-2">
                   <div className="flex items-center gap-2.5">
-                    <img
-                      src={doorPhotoDataUrl}
-                      alt="Ảnh cửa container"
-                      className="h-14 w-20 rounded object-cover border border-line-strong"
-                    />
+                    <img src={doorPhotoDataUrl} alt="Ảnh cửa container" className="h-14 w-20 rounded border border-line-strong object-cover" />
                     <div className="text-xs">
-                      <span className="font-bold text-emerald-700 block">
-                        ✓ Đã chụp ảnh cửa Cont
-                      </span>
-                      <span className="text-[11px] text-ink-muted">
-                        Vui lòng chọn đủ 4 mục bên dưới
-                      </span>
+                      <span className="block font-mono text-sm font-bold text-ink" data-testid="inspector-step2-cont">{containerNo || 'Chưa nhập số cont'}</span>
+                      <span className="text-[11px] text-ink-muted">Hãng {lineCode}</span>
                     </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      setDoorPhotoDataUrl('');
-                      setIsReadyToConfirmStep(false);
-                    }}
+                    onClick={() => setInfoDone(false)}
                     className="inline-flex items-center gap-1 rounded border border-line-strong bg-white px-2.5 py-1.5 text-xs font-semibold text-ink hover:bg-navy-50"
                   >
-                    <RefreshCw className="h-3 w-3" />
-                    Chụp lại
+                    <ArrowLeft className="h-3 w-3" />
+                    Sửa
                   </button>
                 </div>
 
-                {/* DEC-166: chọn HÃNG TÀU trước — quyết định bộ Phân loại đóng hàng */}
-                <div className="space-y-1.5 rounded-lg border border-line bg-white p-3">
-                  <span className="block text-xs font-bold text-ink">HÃNG TÀU *</span>
-                  <select
-                    data-testid="inspector-line"
-                    value={lineCode}
-                    onChange={(e) => { setLineCode(e.target.value); setStuffingClass(null); setConditionClass(null); setSurvey(EMPTY_SURVEY); }}
-                    className="w-full rounded-lg border border-line-strong bg-white px-3 py-2.5 text-sm font-bold text-ink"
-                  >
-                    <option value="">-- Chọn hãng tàu --</option>
-                    {shippingLines.map((p) => <option key={p.code} value={p.code}>{p.code} — {p.name}{p.isPriority ? ' (ưu tiên)' : ''}</option>)}
-                  </select>
+                {/* DEC-204: GIÁM ĐỊNH TRỰC TIẾP (form eEIR / AV-DAMAGE) | GIÁM ĐỊNH SAU (W-SURVEY lên kệ — chỉ chọn Vệ sinh) */}
+                <div className="grid grid-cols-2 gap-2" data-testid="inspector-mode">
+                  {([['DIRECT', 'GIÁM ĐỊNH TRỰC TIẾP'], ['DEFERRED', 'GIÁM ĐỊNH SAU']] as const).map(([m, label]) => (
+                    <button
+                      key={m}
+                      type="button"
+                      data-testid={`inspector-mode-${m}`}
+                      aria-pressed={mode === m}
+                      onClick={() => chooseMode(m)}
+                      className={`rounded-lg border py-3 text-sm font-bold ${mode === m ? (m === 'DEFERRED' ? 'border-amber-500 bg-amber-500 text-ink' : 'border-navy-900 bg-navy-900 text-white') : 'border-line-strong bg-white text-ink hover:bg-canvas'}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
+                {mode === 'DEFERRED' && (
+                  <p className="text-xs text-ink-muted">Lên kệ giám định (W-SURVEY): chỉ chọn Vệ sinh rồi xác nhận. Xe nâng hạ cont lên kệ; Giám định bổ sung ở tab Chờ giám định trên kệ.</p>
+                )}
 
                 {/* UI-02: form Giám định dùng chung (hiện lần lượt từng mục) */}
-                {lineCode && <InspectionFields
+                {mode && <InspectionFields
                   progressive
-                  allowDeferred
+                  hideCondition={mode === 'DEFERRED'}
                   stuffingOptions={lineStuffing}
                   survey={surveyMode ? { value: survey, onChange: setSurvey } : undefined}
                   value={{
@@ -844,6 +948,14 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   />
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="rounded bg-white p-2 border border-line">
+                      <span className="text-[10px] text-ink-muted block">SỐ CONTAINER</span>
+                      <span className="font-mono text-sm font-bold text-ink">{containerNo || 'Văn phòng nhập'}</span>
+                    </div>
+                    <div className="rounded bg-white p-2 border border-line">
+                      <span className="text-[10px] text-ink-muted block">GIÁM ĐỊNH</span>
+                      <span className="text-sm font-bold text-ink">{isDeferred ? 'SAU (lên kệ)' : 'TRỰC TIẾP'}</span>
+                    </div>
                     <div className="rounded bg-white p-2 border border-line">
                       <span className="text-[10px] text-ink-muted block">
                         TRẠNG THÁI

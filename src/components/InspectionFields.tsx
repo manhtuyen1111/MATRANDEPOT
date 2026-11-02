@@ -69,11 +69,13 @@ export const InspectionFields: React.FC<{
   allowDeferred?: boolean;
   // DEC-147: Giám định bổ sung trên kệ — Vệ sinh đã khai lúc hạ vỏ, không hỏi lại
   hideCleaning?: boolean;
+  // DEC-204: GIÁM ĐỊNH SAU — trạng thái W-SURVEY đã chọn ở màn ngoài, ẩn mục 1 (chỉ còn Vệ sinh)
+  hideCondition?: boolean;
   // DEC-166: mã Đóng hàng của hãng tàu (stuffingOptions trong services/stuffing.ts); rỗng → ẩn mục 2
   stuffingOptions: string[];
   // DEC-203: hãng MSK — mục 1 ghi tình trạng theo eEIR (Không hư / Hao mòn / Hư bên thứ 3), AV / DAMAGE tự tính
   survey?: { value: InspectionSurvey; onChange: (s: InspectionSurvey) => void; fixedSize?: string; hasDoorPhoto?: boolean };
-}> = ({ value: v, onChange, progressive, allowDeferred, hideCleaning, stuffingOptions, survey }) => {
+}> = ({ value: v, onChange, progressive, allowDeferred, hideCleaning, hideCondition, stuffingOptions, survey }) => {
   const set = (patch: Partial<InspectionValue>) => onChange({ ...v, ...patch });
   const toggleCleaning = (item: FieldCleaningItem) => {
     if (item === 'KHÔNG VỆ SINH') return set({ cleaning: ['KHÔNG VỆ SINH'] });
@@ -97,7 +99,7 @@ export const InspectionFields: React.FC<{
 
   return (
     <div className="space-y-3">
-      {survey ? (
+      {hideCondition ? null : survey ? (
         <Section title={allowDeferred ? '1. TÌNH TRẠNG (eEIR Maersk) / W-SURVEY *' : '1. TÌNH TRẠNG (eEIR Maersk) *'}>
           <div className="grid grid-cols-2 gap-2">
             <button
