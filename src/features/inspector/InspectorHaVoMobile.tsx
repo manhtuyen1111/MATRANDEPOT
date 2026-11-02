@@ -10,10 +10,8 @@ import {
   Clock,
   Eye,
   Plus,
-  RefreshCw,
   Send,
   ShieldAlert,
-  Upload,
   X,
 } from 'lucide-react';
 import {
@@ -726,15 +724,54 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
               <div className="space-y-3 py-2">
                 {/* DEC-204: SỐ CONT trước (bỏ trống được — Văn phòng đọc từ ảnh cửa) → API hãng tàu điền sẵn thông tin */}
                 <div className="space-y-1.5 rounded-lg border border-line bg-white p-3">
-                  <span className="block text-xs font-bold text-ink">SỐ CONTAINER</span>
-                  <input
-                    data-testid="inspector-cont-no"
-                    value={containerNo}
-                    onChange={(e) => { setContainerNo(cleanContainerNo(e.target.value).slice(0, 11)); setLookup(null); }}
-                    placeholder="VD MSKU1234567"
-                    autoCapitalize="characters"
-                    className="w-full rounded-lg border border-line-strong bg-white px-3 py-2.5 font-mono text-lg font-bold tracking-wider text-ink"
-                  />
+                  <span className="block text-xs font-bold text-ink">SỐ CONTAINER + ẢNH CỬA CONT *</span>
+                  {/* Người dùng 2026-11-02: chụp ảnh cửa = icon nhỏ cùng dòng ô số cont (đã chụp → ảnh nhỏ, bấm để chụp lại) */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      data-testid="inspector-cont-no"
+                      value={containerNo}
+                      onChange={(e) => { setContainerNo(cleanContainerNo(e.target.value).slice(0, 11)); setLookup(null); }}
+                      placeholder="VD MSKU1234567"
+                      autoCapitalize="characters"
+                      className="min-w-0 flex-1 rounded-lg border border-line-strong bg-white px-3 py-2.5 font-mono text-lg font-bold tracking-wider text-ink"
+                    />
+                    <button
+                      type="button"
+                      data-testid="inspector-door-photo"
+                      onClick={() => (cameraOpen ? stopCameraStream() : handleStartLiveCamera())}
+                      aria-label={doorPhotoDataUrl ? 'Chụp lại ảnh cửa cont' : 'Chụp ảnh cửa cont'}
+                      title={doorPhotoDataUrl ? 'Chụp lại ảnh cửa cont' : 'Chụp ảnh cửa cont'}
+                      className={`relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border ${doorPhotoDataUrl ? 'border-success-fg' : 'border-navy-900 bg-navy-900 text-white'}`}
+                    >
+                      {doorPhotoDataUrl ? (
+                        <img src={doorPhotoDataUrl} alt="Ảnh cửa container" className="h-full w-full object-cover" />
+                      ) : (
+                        <Camera className="h-6 w-6" />
+                      )}
+                    </button>
+                  </div>
+                  {cameraOpen && (
+                    <div className="space-y-2 rounded-lg border border-line-strong bg-black p-2">
+                      <video ref={videoRef} autoPlay playsInline muted className="h-60 w-full rounded object-cover" />
+                      <div className="flex gap-2">
+                        <button type="button" onClick={handleCaptureFrame} className="flex-1 rounded-lg bg-navy-900 py-3 text-xs font-bold text-white">
+                          Chụp Ảnh Ngay
+                        </button>
+                        <button type="button" onClick={stopCameraStream} className="rounded-lg border border-line-strong bg-white px-4 py-3 text-xs font-semibold text-ink">
+                          Hủy
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {!doorPhotoDataUrl && !cameraOpen && (
+                    <button
+                      type="button"
+                      onClick={() => setDoorPhotoDataUrl('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80')}
+                      className="text-[11px] text-ink-muted underline"
+                    >
+                      Dùng ảnh mẫu cửa Cont (khi kiểm thử trên máy tính)
+                    </button>
+                  )}
                   {!containerNo && <p className="text-[11px] text-ink-muted">Bỏ trống được — chụp ảnh cửa rõ số cont, Văn phòng nhập sau.</p>}
                   {containerNo && !contNoOk && <p className="text-[11px] text-danger-fg">Số cont gồm 4 chữ + 7 số.</p>}
                 </div>
@@ -766,94 +803,17 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   )}
                 </div>
 
-                <p className="text-center text-xs font-bold text-ink">
-                  Chụp ảnh cửa Container (nhìn rõ số cont)
-                </p>
-
-                {doorPhotoDataUrl ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between rounded-lg border border-line bg-canvas p-2">
-                      <img src={doorPhotoDataUrl} alt="Ảnh cửa container" className="h-14 w-20 rounded border border-line-strong object-cover" />
-                      <span className="text-xs font-bold text-emerald-700">✓ Đã chụp ảnh cửa Cont</span>
-                      <button
-                        type="button"
-                        onClick={() => setDoorPhotoDataUrl('')}
-                        className="inline-flex items-center gap-1 rounded border border-line-strong bg-white px-2.5 py-1.5 text-xs font-semibold text-ink hover:bg-navy-50"
-                      >
-                        <RefreshCw className="h-3 w-3" />
-                        Chụp lại
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      data-testid="inspector-info-next"
-                      disabled={!lineCode || !contNoOk}
-                      onClick={() => setInfoDone(true)}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-sm font-bold text-white hover:bg-navy-700 disabled:opacity-45"
-                    >
-                      <span>TIẾP TỤC GIÁM ĐỊNH</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : cameraOpen ? (
-                  <div className="space-y-2 rounded-lg border border-line-strong bg-black p-2">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="h-60 w-full rounded object-cover"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={handleCaptureFrame}
-                        className="flex-1 rounded-lg bg-navy-900 py-3 text-xs font-bold text-white"
-                      >
-                        Chụp Ảnh Ngay
-                      </button>
-                      <button
-                        type="button"
-                        onClick={stopCameraStream}
-                        className="rounded-lg bg-slate-700 px-4 py-3 text-xs font-semibold text-white"
-                      >
-                        Hủy
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    <button
-                      type="button"
-                      onClick={handleStartLiveCamera}
-                      className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-navy-700 bg-navy-50/50 py-10 text-sm font-bold text-navy-700 hover:bg-navy-50 active:scale-98"
-                    >
-                      <Camera className="h-9 w-9 text-navy-700" />
-                      CHỤP ẢNH CỬA CONTAINER TẠI APP
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-line-strong bg-white py-3 text-xs font-bold text-ink hover:bg-canvas"
-                    >
-                      <Upload className="h-4 w-4 text-ink-muted" />
-                      Mở Camera Điện Thoại / Chọn Ảnh
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDoorPhotoDataUrl(
-                          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80'
-                        )
-                      }
-                      className="w-full rounded-lg border border-line bg-canvas py-2 text-[11px] font-medium text-ink-muted hover:bg-navy-50"
-                    >
-                      Dùng ảnh mẫu cửa Cont (khi kiểm thử trên máy tính)
-                    </button>
-                  </div>
-                )}
+                {!doorPhotoDataUrl && <p className="text-center text-[11px] text-ink-muted">Bấm icon máy ảnh để chụp ảnh cửa cont (nhìn rõ số cont).</p>}
+                <button
+                  type="button"
+                  data-testid="inspector-info-next"
+                  disabled={!doorPhotoDataUrl || !lineCode || !contNoOk}
+                  onClick={() => { stopCameraStream(); setInfoDone(true); }}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-sm font-bold text-white hover:bg-navy-700 disabled:opacity-45"
+                >
+                  <span>TIẾP TỤC GIÁM ĐỊNH</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
               </div>
             ) : !isReadyToConfirmStep ? (
               /* ==============================================================
