@@ -1527,6 +1527,14 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-205 — PWA: cài MATRAN DEPOT lên điện thoại như ứng dụng
+
+- Trạng thái: CONFIRMED (2026-11-02, người dùng): "thiết kế app với tính năng PWA để cài như 1 ứng dụng trên mobile; dùng link thì dùng PC như bình thường".
+- **Cùng 1 trang web, không tách app riêng:** máy tính mở bằng đường link như cũ; điện thoại cài lên Màn hình chính → mở toàn màn hình (không thanh địa chỉ), biểu tượng chữ **M** nền navy.
+- **Cài đặt:** menu **Quản trị hệ thống → Cài ứng dụng** (Android / Chrome / Edge: hộp cài của trình duyệt). iPhone: hướng dẫn Safari → Chia sẻ → Thêm vào Màn hình chính. Đã cài thì ẩn mục này. Không thêm nút ra header (DEC-177).
+- **Service worker (`public/sw.js`):** chỉ lưu "vỏ" ứng dụng cùng tên miền (trang, JS / CSS, icon) để mở nhanh khi sóng yếu; trang luôn lấy mạng trước (bản mới có hiệu lực ngay). **Không lưu dữ liệu nghiệp vụ / ảnh kho** — Supabase là tên miền khác, đi thẳng mạng; không làm chế độ ngoại tuyến cho tác nghiệp. Chỉ đăng ký ở bản build thật (`src/lib/pwa.ts`).
+- File: `public/manifest.webmanifest`, `public/icons/*`, `index.html` (manifest, apple-touch-icon). Không cài thêm package.
+
 ### DEC-204 — Giám định Hạ vỏ: SỐ CONT trước + API hãng tàu; chọn GIÁM ĐỊNH TRỰC TIẾP / GIÁM ĐỊNH SAU
 
 - Trạng thái: CONFIRMED (2026-11-02, người dùng). Thay một phần DEC-203 ("Giám định không nhập số cont") và cách chọn W-SURVEY ở DEC-147.
@@ -2083,6 +2091,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-204 đã xác nhận (cập nhật 2026-11-02).
+- Quyết định nghiệp vụ: DEC-001 → DEC-205 đã xác nhận (cập nhật 2026-11-02).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

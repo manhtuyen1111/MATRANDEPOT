@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-205 (2026-11-02): **PWA** — cài MATRAN DEPOT lên điện thoại như ứng dụng (menu Quản trị hệ thống → **Cài ứng dụng**; iPhone có hướng dẫn); máy tính dùng link như cũ. `public/manifest.webmanifest`, `public/sw.js` (chỉ lưu vỏ ứng dụng, không lưu dữ liệu Supabase), icon `public/icons/`. Không migration, không package mới.
 - DEC-204 sửa (2026-11-02, người dùng): Giám định Hạ vỏ — **chụp ảnh cửa cont là icon nhỏ cùng dòng ô SỐ CONTAINER** (đã chụp → ảnh nhỏ, bấm để chụp lại); bỏ khối chụp ảnh riêng. Không migration.
 - DEC-204 (2026-11-02): **Giám định Hạ vỏ nhập SỐ CONT trước** (mọi hãng, bỏ trống được — Văn phòng được điền sẵn, sửa được) + nút **LẤY THÔNG TIN TỪ HÃNG TÀU** (`equipmentInfo.ts` — Maersk chưa có khóa → "chưa kết nối", Giám định tự nhập). Chọn **GIÁM ĐỊNH TRỰC TIẾP / GIÁM ĐỊNH SAU** (W-SURVEY chỉ chọn Vệ sinh). **Giám định trên kệ cont MSK theo eEIR** (size theo cont). Danh mục Phân loại MSK Demo đủ hạng **M / S / K / E / Q / N**. **Migration mới `20261125000001_rack_survey`** (`record_rack_survey`, pgTAP `0027`) — pgTAP 378/378, chạy thật 4/4 local.
 - 2026-11-01: eEIR **Current Move** theo app thật (Nhập tàu IN-EMPTY-POSITION, Xuất tàu / Cấp sale OUT-EMPTY-POSITION — cấp sale không cần booking); phiếu eEIR chạy thử gồm Nhập tàu + Xuất tàu. **Size cont do Giám định chọn** — Văn phòng tự điền + khóa. **Migration mới `20261124000001_gate_in_survey_size_lock.sql`** (pgTAP 371/371, chạy thật 5/5).
