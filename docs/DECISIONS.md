@@ -1548,7 +1548,7 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-11-02, người dùng). Thay một phần DEC-203 ("Giám định không nhập số cont") và cách chọn W-SURVEY ở DEC-147.
 - **Bước 1 — Số cont + Hãng tàu + Ảnh cửa:** Giám định nhập **SỐ CONTAINER** đầu tiên (**mọi hãng**; 4 chữ + 7 số). **Bỏ trống được** — chụp ảnh cửa rõ số cont, Văn phòng nhập sau. Ảnh cửa cont vẫn bắt buộc (DEC-182). Số cont Giám định nhập lưu `GateInOrder.initialContainerHint` (database `initial_container_hint` — đã có); Văn phòng Hạ vỏ **được điền sẵn, sửa được**.
-- **API hãng tàu (`src/services/equipmentInfo.ts`):** có số cont + hãng có nguồn API → nút **LẤY THÔNG TIN TỪ HÃNG TÀU**. Ô nào API trả được (Size, Type, ISO, AGE, hạng vỏ) thì tự điền — Giám định không phải nhập lại; Văn phòng sửa được sau. **Chưa kết nối / API lỗi / cont không có dữ liệu → Giám định tự nhập như cũ** (không chặn tác nghiệp). Maersk: API 1 `getEquipmentDetails` — **chưa có khóa → hiện "chưa kết nối"**; khóa chỉ ở máy chủ. Không tạo dữ liệu giả.
+- **API hãng tàu (`src/services/carriers/equipment.ts`):** có số cont + hãng có nguồn API → nút **LẤY THÔNG TIN TỪ HÃNG TÀU**. Ô nào API trả được (Size, Type, ISO, AGE, hạng vỏ) thì tự điền — Giám định không phải nhập lại; Văn phòng sửa được sau. **Chưa kết nối / API lỗi / cont không có dữ liệu → Giám định tự nhập như cũ** (không chặn tác nghiệp). Maersk: API 1 `getEquipmentDetails` — **chưa có khóa → hiện "chưa kết nối"**; khóa chỉ ở máy chủ. Không tạo dữ liệu giả.
 - **Phân loại theo hạng vỏ của hãng:** hạng vỏ API trả về dùng thẳng làm mã **PHÂN LOẠI** nếu mã đó có trong Danh mục Phân loại của hãng (DEC-166). Danh mục MSK bổ sung đủ hạng Maersk **M / S / K / E / Q / N** (Demo đã có; database: Admin thêm ở Danh mục chung → Phân loại). Thiết kế chung — hãng mới chỉ cần thêm nguồn API (`EQUIPMENT_SOURCES`) + Danh mục Phân loại.
 - **Bước 2 — chọn cách giám định:** **GIÁM ĐỊNH TRỰC TIẾP** = giám định ngay (cont MSK: form eEIR DEC-203; hãng khác: AV / DAMAGE + Đóng hàng + AGE). **GIÁM ĐỊNH SAU** = W-SURVEY lên kệ (DEC-147): chỉ chọn **Vệ sinh** rồi xác nhận; Xe nâng hạ lên kệ.
 - **Giám định trên kệ cont MSK theo eEIR:** tab Chờ giám định trên kệ dùng form eEIR như Giám định trực tiếp; **size theo cont Văn phòng đã nhập** (không chọn lại); ảnh cửa lúc hạ vỏ tính vào KHÔNG HƯ. Lưu vào `GateInOrder.survey`; database `record_rack_survey` (migration `20261125000001`). Hồ sơ: dòng Tình trạng eEIR theo giờ giám định trên kệ.
@@ -1571,7 +1571,7 @@ Quy ước trạng thái:
 - **Lưới vị trí CEDEX (người dùng mô tả 2026-11-01):** mã = mặt + hàng + cột đầu + (cột cuối | **N** khi 1 cột). Vách L / R, Cửa D, Mặt trước F: hàng **H** trên cùng • **T** trên • **B** dưới • **G** dưới cùng, nhiều hàng → **X**; Nóc T / Khung đáy U / Sàn B: hàng **L** trên • **R** dưới, cả 2 → **X**; cột vách / nóc / đáy / sàn **10 ô (cont 40') / 5 ô (cont 20')** số 1…9, 0; cửa / mặt trước 4 cột 1–4. VD `DB2N`, `DX3N`, `TL1N`, `TX1N`, `TX14`. Giám định chạm ô trên sơ đồ, mã tự điền (`cedexGrid` / `cedexLocation`). **Người dùng xác nhận:** chọn nhiều hàng bất kỳ đều là X; vách trái / phải đánh số cột trái → phải 1 → 0 như nóc.
 - **Giám định chọn SIZE CONT trước khi giám định** (người dùng 2026-11-01): mục đầu tiên của phần eEIR là SIZE CONT 20 / 40 / 45 — chưa chọn thì chưa hiện 3 phần hư hỏng, chưa bấm TIẾP TỤC được; sơ đồ 20' = 5 ô, 40' / 45' = 10 ô; cont 20' chặn cột 6–0 ở vách / nóc / đáy / sàn. Lưu `survey.size`. Migration `20261122000001`.
 - **NHẬP TÀU dùng cùng form eEIR như Hạ vỏ** (người dùng 2026-11-01): cont MSK ở Giám định → Nhập tàu ghi Không hư / Hao mòn / Hư bên thứ 3; **SIZE lấy theo danh sách tàu** (không cho chọn); không có ảnh cửa (DEC-156) → Không hư đủ 20 ảnh; AV / DAMAGE tự suy; lưu `VesselListItem.survey`; hồ sơ NT- có dòng Tình trạng eEIR. Database `record_vessel_import_survey` + `eeir_survey_check` (migration `20261123000001`). Phiếu eEIR chạy thử đã gồm Nhập tàu + Xuất tàu.
-- **Dòng CURRENT MOVE • LOCATION trên màn Giám định (người dùng duyệt 2026-11-02):** cont MSK — Hạ vỏ, Giám định trên kệ, Nhập tàu, Cấp vỏ (ảnh) hiện ô chỉ đọc Current Move + Location (`3HY` + tên depot Danh mục Công ty); không cho chọn / sửa. Nguồn duy nhất `EEIR_SOURCE_MOVE` (`src/services/edi/eeir.ts`), component `EeirMoveLine`. RKEM location = mã vị trí hư hỏng (CEDEX) khi giám định — đã có (người dùng xác nhận).
+- **Dòng CURRENT MOVE • LOCATION trên màn Giám định (người dùng duyệt 2026-11-02):** cont MSK — Hạ vỏ, Giám định trên kệ, Nhập tàu, Cấp vỏ (ảnh) hiện ô chỉ đọc Current Move + Location (`3HY` + tên depot Danh mục Công ty); không cho chọn / sửa. Nguồn duy nhất `EEIR_SOURCE_MOVE` (`src/services/carriers/maersk/eeir.ts`), component `EeirMoveLine`. RKEM location = mã vị trí hư hỏng (CEDEX) khi giám định — đã có (người dùng xác nhận).
 - **Current Move (danh sách app eEIR thật, người dùng chốt 2026-11-01 — Q-058 xong):** Hạ vỏ `IN-EMPTY-IMPORT_RETURN` • Nhập tàu `IN-EMPTY-POSITION` • Cấp vỏ theo booking `OUT-EMPTY-EXPORT` • Cấp sale `OUT-EMPTY-POSITION` (không cần booking) • Xuất tàu `OUT-EMPTY-POSITION` — **tạm chưa gửi eEIR** (người dùng 2026-11-01: Xuất tàu chưa chụp ảnh; bật lại bằng `EEIR_SEND_VESSEL_EXPORT`). Không dùng: IN-FULL-EXP, STUFFING, STRIPPING, OUT-FULL-DELIVERY (cont có hàng).
 - **SIZE cont do Giám định chọn** (người dùng 2026-11-01): cont MSK giám định eEIR → Văn phòng Hạ vỏ tự điền size Giám định, ô Size khóa; service + trigger database `gate_in_survey_size_guard` chặn ghi size khác (migration `20261124000001`).
 - **Chờ người dùng:** (1) ~~mã ô lưới~~ — đã làm theo mô tả; (2) ~~Floor Cleaning~~ — **người dùng chốt 2026-11-01: KHÔNG làm mục riêng**; ảnh sàn bẩn trước vệ sinh ghi trong phần hư hỏng (mặt **Sàn (B)**, loại **Bẩn**) — Vệ sinh vẫn theo mục Vệ sinh MATRAN; (3) áp dụng cho **Nhập tàu** (moveType của tàu).
@@ -1597,7 +1597,7 @@ Quy ước trạng thái:
 ### DEC-201 — eEIR chỉ tích hợp cont MSK loại KHÔ (DRY)
 
 - Trạng thái: CONFIRMED (2026-10-30, người dùng): eEIR **chỉ áp dụng cont DRY** (Size/Type DC, HC); cont lạnh / open-top / flat **chưa tích hợp**.
-- Code: `isEeirContainer` (`src/services/edi/eeir.ts`). Bản chạy thử `eeirInspections` / `eeirInspectionDetails` đã có (chưa có màn hình, chưa gửi).
+- Code: `isEeirContainer` (`src/services/carriers/maersk/eeir.ts`). Bản chạy thử `eeirInspections` / `eeirInspectionDetails` đã có (chưa có màn hình, chưa gửi).
 - **Chưa chốt:** DEC-198 (ảnh cấp vỏ) và DEC-199 (booking) hiện áp cho **mọi cont MSK** — có thu hẹp về DRY không (hỏi người dùng phiên sau).
 
 ### DEC-200 — Hư hỏng cont MSK ghi theo mã CEDEX (eEIR)
@@ -1611,7 +1611,7 @@ Quy ước trạng thái:
 
 ### DEC-199 — Booking cont MSK phải là 9–11 chữ số
 
-- Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-063). **Đã code ở app** (`edi/maersk.ts`, `createReleaseOrder`); **database chưa chặn** — cần migration (phiên sau).
+- Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-063). **Đã code ở app** (`carriers/maersk/rules.ts`, `createReleaseOrder`); **database chưa chặn** — cần migration (phiên sau).
 - Văn phòng lập lệnh **Cấp vỏ Release for customer** cho cont **hãng MSK**: số booking không phải **9–11 ký tự chữ / số** → **chặn**. (Sửa 2026-10-30 theo tài liệu v4.3: Maersk nhận alphanumeric 9–11, không chỉ chữ số.) Lý do: eEIR gate-out của Maersk từ chối booking sai dạng; sửa ngay khi khách còn ở quầy.
 - Không áp dụng: Release for sale (dùng Sale code — DEC-194), hãng khác.
 - Dữ liệu Demo đã đổi booking sang 9 chữ số. Còn: migration chặn ở database (trigger trước khi thêm `gate_out_orders`).
@@ -1645,7 +1645,7 @@ Quy ước trạng thái:
 - Sắp theo giờ, cùng giờ thì gate-in trước gate-out (app cũ không sắp theo giờ — so khớp theo từng cont, không theo thứ tự dòng).
 - Kiểm chứng: test **dựng lại đúng từng ký tự** file mẫu app cũ `202610290500.txt` (`tests/edi-codeco.test.ts`).
 - Code:
-  - `src/services/edi/codeco.ts` (`MAERSK_CODECO`, `codecoEvents`, `buildCodecoFile`);
+  - `src/services/carriers/standards/codeco.ts` (`MAERSK_CODECO`, `codecoEvents`, `buildCodecoFile`);
   - `src/services/remote/ediSource.ts` + `loadEdiState` (database: tải lượt ra / vào của giờ đó);
   - `src/features/catalog/EdiWorkspace.tsx`.
 - Không cần migration.
