@@ -5,6 +5,7 @@ Ghi lại những thay đổi quan trọng của tài liệu, thiết kế, data
 ## [0.5.0-dev] — 2026-10-27 (nhánh `agent/claude/p4-database`)
 
 ### Added
+- DEC-204 (2026-11-02): **Giám định Hạ vỏ nhập SỐ CONT trước** (mọi hãng, bỏ trống được — Văn phòng được điền sẵn, sửa được) + nút **LẤY THÔNG TIN TỪ HÃNG TÀU** (`equipmentInfo.ts` — Maersk chưa có khóa → "chưa kết nối", Giám định tự nhập). Chọn **GIÁM ĐỊNH TRỰC TIẾP / GIÁM ĐỊNH SAU** (W-SURVEY chỉ chọn Vệ sinh). **Giám định trên kệ cont MSK theo eEIR** (size theo cont). Danh mục Phân loại MSK Demo đủ hạng **M / S / K / E / Q / N**. **Migration mới `20261125000001_rack_survey`** (`record_rack_survey`, pgTAP `0027`) — pgTAP 378/378, chạy thật 4/4 local.
 - 2026-11-01: eEIR **Current Move** theo app thật (Nhập tàu IN-EMPTY-POSITION, Xuất tàu / Cấp sale OUT-EMPTY-POSITION — cấp sale không cần booking); phiếu eEIR chạy thử gồm Nhập tàu + Xuất tàu. **Size cont do Giám định chọn** — Văn phòng tự điền + khóa. **Migration mới `20261124000001_gate_in_survey_size_lock.sql`** (pgTAP 371/371, chạy thật 5/5).
 - DEC-203 (2026-11-01): **Giám định Nhập tàu cont MSK dùng form eEIR như Hạ vỏ** — size theo danh sách tàu, không ảnh cửa (Không hư 20 ảnh), hồ sơ NT- có dòng Tình trạng eEIR. **Migration mới `20261123000001_vessel_import_survey.sql`** (pgTAP 369/369, chạy thật 5/5).
 - DEC-203 bổ sung (2026-11-01): Giám định cont MSK **chọn SIZE CONT (20 / 40 / 45) trước khi giám định** — sơ đồ 20' 5 ô, 40' / 45' 10 ô; bỏ nút chọn 20/40 trên sơ đồ. **Migration mới `20261122000001_gate_in_survey_size.sql`** (pgTAP 363/363, chạy thật 5/5).
