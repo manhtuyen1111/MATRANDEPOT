@@ -12,6 +12,8 @@ import * as inv from './invoice';
 import * as fb from './feedback';
 import * as route from './driverRoute';
 import * as rp from './releasePhoto';
+import * as cdx from './cedexCatalog';
+import * as aems from './aemsQuotation';
 import type { DepotState } from './depotStore';
 import { enqueue, isRemoteMode, mapId, realId, requestId, rpc, uploadDoorPhoto, uploadReleasePhotos, uploadRepairPhotos, uploadSurveyPhotos, type RemoteOp } from './remote/sync';
 import { callEdgeFunction } from './remote/edge';
@@ -94,6 +96,19 @@ export const completeCleaningTask = wrap(ops.completeCleaningTask, ([, i]) => as
 });
 export const saveQuotationDraft = wrap(ops.saveQuotationDraft, ([, i]) => async (c) => {
   await rpc(c, 'save_quotation_draft', { p_container_no: i.containerNo, p_items: i.quotationItems, p_labor_hours: i.laborHours });
+});
+// DEC-207: Báo giá AEMS — database tính lại toàn bộ từ dòng + Danh mục (không tin số tiền từ máy)
+export const saveAemsQuotation = wrap(aems.saveAemsQuotation, ([, i], next) => {
+  const q = next.containers.find((c) => c.containerNo === i.containerNo && c.status !== 'GATED_OUT')?.aemsQuote;
+  return async (c) => {
+    await rpc(c, 'save_aems_quotation', {
+      p_container_no: i.containerNo, p_mode: q?.mode, p_remark: nul(q?.remark),
+      p_lines: (q?.lines || []).map((l) => ({ damageCode: l.damageCode, repairCode: l.repairCode, locCode: l.locCode, tpi: l.tpi, pcs: l.pcs, manHours: l.manHours, materialCost: l.materialCost })),
+    });
+  };
+});
+export const setAemsApproval = wrap(aems.setAemsApproval, ([, i]) => async (c) => {
+  await rpc(c, 'set_aems_approval', { p_container_no: i.containerNo, p_status: i.approval, p_work_order_no: nul(i.workOrderNo?.trim()) });
 });
 export const confirmQuotationToRepair = wrap(ops.confirmQuotationToRepair, ([, i]) => async (c) => {
   await rpc(c, 'confirm_quotation_to_repair', { p_container_no: i.containerNo });
@@ -323,6 +338,13 @@ export const setShippingLinePriority = wrap(ops.setShippingLinePriority, ([, i])
 });
 export const addStuffingClassCatalogItem = wrap(ops.addStuffingClassCatalogItem, ([, i]) => async (c) => {
   await rpc(c, 'catalog_upsert_stuffing_class', { p_shipping_line_code: i.shippingLineCode, p_code: i.code.trim().toUpperCase(), p_description: nul(i.description?.trim()) });
+});
+// DEC-206: CODE CEDEX + MÃ SỬA CHỮA theo hãng tàu (1 dòng hay nhập Excel — gửi theo lô)
+export const upsertCedexCodes = wrap(cdx.upsertCedexCodes, ([, i]) => async (c) => {
+  await rpc(c, 'catalog_upsert_cedex_codes', { p_shipping_line_code: i.shippingLineCode, p_kind: i.kind, p_rows: i.rows });
+});
+export const upsertRepairCodes = wrap(cdx.upsertRepairCodes, ([, i]) => async (c) => {
+  await rpc(c, 'catalog_upsert_repair_codes', { p_shipping_line_code: i.shippingLineCode, p_rows: i.rows });
 });
 export const setStuffingClassActive = wrap(ops.setStuffingClassActive, ([, i]) => async (c) => {
   await rpc(c, 'catalog_set_stuffing_class_active', { p_shipping_line_code: i.shippingLineCode, p_code: i.code, p_active: i.isActive });

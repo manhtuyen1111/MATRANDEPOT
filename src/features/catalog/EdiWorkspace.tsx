@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Download, FileText, Search, TriangleAlert } from 'lucide-react';
 import { DepotState } from '../../services/depotStore';
 import { formatDateTime, parseDateTime } from '../../services/datetime';
-import { buildCodecoFile, CODECO_SOURCE_LABELS, CodecoCodeSet, codecoEvents, codecoSizeType, CodecoSource, MAERSK_CODECO } from '../../services/edi/codeco';
+import { buildCodecoFile, CODECO_SOURCE_LABELS, CodecoCodeSet, codecoEvents, codecoSizeType, CodecoSource } from '../../services/carriers/standards/codeco';
+import { MAERSK_CODECO } from '../../services/carriers/maersk/config';
 import { ediStateFor } from '../../services/remote/ediSource';
 import { DateTimeField, Feedback, inputCls, labelCls, linkCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
 

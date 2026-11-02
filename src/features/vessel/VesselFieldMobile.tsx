@@ -17,6 +17,7 @@ import { ChoiceButtons } from './VesselShared';
 import { EMPTY_INSPECTION, InspectionFields, InspectionValue, inspectionRemarks, isInspectionComplete } from '../../components/InspectionFields';
 import { CONTAINER_SEARCH_HINT, containerSerial as containerSerialOf, matchContainerNo } from '../../services/containerSearch';
 import { EMPTY_SURVEY, usesInspectionSurvey } from '../../services/inspectionSurvey';
+import { EeirMoveLine } from '../../components/EeirMoveLine';
 import type { InspectionSurvey } from '../../types/depot';
 
 export type VesselFieldMode = 'GD_NHAP_TAU' | 'GD_XUAT_TAU' | 'XN_NHAP_TAU' | 'XN_XUAT_TAU';
@@ -253,6 +254,7 @@ export const VesselFieldMobile: React.FC<{
                 </div>
               )}
 
+              {surveyMode && <EeirMoveLine state={state} source="NHAP_TAU" />}
               {isInspect && (
                 <InspectionFields
                   value={insp}

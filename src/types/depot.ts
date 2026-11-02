@@ -120,6 +120,77 @@ export const conditionLabel = (c?: string | null): string => (c === 'W-SURVEY' ?
 export const CONDITION_DEFERRED = 'W-SURVEY' as const;
 // DEC-166: mã PHÂN LOẠI ĐÓNG HÀNG lấy từ Danh mục theo hãng tàu (mặc định M / K / E) — trống khi hãng không dùng
 export type FieldStuffingClass = string;
+// DEC-207: BÁO GIÁ THEO AEMS Maersk (thiết kế docs/design/BAO_GIA_AEMS.md). Tiền VND, VAT 0. Chỉ Ordinary Hours (OT chờ).
+export type AemsTpi = 'W' | 'T'; // W = hao mòn (Wear & Tear) • T = bên thứ 3 (Third Party)
+export type AemsApproval = 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'SUSPEND_TTL' | 'DECLARED_TTL';
+export const AEMS_APPROVAL_LABELS: Record<AemsApproval, string> = {
+  DRAFT: 'Draft',
+  PENDING_APPROVAL: 'Pending Approval',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  SUSPEND_TTL: 'Suspend for TTL check',
+  DECLARED_TTL: 'Declared as TTL',
+};
+export interface AemsQuoteLine {
+  id: string;
+  damageCode: string;   // MÃ HƯ HỎNG (Danh mục CODE CEDEX)
+  repairCode: string;   // Repair Code của MÃ SỬA CHỮA (VD 0804)
+  locCode: string;      // Repair Loc code = vị trí CEDEX 4 ký tự (VD BR5N, IXXX)
+  tpi: AemsTpi;
+  pcs: number;
+  manHours: number;     // Man Hrs / pc (mặc định Fixed man hour của mã sửa chữa)
+  materialCost: number; // Material cost / pc (mặc định Material Rate)
+  itemTotal: number;    // Pcs × Material cost / pc
+}
+export interface AemsQuote {
+  mode: string;         // Repair Mode (VD 03)
+  cause: string;        // tự theo dòng: có T → Third Party, chỉ W → 1 - Wear And Tear
+  remark?: string;      // 0/255
+  lines: AemsQuoteLine[];
+  repairHours: number;      // Σ Pcs × Man Hrs
+  preparationHours: number; // tự tính theo mã PREPARATION (khoảng giờ trong Repair Name)
+  totalHours: number;       // Ordinary Hours = sửa + chuẩn bị
+  laborRate: number;        // đơn giá giờ công (mã "Man hour rate")
+  laborCost: number;
+  materialCost: number;
+  wearTearTotal: number;    // Σ Item Total dòng W
+  thirdPartyTotal: number;  // Σ Item Total dòng T
+  totalExclVat: number;
+  totalInclVat: number;     // VAT 0 (người dùng 2026-11-02)
+  approval: AemsApproval;
+  approvalAt?: string;
+  approvalBy?: string;
+  workOrderNo?: string;     // số Work Order trên AEMS (nhập tay khi đã tạo bên AEMS)
+  savedAt: string;
+  savedBy: string;
+}
+
+// CODE CEDEX theo hãng tàu (Danh mục chung → Sửa chữa — người dùng 2026-11-02, DEC-206)
+export type CedexCodeKind = 'LOCATION' | 'DAMAGE' | 'MATERIAL';
+export const CEDEX_CODE_KIND_LABELS: Record<CedexCodeKind, string> = { LOCATION: 'MÃ VỊ TRÍ', DAMAGE: 'MÃ HƯ HỎNG', MATERIAL: 'MÃ VẬT LIỆU' };
+export interface CedexCode {
+  id: string;
+  shippingLineCode: string;
+  kind: CedexCodeKind;
+  code: string;
+  name: string;
+  note?: string;
+  isActive: boolean;
+}
+// MÃ SỬA CHỮA — đúng mẫu bảng giá hãng (Item Name, Repair Mode, Repair Name, Max Qty, Fixed man hour, Repair Code, Material Rate)
+export interface RepairCode {
+  id: string;
+  shippingLineCode: string;
+  itemName: string;      // VD DR001 — khóa theo hãng
+  repairMode: string;    // VD 03; '-' = không áp dụng
+  repairName: string;
+  maxQty?: number;       // Max Qty per work order (trống = không giới hạn)
+  manHour: number;       // Fixed man hour applicable per work order
+  repairCode: string;    // VD 0003; '-' = không áp dụng
+  materialRate: number;  // Material Rate (Excluding VAT)
+  isActive: boolean;
+}
+
 export interface StuffingClassItem {
   id: string;
   shippingLineCode: string;
@@ -378,6 +449,7 @@ export interface ContainerRecord {
   quotationLaborHours?: number; // GIỜ CÔNG SỬA CHỮA do Báo giá nhập (DEC-041)
   quotationUpdatedBy?: string; // DEC-086: người / giờ cập nhật báo giá (trước khi chuyển sửa chữa)
   quotationUpdatedAt?: string;
+  aemsQuote?: AemsQuote; // DEC-207: Báo giá theo AEMS (hãng bật aemsQuotation — MSK)
   // KHÓA CONTAINER = Tạm giữ / Khóa xuất (DEC-002, DEC-015, CR-02)
   isOnHold: boolean;
   holdReason?: string;

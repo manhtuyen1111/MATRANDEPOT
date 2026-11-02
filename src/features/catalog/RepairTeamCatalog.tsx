@@ -6,15 +6,17 @@ import { DepotState, formatVnd } from '../../services/depotStore';
 import type { RepairGrade, RepairTeam, StaffUser } from '../../types/depot';
 
 import { hasRolePermission } from '../../services/permissions';
+import { CedexCatalog } from './CedexCatalog';
 import { CellText, CELL_MAX, DetailDrawer, Feedback, inputCls, labelCls, primaryBtn, secondaryBtn, SectionCard } from '../../components/shared';
 
-type Tab = 'STAFF' | 'TEAM' | 'GRADE';
+type Tab = 'STAFF' | 'TEAM' | 'GRADE' | 'CEDEX';
 type Run = (fn: () => DepotState, message: string) => boolean;
 
 // DANH MỤC CHUNG — SỬA CHỮA (DEC-042, DEC-173). Chỉ ADMIN cấu hình, vai trò khác xem.
 //   NHÂN VIÊN SỬA CHỮA: user có vai trò Sửa chữa — bắt buộc cấu hình TỔ + BẬC THỢ (giờ công bậc thợ tự lấy theo bậc)
 //   TỔ SỬA CHỮA: tạo theo số lượng (TỔ SỬA CHỮA 1, 2, 3…)
 //   BẬC THỢ: tên + giờ công bậc thợ (đơn giá tiền / 1 giờ); VƯỢT GIỜ: mốc giờ công + đơn giá vượt giờ (DEC-175)
+//   CODE CEDEX: mã vị trí / hư hỏng / vật liệu / sửa chữa theo hãng tàu (DEC-206)
 export const RepairTeamCatalog: React.FC<{ state: DepotState; onUpdateState: (next: DepotState) => void }> = ({ state, onUpdateState }) => {
   const isAdmin = hasRolePermission(state.currentUser, ['ADMIN']);
   const [tab, setTab] = useState<Tab>('STAFF');
@@ -39,7 +41,7 @@ export const RepairTeamCatalog: React.FC<{ state: DepotState; onUpdateState: (ne
       <Feedback error={error} success={success} onClose={() => (setError(null), setSuccess(null))} />
       {!isAdmin && <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">Chế độ chỉ xem — chỉ Admin cấu hình sửa chữa.</p>}
       <div className="inline-flex overflow-hidden rounded-lg border border-line bg-white text-xs font-bold">
-        {([['STAFF', 'NHÂN VIÊN SỬA CHỮA'], ['TEAM', 'TỔ SỬA CHỮA'], ['GRADE', 'BẬC THỢ']] as const).map(([k, t]) => (
+        {([['STAFF', 'NHÂN VIÊN SỬA CHỮA'], ['TEAM', 'TỔ SỬA CHỮA'], ['GRADE', 'BẬC THỢ'], ['CEDEX', 'CODE CEDEX']] as const).map(([k, t]) => (
           <button key={k} type="button" onClick={() => setTab(k)} className={`px-4 py-2 ${tab === k ? 'bg-navy-900 text-white' : 'text-ink-muted hover:bg-canvas'}`}>
             {t}
           </button>
@@ -48,6 +50,7 @@ export const RepairTeamCatalog: React.FC<{ state: DepotState; onUpdateState: (ne
       {tab === 'STAFF' && <StaffTab state={state} isAdmin={isAdmin} run={run} />}
       {tab === 'TEAM' && <TeamTab state={state} isAdmin={isAdmin} run={run} />}
       {tab === 'GRADE' && <GradeTab state={state} isAdmin={isAdmin} run={run} />}
+      {tab === 'CEDEX' && <CedexCatalog state={state} isAdmin={isAdmin} run={run} />}
     </div>
   );
 };

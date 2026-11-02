@@ -5,6 +5,7 @@ import { DepotState } from '../../services/depotStore';
 import { formatDateTime } from '../../services/datetime';
 import { pendingReleasePhotos, RELEASE_PHOTO_MAX, RELEASE_PHOTO_MIN, releaseContainerOf } from '../../services/releasePhoto';
 import { PhotoCamera } from '../../components/PhotoCamera';
+import { EeirMoveLine } from '../../components/EeirMoveLine';
 import { ContainerNo, Feedback, labelCls, linkCls, primaryBtn } from '../../components/shared';
 import { QueueHeader, QueueListRow } from '../field-queues/FieldQueueWorkspaces';
 
@@ -76,6 +77,7 @@ export const InspectorCapVoMobile: React.FC<{
               </dd>
             </div>
           </dl>
+          <EeirMoveLine state={state} source={order.releasePurpose === 'SALE' ? 'CAP_SALE' : 'CAP_VO'} />
 
           <span className={labelCls}>Ảnh cấp vỏ * ({photos.length}/{RELEASE_PHOTO_MAX})</span>
           <button type="button" onClick={() => setCameraOpen(true)} disabled={photos.length >= RELEASE_PHOTO_MAX} className={`${primaryBtn} w-full py-3`}>

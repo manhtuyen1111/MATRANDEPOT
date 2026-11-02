@@ -1357,3 +1357,55 @@ describe('DEC-205: PWA cài như ứng dụng', () => {
     expect(isIosSafari('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0 Safari/537.36')).toBe(false);
   });
 });
+
+// Dòng CURRENT MOVE • LOCATION trên màn Giám định cont MSK (người dùng duyệt 2026-11-02)
+import { EeirMoveLine } from '../src/components/EeirMoveLine';
+describe('eEIR: dòng CURRENT MOVE trên màn Giám định', () => {
+  it('Hạ vỏ / Cấp sale hiện đúng Current Move + Location, chỉ đọc', () => {
+    const st = createDemoState();
+    const hv = renderToString(<EeirMoveLine state={st} source="HA_VO" />).replace(/<!-- -->/g, '');
+    expect(hv).toContain('IN-EMPTY-IMPORT_RETURN');
+    expect(hv).toContain('3HY - MATRAN DEPOT');
+    expect(hv).not.toMatch(/<(input|select|button)/);
+    expect(renderToString(<EeirMoveLine state={st} source="CAP_SALE" />)).toContain('OUT-EMPTY-POSITION');
+  });
+});
+
+// DEC-206: Danh mục chung → Sửa chữa → CODE CEDEX
+import { CedexCatalog } from '../src/features/catalog/CedexCatalog';
+import { upsertRepairCodes } from '../src/services/cedexCatalog';
+describe('DEC-206: tab CODE CEDEX', () => {
+  it('Admin thấy NHẬP EXCEL / THÊM MÃ + bảng MÃ SỬA CHỮA đúng cột mẫu; Văn phòng chỉ xem', () => {
+    const base = createDemoState();
+    const s = upsertRepairCodes(as(base, 'usr-admin'), { shippingLineCode: 'MSK', rows: [{ itemName: 'DR008', repairMode: '03', repairName: 'General - Replace missing rivets', maxQty: 7, manHour: 0.1, repairCode: '0804', materialRate: 9215.85 }] });
+    const html = renderToString(<CedexCatalog state={s} isAdmin run={() => true} />).replace(/<!-- -->/g, '');
+    for (const t of ['MÃ VỊ TRÍ', 'MÃ HƯ HỎNG', 'MÃ VẬT LIỆU', 'MÃ SỬA CHỮA', 'NHẬP EXCEL', 'THÊM MÃ', 'Material Rate (Excluding VAT)', '9,215.85', '0804']) expect(html).toContain(t);
+    expect(html).toContain('data-table');
+    const view = renderToString(<CedexCatalog state={as(s, 'usr-office')} isAdmin={false} run={() => true} />);
+    expect(view).not.toContain('NHẬP EXCEL');
+    expect(view).toContain('DR008');
+  });
+});
+
+// DEC-207: Báo giá AEMS — cont MSK chờ báo giá
+import { AemsQuoteForm } from '../src/features/quotation/AemsQuoteForm';
+import { saveAemsQuotation } from '../src/services/aemsQuotation';
+describe('DEC-207: form Báo giá AEMS', () => {
+  it('chưa lưu: dòng tạo sẵn từ Giám định (TPI T + Loc), đủ khối giờ công / tổng tiền; nút xác nhận khóa khi chưa Approved', () => {
+    const s = as(createDemoState(), 'usr-quotation');
+    const c = s.containers.find((x) => x.needsQuotation && x.shippingLineCode === 'MSK' && !x.aemsQuote)!;
+    const html = renderToString(<AemsQuoteForm state={s} container={c} onSave={() => {}} onApproval={() => {}} onConfirm={() => {}} />).replace(/<!-- -->/g, '');
+    for (const t of ['Damage Code', 'Repair Code', 'Repair Loc code', 'TPI', 'Man Hrs/pc', 'Material cost/pc', 'Ordinary Hours', 'Preparation Time', 'Total Labor Cost', 'Total Third Party', 'Chưa lưu', 'VND • VAT 0']) expect(html).toContain(t);
+    expect((html.match(/data-testid="aems-line"/g) || []).length).toBeGreaterThan(0);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>XÁC NHẬN CHỜ SỬA CHỮA/);
+  });
+  it('đã lưu: hiện trạng thái Draft + khối cập nhật trạng thái Maersk', () => {
+    const s0 = as(createDemoState(), 'usr-quotation');
+    const c0 = s0.containers.find((x) => x.needsQuotation && x.shippingLineCode === 'MSK' && !x.aemsQuote)!;
+    const s = saveAemsQuotation(s0, { containerNo: c0.containerNo, lines: [{ damageCode: 'CU', repairCode: '0804', locCode: 'LB34', tpi: 'T', pcs: 1 }] });
+    const c = s.containers.find((x) => x.id === c0.id)!;
+    const html = renderToString(<AemsQuoteForm state={s} container={c} onSave={() => {}} onApproval={() => {}} onConfirm={() => {}} />).replace(/<!-- -->/g, '');
+    expect(html).toMatch(/data-testid="aems-approval">Draft</);
+    for (const t of ['CẬP NHẬT TRẠNG THÁI', 'Pending Approval', 'Approved', 'Rejected', 'Work Order AEMS']) expect(html).toContain(t);
+  });
+});

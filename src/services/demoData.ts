@@ -19,7 +19,6 @@ import {
   executeGateOut,
   updateCompanyProfile,
   recordGateInFieldStep,
-  saveQuotationDraft,
   simulateDemoBankTransfer,
   toggleContainerHold,
   updateContainerLocation,
@@ -30,6 +29,8 @@ import { completeCleaningTask, completeRackInspection, shiftContainer } from './
 import { markInvoiceIssued, prepaidInvoiceView, submitInvoiceRequest, submitPrepaidInvoiceGroup } from './invoice';
 import { respondFeedback, submitFeedback } from './feedback';
 import { recordReleasePhotos } from './releasePhoto';
+import { upsertCedexCodes, upsertRepairCodes, type RepairCodeInput } from './cedexCatalog';
+import { aemsDraftLines, saveAemsQuotation, setAemsApproval } from './aemsQuotation';
 import type { ContainerSize, ContainerType } from '../types/depot';
 
 const as = (state: DepotState, userId: string): DepotState => ({
@@ -59,6 +60,21 @@ const RAC = [
   { name: 'THU GOM RÁC LV2', amount: 500_000 },
 ];
 let FEES: Record<string, string[]> = {};
+// DEC-206 / DEC-207: bảng MÃ SỬA CHỮA MSK theo ảnh bảng giá người dùng gửi 2026-11-02 (DR001 → DR010) + mã hư hỏng trên ảnh AEMS
+const MSK_REPAIR_CODES: RepairCodeInput[] = [
+  { itemName: 'DR001', repairMode: '-', repairName: 'Man hour rate for dry repair', manHour: 1, repairCode: '-', materialRate: 28000 },
+  { itemName: 'DR002', repairMode: '03', repairName: 'PREPARATION - FOR TOTAL REPAIR TIME LESS THAN OR EQUAL TO 2 HRS.', maxQty: 1, manHour: 0.1, repairCode: '0003', materialRate: 0 },
+  { itemName: 'DR003', repairMode: '03', repairName: 'PREPARATION - FOR TOTAL REPAIR TIME BETWEEN 2 & 8 HRS.', maxQty: 1, manHour: 0.2, repairCode: '0005', materialRate: 0 },
+  { itemName: 'DR004', repairMode: '03', repairName: 'Preparation - For total repair time between 8 & 24 hrs.', maxQty: 1, manHour: 0.3, repairCode: '0008', materialRate: 0 },
+  { itemName: 'DR005', repairMode: '03', repairName: 'Preparation - For total repair time between 24 & 40 hrs.', maxQty: 1, manHour: 0.5, repairCode: '0011', materialRate: 0 },
+  { itemName: 'DR006', repairMode: '03', repairName: 'Preparation - For total repair time exceeding 40 hrs.', maxQty: 1, manHour: 0.8, repairCode: '0014', materialRate: 0 },
+  { itemName: 'DR007', repairMode: '03', repairName: 'GENERAL - ESTIMATE ONLY', maxQty: 1, manHour: 0.2, repairCode: '0750', materialRate: 0 },
+  { itemName: 'DR008', repairMode: '03', repairName: 'General - Replace missing rivets or huckbolts', maxQty: 7, manHour: 0.1, repairCode: '0804', materialRate: 9215.85 },
+  { itemName: 'DR009', repairMode: '03', repairName: 'GENERAL - REMOVE NAILS', maxQty: 1, manHour: 0.1, repairCode: '0806', materialRate: 0 },
+  { itemName: 'DR010', repairMode: '03', repairName: 'install container tracking device (per CPH)', maxQty: 1, manHour: 0.2, repairCode: '0812', materialRate: 0 },
+];
+const MSK_DAMAGE_CODES = [{ code: 'BR', name: 'Broken' }, { code: 'CU', name: 'Cut' }];
+
 const MSK_GRADES: [string, string][] = [
   ['M', 'Food grade'],
   ['S', 'Flexi-bag / premium food'],
@@ -76,6 +92,8 @@ function seedCatalog(state: DepotState): DepotState {
   s = addPartnerCatalogItem(s, { code: LINE, name: 'MSK', partnerType: 'SHIPPING_LINE', allowTts: true });
   // DEC-166 + DEC-204: đủ hạng vỏ Maersk (smokeTested — docs/EDI_MAERSK.md 12.2) để API điền thẳng Phân loại
   for (const [code, description] of MSK_GRADES) s = addStuffingClassCatalogItem(s, { shippingLineCode: LINE, code, description });
+  s = upsertRepairCodes(s, { shippingLineCode: LINE, rows: MSK_REPAIR_CODES }); // DEC-206
+  s = upsertCedexCodes(s, { shippingLineCode: LINE, kind: 'DAMAGE', rows: MSK_DAMAGE_CODES });
   for (const c of CUSTOMERS) s = addPartnerCatalogItem(s, { code: c.code, name: c.name, partnerType: 'CUSTOMER', allowTts: c.allowTts });
   s = updateCompanyProfile(s, {
     name: 'CÔNG TY CỔ PHẦN MATRAN',
@@ -118,6 +136,17 @@ const ntSurvey = (damage: boolean) => ({
   noDamagePhotos: [PHOTO], wearTearPhotos: [],
   damages: damage ? [{ id: 'dmg-nt', side: 'D' as const, location: 'DB2N', damageType: 5, source: 3, description: 'Móp vách sau', photos: [PHOTO] }] : [],
 });
+
+// DEC-207: Báo giá AEMS cont MSK — dòng tạo sẵn từ Giám định (CU / 0804) → lưu → Maersk Approved (nhập tay) → chờ sửa chữa
+function aemsApproved(state: DepotState, no: string, pcs: number): DepotState {
+  const q = as(state, 'usr-quotation');
+  const c = q.containers.find((x) => x.containerNo === no && x.status !== 'GATED_OUT')!;
+  const draft = aemsDraftLines(q, c);
+  const lines = (draft.length ? draft : [{ damageCode: '', repairCode: '', locCode: 'LB34', tpi: 'T' as const, pcs: 1 }]).map((l) => ({ ...l, damageCode: 'CU', repairCode: '0804', pcs }));
+  let s = saveAemsQuotation(q, { containerNo: no, lines });
+  s = setAemsApproval(s, { containerNo: no, approval: 'APPROVED' });
+  return confirmQuotationToRepair(s, { containerNo: no });
+}
 
 // Hạ vỏ: Giám định → Văn phòng lập chứng từ → thanh toán theo hình thức
 function gateIn(state: DepotState, c: GateInCase): DepotState {
@@ -233,8 +262,7 @@ function bulkData(state: DepotState): DepotState {
   // Báo giá / Sửa chữa: 1/3 chờ báo giá, 1/3 chờ sửa chữa, 1/3 sửa xong
   placed.filter((m) => m.damage).forEach((m, k) => {
     if (k % 3 === 0) return;
-    s = saveQuotationDraft(as(s, 'usr-quotation'), { containerNo: m.no, quotationItems: ['Gò nắn vách', 'Sơn dặm'], laborHours: 1 + (k % 4) });
-    s = confirmQuotationToRepair(as(s, 'usr-quotation'), { containerNo: m.no });
+    s = aemsApproved(s, m.no, 1 + (k % 4));
     if (k % 3 === 2) s = completeRepairTask(as(s, 'usr-repair'), { containerNo: m.no, teamId: 'rt-1', memberIds: ['rtm-1', 'rtm-2'], photos: [PHOTO] });
   });
 
@@ -373,10 +401,8 @@ export function createDemoState(): DepotState {
   s = toggleContainerHold(as(s, 'usr-office'), { containerNo: 'MSKU1000044', hold: true, reason: 'Hãng tàu MSK yêu cầu giữ vỏ' });
 
   // DAMAGE: 1 chờ báo giá; 1 đã báo giá → chờ sửa chữa; 1 sửa xong → AV
-  s = saveQuotationDraft(as(s, 'usr-quotation'), { containerNo: 'MSKU1000066', quotationItems: ['Vá mái 0.5m2'], laborHours: 2 });
-  s = confirmQuotationToRepair(as(s, 'usr-quotation'), { containerNo: 'MSKU1000066' });
-  s = saveQuotationDraft(as(s, 'usr-quotation'), { containerNo: 'MSKU1000077', quotationItems: ['Nắn khung cửa', 'Thay gioăng'], laborHours: 3.5 });
-  s = confirmQuotationToRepair(as(s, 'usr-quotation'), { containerNo: 'MSKU1000077' });
+  s = aemsApproved(s, 'MSKU1000066', 2);
+  s = aemsApproved(s, 'MSKU1000077', 3);
   s = completeRepairTask(as(s, 'usr-repair'), { containerNo: 'MSKU1000077', teamId: 'rt-1', memberIds: ['rtm-1', 'rtm-2'], photos: [PHOTO] });
 
   // ── CẤP VỎ: 1 lượt đã xuất bãi (TT tiền mặt), 1 lượt TTS chờ Xe nâng

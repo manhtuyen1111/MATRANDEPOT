@@ -452,7 +452,7 @@ Gửi `eEIRSupport@maersk.com` / ticket developer portal, nêu mã depot 3 ký t
 
 **Phạm vi (DEC-201):** chỉ cont **MSK DRY** (DC / HC).
 
-**Đã code (chạy thử, chưa màn hình):** `src/services/edi/eeir.ts`
+**Đã code (chạy thử, chưa màn hình):** `src/services/carriers/maersk/eeir.ts`
 - `eeirInspections(state, range)` — phiếu Hạ vỏ (IN-EMPTY-IMP) / Cấp vỏ (OUT-EMPTY-EXP) / Cấp sale (chờ) + danh sách thiếu (ảnh, số xe ≤ 11, booking, số cont, cont hư chưa phân loại, W-SURVEY);
 - `eeirInspectionDetails(i)` — JSON theo bảng trường 6.1; `eeirTypeSize` (`40DRY 45G1` / `99XXX 99X9`); `isEeirContainer`.
 - Test: `tests/acceptance.test.ts` "eEIR chạy thử".
@@ -467,8 +467,8 @@ Gửi `eEIRSupport@maersk.com` / ticket developer portal, nêu mã depot 3 ký t
 
 **Đã làm (chạy được trong app, chưa gửi Maersk):**
 - Dữ liệu giám định đủ cho eEIR: Hạ vỏ (form eEIR, size, lưới CEDEX — DEC-203), Nhập tàu (DEC-203), **Giám định trên kệ (DEC-204)**, ảnh Cấp vỏ (DEC-198), booking 9–11 ký tự (DEC-199), chỉ cont MSK DRY (DEC-201), Current Move (mục 21).
-- Phiếu eEIR chạy thử `src/services/edi/eeir.ts`: `eeirInspections` (danh sách phiếu + lỗi thiếu) → `eeirInspectionDetails` (JSON đúng bảng trường v4.3 mục 6.1).
-- Khung lấy thông tin cont từ hãng (`src/services/equipmentInfo.ts` — DEC-204): có nút trên màn Giám định, nguồn MSK đang "chưa kết nối".
+- Phiếu eEIR chạy thử `src/services/carriers/maersk/eeir.ts`: `eeirInspections` (danh sách phiếu + lỗi thiếu) → `eeirInspectionDetails` (JSON đúng bảng trường v4.3 mục 6.1).
+- Khung lấy thông tin cont từ hãng (`src/services/carriers/equipment.ts` — DEC-204): có nút trên màn Giám định, nguồn MSK đang "chưa kết nối".
 
 **Ánh xạ trường gửi (API 2 `inspection/save`):**
 

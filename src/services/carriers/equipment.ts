@@ -2,41 +2,24 @@
 // THÔNG TIN CONT TỪ API HÃNG TÀU (người dùng 2026-11-02): Giám định Hạ vỏ nhập số cont trước → hỏi API hãng tàu.
 //   Ô nào API trả được (Size / Type / ISO / AGE / Phân loại) thì tự điền, Giám định không phải nhập lại; Văn phòng sửa được sau.
 //   Chưa kết nối / API lỗi / cont không có dữ liệu → Giám định tự nhập như trước (không chặn tác nghiệp — EDI_MAERSK.md 12.2).
-// Thiết kế chung cho mọi hãng: mỗi hãng 1 "nguồn" (EQUIPMENT_SOURCES); hạng vỏ hãng trả về dùng thẳng làm mã
+// Thiết kế chung cho mọi hãng: mỗi hãng khai báo nguồn API trong hồ sơ hãng (CarrierProfile.equipment); hạng vỏ hãng trả về dùng thẳng làm mã
 //   PHÂN LOẠI nếu mã đó có trong Danh mục Phân loại của hãng (DEC-166) — thêm hãng mới chỉ cần thêm nguồn + Danh mục.
 // Maersk: API 1 getEquipmentDetails (containerSize, equipmentSubType, equipmentISOCode, productionYear, smokeTested).
 //   Khóa API chỉ ở máy chủ (Edge Function) — CHƯA CÓ KHÓA nên nguồn MSK đang "chưa kết nối". Không bao giờ tạo dữ liệu giả.
 // ============================================================================
-import { isMaerskLine } from './edi/maersk';
-import type { DepotState } from './depotStore';
-import { stuffingOptions } from './stuffing';
+import type { DepotState } from '../depotStore';
+import { stuffingOptions } from '../stuffing';
+import { carrierOf } from './registry';
+import type { EquipmentInfo, EquipmentLookup } from './types';
+
+export type { EquipmentInfo, EquipmentLookup } from './types';
 
 export const CONTAINER_NO_PATTERN = /^[A-Z]{4}\d{7}$/;
 export const cleanContainerNo = (no?: string) => (no || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 export const isContainerNoFormat = (no?: string) => CONTAINER_NO_PATTERN.test(cleanContainerNo(no));
 
-export interface EquipmentInfo {
-  size?: string; // 20 / 40 / 45
-  type?: string; // DC / HC / RF…
-  isoCode?: string; // ISO 6346 (VD 45G1)
-  manufactureYear?: number;
-  grade?: string; // hạng vỏ của hãng (Maersk smokeTested: M / S / K / E / Q / N)
-}
-
-export type EquipmentLookup =
-  | { status: 'OK'; info: EquipmentInfo }
-  | { status: 'NOT_CONNECTED' | 'NOT_FOUND' | 'ERROR'; message: string };
-
-export interface EquipmentSource {
-  label: string;
-  connected: boolean; // có khóa API ở máy chủ chưa
-  fetch?: (containerNo: string) => Promise<EquipmentLookup>;
-}
-
-// Nguồn theo hãng — bật MSK khi có khóa staging / thật (Edge Function gọi getEquipmentDetails)
-export const EQUIPMENT_SOURCES: Record<string, EquipmentSource> = {};
-const sourceOf = (lineCode?: string): EquipmentSource | undefined =>
-  EQUIPMENT_SOURCES[lineCode || ''] || (isMaerskLine(lineCode) ? { label: 'Maersk eEIR (getEquipmentDetails)', connected: false } : undefined);
+// Nguồn API theo hãng: khai báo trong hồ sơ hãng (carriers/<hãng>/profile.ts → equipment)
+const sourceOf = (lineCode?: string) => carrierOf(lineCode)?.equipment;
 
 export const hasEquipmentSource = (lineCode?: string) => Boolean(sourceOf(lineCode));
 

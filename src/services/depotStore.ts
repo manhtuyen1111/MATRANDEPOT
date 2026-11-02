@@ -28,6 +28,8 @@ import {
   YardBlock,
   VesselList,
   StuffingClassItem,
+  CedexCode,
+  RepairCode,
   ContainerIsoCode,
 } from '../types/depot';
 import { defaultStuffingClasses } from './stuffing';
@@ -45,6 +47,8 @@ export interface DepotState {
   containerTypes: ContainerType[];
   containerIsoCodes: ContainerIsoCode[]; // DEC-195: mã ISO 6346 theo Size + Type
   stuffingClasses: StuffingClassItem[]; // DEC-166: Phân loại đóng hàng theo hãng tàu
+  cedexCodes: CedexCode[]; // DEC-206: CODE CEDEX (vị trí / hư hỏng / vật liệu) theo hãng tàu
+  repairCodes: RepairCode[]; // DEC-206: MÃ SỬA CHỮA theo hãng tàu
   feeCatalog: DepotFeeCatalogItem[];
   containers: ContainerRecord[];
   locationHistory: LocationHistoryItem[];
@@ -788,6 +792,8 @@ export function createInitialState(): DepotState {
       },
     ],
     repairGrades: [],
+    cedexCodes: [],
+    repairCodes: [],
     repairOvertime: { thresholdHours: 200, hourlyRate: 3000 }, // DEC-175: số người dùng chốt, Admin sửa ở Danh mục
     repairTeams: [
       {
@@ -862,6 +868,8 @@ export function normalizeDepotState(input: Partial<DepotState>): DepotState {
     paymentReceipts: ensureInvoiceFields(raw.paymentReceipts || []), // DEC-111
     repairTeams: raw.repairTeams || base.repairTeams,
     repairGrades: raw.repairGrades || base.repairGrades,
+    cedexCodes: raw.cedexCodes || [],
+    repairCodes: raw.repairCodes || [],
     repairOvertime: raw.repairOvertime || base.repairOvertime,
     companyProfile: { ...base.companyProfile, ...(raw.companyProfile || {}) },
     vesselLists: raw.vesselLists || [],

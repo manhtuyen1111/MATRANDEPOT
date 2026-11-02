@@ -1527,6 +1527,27 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-207 — Báo giá theo AEMS Maersk (cont MSK)
+
+- Trạng thái: CONFIRMED (2026-11-02, người dùng trả lời 7 câu ở `docs/design/BAO_GIA_AEMS.md`). Thay một phần DEC-086 cho hãng bật `aemsQuotation` (hồ sơ hãng — MSK); hãng khác giữ màn cũ.
+- **Cấu trúc như AEMS:** đầu phiếu (Mode mặc định 03, Cause tự: có dòng T → Third Party, chỉ W → 1 - Wear And Tear) → **dòng sửa chữa**: Damage Code (MÃ HƯ HỎNG) • Repair Code (MÃ SỬA CHỮA theo Mode) • Repair Loc code (CEDEX 4 ký tự) • TPI W / T • Pcs (≤ Max Qty) • Man Hrs/pc • Material cost/pc (mặc định theo mã, sửa được) • Item Total → giờ công → tổng tiền → ghi chú 0/255.
+- **Tạo sẵn dòng từ Giám định:** mỗi chỗ hư bên thứ 3 (eEIR) → 1 dòng T (Loc = CEDEX); có ảnh hao mòn → 1 dòng W (Báo giá điền Loc). Cont chỉ hao mòn (AV) **không** vào Báo giá (như cũ).
+- **Giờ công:** chỉ **Ordinary Hours** (OT1–OT3 để chờ — cont khô). Giờ sửa = Σ Pcs × Man Hrs; **Preparation tự tính** theo mã PREPARATION, khoảng giờ đọc từ Repair Name: ≤ 2 giờ → 0.1 • 2–8 → 0.2 • 8–24 → 0.3 • 24–40 → 0.5 • > 40 → 0.8 (khoảng (min, max], VD 8 giờ → 0.2). Tiền công = tổng giờ × đơn giá mã "Man hour rate" (DR001 = 28,000).
+- **Tiền:** VND, **VAT 0** (tổng có VAT = chưa VAT như ảnh AEMS). Tổng Wear and Tear / Third Party = Σ Item Total theo TPI.
+- **Trạng thái duyệt Maersk** (nhập tay, sau này API sửa chữa Maersk): Draft (khi lưu) → Pending Approval / Approved / Rejected / Suspend for TTL check / Declared as TTL + số Work Order AEMS. **Chỉ Approved mới XÁC NHẬN CHỜ SỬA CHỮA**; đã Approved thì không sửa phiếu; sửa lại phiếu (sau Rejected) → về Draft.
+- Tương thích: lưu phiếu ghi luôn TÌNH TRẠNG SỬA CHỮA (`LB34 CU 0804 ×1 (T)`) + giờ công = tổng giờ (báo cáo sản lượng sửa chữa DEC-170 dùng tiếp).
+- Code: `src/services/carriers/maersk/aems.ts` (tính, kiểm tra — hàm thuần), `src/services/aemsQuotation.ts` (lưu / trạng thái / chặn), `src/features/quotation/AemsQuoteForm.tsx`. Database: `containers.aems_quote`, `save_aems_quotation` (tính lại toàn bộ), `set_aems_approval`, trigger `containers_aems_repair_guard` (migration `20261128000001`).
+- Chưa làm: OT1–OT3; gửi phiếu sang AEMS qua API (chờ tài liệu API sửa chữa Maersk); Part cost; đính kèm ảnh vào phiếu.
+
+### DEC-206 — Danh mục CODE CEDEX theo hãng tàu (Danh mục chung → Sửa chữa)
+
+- Trạng thái: CONFIRMED (2026-11-02, người dùng).
+- Tab **CODE CEDEX** trong Danh mục chung → Sửa chữa. Chọn **hãng tàu** → 4 bảng: **MÃ VỊ TRÍ • MÃ HƯ HỎNG • MÃ VẬT LIỆU** (Mã | Tên | Ghi chú | Trạng thái) và **MÃ SỬA CHỮA** đúng mẫu bảng giá hãng: Item Name | Repair Mode | Repair Name | Max Qty per work order | Fixed man hour applicable per work order | Repair Code | Material Rate (Excluding VAT) (+ Trạng thái).
+- **Nhập Excel + sửa tay:** NHẬP EXCEL tìm dòng tiêu đề trong 10 dòng đầu (tên cột tiếng Anh / Việt, không phân biệt hoa thường, xuống dòng) → **xem trước** số dòng hợp lệ / dòng lỗi → LƯU dòng hợp lệ (mã đã có thì cập nhật). Giữ số 0 đầu (0003). THÊM MÃ / bấm dòng sửa / ngừng dùng. Xuất Excel cùng cột màn hình (DEC-129).
+- **Quyền:** chỉ **Admin** thêm / sửa / nhập; khối Văn phòng xem. Database chỉ tải danh mục này cho người xem được Danh mục Sửa chữa (máy hiện trường không tải).
+- Nghiệp vụ: `src/services/cedexCatalog.ts`; database `cedex_codes`, `repair_codes`, RPC `catalog_upsert_cedex_codes` / `catalog_upsert_repair_codes` (migration `20261127000001`).
+- **Bước sau (chưa code):** nối Giám định → Báo giá theo AEMS (Damage Code + Repair Code + Repair Loc code + TPI…) — phân tích + câu hỏi ở `docs/design/BAO_GIA_AEMS.md`.
+
 ### DEC-205 — PWA: cài MATRAN DEPOT lên điện thoại như ứng dụng
 
 - Trạng thái: CONFIRMED (2026-11-02, người dùng): "thiết kế app với tính năng PWA để cài như 1 ứng dụng trên mobile; dùng link thì dùng PC như bình thường".
@@ -1539,7 +1560,7 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-11-02, người dùng). Thay một phần DEC-203 ("Giám định không nhập số cont") và cách chọn W-SURVEY ở DEC-147.
 - **Bước 1 — Số cont + Hãng tàu + Ảnh cửa:** Giám định nhập **SỐ CONTAINER** đầu tiên (**mọi hãng**; 4 chữ + 7 số). **Bỏ trống được** — chụp ảnh cửa rõ số cont, Văn phòng nhập sau. Ảnh cửa cont vẫn bắt buộc (DEC-182). Số cont Giám định nhập lưu `GateInOrder.initialContainerHint` (database `initial_container_hint` — đã có); Văn phòng Hạ vỏ **được điền sẵn, sửa được**.
-- **API hãng tàu (`src/services/equipmentInfo.ts`):** có số cont + hãng có nguồn API → nút **LẤY THÔNG TIN TỪ HÃNG TÀU**. Ô nào API trả được (Size, Type, ISO, AGE, hạng vỏ) thì tự điền — Giám định không phải nhập lại; Văn phòng sửa được sau. **Chưa kết nối / API lỗi / cont không có dữ liệu → Giám định tự nhập như cũ** (không chặn tác nghiệp). Maersk: API 1 `getEquipmentDetails` — **chưa có khóa → hiện "chưa kết nối"**; khóa chỉ ở máy chủ. Không tạo dữ liệu giả.
+- **API hãng tàu (`src/services/carriers/equipment.ts`):** có số cont + hãng có nguồn API → nút **LẤY THÔNG TIN TỪ HÃNG TÀU**. Ô nào API trả được (Size, Type, ISO, AGE, hạng vỏ) thì tự điền — Giám định không phải nhập lại; Văn phòng sửa được sau. **Chưa kết nối / API lỗi / cont không có dữ liệu → Giám định tự nhập như cũ** (không chặn tác nghiệp). Maersk: API 1 `getEquipmentDetails` — **chưa có khóa → hiện "chưa kết nối"**; khóa chỉ ở máy chủ. Không tạo dữ liệu giả.
 - **Phân loại theo hạng vỏ của hãng:** hạng vỏ API trả về dùng thẳng làm mã **PHÂN LOẠI** nếu mã đó có trong Danh mục Phân loại của hãng (DEC-166). Danh mục MSK bổ sung đủ hạng Maersk **M / S / K / E / Q / N** (Demo đã có; database: Admin thêm ở Danh mục chung → Phân loại). Thiết kế chung — hãng mới chỉ cần thêm nguồn API (`EQUIPMENT_SOURCES`) + Danh mục Phân loại.
 - **Bước 2 — chọn cách giám định:** **GIÁM ĐỊNH TRỰC TIẾP** = giám định ngay (cont MSK: form eEIR DEC-203; hãng khác: AV / DAMAGE + Đóng hàng + AGE). **GIÁM ĐỊNH SAU** = W-SURVEY lên kệ (DEC-147): chỉ chọn **Vệ sinh** rồi xác nhận; Xe nâng hạ lên kệ.
 - **Giám định trên kệ cont MSK theo eEIR:** tab Chờ giám định trên kệ dùng form eEIR như Giám định trực tiếp; **size theo cont Văn phòng đã nhập** (không chọn lại); ảnh cửa lúc hạ vỏ tính vào KHÔNG HƯ. Lưu vào `GateInOrder.survey`; database `record_rack_survey` (migration `20261125000001`). Hồ sơ: dòng Tình trạng eEIR theo giờ giám định trên kệ.
@@ -1562,6 +1583,7 @@ Quy ước trạng thái:
 - **Lưới vị trí CEDEX (người dùng mô tả 2026-11-01):** mã = mặt + hàng + cột đầu + (cột cuối | **N** khi 1 cột). Vách L / R, Cửa D, Mặt trước F: hàng **H** trên cùng • **T** trên • **B** dưới • **G** dưới cùng, nhiều hàng → **X**; Nóc T / Khung đáy U / Sàn B: hàng **L** trên • **R** dưới, cả 2 → **X**; cột vách / nóc / đáy / sàn **10 ô (cont 40') / 5 ô (cont 20')** số 1…9, 0; cửa / mặt trước 4 cột 1–4. VD `DB2N`, `DX3N`, `TL1N`, `TX1N`, `TX14`. Giám định chạm ô trên sơ đồ, mã tự điền (`cedexGrid` / `cedexLocation`). **Người dùng xác nhận:** chọn nhiều hàng bất kỳ đều là X; vách trái / phải đánh số cột trái → phải 1 → 0 như nóc.
 - **Giám định chọn SIZE CONT trước khi giám định** (người dùng 2026-11-01): mục đầu tiên của phần eEIR là SIZE CONT 20 / 40 / 45 — chưa chọn thì chưa hiện 3 phần hư hỏng, chưa bấm TIẾP TỤC được; sơ đồ 20' = 5 ô, 40' / 45' = 10 ô; cont 20' chặn cột 6–0 ở vách / nóc / đáy / sàn. Lưu `survey.size`. Migration `20261122000001`.
 - **NHẬP TÀU dùng cùng form eEIR như Hạ vỏ** (người dùng 2026-11-01): cont MSK ở Giám định → Nhập tàu ghi Không hư / Hao mòn / Hư bên thứ 3; **SIZE lấy theo danh sách tàu** (không cho chọn); không có ảnh cửa (DEC-156) → Không hư đủ 20 ảnh; AV / DAMAGE tự suy; lưu `VesselListItem.survey`; hồ sơ NT- có dòng Tình trạng eEIR. Database `record_vessel_import_survey` + `eeir_survey_check` (migration `20261123000001`). Phiếu eEIR chạy thử đã gồm Nhập tàu + Xuất tàu.
+- **Dòng CURRENT MOVE • LOCATION trên màn Giám định (người dùng duyệt 2026-11-02):** cont MSK — Hạ vỏ, Giám định trên kệ, Nhập tàu, Cấp vỏ (ảnh) hiện ô chỉ đọc Current Move + Location (`3HY` + tên depot Danh mục Công ty); không cho chọn / sửa. Nguồn duy nhất `EEIR_SOURCE_MOVE` (`src/services/carriers/maersk/eeir.ts`), component `EeirMoveLine`. RKEM location = mã vị trí hư hỏng (CEDEX) khi giám định — đã có (người dùng xác nhận).
 - **Current Move (danh sách app eEIR thật, người dùng chốt 2026-11-01 — Q-058 xong):** Hạ vỏ `IN-EMPTY-IMPORT_RETURN` • Nhập tàu `IN-EMPTY-POSITION` • Cấp vỏ theo booking `OUT-EMPTY-EXPORT` • Cấp sale `OUT-EMPTY-POSITION` (không cần booking) • Xuất tàu `OUT-EMPTY-POSITION` — **tạm chưa gửi eEIR** (người dùng 2026-11-01: Xuất tàu chưa chụp ảnh; bật lại bằng `EEIR_SEND_VESSEL_EXPORT`). Không dùng: IN-FULL-EXP, STUFFING, STRIPPING, OUT-FULL-DELIVERY (cont có hàng).
 - **SIZE cont do Giám định chọn** (người dùng 2026-11-01): cont MSK giám định eEIR → Văn phòng Hạ vỏ tự điền size Giám định, ô Size khóa; service + trigger database `gate_in_survey_size_guard` chặn ghi size khác (migration `20261124000001`).
 - **Chờ người dùng:** (1) ~~mã ô lưới~~ — đã làm theo mô tả; (2) ~~Floor Cleaning~~ — **người dùng chốt 2026-11-01: KHÔNG làm mục riêng**; ảnh sàn bẩn trước vệ sinh ghi trong phần hư hỏng (mặt **Sàn (B)**, loại **Bẩn**) — Vệ sinh vẫn theo mục Vệ sinh MATRAN; (3) áp dụng cho **Nhập tàu** (moveType của tàu).
@@ -1587,7 +1609,7 @@ Quy ước trạng thái:
 ### DEC-201 — eEIR chỉ tích hợp cont MSK loại KHÔ (DRY)
 
 - Trạng thái: CONFIRMED (2026-10-30, người dùng): eEIR **chỉ áp dụng cont DRY** (Size/Type DC, HC); cont lạnh / open-top / flat **chưa tích hợp**.
-- Code: `isEeirContainer` (`src/services/edi/eeir.ts`). Bản chạy thử `eeirInspections` / `eeirInspectionDetails` đã có (chưa có màn hình, chưa gửi).
+- Code: `isEeirContainer` (`src/services/carriers/maersk/eeir.ts`). Bản chạy thử `eeirInspections` / `eeirInspectionDetails` đã có (chưa có màn hình, chưa gửi).
 - **Chưa chốt:** DEC-198 (ảnh cấp vỏ) và DEC-199 (booking) hiện áp cho **mọi cont MSK** — có thu hẹp về DRY không (hỏi người dùng phiên sau).
 
 ### DEC-200 — Hư hỏng cont MSK ghi theo mã CEDEX (eEIR)
@@ -1601,7 +1623,7 @@ Quy ước trạng thái:
 
 ### DEC-199 — Booking cont MSK phải là 9–11 chữ số
 
-- Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-063). **Đã code ở app** (`edi/maersk.ts`, `createReleaseOrder`); **database chưa chặn** — cần migration (phiên sau).
+- Trạng thái: CONFIRMED (2026-10-30, người dùng — trả lời Q-063). **Đã code ở app** (`carriers/maersk/rules.ts`, `createReleaseOrder`); **database chưa chặn** — cần migration (phiên sau).
 - Văn phòng lập lệnh **Cấp vỏ Release for customer** cho cont **hãng MSK**: số booking không phải **9–11 ký tự chữ / số** → **chặn**. (Sửa 2026-10-30 theo tài liệu v4.3: Maersk nhận alphanumeric 9–11, không chỉ chữ số.) Lý do: eEIR gate-out của Maersk từ chối booking sai dạng; sửa ngay khi khách còn ở quầy.
 - Không áp dụng: Release for sale (dùng Sale code — DEC-194), hãng khác.
 - Dữ liệu Demo đã đổi booking sang 9 chữ số. Còn: migration chặn ở database (trigger trước khi thêm `gate_out_orders`).
@@ -1635,7 +1657,7 @@ Quy ước trạng thái:
 - Sắp theo giờ, cùng giờ thì gate-in trước gate-out (app cũ không sắp theo giờ — so khớp theo từng cont, không theo thứ tự dòng).
 - Kiểm chứng: test **dựng lại đúng từng ký tự** file mẫu app cũ `202610290500.txt` (`tests/edi-codeco.test.ts`).
 - Code:
-  - `src/services/edi/codeco.ts` (`MAERSK_CODECO`, `codecoEvents`, `buildCodecoFile`);
+  - `src/services/carriers/standards/codeco.ts` (`MAERSK_CODECO`, `codecoEvents`, `buildCodecoFile`);
   - `src/services/remote/ediSource.ts` + `loadEdiState` (database: tải lượt ra / vào của giờ đó);
   - `src/features/catalog/EdiWorkspace.tsx`.
 - Không cần migration.
@@ -2092,6 +2114,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-205 đã xác nhận (cập nhật 2026-11-02).
+- Quyết định nghiệp vụ: DEC-001 → DEC-207 đã xác nhận (cập nhật 2026-11-02).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

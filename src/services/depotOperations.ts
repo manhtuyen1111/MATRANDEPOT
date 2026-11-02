@@ -33,7 +33,8 @@ import { allocateCode } from './codes';
 import { markVesselImportPlaced } from './vessel';
 import { resolveStuffing } from './stuffing';
 import { ASSIGNABLE_ROLES } from './permissions';
-import { isMaerskBooking, isMaerskLine, MAERSK_BOOKING_ERROR } from './edi/maersk';
+import { carrierBookingProblem } from './carriers/registry';
+import { aemsRepairBlocker, usesAemsQuotation } from './aemsQuotation';
 import { surveyCondition, surveyRemarks, usesInspectionSurvey, validateSurvey } from './inspectionSurvey';
 import {
   appendAudit,
@@ -942,6 +943,7 @@ export function saveQuotationDraft(
   assertPermission(state, 'QUOTATION', 'chỉ Bộ phận Báo giá được cập nhật báo giá.');
   const container = findActiveContainer(state, input.containerNo);
   if (!container || !container.needsQuotation) throw new Error('Container không nằm trong hàng chờ Báo giá.');
+  if (usesAemsQuotation(container.shippingLineCode)) throw new Error(`Cont hãng ${container.shippingLineCode} báo giá theo AEMS (DEC-207).`);
   const items = input.quotationItems.map((i) => i.trim()).filter(Boolean);
   if (items.length === 0) throw new Error('Vui lòng nhập TÌNH TRẠNG SỬA CHỮA.');
   const laborHours = Number(input.laborHours);
@@ -971,6 +973,8 @@ export function confirmQuotationToRepair(state: DepotState, input: { containerNo
   if (!container.quotationItems?.length || !(Number(container.quotationLaborHours) > 0)) {
     throw new Error(`Chưa cập nhật TÌNH TRẠNG SỬA CHỮA / GIỜ CÔNG cho ${container.containerNo} — bấm "Cập nhật" trước.`);
   }
+  const aems = aemsRepairBlocker(container); // DEC-207: hãng báo giá AEMS → chờ Maersk Approved mới sửa
+  if (aems) throw new Error(`${container.containerNo}: ${aems} — chưa chuyển Sửa chữa.`);
   return approveDamageQuotation(state, {
     containerNo: container.containerNo,
     quotationItems: container.quotationItems,
@@ -1156,7 +1160,8 @@ export function createReleaseOrder(
   const blocker = releaseBlocker(container);
   if (blocker) throw new Error(`Container ${container.containerNo} chưa đủ điều kiện CẤP VỎ: ${blocker}.`);
   // DEC-199: cont Maersk cấp cho khách — booking 9–11 chữ số (eEIR gate-out); cấp sale dùng Sale code nên không kiểm
-  if (purpose === 'CUSTOMER' && isMaerskLine(container.shippingLineCode) && !isMaerskBooking(bookingNo)) throw new Error(MAERSK_BOOKING_ERROR);
+  const bookingProblem = purpose === 'CUSTOMER' ? carrierBookingProblem(container.shippingLineCode, bookingNo) : null; // DEC-199: quy tắc booking riêng của hãng
+  if (bookingProblem) throw new Error(bookingProblem);
   const truckNo = input.truckNo.trim().toUpperCase();
   if (!truckNo) throw new Error('Vui lòng nhập SỐ XE.');
   const driverPhone = normalizeDriverPhone(input.driverPhone);
@@ -1775,7 +1780,7 @@ export function simulateDemoBankTransfer(state: DepotState, input: { transaction
 // ============================================================================
 // 13. CẤU HÌNH DANH MỤC CHUNG (CHỈ ADMIN CÓ QUYỀN CẤU HÌNH)
 // ============================================================================
-function assertAdmin(state: DepotState): void {
+export function assertAdmin(state: DepotState): void {
   if (!hasRolePermission(state.currentUser, ['ADMIN'])) {
     throw new Error(
       'Từ chối quyền: Chỉ tài khoản Quản trị hệ thống (ADMIN) mới có quyền cấu hình DANH MỤC CHUNG.'
@@ -2655,6 +2660,11 @@ export function bulkConfirmQuotationToRepair(state: DepotState, input: { contain
     }
     if (!c.quotationItems?.length || !(Number(c.quotationLaborHours) > 0)) {
       skipped.push({ containerNo: c.containerNo, reason: 'Chưa cập nhật tình trạng sửa chữa / giờ công' });
+      continue;
+    }
+    const aems = aemsRepairBlocker(c); // DEC-207
+    if (aems) {
+      skipped.push({ containerNo: c.containerNo, reason: aems });
       continue;
     }
     next = confirmQuotationToRepair(next, { containerNo: c.containerNo });

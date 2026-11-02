@@ -1,5 +1,6 @@
 // ============================================================================
-// EDI CODECO (UN/EDIFACT D.95B, ITG14 của Maersk) — CHẠY THỬ (OPEN-009, DEC-197). Chưa gửi hãng tàu.
+// EDI CODECO (UN/EDIFACT D.95B) — CHUẨN CHUNG cho mọi hãng, chạy theo CodecoConfig của từng hãng
+// (Maersk: carriers/maersk/config.ts — ITG14). CHẠY THỬ (OPEN-009, DEC-197). Chưa gửi hãng tàu.
 // Tạo đúng mẫu file app cũ (ERPVINASHIP) gửi mỗi giờ — chi tiết từng dòng: docs/EDI_MAERSK.md mục 3.
 //   Gate-in (BGM 34)  : Hạ vỏ cont của hãng — RFF+BN:GRADE<hạng> + DAM+1+<2 hư / 6 tốt>
 //   Gate-out (BGM 36) : Cấp vỏ theo booking (EQD ++2+4, RFF+BN:<booking>)
@@ -7,8 +8,8 @@
 //                       Xuất tàu (EQD ++8+4, RFF+BN:<mã cảng đến> — DEC-196), giờ thực tế từng cont
 // Chưa gửi: Nhập tàu (chưa rõ có gửi — Q-050), tin hủy / sửa khi đổi container sau khi đã lên xe (Q-052).
 // ============================================================================
-import type { DepotState } from '../depotStore';
-import { containerIsoCode } from '../depotOperations';
+import type { DepotState } from '../../depotStore';
+import { containerIsoCode } from '../../depotOperations';
 
 export type CodecoCodeSet = 'LEGACY' | 'ISO'; // DEC-195: mã size/type app cũ (chạy song song) / ISO 6346
 
@@ -24,18 +25,6 @@ export interface CodecoConfig {
   lineBreak: string;
 }
 
-// Cấu hình Maersk lấy từ file mẫu app cũ (docs/EDI_MAERSK.md 3.1, 3.5)
-export const MAERSK_CODECO: CodecoConfig = {
-  partnerCode: 'MSK',
-  sender: 'VNHPHVI',
-  receiver: 'MAEU',
-  location: 'VNHPHVI',
-  terminal: 'HPHVI',
-  truckCarrier: 'HPHTRK',
-  codeSet: 'LEGACY',
-  legacySizeType: { '20DC': '2200', '40DC': '4200', '40HC': '4200', '45HC': '4500' },
-  lineBreak: '\n',
-};
 
 export type CodecoSource = 'HA_VO' | 'CAP_VO' | 'CAP_SALE' | 'XUAT_TAU';
 export const CODECO_SOURCE_LABELS: Record<CodecoSource, string> = {
@@ -78,7 +67,7 @@ export function codecoSizeType(ev: Pick<CodecoEvent, 'size' | 'type' | 'isoCode'
 const inRange = (at: string | undefined, from: Date, to: Date) => Boolean(at) && new Date(at!) >= from && new Date(at!) < to;
 
 // Các lượt ra / vào của hãng trong khoảng [from, to) — dữ liệu thực tế (DEC-196)
-export function codecoEvents(state: DepotState, range: { from: Date; to: Date }, cfg: CodecoConfig = MAERSK_CODECO): CodecoEvent[] {
+export function codecoEvents(state: DepotState, range: { from: Date; to: Date }, cfg: CodecoConfig): CodecoEvent[] {
   const { from, to } = range;
   const out: CodecoEvent[] = [];
   const iso = (c: { size: string; type: string; isoCode?: string }) => containerIsoCode(state, c);
@@ -129,7 +118,7 @@ export function codecoEvents(state: DepotState, range: { from: Date; to: Date },
 }
 
 // Tạo file CODECO của 1 giờ. stamp = giờ tạo file (tên file + mã tham chiếu yyyyMMddHHmm). Tin thiếu dữ liệu / thiếu mã size-type bị bỏ ra.
-export function buildCodecoFile(events: CodecoEvent[], stamp: Date, cfg: CodecoConfig = MAERSK_CODECO) {
+export function buildCodecoFile(events: CodecoEvent[], stamp: Date, cfg: CodecoConfig) {
   const ref = ediDateTime(stamp);
   const p = vnParts(stamp);
   const skipped: { event: CodecoEvent; reason: string }[] = [];

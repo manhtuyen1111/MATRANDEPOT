@@ -2,6 +2,7 @@
 // QUY TẮC RIÊNG CONT MAERSK (eEIR — docs/EDI_MAERSK.md mục 12, 15, 18). Mã hãng trong Danh mục: MSK.
 //   DEC-198: chụp ảnh cấp vỏ • DEC-199: booking 9–11 chữ số • DEC-200: hư hỏng theo CEDEX
 // Database khớp: release_photo_lines(), maersk_booking_ok() (migration 20261119000001, 20261120000001).
+// Nghiệp vụ chung không gọi trực tiếp file này — dùng carriers/registry.ts (hồ sơ MAERSK ở profile.ts).
 // ============================================================================
 
 export const MAERSK_LINE_CODES = ['MSK'];

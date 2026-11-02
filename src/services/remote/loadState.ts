@@ -3,7 +3,8 @@
 // N1: danh mục + nhân viên + công ty. Dữ liệu tác nghiệp (container, hồ sơ, phiếu thu…) nối dần từ N3.
 // ============================================================================
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AppRole, DepotFeeCatalogItem, Partner, RepairTeam, StaffUser, StuffingClassItem, YardBlock } from '../../types/depot';
+import type { AppRole, CedexCode, DepotFeeCatalogItem, Partner, RepairCode, RepairTeam, StaffUser, StuffingClassItem, YardBlock } from '../../types/depot';
+import { canOpenMenu } from '../permissions';
 import { createCleanState, type DepotState } from '../depotStore';
 import type { StaffSession } from './session';
 import { mapStaffProfile, STAFF_PROFILE_COLUMNS, type StaffProfileRow } from './session';
@@ -14,7 +15,32 @@ async function rows<T>(query: PromiseLike<{ data: T[] | null; error: { message: 
   return data || [];
 }
 
+// Đọc hết theo trang 1000 dòng (Supabase giới hạn số dòng mỗi lần đọc)
+async function allRows<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
+  const out: T[] = [];
+  for (let from = 0; ; from += 1000) {
+    const part = await rows(page(from, from + 999));
+    out.push(...part);
+    if (part.length < 1000) return out;
+  }
+}
+
 export async function loadCatalogState(client: SupabaseClient, me: StaffSession): Promise<DepotState> {
+  // DEC-206: CODE CEDEX / MÃ SỬA CHỮA (có thể hàng nghìn dòng) — chỉ tải cho người xem được Danh mục Sửa chữa, máy hiện trường không tải
+  const seesCedex = canOpenMenu({ id: me.id, staffCode: me.staffCode, fullName: me.fullName, email: me.email, roles: me.roles, isActive: me.isActive }, 'DM_SUA_CHUA');
+  const none = Promise.resolve([] as never[]);
+  const [cedex, repairCodes] = await Promise.all([
+    seesCedex
+      ? allRows<{ id: string; shipping_line_code: string; kind: CedexCode['kind']; code: string; name: string; note: string | null; is_active: boolean }>(
+          (from, to) => client.from('cedex_codes').select('id, shipping_line_code, kind, code, name, note, is_active').order('id').range(from, to)
+        )
+      : none,
+    seesCedex
+      ? allRows<{ id: string; shipping_line_code: string; item_name: string; repair_mode: string; repair_name: string; max_qty: number | null; man_hour: number; repair_code: string; material_rate: number; is_active: boolean }>(
+          (from, to) => client.from('repair_codes').select('id, shipping_line_code, item_name, repair_mode, repair_name, max_qty, man_hour, repair_code, material_rate, is_active').order('id').range(from, to)
+        )
+      : none,
+  ]);
   const [partners, sizes, types, blocks, fees, teams, company, staff, stuffing, grades, overtime, isoCodes] = await Promise.all([
     rows<{ id: string; code: string; name: string; is_shipping_line: boolean; is_customer: boolean; allow_tts: boolean; is_priority: boolean }>(
       client.from('partners').select('id, code, name, is_shipping_line, is_customer, allow_tts, is_priority').eq('is_active', true).order('code')
@@ -64,6 +90,11 @@ export async function loadCatalogState(client: SupabaseClient, me: StaffSession)
     containerSizes: sizes.map((s) => s.code),
     containerTypes: types.map((t) => t.code),
     containerIsoCodes: isoCodes.map((r) => ({ size: r.size, type: r.type, isoCode: r.iso_code })),
+    cedexCodes: cedex.map((c): CedexCode => ({ id: c.id, shippingLineCode: c.shipping_line_code, kind: c.kind, code: c.code, name: c.name, note: c.note || undefined, isActive: c.is_active })),
+    repairCodes: repairCodes.map((c): RepairCode => ({
+      id: c.id, shippingLineCode: c.shipping_line_code, itemName: c.item_name, repairMode: c.repair_mode, repairName: c.repair_name,
+      maxQty: c.max_qty ?? undefined, manHour: Number(c.man_hour), repairCode: c.repair_code, materialRate: Number(c.material_rate), isActive: c.is_active,
+    })),
     stuffingClasses: stuffing.map((s): StuffingClassItem => ({ id: s.id, shippingLineCode: s.shipping_line_code, code: s.code, description: s.description || undefined, isActive: s.is_active })),
     yardBlocks: blocks.map((b): YardBlock => ({
       blockCode: b.code, blockName: b.name, maxBay: b.max_bay, maxRow: b.max_row, maxTier: b.max_tier, capacity: b.capacity,

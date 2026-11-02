@@ -2298,7 +2298,7 @@ describe('DEC-199: booking cont MSK 9–11 ký tự chữ / số', () => {
 });
 
 // eEIR chạy thử — theo tài liệu eEIR External API v4.3; chỉ cont MSK loại DRY
-import { eeirInspectionDetails, eeirInspections, eeirMoveLabel, eeirTypeSize, isEeirContainer } from '../src/services/edi/eeir';
+import { eeirInspectionDetails, eeirInspections, eeirMoveLabel, eeirTypeSize, isEeirContainer } from '../src/services/carriers/maersk/eeir';
 
 describe('eEIR chạy thử: phiếu Hạ vỏ / Cấp vỏ cont MSK DRY', () => {
   const demo = createDemoState();
@@ -2579,7 +2579,7 @@ describe('DEC-203: Văn phòng dùng size Giám định chọn', () => {
 });
 
 // DEC-204: Giám định Hạ vỏ nhập số cont trước + API hãng tàu; GIÁM ĐỊNH SAU (trên kệ) cont MSK theo eEIR
-import { equipmentPrefill, lookupEquipment } from '../src/services/equipmentInfo';
+import { equipmentPrefill, lookupEquipment } from '../src/services/carriers/equipment';
 import { stuffingOptions as lineStuffing } from '../src/services/stuffing';
 describe('DEC-204: số cont Giám định + thông tin API hãng tàu', () => {
   it('số cont Giám định nhập lưu vào hồ sơ (chữ hoa); sai định dạng → chặn; bỏ trống được', () => {
@@ -2630,3 +2630,195 @@ describe('DEC-204: Giám định trên kệ cont MSK theo eEIR', () => {
     expect(() => rack('DAMAGE', { noDamagePhotos: [], wearTearPhotos: [], damages: [] })).toThrow(/phải là AV/);
   });
 });
+
+// Người dùng duyệt 2026-11-02: CURRENT MOVE tự gán theo tác nghiệp (1 nguồn cho phiếu eEIR + màn Giám định)
+import { eeirCurrentMove, eeirLocationLabel } from '../src/services/carriers/maersk/eeir';
+describe('eEIR: CURRENT MOVE • LOCATION theo tác nghiệp', () => {
+  it('đúng danh sách app eEIR cho 5 tác nghiệp; LOCATION = mã shop + tên depot', () => {
+    expect(eeirCurrentMove('HA_VO')).toBe('IN-EMPTY-IMPORT_RETURN');
+    expect(eeirCurrentMove('NHAP_TAU')).toBe('IN-EMPTY-POSITION');
+    expect(eeirCurrentMove('CAP_VO')).toBe('OUT-EMPTY-EXPORT');
+    expect(eeirCurrentMove('CAP_SALE')).toBe('OUT-EMPTY-POSITION');
+    expect(eeirCurrentMove('XUAT_TAU')).toBe('OUT-EMPTY-POSITION');
+    expect(eeirLocationLabel(createDemoState())).toBe('3HY - MATRAN DEPOT');
+    expect(eeirLocationLabel({ companyProfile: { shortName: '' } } as never)).toBe('3HY');
+  });
+});
+
+// DEC-206: CODE CEDEX + MÃ SỬA CHỮA theo hãng tàu (Danh mục chung → Sửa chữa)
+import { parseRepairGrid, parseCedexGrid, readRepairExcel, REPAIR_COLUMNS, repairSheetRows, upsertCedexCodes, upsertRepairCodes } from '../src/services/cedexCatalog';
+describe('DEC-206: danh mục CODE CEDEX theo hãng tàu', () => {
+  const demo = { ...createDemoState(), cedexCodes: [], repairCodes: [] }; // danh mục trống để kiểm tra thêm / cập nhật
+  const admin = as(demo, 'usr-admin');
+  const DR001 = { itemName: 'dr001', repairMode: '-', repairName: 'Man hour rate for dry repair', manHour: 1, repairCode: '-', materialRate: 28000 };
+  const DR008 = { itemName: 'DR008', repairMode: '03', repairName: 'General - Replace missing rivets', maxQty: 7, manHour: 0.1, repairCode: '0804', materialRate: 9215.85 };
+
+  it('Admin lưu mã vị trí / hư hỏng; lưu lại cùng mã → cập nhật, ngừng dùng được', () => {
+    let s = upsertCedexCodes(admin, { shippingLineCode: 'MSK', kind: 'DAMAGE', rows: [{ code: 'br', name: 'Broken' }, { code: 'CU', name: 'Cut' }] });
+    expect(s.cedexCodes.filter((c) => c.kind === 'DAMAGE').map((c) => c.code)).toEqual(['BR', 'CU']);
+    s = upsertCedexCodes(s, { shippingLineCode: 'MSK', kind: 'DAMAGE', rows: [{ code: 'BR', name: 'Bent', note: 'Cong', isActive: false }] });
+    expect(s.cedexCodes.filter((c) => c.kind === 'DAMAGE')).toHaveLength(2);
+    expect(s.cedexCodes.find((c) => c.code === 'BR')).toMatchObject({ name: 'Bent', note: 'Cong', isActive: false });
+    s = upsertCedexCodes(s, { shippingLineCode: 'MSK', kind: 'LOCATION', rows: [{ code: 'BR5N', name: 'Sàn phải ô 5' }] });
+    expect(s.cedexCodes.filter((c) => c.kind === 'LOCATION').map((c) => c.code)).toEqual(['BR5N']);
+    expect(s.auditLogs[0].actionCode).toBe('ADMIN_UPSERT_CEDEX');
+  });
+
+  it('Admin lưu MÃ SỬA CHỮA đúng mẫu (DR001 / DR008); lưu lại cùng Item Name → cập nhật', () => {
+    let s = upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: [DR001, DR008] });
+    expect(s.repairCodes.find((c) => c.itemName === 'DR001')).toMatchObject({ repairMode: '-', repairCode: '-', materialRate: 28000, manHour: 1 });
+    expect(s.repairCodes.find((c) => c.itemName === 'DR008')).toMatchObject({ repairMode: '03', repairCode: '0804', maxQty: 7, materialRate: 9215.85 });
+    s = upsertRepairCodes(s, { shippingLineCode: 'MSK', rows: [{ ...DR008, materialRate: 9300 }] });
+    expect(s.repairCodes).toHaveLength(2);
+    expect(s.repairCodes.find((c) => c.itemName === 'DR008')!.materialRate).toBe(9300);
+  });
+
+  it('từ chối: không phải Admin, hãng không có, mã sai, số sai, trùng trong lô', () => {
+    expect(() => upsertCedexCodes(as(demo, 'usr-office'), { shippingLineCode: 'MSK', kind: 'DAMAGE', rows: [{ code: 'BR', name: 'Broken' }] })).toThrow(/ADMIN/);
+    expect(() => upsertCedexCodes(admin, { shippingLineCode: 'XXX', kind: 'DAMAGE', rows: [{ code: 'BR', name: 'Broken' }] })).toThrow(/HÃNG TÀU/);
+    expect(() => upsertCedexCodes(admin, { shippingLineCode: 'MSK', kind: 'DAMAGE', rows: [{ code: 'B R', name: 'x' }] })).toThrow(/1–10 chữ/);
+    expect(() => upsertCedexCodes(admin, { shippingLineCode: 'MSK', kind: 'DAMAGE', rows: [{ code: 'BR', name: '' }] })).toThrow(/Thiếu tên/);
+    expect(() => upsertCedexCodes(admin, { shippingLineCode: 'MSK', kind: 'DAMAGE', rows: [{ code: 'BR', name: 'a' }, { code: 'br', name: 'b' }] })).toThrow(/trùng/);
+    expect(() => upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: [{ ...DR008, manHour: 0.123 }] })).toThrow(/2 số lẻ/);
+    expect(() => upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: [{ ...DR008, maxQty: 0 }] })).toThrow(/Max Qty/);
+    expect(() => upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: [{ ...DR008, repairCode: '' }] })).toThrow(/Repair Code/);
+    expect(() => upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: [] })).toThrow(/Không có dòng/);
+  });
+
+  it('đọc bảng Excel theo mẫu: dòng tiêu đề không ở dòng 1, giữ số 0 đầu, số có dấu phẩy nghìn; dòng lỗi báo riêng', () => {
+    const grid = [
+      ['BẢNG GIÁ SỬA CHỮA MSK'],
+      ['Item\nName', 'Repair\nMode', 'Repair Name', 'Max Qty\nper work order', 'Fixed man hour\napplicable per\nwork order', 'Repair\nCode', 'Material Rate\n(Excluding VAT)'],
+      ['DR001', '-', 'Man hour rate for dry repair', '', '1.0', '-', '28,000.00'],
+      ['DR002', '03', 'PREPARATION - FOR TOTAL REPAIR TIME', '1', '0.1', '0003', '0.00'],
+      ['DR008', '03', 'General - Replace missing rivets', '7', '0.1', '0804', '9,215.85'],
+      ['DR009', '03', '', '1', '0.1', '0806', '0.00'],
+      ['DR002', '03', 'trùng', '1', '0.1', '0003', '0'],
+      [],
+    ];
+    const p = parseRepairGrid(grid);
+    expect(p.rows.map((r) => [r.itemName, r.repairCode, r.materialRate, r.maxQty])).toEqual([
+      ['DR001', '-', 28000, null], ['DR002', '0003', 0, 1], ['DR008', '0804', 9215.85, 7],
+    ]);
+    expect(p.errors.map((e) => e.row)).toEqual([6, 7]);
+    expect(() => parseRepairGrid([['abc']])).toThrow(/dòng tiêu đề/);
+    const c = parseCedexGrid([['Mã', 'Tên', 'Ghi chú', 'Trạng thái'], ['BR', 'Broken', 'Gãy', 'Đang dùng'], ['CU', 'Cut', '', 'Ngừng dùng']]);
+    expect(c.rows).toEqual([{ code: 'BR', name: 'Broken', note: 'Gãy', isActive: true }, { code: 'CU', name: 'Cut', note: undefined, isActive: false }]);
+  });
+
+  it('Xuất Excel → nhập lại được nguyên (cùng cột với màn hình — DEC-129)', async () => {
+    const s = upsertRepairCodes(admin, { shippingLineCode: 'MSK', rows: [DR001, { ...DR008, repairCode: '0003' }] });
+    const buf = await toXlsxBuffer([{ name: 'MA SUA CHUA', columns: REPAIR_COLUMNS, rows: repairSheetRows(s.repairCodes) }]);
+    const back = await readRepairExcel(buf);
+    expect(back.errors).toEqual([]);
+    expect(back.rows.map((r) => [r.itemName, r.repairCode, r.manHour, r.materialRate])).toEqual([['DR001', '-', 1, 28000], ['DR008', '0003', 0.1, 9215.85]]);
+  });
+
+  it('Repair Code lưu dạng số + định dạng 0000 trong Excel → vẫn đọc 0003', async () => {
+    const { default: ExcelJS } = await import('exceljs');
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('S');
+    ws.addRow(REPAIR_COLUMNS.slice(0, 7));
+    ws.addRow(['DR002', '03', 'PREPARATION', 1, 0.1, 3, 0]);
+    ws.getCell('F2').numFmt = '0000';
+    const back = await readRepairExcel((await wb.xlsx.writeBuffer()) as ArrayBuffer);
+    expect(back.rows[0]).toMatchObject({ itemName: 'DR002', repairCode: '0003', manHour: 0.1 });
+  });
+});
+
+// Kiến trúc nhiều hãng tàu (docs/CODE_STRUCTURE.md): nghiệp vụ chung chỉ hỏi carriers/registry
+import { CARRIERS, carrierBookingProblem, carrierOf, carrierUses, linesWith } from '../src/services/carriers/registry';
+describe('Hồ sơ hãng tàu (carriers/registry)', () => {
+  it('MSK bật form eEIR + ảnh cấp vỏ + quy tắc booking; hãng khác dùng quy trình chung', () => {
+    expect(carrierOf('MSK')?.key).toBe('maersk');
+    expect(carrierUses('MSK', 'inspectionSurvey') && carrierUses('MSK', 'releasePhoto')).toBe(true);
+    expect(carrierUses('ONE', 'inspectionSurvey') || carrierUses(undefined, 'releasePhoto')).toBe(false);
+    expect(linesWith('releasePhoto')).toEqual(['MSK']);
+    expect(carrierBookingProblem('MSK', 'BK-1')).toMatch(/9–11/);
+    expect(carrierBookingProblem('MSK', '123456789')).toBeNull();
+    expect(carrierBookingProblem('ONE', 'BK-1')).toBeNull();
+  });
+  it('mỗi mã hãng chỉ thuộc 1 hồ sơ, key = tên thư mục duy nhất', () => {
+    const codes = CARRIERS.flatMap((c) => c.lineCodes);
+    expect(new Set(codes).size).toBe(codes.length);
+    expect(new Set(CARRIERS.map((c) => c.key)).size).toBe(CARRIERS.length);
+  });
+});
+
+// DEC-207: Báo giá theo AEMS Maersk (dòng Damage / Repair / Loc / TPI…), chờ Maersk Approved mới sửa
+import { aemsPreparation, computeAemsQuote, preparationRange, type AemsCatalog } from '../src/services/carriers/maersk/aems';
+import { aemsDraftLines, aemsRepairBlocker, saveAemsQuotation, setAemsApproval } from '../src/services/aemsQuotation';
+import { bulkConfirmQuotationToRepair, confirmQuotationToRepair, saveQuotationDraft } from '../src/services/depotOperations';
+describe('DEC-207: Báo giá AEMS', () => {
+  const demo = createDemoState();
+  const cat: AemsCatalog = {
+    repairCodes: [
+      ...demo.repairCodes,
+      { id: 'x1', shippingLineCode: 'MSK', itemName: 'DR100', repairMode: '03', repairName: 'Inside - remove', manHour: 0, repairCode: '0912', materialRate: 0, isActive: true },
+      { id: 'x2', shippingLineCode: 'MSK', itemName: 'DR101', repairMode: '03', repairName: 'Floor - cut & insert', manHour: 0.8, repairCode: '6620', materialRate: 6000, isActive: true },
+    ],
+    damageCodes: demo.cedexCodes.filter((c) => c.kind === 'DAMAGE'),
+  };
+  let n = 0;
+  const id = () => `t${n++}`;
+
+  it('dựng lại đúng phiếu AEMS mẫu: 0.8 giờ sửa + 0.1 chuẩn bị = 0.9 giờ → 25,200 + 6,000 = 31,200 (T 6,000)', () => {
+    const q = computeAemsQuote(cat, { lines: [
+      { damageCode: 'br', repairCode: '0912', locCode: 'ixxx', tpi: 'W', pcs: 1 },
+      { damageCode: 'CU', repairCode: '6620', locCode: 'BR5N', tpi: 'T', pcs: 1 },
+    ] }, id);
+    expect(q).toMatchObject({ mode: '03', repairHours: 0.8, preparationHours: 0.1, totalHours: 0.9, laborRate: 28000, laborCost: 25200, materialCost: 6000,
+      wearTearTotal: 0, thirdPartyTotal: 6000, totalExclVat: 31200, totalInclVat: 31200, cause: 'Third Party' });
+    expect(q.lines[0]).toMatchObject({ damageCode: 'BR', locCode: 'IXXX', manHours: 0, itemTotal: 0 });
+  });
+
+  it('Preparation theo khoảng giờ đọc từ tên mã DR002–DR006 (≤2 / 2–8 / 8–24 / 24–40 / >40)', () => {
+    expect(preparationRange('PREPARATION - FOR TOTAL REPAIR TIME BETWEEN 2 & 8 HRS.')).toEqual({ min: 2, max: 8 });
+    expect(preparationRange('Preparation - For total repair time exceeding 40 hrs.')).toEqual({ min: 40, max: Infinity });
+    expect([0, 0.5, 2, 2.1, 8, 8.5, 24, 30, 40, 40.5].map((h) => aemsPreparation(cat, h))).toEqual([0, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.5, 0.5, 0.8]);
+  });
+
+  it('từ chối dòng sai: mã hư / mã sửa không có trong danh mục, Loc sai, vượt Max Qty, không có dòng', () => {
+    const L = { damageCode: 'CU', repairCode: '0804', locCode: 'LB34', tpi: 'T' as const, pcs: 1 };
+    expect(() => computeAemsQuote(cat, { lines: [{ ...L, damageCode: 'ZZ' }] }, id)).toThrow(/Damage Code ZZ/);
+    expect(() => computeAemsQuote(cat, { lines: [{ ...L, repairCode: '9999' }] }, id)).toThrow(/Repair Code 9999/);
+    expect(() => computeAemsQuote(cat, { lines: [{ ...L, repairCode: '0003' }] }, id)).toThrow(/Repair Code 0003/); // mã PREPARATION tự tính, không chọn tay
+    expect(() => computeAemsQuote(cat, { lines: [{ ...L, locCode: 'LB3' }] }, id)).toThrow(/4 ký tự/);
+    expect(() => computeAemsQuote(cat, { lines: [{ ...L, pcs: 8 }] }, id)).toThrow(/tối đa 7/);
+    expect(() => computeAemsQuote(cat, { lines: [] }, id)).toThrow(/ít nhất 1 dòng/);
+    expect(() => computeAemsQuote({ ...cat, repairCodes: cat.repairCodes.filter((c) => c.itemName !== 'DR001') }, { lines: [L] }, id)).toThrow(/Man hour rate/);
+  });
+
+  it('luồng: dòng tạo sẵn từ Giám định → lưu (Draft) → chỉ Approved mới sang Sửa chữa; cách cũ bị chặn với MSK', () => {
+    const c = pendingQuotation(demo);
+    const q = as(demo, 'usr-quotation');
+    const draft = aemsDraftLines(q, c);
+    expect(draft[0]).toMatchObject({ tpi: 'T', locCode: expect.stringMatching(/^[A-Z0-9]{4}$/) });
+    expect(() => saveQuotationDraft(q, { containerNo: c.containerNo, quotationItems: ['x'], laborHours: 1 })).toThrow(/AEMS/);
+    let s = saveAemsQuotation(q, { containerNo: c.containerNo, lines: draft.map((l) => ({ ...l, damageCode: 'CU', repairCode: '0804', pcs: 2 })) });
+    const saved = s.containers.find((x) => x.id === c.id)!;
+    expect(saved.aemsQuote).toMatchObject({ approval: 'DRAFT', repairHours: 0.2, preparationHours: 0.1, totalHours: 0.3 });
+    expect(saved).toMatchObject({ quotationLaborHours: 0.3, quotationAmount: saved.aemsQuote!.totalExclVat });
+    expect(() => confirmQuotationToRepair(s, { containerNo: c.containerNo })).toThrow(/Maersk chưa duyệt \(Draft\)/);
+    expect(bulkConfirmQuotationToRepair(s, { containerIds: [c.id] }).skipped[0].reason).toMatch(/chưa duyệt/);
+    s = setAemsApproval(s, { containerNo: c.containerNo, approval: 'REJECTED', workOrderNo: '513325391' });
+    expect(aemsRepairBlocker(s.containers.find((x) => x.id === c.id)!)).toMatch(/Rejected/);
+    s = saveAemsQuotation(s, { containerNo: c.containerNo, lines: draft.map((l) => ({ ...l, damageCode: 'CU', repairCode: '0804', pcs: 1 })) }); // sửa lại → Draft, giữ số WO
+    expect(s.containers.find((x) => x.id === c.id)!.aemsQuote).toMatchObject({ approval: 'DRAFT', workOrderNo: '513325391' });
+    s = setAemsApproval(s, { containerNo: c.containerNo, approval: 'APPROVED' });
+    expect(() => saveAemsQuotation(s, { containerNo: c.containerNo, lines: draft })).toThrow(/đã duyệt/);
+    s = confirmQuotationToRepair(s, { containerNo: c.containerNo });
+    expect(s.containers.find((x) => x.id === c.id)).toMatchObject({ needsQuotation: false, needsRepair: true });
+  });
+
+  it('từ chối: sai quyền, trạng thái duyệt khi chưa lưu phiếu, đặt Draft bằng tay', () => {
+    const c = pendingQuotation(demo);
+    expect(() => saveAemsQuotation(as(demo, 'usr-office'), { containerNo: c.containerNo, lines: [] })).toThrow(/Báo giá/);
+    expect(() => setAemsApproval(as(demo, 'usr-quotation'), { containerNo: c.containerNo, approval: 'APPROVED' })).toThrow(/chưa LƯU/);
+    const s = saveAemsQuotation(as(demo, 'usr-quotation'), { containerNo: c.containerNo, lines: [{ damageCode: 'CU', repairCode: '0804', locCode: 'LB34', tpi: 'T', pcs: 1 }] });
+    expect(() => setAemsApproval(s, { containerNo: c.containerNo, approval: 'DRAFT' })).toThrow(/không hợp lệ/);
+  });
+});
+function pendingQuotation(s: DepotState) {
+  return s.containers.find((x) => x.needsQuotation && x.status !== 'GATED_OUT' && x.shippingLineCode === 'MSK' && !x.aemsQuote)!;
+}

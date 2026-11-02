@@ -13,17 +13,12 @@ export const EEIR_SEND_VESSEL_EXPORT = false;
 // Hạng (Grade) lấy từ API 1 (smokeTested); chưa gọi được API 1 → "N" (đúng hướng dẫn tài liệu).
 // JSON là KHUNG theo bảng trường v4.3 — chỉnh khi có file inspectionDetails mẫu (Q-056).
 // ============================================================================
-import type { DepotState } from '../depotStore';
-import { containerIsoCode } from '../depotOperations';
-import { isMaerskBooking, isMaerskLine, MAERSK_BOOKING_ERROR } from './maersk';
-import type { InspectionSurvey } from '../../types/depot';
+import type { DepotState } from '../../depotStore';
+import { containerIsoCode } from '../../depotOperations';
+import { isMaerskBooking, isMaerskLine, MAERSK_BOOKING_ERROR } from './rules';
+import { MAERSK_EEIR, type EeirConfig } from './config';
+import type { InspectionSurvey } from '../../../types/depot';
 
-export interface EeirConfig {
-  depotCode: string;    // Shop trên PDF (3HY - MATRAN)
-  surveyorId: string;   // client id eEIR của depot — điền ở máy chủ khi có khóa (không để trong code)
-  emails: string[];     // email nhận PDF (Q-060) — cấu hình, không viết cứng
-}
-export const MAERSK_EEIR: EeirConfig = { depotCode: '3HY', surveyorId: '', emails: [] };
 
 // Loại cont theo Maersk (equipmentSubType). Hiện chỉ tích hợp DRY.
 const SUB_TYPE: Record<string, string> = { DC: 'DRY', HC: 'DRY', RF: 'REEF', RH: 'REEF', OT: 'OPEN', FR: 'FLAT' };
@@ -81,6 +76,18 @@ export function eeirTypeSize(i: Pick<EeirInspection, 'size' | 'type' | 'isoCode'
 // Tên Current Move như app eEIR
 const MOVE_NAME: Record<EeirMoveType, string> = { IMP: 'IMPORT_RETURN', EXP: 'EXPORT', POS: 'POSITION' };
 export const eeirMoveLabel = (i: Pick<EeirInspection, 'moveStatus' | 'moveType'>) => `${i.moveStatus}-EMPTY-${i.moveType ? MOVE_NAME[i.moveType] : '?'}`;
+// Current Move theo tác nghiệp — 1 nguồn cho phiếu eEIR + dòng CURRENT MOVE trên màn Giám định (người dùng duyệt 2026-11-02)
+export const EEIR_SOURCE_MOVE: Record<EeirSource, { moveStatus: 'IN' | 'OUT'; moveType: EeirMoveType }> = {
+  HA_VO: { moveStatus: 'IN', moveType: 'IMP' },
+  NHAP_TAU: { moveStatus: 'IN', moveType: 'POS' },
+  CAP_VO: { moveStatus: 'OUT', moveType: 'EXP' },
+  CAP_SALE: { moveStatus: 'OUT', moveType: 'POS' },
+  XUAT_TAU: { moveStatus: 'OUT', moveType: 'POS' },
+};
+export const eeirCurrentMove = (source: EeirSource) => eeirMoveLabel(EEIR_SOURCE_MOVE[source]);
+// LOCATION như app eEIR: mã shop Maersk + tên depot (Danh mục → Công ty)
+export const eeirLocationLabel = (state: Pick<DepotState, 'companyProfile'>, cfg: EeirConfig = MAERSK_EEIR) =>
+  [cfg.depotCode, state.companyProfile?.shortName].filter(Boolean).join(' - ');
 
 const inRange = (at: string | undefined, from: Date, to: Date) => Boolean(at) && new Date(at!) >= from && new Date(at!) < to;
 const truckOf = (no?: string) => (no || '').replace(/\s+/g, '').toUpperCase();
@@ -125,7 +132,7 @@ export function eeirInspections(state: DepotState, range: { from: Date; to: Date
     checks(problems, c.containerNo, truck, general, c.conditionClass === 'DAMAGE' && !survey?.damages.length);
     out.push({
       key: `IN-${c.id}`, source: 'HA_VO', dossierCode: c.masterDossierCode, containerNo: c.containerNo, size: c.size, type: c.type,
-      isoCode: containerIsoCode(state, c), moveStatus: 'IN', moveType: 'IMP', moveTypeConfirmed: true, at: c.gateInAt, bookingNo: '',
+      isoCode: containerIsoCode(state, c), ...EEIR_SOURCE_MOVE.HA_VO, moveTypeConfirmed: true, at: c.gateInAt, bookingNo: '',
       grade: 'N', productionYear: c.manufactureYear, truckRegNo: truck, driverPhone: gi?.driverPhone || c.driverPhone,
       photos: damages.flatMap((d) => d.photos), damages, problems, notes: [GRADE_NOTE], // Hạ vỏ = IN-EMPTY-IMPORT_RETURN (app eEIR thật — Q-058)
     });
@@ -145,7 +152,7 @@ export function eeirInspections(state: DepotState, range: { from: Date; to: Date
     checks(problems, c.containerNo, truck, photos, damaged, 'Chưa có ảnh cấp vỏ của Giám định (DEC-198)');
     out.push({
       key: `OUT-${o.id}`, source: sale ? 'CAP_SALE' : 'CAP_VO', dossierCode: o.gateOutCode, containerNo: o.containerNo, size: c.size, type: c.type,
-      isoCode: containerIsoCode(state, c), moveStatus: 'OUT', moveType: sale ? 'POS' : 'EXP', moveTypeConfirmed: true,
+      isoCode: containerIsoCode(state, c), ...EEIR_SOURCE_MOVE[sale ? 'CAP_SALE' : 'CAP_VO'], moveTypeConfirmed: true,
       at: o.releasePhotosAt || o.confirmedAt!, bookingNo: sale ? '' : o.bookingNo, grade: 'N', productionYear: c.manufactureYear,
       truckRegNo: truck, driverPhone: o.driverPhone, photos, damages: damaged ? [] : [{ location: '0000', tpIndicator: 0, photos }], problems, notes: [GRADE_NOTE],
     });
@@ -166,8 +173,8 @@ export function eeirInspections(state: DepotState, range: { from: Date; to: Date
         imp ? 'Thiếu ảnh (eEIR bắt buộc ≥ 1 ảnh)' : 'Xuất tàu chưa chụp ảnh (eEIR bắt buộc ≥ 1 ảnh)');
       out.push({
         key: `${imp ? 'NT' : 'XT'}-${it.id}`, source: imp ? 'NHAP_TAU' : 'XUAT_TAU', dossierCode: it.dossierCode || c.masterDossierCode,
-        containerNo: c.containerNo, size: c.size, type: c.type, isoCode: containerIsoCode(state, c), moveStatus: imp ? 'IN' : 'OUT',
-        moveType: 'POS', moveTypeConfirmed: true, at: at!, bookingNo: '', grade: 'N', productionYear: c.manufactureYear, truckRegNo: truck,
+        containerNo: c.containerNo, size: c.size, type: c.type, isoCode: containerIsoCode(state, c),
+        ...EEIR_SOURCE_MOVE[imp ? 'NHAP_TAU' : 'XUAT_TAU'], moveTypeConfirmed: true, at: at!, bookingNo: '', grade: 'N', productionYear: c.manufactureYear, truckRegNo: truck,
         photos: damages.flatMap((d) => d.photos), damages, problems, notes: [GRADE_NOTE],
       });
     }
