@@ -1,6 +1,7 @@
 # Báo giá theo AEMS Maersk — phân tích ảnh (người dùng gửi 2026-11-02)
 
-> Trạng thái: **ĐỀ XUẤT — CHƯA CODE.** Danh mục mã đã có (DEC-206 — Danh mục chung → Sửa chữa → CODE CEDEX).
+> Trạng thái: **ĐÃ CHỐT + ĐÃ CODE (DEC-207, 2026-11-02)** — câu trả lời ở mục 5.
+> Trước đó: đề xuất. Danh mục mã đã có (DEC-206 — Danh mục chung → Sửa chữa → CODE CEDEX).
 > Mục tiêu người dùng: **nối tình trạng Giám định (eEIR) sang Báo giá / Sửa chữa**.
 
 ## 1. AEMS (Advanced Equipment Maintenance System) — màn Work Orders
@@ -42,3 +43,16 @@
 5. Tiền: chỉ VND, hay cần cả USD (tỷ giá lấy đâu)? VAT bao nhiêu?
 6. Trạng thái phiếu (Draft / Pending Approval / Approved / Rejected / Suspend for TTL check) — MATRAN có theo dõi trạng thái duyệt của Maersk không (nhập tay hay API)?
 7. Có gửi phiếu sang AEMS qua API không (cần tài liệu API AEMS), hay Báo giá vẫn nhập tay trên AEMS và MATRAN chỉ lưu bản tính?
+
+## 5. Người dùng chốt (2026-11-02) → DEC-207
+
+| # | Câu hỏi | Trả lời |
+|---|---|---|
+| 1 | Thay hẳn hay thêm khối | **Dùng cấu trúc như AEMS** (cont MSK) |
+| 2 | Tạo sẵn dòng từ Giám định; hao mòn có dòng | **Có** (T theo chỗ hư, 1 dòng W khi có ảnh hao mòn) |
+| 3 | Preparation | **Tự tính theo bảng** DR002–DR006 (≤ 2 / 2–8 / 8–24 / 24–40 / > 40 giờ → 0.1 / 0.2 / 0.3 / 0.5 / 0.8) |
+| 4 | OT1–OT3 | **Để chờ** — cont khô chỉ Ordinary Hours |
+| 5 | Tiền / VAT | **VND**, VAT 0 (như ảnh) |
+| 6 | Theo dõi duyệt Maersk | **Có** — chỉ Approved mới sang Sửa chữa |
+| 7 | API AEMS | **Sau này** hướng tới API sửa chữa với MSK; hiện nhập trạng thái tay |
+

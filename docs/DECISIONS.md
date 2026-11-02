@@ -1527,6 +1527,18 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-10-28, người dùng). Sửa chữa → Chờ sửa chữa: ô nhãn đầu mỗi dòng (và khung cont vừa quét) ghi **CHỜ SỬA CHỮA**, không ghi tác nghiệp (HẠ VỎ / NHẬP TÀU…). Các danh sách chờ khác giữ nhãn tác nghiệp (DEC-089).
 
+### DEC-207 — Báo giá theo AEMS Maersk (cont MSK)
+
+- Trạng thái: CONFIRMED (2026-11-02, người dùng trả lời 7 câu ở `docs/design/BAO_GIA_AEMS.md`). Thay một phần DEC-086 cho hãng bật `aemsQuotation` (hồ sơ hãng — MSK); hãng khác giữ màn cũ.
+- **Cấu trúc như AEMS:** đầu phiếu (Mode mặc định 03, Cause tự: có dòng T → Third Party, chỉ W → 1 - Wear And Tear) → **dòng sửa chữa**: Damage Code (MÃ HƯ HỎNG) • Repair Code (MÃ SỬA CHỮA theo Mode) • Repair Loc code (CEDEX 4 ký tự) • TPI W / T • Pcs (≤ Max Qty) • Man Hrs/pc • Material cost/pc (mặc định theo mã, sửa được) • Item Total → giờ công → tổng tiền → ghi chú 0/255.
+- **Tạo sẵn dòng từ Giám định:** mỗi chỗ hư bên thứ 3 (eEIR) → 1 dòng T (Loc = CEDEX); có ảnh hao mòn → 1 dòng W (Báo giá điền Loc). Cont chỉ hao mòn (AV) **không** vào Báo giá (như cũ).
+- **Giờ công:** chỉ **Ordinary Hours** (OT1–OT3 để chờ — cont khô). Giờ sửa = Σ Pcs × Man Hrs; **Preparation tự tính** theo mã PREPARATION, khoảng giờ đọc từ Repair Name: ≤ 2 giờ → 0.1 • 2–8 → 0.2 • 8–24 → 0.3 • 24–40 → 0.5 • > 40 → 0.8 (khoảng (min, max], VD 8 giờ → 0.2). Tiền công = tổng giờ × đơn giá mã "Man hour rate" (DR001 = 28,000).
+- **Tiền:** VND, **VAT 0** (tổng có VAT = chưa VAT như ảnh AEMS). Tổng Wear and Tear / Third Party = Σ Item Total theo TPI.
+- **Trạng thái duyệt Maersk** (nhập tay, sau này API sửa chữa Maersk): Draft (khi lưu) → Pending Approval / Approved / Rejected / Suspend for TTL check / Declared as TTL + số Work Order AEMS. **Chỉ Approved mới XÁC NHẬN CHỜ SỬA CHỮA**; đã Approved thì không sửa phiếu; sửa lại phiếu (sau Rejected) → về Draft.
+- Tương thích: lưu phiếu ghi luôn TÌNH TRẠNG SỬA CHỮA (`LB34 CU 0804 ×1 (T)`) + giờ công = tổng giờ (báo cáo sản lượng sửa chữa DEC-170 dùng tiếp).
+- Code: `src/services/carriers/maersk/aems.ts` (tính, kiểm tra — hàm thuần), `src/services/aemsQuotation.ts` (lưu / trạng thái / chặn), `src/features/quotation/AemsQuoteForm.tsx`. Database: `containers.aems_quote`, `save_aems_quotation` (tính lại toàn bộ), `set_aems_approval`, trigger `containers_aems_repair_guard` (migration `20261128000001`).
+- Chưa làm: OT1–OT3; gửi phiếu sang AEMS qua API (chờ tài liệu API sửa chữa Maersk); Part cost; đính kèm ảnh vào phiếu.
+
 ### DEC-206 — Danh mục CODE CEDEX theo hãng tàu (Danh mục chung → Sửa chữa)
 
 - Trạng thái: CONFIRMED (2026-11-02, người dùng).
@@ -2102,6 +2114,6 @@ Quy ước trạng thái:
 
 ## 6. Trạng thái tài liệu
 
-- Quyết định nghiệp vụ: DEC-001 → DEC-206 đã xác nhận (cập nhật 2026-11-02).
+- Quyết định nghiệp vụ: DEC-001 → DEC-207 đã xác nhận (cập nhật 2026-11-02).
 - Quyết định kỹ thuật: DEC-010 → DEC-013 đã xác nhận.
 - Các mục OPEN: OPEN-001 → OPEN-008; cần giải quyết các mục ảnh hưởng schema trước khi viết lại migration database.

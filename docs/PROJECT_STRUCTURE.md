@@ -130,7 +130,7 @@ src/
 │   ├── field-queues/          Hàng chờ Vệ sinh, Xe nâng, Sửa chữa (mobile)
 │   ├── forklift/              Xe nâng — Đảo chuyển
 │   ├── vessel/                Nhập / Xuất tàu (văn phòng + hiện trường)
-│   ├── quotation/             Báo giá
+│   ├── quotation/             Báo giá (QuotationWorkspace; AemsQuoteForm — form AEMS cho hãng bật aemsQuotation)
 │   ├── receipts/              Phiếu thu
 │   ├── invoice/               Trang khách yêu cầu xuất hóa đơn
 │   ├── yard/                  Tồn vỏ
@@ -148,6 +148,7 @@ src/
     ├── inspectionSurvey.ts    Quy tắc Tình trạng eEIR (CEDEX, ảnh, AV/DAMAGE tự suy)
     ├── releasePhoto.ts        Ảnh cấp vỏ (hãng bật releasePhoto)
     ├── cedexCatalog.ts        Danh mục CODE CEDEX + mã sửa chữa, đọc / xuất Excel (DEC-206)
+    ├── aemsQuotation.ts       Báo giá AEMS: dòng tạo sẵn từ Giám định, lưu, trạng thái duyệt hãng, chặn chưa Approved (DEC-207)
     ├── stuffing.ts · yardStatus.ts · containerSearch.ts · photo.ts · datetime.ts · driverRoute.ts · dossierHistory.ts
     ├── permissions.ts         Ma trận quyền + MENU_ACCESS (nguồn duy nhất)
     ├── core.ts · depotStore.ts · demoData.ts · reports.ts · feedback.ts · dbHealth.ts · authPassword.ts
@@ -161,7 +162,8 @@ src/
     │       ├── profile.ts     Hồ sơ MAERSK (MSK): eEIR form, ảnh cấp vỏ, booking 9–11, API (chưa kết nối), CODECO
     │       ├── rules.ts       Mã hãng, quy tắc booking
     │       ├── config.ts      MAERSK_CODECO, MAERSK_EEIR (mã shop 3HY…) — không chứa khóa
-    │       └── eeir.ts        Phiếu eEIR chạy thử (API v4.3), Current Move theo tác nghiệp
+    │       ├── eeir.ts        Phiếu eEIR chạy thử (API v4.3), Current Move theo tác nghiệp
+    │       └── aems.ts        Tính phiếu Báo giá AEMS (Preparation, giờ công × đơn giá, W / T) — hàm thuần (DEC-207)
     └── remote/                Chế độ database: session, sync (hàng chờ ghi + tải ảnh), loadState / loadWorking (tải dữ liệu),
                                reportPaging / reportSource / dossierSource / ediSource / dbHealthSource, photoLink, edge
 supabase/
@@ -187,6 +189,7 @@ Nguyên tắc: giao diện (`features/`, `components/`) không tự đặt quy t
    - `carrierUses(line, 'releasePhoto')` / `linesWith('releasePhoto')` — ảnh cấp vỏ (DEC-198)
    - `carrierBookingProblem(line, booking)` — quy tắc booking riêng (DEC-199)
    - `carrierOf(line)?.equipment` — API thông tin cont (DEC-204); `carrierOf(line)?.codeco` — cấu hình EDI CODECO (DEC-197)
+   - `carrierUses(line, 'aemsQuotation')` — Báo giá theo AEMS + chờ hãng duyệt (DEC-207; database `aems_quotation_lines()`)
 2. **Mỗi hãng 1 thư mục** `src/services/carriers/<hãng>/`: `profile.ts` (bật chức năng) · `rules.ts` (quy tắc riêng) · `config.ts` (thông số kết nối, không khóa) · file theo API (`eeir.ts`, …).
 3. **Chuẩn dùng chung** đặt ở `carriers/standards/` (CODECO EDIFACT). Hãng chỉ khai báo cấu hình; định dạng riêng (khác chuẩn) mới viết trong thư mục hãng.
 4. **Khóa / mật khẩu API không bao giờ ở frontend / repo:** gọi API hãng qua Edge Function (`supabase/functions/<hãng>-…`), khóa ở `supabase secrets` do người dùng đặt. Frontend chỉ thấy `connected: true/false`.
