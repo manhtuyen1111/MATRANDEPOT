@@ -60,6 +60,13 @@ export const AemsQuoteForm: React.FC<{
     problem = err instanceof Error ? err.message : 'Phiếu chưa hợp lệ';
   }
   const set = (i: number, p: Partial<Row>) => setRows(rows.map((r, k) => (k === i ? { ...r, ...p } : r)));
+  const listId = `aems-repair-codes-${c.id}`;
+  // Gõ đúng Repair Code có trong danh mục (theo Mode) → điền sẵn giờ công + vật liệu của mã
+  const setRepairCode = (i: number, value: string) => {
+    const v = value.trim().toUpperCase();
+    const hit = repairOptions.find((x) => x.repairCode === v);
+    set(i, hit ? { repairCode: v, manHours: String(hit.manHour), materialCost: String(hit.materialRate) } : { repairCode: v });
+  };
   const cell = 'h-8 w-full rounded border border-line-strong bg-white px-1.5 font-mono text-xs uppercase disabled:bg-canvas';
 
   return (
@@ -112,10 +119,19 @@ export const AemsQuoteForm: React.FC<{
                     </select>
                   </td>
                   <td className="px-1 py-1 w-56">
-                    <select value={r.repairCode} onChange={(e) => set(i, { repairCode: e.target.value, manHours: '', materialCost: '' })} disabled={locked} className={cell}>
-                      <option value="">--</option>
-                      {repairOptions.map((x) => <option key={x.id} value={x.repairCode}>{x.repairCode} — {x.repairName}</option>)}
-                    </select>
+                    {/* Gõ số → gợi ý theo Mode; gõ đúng mã → tự điền Man Hrs/pc + Material cost/pc của mã (sửa được) */}
+                    <input
+                      value={r.repairCode}
+                      list={listId}
+                      inputMode="numeric"
+                      onChange={(e) => setRepairCode(i, e.target.value)}
+                      disabled={locked}
+                      placeholder="VD 0804"
+                      title={code ? code.repairName : ''}
+                      className={cell}
+                      data-testid="aems-repair-code"
+                    />
+                    {code && <span className="block max-w-[14rem] truncate text-[10px] font-normal normal-case text-ink-muted" title={code.repairName}>{code.repairName}</span>}
                   </td>
                   <td className="px-1 py-1 w-24"><input value={r.locCode} maxLength={4} onChange={(e) => set(i, { locCode: e.target.value.toUpperCase() })} disabled={locked} placeholder="BR5N" className={cell} /></td>
                   <td className="px-1 py-1 w-20">
@@ -140,6 +156,9 @@ export const AemsQuoteForm: React.FC<{
             })}
           </tbody>
         </table>
+        <datalist id={listId}>
+          {repairOptions.map((x) => <option key={x.id} value={x.repairCode}>{x.repairName}</option>)}
+        </datalist>
       </div>
       {!locked && (
         <button type="button" onClick={() => setRows([...rows, { damageCode: '', repairCode: '', locCode: '', tpi: 'T', pcs: '1', manHours: '', materialCost: '' }])} className={secondaryBtn}>

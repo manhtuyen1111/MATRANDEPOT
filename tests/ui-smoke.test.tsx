@@ -1398,6 +1398,10 @@ describe('DEC-207: form Báo giá AEMS', () => {
     for (const t of ['Damage Code', 'Repair Code', 'Repair Loc code', 'TPI', 'Man Hrs/pc', 'Material cost/pc', 'Ordinary Hours', 'Preparation Time', 'Total Labor Cost', 'Total Third Party', 'Chưa lưu', 'VND • VAT 0']) expect(html).toContain(t);
     expect((html.match(/data-testid="aems-line"/g) || []).length).toBeGreaterThan(0);
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>XÁC NHẬN CHỜ SỬA CHỮA/);
+    // Repair Code: ô gõ số + gợi ý (datalist) theo Mode — không gợi ý mã giờ công / PREPARATION
+    expect(html).toContain('data-testid="aems-repair-code"');
+    expect(html).toMatch(/<datalist id="aems-repair-codes-[^"]+">.*value="0804"/);
+    expect(html).not.toMatch(/<datalist[^>]*>.*value="0003"/);
   });
   it('đã lưu: hiện trạng thái Draft + khối cập nhật trạng thái Maersk', () => {
     const s0 = as(createDemoState(), 'usr-quotation');

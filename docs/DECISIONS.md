@@ -1531,6 +1531,7 @@ Quy ước trạng thái:
 
 - Trạng thái: CONFIRMED (2026-11-02, người dùng trả lời 7 câu ở `docs/design/BAO_GIA_AEMS.md`). Thay một phần DEC-086 cho hãng bật `aemsQuotation` (hồ sơ hãng — MSK); hãng khác giữ màn cũ.
 - **Cấu trúc như AEMS:** đầu phiếu (Mode mặc định 03, Cause tự: có dòng T → Third Party, chỉ W → 1 - Wear And Tear) → **dòng sửa chữa**: Damage Code (MÃ HƯ HỎNG) • Repair Code (MÃ SỬA CHỮA theo Mode) • Repair Loc code (CEDEX 4 ký tự) • TPI W / T • Pcs (≤ Max Qty) • Man Hrs/pc • Material cost/pc (mặc định theo mã, sửa được) • Item Total → giờ công → tổng tiền → ghi chú 0/255.
+- **Nhập Repair Code (người dùng 2026-11-02):** gõ số, hiện gợi ý mã theo Mode; gõ đúng mã → tự điền Man Hrs/pc + Material cost/pc của mã (sửa được). Danh mục MÃ VỊ TRÍ / MÃ HƯ HỎNG MSK: **người dùng tự nhập** ở Danh mục chung → Sửa chữa → CODE CEDEX (mã vị trí = các ô lưới CEDEX của Giám định — đã đủ; mã hư hỏng sẽ thêm dần).
 - **Tạo sẵn dòng từ Giám định:** mỗi chỗ hư bên thứ 3 (eEIR) → 1 dòng T (Loc = CEDEX); có ảnh hao mòn → 1 dòng W (Báo giá điền Loc). Cont chỉ hao mòn (AV) **không** vào Báo giá (như cũ).
 - **Giờ công:** chỉ **Ordinary Hours** (OT1–OT3 để chờ — cont khô). Giờ sửa = Σ Pcs × Man Hrs; **Preparation tự tính** theo mã PREPARATION, khoảng giờ đọc từ Repair Name: ≤ 2 giờ → 0.1 • 2–8 → 0.2 • 8–24 → 0.3 • 24–40 → 0.5 • > 40 → 0.8 (khoảng (min, max], VD 8 giờ → 0.2). Tiền công = tổng giờ × đơn giá mã "Man hour rate" (DR001 = 28,000).
 - **Tiền:** VND, **VAT 0** (tổng có VAT = chưa VAT như ảnh AEMS). Tổng Wear and Tear / Third Party = Σ Item Total theo TPI.
