@@ -64,7 +64,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
   const order: GateInOrder | undefined = pendingOrders.find((o) => o.id === selectedId) || pendingOrders[0];
 
   const blankForm = (o?: GateInOrder) => ({
-    contNo: o?.containerNo || '',
+    contNo: o?.containerNo || o?.initialContainerHint || '', // DEC-204: số cont Giám định nhập — Văn phòng sửa được
     size: o?.size || o?.survey?.size || '', // DEC-203: cont MSK — size do Giám định chọn
     type: o?.type || '',
     shippingLineCode: o?.shippingLineCode || '',
