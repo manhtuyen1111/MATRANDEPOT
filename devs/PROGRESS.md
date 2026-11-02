@@ -272,6 +272,8 @@ Mở app lần đầu sẽ tự nạp **dữ liệu test** (nút **Nạp dữ li
 - **Phiên sau làm theo thứ tự:** (1) hỏi người dùng: DEC-198 ảnh cấp vỏ + DEC-199 booking có thu hẹp về cont DRY không; (2) tab **eEIR** ở Danh mục chung → EDI hãng tàu; (3) migration DEC-199 (trigger trước khi thêm `gate_out_orders`: cont MSK + CUSTOMER → booking khớp `^[A-Z0-9]{9,11}$`) + pgTAP, chạy Supabase local rồi tắt; (4) màn Giám định cont MSK DRY có hư: Hao mòn / Bên thứ 3 → CEDEX (DEC-200).
 - **Người dùng cần:** db push 7 file `20261113` → `20261119`; merge PR; gửi ticket Maersk (mục 17) xin khóa eEIR staging + JSON mẫu; lấy thông số SFTP từ AutoEDI; dung lượng PDF eEIR + 1 PDF Hạ vỏ (xác nhận IN-EMPTY-IMP); bảng mã vị trí CEDEX depot đang dùng (nếu có).
 
+**▶ BÀN GIAO 2026-11-02 — W-SURVEY → "GIÁM ĐỊNH SAU":** chỉ đổi chữ hiển thị (`conditionLabel`), mã dữ liệu giữ W-SURVEY. Migration mới `20261126000001_deferred_label` (pgTAP `0028`). vitest 287 pass • build PASS • pgTAP 381/381 • chạy thật 4/4. **Người dùng cần:** `db push --linked` (thêm `20261125000001` + `20261126000001`).
+
 **▶ BÀN GIAO 2026-11-02 — DEC-205 PWA:** cài lên điện thoại như ứng dụng (Quản trị hệ thống → Cài ứng dụng; iPhone: Safari → Chia sẻ → Thêm vào Màn hình chính). `public/sw.js` chỉ lưu vỏ ứng dụng cùng tên miền; Supabase đi thẳng mạng. Kiểm thử: vitest 287 pass • build PASS • `vite preview` phục vụ đúng manifest / sw.js / icon. **Chưa thử cài trên điện thoại thật** (cần bản trên Vercel — HTTPS). Đổi `VERSION` trong `sw.js` khi muốn xóa bộ nhớ đệm cũ.
 
 **▶ BÀN GIAO 2026-11-02 — DEC-204 SỐ CONT + API HÃNG TÀU + GIÁM ĐỊNH TRỰC TIẾP / SAU (ĐỌC TRƯỚC):**
