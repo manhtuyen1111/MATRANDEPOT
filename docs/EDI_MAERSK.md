@@ -463,3 +463,39 @@ Gửi `eEIRSupport@maersk.com` / ticket developer portal, nêu mã depot 3 ký t
 
 8 lựa chọn: IN-EMPTY-IMPORT_RETURN • IN-EMPTY-POSITION • OUT-EMPTY-POSITION • OUT-EMPTY-EXPORT • IN-FULL-EXP • STUFFING • STRIPPING • OUT-FULL-DELIVERY. MATRAN (depot cont rỗng) dùng: **Hạ vỏ** IN-EMPTY-IMPORT_RETURN (moveStatus 1 / moveType 2) • **Nhập tàu** IN-EMPTY-POSITION (1 / 1) • **Cấp vỏ** OUT-EMPTY-EXPORT (2 / 3, booking bắt buộc) • **Cấp sale** OUT-EMPTY-POSITION (2 / 1, không booking) • **Xuất tàu** OUT-EMPTY-POSITION (2 / 1). Xuất tàu chưa chụp ảnh → người dùng chốt **tạm chưa gửi eEIR cho Xuất tàu** (`EEIR_SEND_VESSEL_EXPORT = false`).
 
+## 22. Tình trạng eEIR (2026-11-02) — đã làm / còn thiếu
+
+**Đã làm (chạy được trong app, chưa gửi Maersk):**
+- Dữ liệu giám định đủ cho eEIR: Hạ vỏ (form eEIR, size, lưới CEDEX — DEC-203), Nhập tàu (DEC-203), **Giám định trên kệ (DEC-204)**, ảnh Cấp vỏ (DEC-198), booking 9–11 ký tự (DEC-199), chỉ cont MSK DRY (DEC-201), Current Move (mục 21).
+- Phiếu eEIR chạy thử `src/services/edi/eeir.ts`: `eeirInspections` (danh sách phiếu + lỗi thiếu) → `eeirInspectionDetails` (JSON đúng bảng trường v4.3 mục 6.1).
+- Khung lấy thông tin cont từ hãng (`src/services/equipmentInfo.ts` — DEC-204): có nút trên màn Giám định, nguồn MSK đang "chưa kết nối".
+
+**Ánh xạ trường gửi (API 2 `inspection/save`):**
+
+| Trường | Lấy từ MATRAN | Tình trạng |
+|---|---|---|
+| createdLocalDate / createdUtcDate / submittedLocalDate | giờ tác nghiệp (GATE IN OK, Xe nâng cấp, Giám định Nhập tàu) | ✅ |
+| user.surveyorId | client id eEIR của depot | ❌ **chưa có khóa** |
+| containerStatus 1 • operator 1 • fgStatus 1 • stSound Y • damage null | cố định theo tài liệu | ✅ |
+| moveStatus / moveType | Current Move (mục 21) | ✅ (Xuất tàu tạm không gửi) |
+| containerTypeSize (`40DRY 45G1`) | size (Giám định chọn) + DRY + ISO Danh mục | ✅ tạm — nên lấy từ API 1 khi có khóa |
+| bookingNo | Booking lệnh Cấp vỏ (cấp sale không cần) | ✅ |
+| grade | API 1 `smokeTested` | ⚠ hiện gửi **N** — chờ API 1 |
+| containerNo, productionYear | số cont, AGE | ✅ |
+| damages[] (0000 / Hao mòn / Bên thứ 3 CEDEX + loại hư + bên gây hư) | form eEIR | ✅ |
+| images + file ảnh (multipart) | ảnh cửa + ảnh eEIR + ảnh cấp vỏ | ✅ dữ liệu — ⚠ chưa thử gửi multipart |
+| truckers.truckerRegno (≤ 11) | số xe | ✅ Hạ vỏ / Cấp vỏ / Nhập tàu |
+| emails[] (category Shop) | email depot nhận PDF | ❌ **chưa có địa chỉ** (Q-060) |
+
+**Chưa làm (cần khóa / quyết định):**
+1. Máy chủ gửi (Supabase Edge Function): lấy `id_token` (2 giờ) → API 1 `getEquipmentDetails` → API 2 gửi phiếu kèm ảnh → lưu `inspectionId`; hàng chờ CHỜ GỬI / ĐÃ GỬI / LỖI, gửi lại, cảnh báo quá 24 giờ.
+2. Tab **eEIR** ở Danh mục chung → EDI hãng tàu (danh sách phiếu theo ngày, lỗi thiếu, xem JSON, gửi lại).
+3. Hồ sơ container: dòng "eEIR đã gửi" + `inspectionId` (+ PDF nếu làm mục 16).
+
+**Cần người dùng chuẩn bị:**
+1. **Khóa eEIR staging** (client id / secret) — gửi ticket mục 17 tới `eEIRSupport@maersk.com`. Khóa **không gửi cho agent**: bạn tự đặt bằng `npx supabase secrets set` khi Edge Function sẵn sàng.
+2. **File mẫu `inspectionDetails` JSON** (Q-056) — xác định trường dạng số hay `{"id":1}`.
+3. **Email depot nhận PDF eEIR** (Q-060) — chỉ địa chỉ email.
+4. Maersk xác nhận **mã shop 3HY** (sai mã → lỗi 412) và eEIR có **thay CODECO** không (Q-061).
+5. Nhập tàu: `truckerRegno` ghi gì (số xe / tên sà lan — Q-065).
+6. Quyết định: Cấp vỏ (DEC-198) có dùng form eEIR như Hạ vỏ không; ảnh cấp vỏ tối đa 30 hay 20 (eEIR nhận ≤ 20 ảnh / mục).
