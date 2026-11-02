@@ -2,7 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { FileSpreadsheet, ListChecks, Search } from "lucide-react";
 import { ContainerRecord } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
-import { bulkConfirmQuotationToRepair, confirmQuotationToRepair, saveQuotationDraft } from "../../services/api";
+import { bulkConfirmQuotationToRepair, confirmQuotationToRepair, saveAemsQuotation, saveQuotationDraft, setAemsApproval } from "../../services/api";
+import { aemsRepairBlocker, usesAemsQuotation } from "../../services/aemsQuotation";
+import { AEMS_APPROVAL_LABELS } from "../../types/depot";
+import { AemsQuoteForm } from "./AemsQuoteForm";
 import { formatLocation, parseContainerList, storageDays } from "../../services/core";
 import { formatDateTime, fileStamp } from '../../services/datetime';
 import { yardStockSheet } from '../../services/reports';
@@ -116,7 +119,18 @@ export const QuotationWorkspace: React.FC<{
       setError(err instanceof Error ? err.message : "Lỗi xác nhận chờ sửa chữa");
     }
   };
-  const hasDraft = (c: ContainerRecord) => Boolean(c.quotationItems?.length && Number(c.quotationLaborHours) > 0);
+  // DEC-207: cont hãng báo giá AEMS → chỉ Approved mới xác nhận được
+  const hasDraft = (c: ContainerRecord) => Boolean(c.quotationItems?.length && Number(c.quotationLaborHours) > 0) && !aemsRepairBlocker(c);
+  const runAems = (fn: () => DepotState, message: string) => {
+    setError(null);
+    setSuccess(null);
+    try {
+      onUpdateState(fn());
+      setSuccess(message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Lỗi báo giá AEMS');
+    }
+  };
 
   return (
     <div className="w-full space-y-3">
@@ -231,13 +245,13 @@ export const QuotationWorkspace: React.FC<{
                   <td className="px-2 py-2.5 text-center font-bold text-rose-700">{c.conditionClass}</td>
                   <td className="px-2 py-2.5 text-right font-mono font-bold">{storageDays(c.gateInAt, now)}</td>
                   <td className="px-2 py-2.5 font-mono"><LocationText loc={c} /></td>
-                  <td className="px-2 py-2.5">{c.quotationItems?.length ? <CellText text={c.quotationItems.join(", ")} max={CELL_MAX.LONG} className="font-semibold text-ink" /> : <span className="italic text-ink-muted">Chưa cập nhật</span>}</td>
+                  <td className="px-2 py-2.5">{c.aemsQuote && <span className="mr-1.5 rounded bg-canvas px-1.5 py-0.5 text-[10px] font-bold text-ink" data-testid="quote-aems-status">{AEMS_APPROVAL_LABELS[c.aemsQuote.approval]}</span>}{c.quotationItems?.length ? <CellText text={c.quotationItems.join(", ")} max={CELL_MAX.LONG} className="font-semibold text-ink" /> : <span className="italic text-ink-muted">Chưa cập nhật</span>}</td>
                   <td className="px-2 py-2.5 text-right font-mono font-bold">{c.quotationLaborHours ?? "-"}</td>
                   <td className={`px-2 py-2.5 ${c.officeNote ? 'bg-yellow-200 font-semibold' : 'text-ink-muted'}`}><CellText text={c.officeNote} max={CELL_MAX.LONG} /></td>
                   <td className="px-2 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                     <span className="inline-flex gap-1">
                       <button type="button" onClick={() => open(c)} className={secondaryBtn}>Cập nhật</button>
-                      <button type="button" disabled={!hasDraft(c)} title={hasDraft(c) ? "" : "Cập nhật tình trạng sửa chữa + giờ công trước"} onClick={() => confirmRepair(c)} className={primaryBtn}>Xác nhận chờ sửa chữa</button>
+                      <button type="button" disabled={!hasDraft(c)} title={hasDraft(c) ? "" : aemsRepairBlocker(c) || "Cập nhật tình trạng sửa chữa + giờ công trước"} onClick={() => confirmRepair(c)} className={primaryBtn}>Xác nhận chờ sửa chữa</button>
                     </span>
                   </td>
                 </tr>
@@ -249,6 +263,7 @@ export const QuotationWorkspace: React.FC<{
       </div>
 
       <DetailDrawer
+        wide={Boolean(selected && usesAemsQuotation(selected.shippingLineCode))}
         open={Boolean(selected)}
         onClose={() => setSelectedId('')}
         title={selected ? <span className="flex items-center gap-2">Báo giá <ContainerNo no={selected.containerNo} className="text-base" /><ReleaseDamageTag show={selected.releaseDamage} /></span> : ''}
@@ -265,6 +280,19 @@ export const QuotationWorkspace: React.FC<{
               <dt className="text-ink-muted">Lưu bãi</dt><dd className="font-mono">{storageDays(selected.gateInAt, now)} ngày</dd>
               <dt className="text-ink-muted">Hư hỏng giám định</dt><dd className="font-semibold text-rose-800 sm:col-span-3">{selected.damageRemarks.join(', ') || '-'}</dd>
             </dl>
+            {usesAemsQuotation(selected.shippingLineCode) ? (
+              <>
+                <Feedback success={success} onClose={() => setSuccess(null)} />
+                <AemsQuoteForm
+                  key={`${selected.id}-${selected.aemsQuote?.savedAt || ''}`}
+                  state={state}
+                  container={selected}
+                  onSave={(input) => runAems(() => saveAemsQuotation(state, { ...input, containerNo: selected.containerNo }), `Đã lưu phiếu báo giá AEMS ${selected.containerNo} (Draft) — cập nhật trạng thái Maersk khi có kết quả duyệt.`)}
+                  onApproval={(approval, wo) => runAems(() => setAemsApproval(state, { containerNo: selected.containerNo, approval, workOrderNo: wo }), `Đã cập nhật trạng thái Maersk: ${AEMS_APPROVAL_LABELS[approval]}.`)}
+                  onConfirm={() => confirmRepair(selected)}
+                />
+              </>
+            ) : (<>
             <label className="block">
               <span className={labelCls}>Tình trạng sửa chữa thực tế * (phân cách bằng dấu phẩy)</span>
               <input value={items} onChange={(e) => setItems(e.target.value)} placeholder="Thay tôn vách trái 1m2, Hàn sàn..." className={inputCls} />
@@ -286,6 +314,7 @@ export const QuotationWorkspace: React.FC<{
             {selected.quotationUpdatedBy && (
               <p className="text-[11px] text-ink-muted">Cập nhật gần nhất: {selected.quotationUpdatedBy} • {formatDateTime(selected.quotationUpdatedAt)}</p>
             )}
+            </>)}
           </div>
         )}
       </DetailDrawer>
