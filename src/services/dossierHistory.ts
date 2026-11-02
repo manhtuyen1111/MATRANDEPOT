@@ -3,6 +3,7 @@
 // THỜI GIAN | BỘ PHẬN | NỘI DUNG (TẠO MỚI / SỬA / XÓA) | CHI TIẾT | NHÂN VIÊN — cũ trên, mới dưới (DEC-184: cột Bộ phận).
 // Bước chưa làm: mỗi việc 1 dòng ĐANG CHỜ cuối bảng, kèm bộ phận phụ trách.
 import { RELEASE_PURPOSE_LABELS, SWAP_REASON_LABELS } from '../types/depot';
+import { DEFERRED_LABEL } from '../types/depot';
 import type { ContainerRecord, GateInOrder, InspectionSurvey, GateOutOrder, LocationHistoryItem, PaymentVoucher, ServiceWorkOrder, VesselList, VesselListItem } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { formatVnd } from './depotStore';
@@ -198,7 +199,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
       action: 'TẠO MỚI',
       detail: join([
         `Hãng tàu ${gateIn.shippingLineCode || '-'}`,
-        `Trạng thái ${gateIn.toInspectionRack && !gateIn.rackInspectedAt ? 'W-SURVEY (lên kệ)' : inspectText(gateIn.conditionClass, gateIn.damageRemarks)}`,
+        `Trạng thái ${gateIn.toInspectionRack && !gateIn.rackInspectedAt ? `${DEFERRED_LABEL} (lên kệ)` : inspectText(gateIn.conditionClass, gateIn.damageRemarks)}`,
         gateIn.stuffingClass && `Đóng hàng ${gateIn.stuffingClass}`,
         `Vệ sinh ${gateIn.cleaningItems.join(' + ') || '-'}`,
         gateIn.manufactureYear && `AGE ${gateIn.manufactureYear}`,
@@ -221,7 +222,7 @@ export function dossierHistory(state: DepotState, d: DossierContext): DossierHis
           operation: 'Giám định — Trên kệ',
           action: 'SỬA',
           detail: join([
-            `W-SURVEY → ${inspectText(container?.conditionClass || gateIn.conditionClass, container?.damageRemarks || gateIn.damageRemarks)}`,
+            `${DEFERRED_LABEL} → ${inspectText(container?.conditionClass || gateIn.conditionClass, container?.damageRemarks || gateIn.damageRemarks)}`,
             (container?.stuffingClass || gateIn.stuffingClass) && `Đóng hàng ${container?.stuffingClass || gateIn.stuffingClass}`,
             (container?.manufactureYear || gateIn.manufactureYear) && `AGE ${container?.manufactureYear || gateIn.manufactureYear}`,
           ]),

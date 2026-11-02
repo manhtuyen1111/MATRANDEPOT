@@ -28,6 +28,7 @@ import { priorityShippingLine, stuffingOptions } from '../../services/stuffing';
 import { damageSourceLabel, damageTypeLabel, EMPTY_SURVEY, surveyCondition, usesInspectionSurvey } from '../../services/inspectionSurvey';
 import { equipmentPrefill, EquipmentLookup, hasEquipmentSource, isContainerNoFormat, lookupEquipment, cleanContainerNo } from '../../services/equipmentInfo';
 import type { InspectionSurvey } from '../../types/depot';
+import { conditionLabel } from '../../types/depot';
 
 interface Props {
   state: DepotState;
@@ -254,7 +255,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
       return;
     }
     if (!conditionClass) {
-      setErrorMsg('Vui lòng chọn TRẠNG THÁI (AV, DAMAGE hoặc W-SURVEY).');
+      setErrorMsg('Vui lòng chọn GIÁM ĐỊNH TRỰC TIẾP hoặc GIÁM ĐỊNH SAU.');
       return;
     }
     if (isDeferred) {
@@ -477,7 +478,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                     <span
                       className={`rounded px-2.5 py-1 text-xs font-bold ${conditionTone(item.conditionClass)}`}
                     >
-                      {item.conditionClass}
+                      {conditionLabel(item.conditionClass)}
                     </span>
                     <Eye className="h-3.5 w-3.5 text-ink-muted" />
                   </div>
@@ -558,7 +559,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                 <span
                   className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${conditionTone(selectedOrder.conditionClass)}`}
                 >
-                  {selectedOrder.conditionClass}
+                  {conditionLabel(selectedOrder.conditionClass)}
                 </span>
                 {selectedOrder.damageRemarks.length > 0 && (
                   <p className="mt-1 text-[11px] text-rose-700">
@@ -856,7 +857,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                   ))}
                 </div>
                 {mode === 'DEFERRED' && (
-                  <p className="text-xs text-ink-muted">Lên kệ giám định (W-SURVEY): chỉ chọn Vệ sinh rồi xác nhận. Xe nâng hạ cont lên kệ; Giám định bổ sung ở tab Chờ giám định trên kệ.</p>
+                  <p className="text-xs text-ink-muted">Lên kệ giám định: chỉ chọn Vệ sinh rồi xác nhận. Xe nâng hạ cont lên kệ; Giám định bổ sung ở tab Chờ giám định trên kệ.</p>
                 )}
 
                 {/* UI-02: form Giám định dùng chung (hiện lần lượt từng mục) */}
@@ -929,7 +930,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                             : 'text-emerald-600'
                         }`}
                       >
-                        {conditionClass}
+                        {conditionLabel(conditionClass)}
                       </span>
                       {conditionClass === 'DAMAGE' && (
                         <p className="text-[11px] text-rose-700">

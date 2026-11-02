@@ -1277,7 +1277,7 @@ describe('DEC-147: W-SURVEY (LÊN KỆ) + giám định bổ sung trên kệ', (
     expect(s.gateInOrders[0]).toMatchObject({ conditionClass: 'W-SURVEY', toInspectionRack: true, cleaningItems: ['WP'] });
     expect(s.gateInOrders[0].stuffingClass).toBeUndefined();
     expect(s.gateInOrders[0].manufactureYear).toBeUndefined();
-    expect(s.auditLogs[0].summary).toMatch(/W-SURVEY/);
+    expect(s.auditLogs[0].summary).toMatch(/GIÁM ĐỊNH SAU/);
     // AV / DAMAGE vẫn bắt buộc Đóng hàng + AGE
     expect(() => fieldStep(createInitialState(), { stuffingClass: undefined })).toThrow(/PHÂN LOẠI ĐÓNG HÀNG/);
     expect(() => fieldStep(createInitialState(), { manufactureYear: undefined })).toThrow(/AGE/);
@@ -1294,7 +1294,7 @@ describe('DEC-147: W-SURVEY (LÊN KỆ) + giám định bổ sung trên kệ', (
     expect(() => completeRackInspection(as(s, 'usr-inspector'), { containerId: c.id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/chưa được Xe nâng hạ lên kệ/);
     s = completeCleaningTask(as(s, 'usr-cleaning'), { containerNo: 'MSKU1234567' });
     s = placeInYard(s, 'MSKU1234567', { blockCode: 'BLOCK-DAMAGE', bay: '01', row: '01', tier: '01' });
-    expect(releaseBlocker(s.containers.find((x) => x.id === c.id)!)).toMatch(/W-SURVEY/);
+    expect(releaseBlocker(s.containers.find((x) => x.id === c.id)!)).toMatch(/GIÁM ĐỊNH SAU/);
   });
 
   it('Giám định bổ sung DAMAGE → cập nhật phiếu + hàng chờ Báo giá; AV → hết chờ; bị từ chối khi sai quyền / thiếu dữ liệu', () => {
@@ -1319,7 +1319,7 @@ describe('DEC-147: W-SURVEY (LÊN KỆ) + giám định bổ sung trên kệ', (
     expect(pendingRackInspections(d)).toEqual([]);
     expect(d.auditLogs[0].actionCode).toBe('GIAM_DINH_TREN_KE');
     // Không giám định bổ sung lần 2
-    expect(() => completeRackInspection(as(d, 'usr-inspector'), { containerId: id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/không ở trạng thái W-SURVEY/);
+    expect(() => completeRackInspection(as(d, 'usr-inspector'), { containerId: id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 })).toThrow(/không ở trạng thái GIÁM ĐỊNH SAU/);
 
     const a = completeRackInspection(insp, { containerId: id, conditionClass: 'AV', stuffingClass: 'E', manufactureYear: 2019 });
     expect(a.containers.find((x) => x.id === id)!).toMatchObject({ conditionClass: 'AV', needsQuotation: false, forkliftShiftTask: 'HA_KE_GIAM_DINH' });

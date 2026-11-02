@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Repeat, X } from 'lucide-react';
 import { SWAP_REASON_LABELS, SwapReason } from '../../types/depot';
+import { conditionLabel } from '../../types/depot';
 import { DepotState } from '../../services/depotStore';
 import { swapGateOutContainer } from '../../services/api';
 import { isGateOutLifted, swapCandidates } from '../../services/depotOperations';
@@ -101,7 +102,7 @@ export const SwapContainerModal: React.FC<{
                     className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-canvas ${picked === c.containerNo ? 'bg-navy-50 font-bold' : ''}`}
                   >
                     <ContainerNo no={c.containerNo} />
-                    <span className="text-ink-muted">{c.size}{c.type} • {c.conditionClass}{c.stuffingClass ? ` • ${c.stuffingClass}` : ''}</span>
+                    <span className="text-ink-muted">{c.size}{c.type} • {conditionLabel(c.conditionClass)}{c.stuffingClass ? ` • ${c.stuffingClass}` : ''}</span>
                     <LocationText loc={c} />
                   </button>
                 </li>

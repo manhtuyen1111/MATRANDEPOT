@@ -11,6 +11,7 @@ import {
   RELEASE_PURPOSE_LABELS,
   ReleasePurpose,
 } from '../../types/depot';
+import { conditionLabel } from '../../types/depot';
 import { DepotState, formatVnd } from '../../services/depotStore';
 import { gateInContainerConflict, getBookingSummary, blockedOnlyByHold, releaseBlocker } from '../../services/depotOperations';
 import { pendingTransactionOf } from '../../services/payments';
@@ -201,7 +202,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                     </span>
                     <span className="text-right">
                       <span className={`block font-bold ${o.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>
-                        {o.conditionClass}
+                        {conditionLabel(o.conditionClass)}
                       </span>
                       {o.toInspectionRack && <span className="block text-[10px] font-bold text-amber-700">HẠ KỆ GĐ</span>}
                       {o.status === 'PAYMENT_PENDING' && <span className="text-[10px] text-amber-700">Chờ thanh toán</span>}
@@ -233,7 +234,7 @@ export const OfficeHaVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateStat
                   <dl className="grid flex-1 grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                     <dt className="text-ink-muted">Trạng thái</dt>
                     <dd className={`font-bold ${order.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>
-                      {order.conditionClass}
+                      {conditionLabel(order.conditionClass)}
                       {order.damageRemarks.length > 0 && <span className="font-normal text-ink-muted"> — {order.damageRemarks.join(', ')}</span>}
                     </dd>
                     {order.toInspectionRack && (
@@ -601,7 +602,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                       <td className="py-2 pr-2"><ContainerNo no={c.containerNo} locked={c.isOnHold} lockReason={c.officeNote || c.holdReason} /></td>
                       <td className="py-2 pr-2">{c.size}/{c.type}</td>
                       <td className="py-2 pr-2">{c.shippingLineCode}</td>
-                      <td className={`py-2 pr-2 font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{c.conditionClass}</td>
+                      <td className={`py-2 pr-2 font-bold ${c.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}`}>{conditionLabel(c.conditionClass)}</td>
                       <td className="py-2 pr-2">{c.stuffingClass}</td>
                       <td className="py-2 pr-2 font-mono"><LocationText loc={c} /></td>
                       <td className="py-2 text-[11px] font-semibold text-amber-900">{c.officeNote || "-"}</td>
@@ -688,7 +689,7 @@ export const OfficeCapVoWorkspace: React.FC<OfficeProps> = ({ state, onUpdateSta
                   ['Số container', selected ? <ContainerNo no={selected.containerNo} /> : null],
                   ['Size/Type', selected ? `${selected.size}/${selected.type}` : null],
                   ['Hãng tàu', selected?.shippingLineCode],
-                  ['Trạng thái', selected ? <strong className={selected.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}>{selected.conditionClass}</strong> : null],
+                  ['Trạng thái', selected ? <strong className={selected.conditionClass === 'DAMAGE' ? 'text-rose-700' : 'text-emerald-700'}>{conditionLabel(selected.conditionClass)}</strong> : null],
                   ['Đóng hàng', selected?.stuffingClass],
                   ['Vị trí', selected ? <LocationText loc={selected} /> : null],
                 ] as [string, React.ReactNode][]).map(([label, value]) => (

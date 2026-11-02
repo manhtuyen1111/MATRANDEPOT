@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 import type { GateInOrder } from '../../types/depot';
+import { conditionLabel } from '../../types/depot';
 import type { DepotState } from '../../services/depotStore';
 import {
   CLEANING_STATUS_LABELS,
@@ -161,7 +162,7 @@ export const InspectionReport: React.FC<Props> = ({ state: live, onOpenDossier }
               <option value="">Tất cả</option>
               <option value="AV">AV</option>
               <option value="DAMAGE">DAMAGE</option>
-              <option value="W-SURVEY">W-SURVEY</option>
+              <option value="W-SURVEY">GIÁM ĐỊNH SAU</option>
             </select>
           </label>
         </>
@@ -185,7 +186,7 @@ export const InspectionReport: React.FC<Props> = ({ state: live, onOpenDossier }
                   <td className="px-3 py-2 text-center">{o.type || '-'}</td>
                   <td className="px-3 py-2">{o.shippingLineCode || '-'}</td>
                   <td className="px-3 py-2">{INSPECTION_OPERATION_LABELS[o.gateInType]}</td>
-                  <td className="px-3 py-2 font-semibold">{o.conditionClass}</td>
+                  <td className="px-3 py-2 font-semibold">{conditionLabel(o.conditionClass)}</td>
                   <td className="px-3 py-2"><CellText text={o.damageRemarks.join(', ')} max={CELL_MAX.MEDIUM} /></td>
                   <td className="px-3 py-2">{o.stuffingClass || '-'}</td>
                   <td className="px-3 py-2">{o.manufactureYear || '-'}</td>

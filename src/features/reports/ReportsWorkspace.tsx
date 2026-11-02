@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FileSpreadsheet, Search } from 'lucide-react';
 import { GateInOrder, GateOutOrder, GateOutType } from '../../types/depot';
+import { conditionLabel } from '../../types/depot';
 import { DepotState, formatVnd } from '../../services/depotStore';
 import {
   buildSummaryReport,
@@ -318,7 +319,7 @@ const OperationReport: React.FC<Props> = ({ state: live, section, onOpenDossier,
                       <td className="px-3 py-2"><CellText text={o.customerRep} max={CELL_MAX.MEDIUM} /></td>
                       <td className="px-3 py-2">{o.truckNo || '-'}</td>
                       <td className="px-3 py-2">{o.driverPhone || '-'}</td>
-                      <td className="px-3 py-2">{o.conditionClass}</td>
+                      <td className="px-3 py-2">{conditionLabel(o.conditionClass)}</td>
                       <td className="px-3 py-2">{GATE_IN_STATUS[o.status]}</td>
                       <td className="px-3 py-2">{formatViTime(o.fieldRecordedAt)}</td>
                       <td className="px-3 py-2">{formatViTime(o.gateInOkAt)}</td>

@@ -114,6 +114,9 @@ export const GATE_OUT_TYPE_LABELS: Record<GateOutType, string> = {
 // Phân loại Giám định Hạ vỏ đã xác nhận (DEC-016, DEC-021)
 // DEC-147: 'W-SURVEY' = chưa giám định được → hạ lên kệ; Giám định bổ sung AV / DAMAGE + Đóng hàng + AGE sau (completeRackInspection)
 export type FieldConditionClass = 'DAMAGE' | 'AV' | 'W-SURVEY';
+// Người dùng 2026-11-02: mã W-SURVEY giữ nguyên trong dữ liệu / database, HIỂN THỊ thống nhất là "GIÁM ĐỊNH SAU" (màn hình, in, Excel, nhật ký)
+export const DEFERRED_LABEL = 'GIÁM ĐỊNH SAU';
+export const conditionLabel = (c?: string | null): string => (c === 'W-SURVEY' ? DEFERRED_LABEL : c || '');
 export const CONDITION_DEFERRED = 'W-SURVEY' as const;
 // DEC-166: mã PHÂN LOẠI ĐÓNG HÀNG lấy từ Danh mục theo hãng tàu (mặc định M / K / E) — trống khi hãng không dùng
 export type FieldStuffingClass = string;

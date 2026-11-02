@@ -24,6 +24,7 @@ import { FEEDBACK_STATUS_LABELS } from './feedback';
 import { assertPermission } from './core';
 import { vesselListProgress, vesselListStatusLabel } from './vessel';
 import type { FeedbackItem, FeedbackStatus, InvoiceStatus } from '../types/depot';
+import { conditionLabel } from '../types/depot';
 import { matchContainerNo } from './containerSearch';
 
 // ============================================================================
@@ -216,7 +217,7 @@ export function gateInSheet(name: string, orders: GateInOrder[], state?: DepotSt
     rows: orders.map((o) => [
       o.masterDossierCode, o.containerNo || '', o.size || '', o.type || '', o.shippingLineCode || '',
       o.gateInType, o.status, o.customerRep || '', o.truckNo || '', o.driverPhone || '', o.orderDocNo || '',
-      o.conditionClass, o.damageRemarks.join('; '), o.stuffingClass || '', o.cleaningItems.join(' + '),
+      conditionLabel(o.conditionClass), o.damageRemarks.join('; '), o.stuffingClass || '', o.cleaningItems.join(' + '),
       o.manufactureYear || '', o.fieldStaffName, fmt(o.fieldRecordedAt), o.officeStaffName || '', fmt(o.officeVerifiedAt),
       o.feeAmount || 0,
       // DEC-126: thanh toán + mã phiếu thu (như Tồn vỏ)
@@ -242,7 +243,7 @@ export function gateOutSheet(name: string, state: DepotState, orders: GateOutOrd
       const v = o.voucherId ? voucherById.get(o.voucherId) : undefined;
       return [
         o.gateOutCode, o.containerNo, c?.size || '', c?.type || '', c?.shippingLineCode || '',
-        o.masterDossierCode, o.gateOutType, o.status, o.bookingNo, c?.conditionClass || '', c?.stuffingClass || '', o.receiverRep,
+        o.masterDossierCode, o.gateOutType, o.status, o.bookingNo, conditionLabel(c?.conditionClass), c?.stuffingClass || '', o.receiverRep,
         o.truckNo, o.driverPhone || '', o.feeAmount || 0,
         ...(() => { const p = voucherPaymentInfo(state, v); return [p.label, p.receipt]; })(), // DEC-126
         fmt(o.createdAt), o.createdBy || '', fmt(o.confirmedAt), o.confirmedBy || '', o.cancelReason || '',
@@ -261,7 +262,7 @@ function stockSheet(containers: ContainerRecord[]): SheetData {
       'SĐT LÁI XE HẠ', 'GATE IN LÚC', 'GHI CHÚ VĂN PHÒNG',
     ],
     rows: containers.map((c) => [
-      c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, c.conditionClass, c.stuffingClass || '',
+      c.masterDossierCode, c.containerNo, c.size, c.type, c.shippingLineCode, conditionLabel(c.conditionClass), c.stuffingClass || '',
       c.manufactureYear || '', c.cleaningItems.join(' + '), c.damageRemarks.join('; '), formatLocation(c), c.status,
       c.needsCleaning ? 'X' : '', c.needsQuotation ? 'X' : '', c.needsRepair ? 'X' : '', c.isOnHold ? 'X' : '',
       c.holdReason || '', c.allocatedBookingNo || '', c.outDossierCode || '', c.customerRep, c.truckNo || '',
@@ -788,7 +789,7 @@ export function inspectionSheet(rows: GateInOrder[]): SheetData {
     ],
     rows: rows.map((o) => [
       o.masterDossierCode, o.containerNo || '', o.size || '', o.type || '', o.shippingLineCode || '',
-      INSPECTION_OPERATION_LABELS[o.gateInType], o.conditionClass, o.damageRemarks.join('; '), o.stuffingClass || '', o.manufactureYear || '',
+      INSPECTION_OPERATION_LABELS[o.gateInType], conditionLabel(o.conditionClass), o.damageRemarks.join('; '), o.stuffingClass || '', o.manufactureYear || '',
       o.cleaningItems.join(' + '), o.fieldStaffName, fmt(o.fieldRecordedAt),
     ]),
   };
