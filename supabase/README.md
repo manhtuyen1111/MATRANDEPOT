@@ -54,6 +54,10 @@ npx supabase functions serve
 node supabase/tests/edge-functions.local.cjs .
 ```
 
+## Xóa dữ liệu tác nghiệp (reset về ban đầu, giữ tài khoản + Danh mục)
+
+File `supabase/scripts/reset_operational_data.sql` (không phải migration). Người dùng tự chạy: Dashboard → **SQL Editor** → dán cả file → **Run** → bảng kiểm tra cuối file: dữ liệu tác nghiệp = 0, nhân viên / hãng tàu > 0. Ảnh: Dashboard → **Storage** → `door-photos` và `repair-photos` → **Empty bucket**. Sau đó mọi máy bấm **Tải lại** / F5. Đã thử trên local 2026-11-02 (có dữ liệu → về 0, giữ nhân viên + Danh mục, bộ đếm mã về 0).
+
 ## Đưa lên project thật (bạn tự làm)
 
 1. Tạo project trên supabase.com, vùng **Singapore**. Làm cho đủ 3 project: dev, staging, production. Bật PITR cho production (DEC-152).
