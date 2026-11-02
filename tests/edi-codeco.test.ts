@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialState, DepotState } from '../src/services/depotStore';
 import { createDemoState } from '../src/services/demoData';
-import { buildCodecoFile, codecoEvents, CodecoEvent, ediDateTime, MAERSK_CODECO } from '../src/services/edi/codeco';
+import { buildCodecoFile, codecoEvents, CodecoEvent, ediDateTime } from '../src/services/carriers/standards/codeco';
+import { MAERSK_CODECO } from '../src/services/carriers/maersk/config';
 
 // DEC-197: EDI CODECO chạy thử — tạo đúng mẫu file app cũ (docs/EDI_MAERSK.md mục 3)
 
@@ -118,7 +119,7 @@ describe('DEC-197: EDI CODECO chạy thử', () => {
       ev({ containerNo: 'MRSU3714482', size: '40', type: 'HC', ref: 'GRADEK', at: vn('04:54'), gateIn: true, damage: '6' }),
       ev({ containerNo: 'MRSU3714482', size: '40', type: 'HC', ref: '279257381', at: vn('04:56') }),
     ];
-    const file = buildCodecoFile(events, new Date(vn('05:00')));
+    const file = buildCodecoFile(events, new Date(vn('05:00')), MAERSK_CODECO);
     expect(file.fileName).toBe('202610290500.txt');
     expect(file.count).toBe(8);
     expect(file.content.trim()).toBe(SAMPLE_0500);
@@ -130,7 +131,7 @@ describe('DEC-197: EDI CODECO chạy thử', () => {
       ev({ containerNo: 'HASU1040690', size: '20', type: 'DC', ref: 'VNHPHTM', at: vn('10:56'), eqdStatus: '8', source: 'XUAT_TAU' }),
       ev({ containerNo: 'ABCU1234567', size: '20', type: 'OT', ref: '123456789', at: vn('10:00') }),
       ev({ containerNo: 'ABCU7654321', size: '20', type: 'DC', ref: '', at: vn('10:00'), source: 'XUAT_TAU', problem: 'Danh sách tàu X chưa có mã cảng đến' }),
-    ], new Date(vn('15:00')));
+    ], new Date(vn('15:00')), MAERSK_CODECO);
     expect(file.content).toContain("EQD+CN+PONU1771369+4200:102:5++8+4'\nRFF+BN:SALEO26VN51'");
     expect(file.content).toContain("EQD+CN+HASU1040690+2200:102:5++8+4'\nRFF+BN:VNHPHTM'");
     expect(file.count).toBe(2);
@@ -146,7 +147,7 @@ describe('DEC-197: EDI CODECO chạy thử', () => {
 
   it('lấy dữ liệu thực tế từ app: chỉ cont MSK trong khoảng giờ; sắp theo giờ, cùng giờ gate-in trước', () => {
     const s: DepotState = createDemoState();
-    const all = codecoEvents(s, { from: new Date('2000-01-01'), to: new Date('2100-01-01') });
+    const all = codecoEvents(s, { from: new Date('2000-01-01'), to: new Date('2100-01-01') }, MAERSK_CODECO);
     expect(all.length).toBeGreaterThan(0);
     for (const e of all) {
       const c = s.containers.find((x) => x.containerNo === e.containerNo);
@@ -156,7 +157,7 @@ describe('DEC-197: EDI CODECO chạy thử', () => {
     const gin = all.find((e) => e.gateIn)!;
     expect(gin.ref).toMatch(/^GRADE/);
     expect(['2', '6']).toContain(gin.damage);
-    expect(codecoEvents(s, { from: new Date('2000-01-01'), to: new Date('2000-01-02') })).toEqual([]);
+    expect(codecoEvents(s, { from: new Date('2000-01-01'), to: new Date('2000-01-02') }, MAERSK_CODECO)).toEqual([]);
     expect(codecoEvents(createInitialState(), { from: new Date('2000-01-01'), to: new Date('2100-01-01') }, { ...MAERSK_CODECO, partnerCode: 'XXX' })).toEqual([]);
   });
 });

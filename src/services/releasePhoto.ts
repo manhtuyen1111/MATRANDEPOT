@@ -7,9 +7,9 @@ import type { ContainerRecord, GateOutOrder } from '../types/depot';
 import type { DepotState } from './depotStore';
 import { appendAudit, assertPermission, nowIso } from './core';
 import { formatDateTime } from './datetime';
-import { MAERSK_LINE_CODES } from './edi/maersk';
+import { linesWith } from './carriers/registry';
 
-export const RELEASE_PHOTO_LINES = MAERSK_LINE_CODES;
+export const RELEASE_PHOTO_LINES = linesWith('releasePhoto');
 export const RELEASE_PHOTO_MIN = 1;
 export const RELEASE_PHOTO_MAX = 30;
 

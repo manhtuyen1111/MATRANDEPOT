@@ -5,7 +5,7 @@
 // Database khớp: record_gate_in_survey (migration 20261120000001).
 // ============================================================================
 import { EEIR_DAMAGE_SIDES, EEIR_DAMAGE_SOURCES, EEIR_DAMAGE_TYPES, EeirDamageSide, InspectionDamageItem, InspectionSurvey } from '../types/depot';
-import { isMaerskLine } from './edi/maersk';
+import { carrierUses } from './carriers/registry';
 
 export const NO_DAMAGE_PHOTO_MAX = 20; // app eEIR: tối đa 20 ảnh "không hư" (ảnh app thật 2026-11-01; tính cả ảnh cửa cont)
 export const WEAR_TEAR_PHOTO_MAX = 20;
@@ -16,7 +16,7 @@ export const DAMAGE_NOTE_MAX = 255;
 export const EMPTY_SURVEY: InspectionSurvey = { noDamagePhotos: [], wearTearPhotos: [], damages: [] };
 
 // Hãng phải ghi tình trạng theo eEIR
-export const usesInspectionSurvey = (lineCode?: string) => isMaerskLine(lineCode);
+export const usesInspectionSurvey = (lineCode?: string) => carrierUses(lineCode, 'inspectionSurvey');
 
 export const surveyCondition = (s: InspectionSurvey): 'AV' | 'DAMAGE' => (s.damages.length ? 'DAMAGE' : 'AV');
 

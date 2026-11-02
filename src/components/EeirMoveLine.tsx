@@ -1,6 +1,6 @@
 import React from 'react';
 import type { DepotState } from '../services/depotStore';
-import { EeirSource, eeirCurrentMove, eeirLocationLabel } from '../services/edi/eeir';
+import { EeirSource, eeirCurrentMove, eeirLocationLabel } from '../services/carriers/maersk/eeir';
 
 // Dòng CURRENT MOVE • LOCATION như app eEIR Maersk (người dùng duyệt 2026-11-02) — chỉ đọc, tự gán theo tác nghiệp.
 // Chỉ đặt ở màn Giám định cont MSK (nơi gọi tự kiểm tra hãng).

@@ -13,17 +13,12 @@ export const EEIR_SEND_VESSEL_EXPORT = false;
 // Hạng (Grade) lấy từ API 1 (smokeTested); chưa gọi được API 1 → "N" (đúng hướng dẫn tài liệu).
 // JSON là KHUNG theo bảng trường v4.3 — chỉnh khi có file inspectionDetails mẫu (Q-056).
 // ============================================================================
-import type { DepotState } from '../depotStore';
-import { containerIsoCode } from '../depotOperations';
-import { isMaerskBooking, isMaerskLine, MAERSK_BOOKING_ERROR } from './maersk';
-import type { InspectionSurvey } from '../../types/depot';
+import type { DepotState } from '../../depotStore';
+import { containerIsoCode } from '../../depotOperations';
+import { isMaerskBooking, isMaerskLine, MAERSK_BOOKING_ERROR } from './rules';
+import { MAERSK_EEIR, type EeirConfig } from './config';
+import type { InspectionSurvey } from '../../../types/depot';
 
-export interface EeirConfig {
-  depotCode: string;    // Shop trên PDF (3HY - MATRAN)
-  surveyorId: string;   // client id eEIR của depot — điền ở máy chủ khi có khóa (không để trong code)
-  emails: string[];     // email nhận PDF (Q-060) — cấu hình, không viết cứng
-}
-export const MAERSK_EEIR: EeirConfig = { depotCode: '3HY', surveyorId: '', emails: [] };
 
 // Loại cont theo Maersk (equipmentSubType). Hiện chỉ tích hợp DRY.
 const SUB_TYPE: Record<string, string> = { DC: 'DRY', HC: 'DRY', RF: 'REEF', RH: 'REEF', OT: 'OPEN', FR: 'FLAT' };

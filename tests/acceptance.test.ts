@@ -2298,7 +2298,7 @@ describe('DEC-199: booking cont MSK 9–11 ký tự chữ / số', () => {
 });
 
 // eEIR chạy thử — theo tài liệu eEIR External API v4.3; chỉ cont MSK loại DRY
-import { eeirInspectionDetails, eeirInspections, eeirMoveLabel, eeirTypeSize, isEeirContainer } from '../src/services/edi/eeir';
+import { eeirInspectionDetails, eeirInspections, eeirMoveLabel, eeirTypeSize, isEeirContainer } from '../src/services/carriers/maersk/eeir';
 
 describe('eEIR chạy thử: phiếu Hạ vỏ / Cấp vỏ cont MSK DRY', () => {
   const demo = createDemoState();
@@ -2579,7 +2579,7 @@ describe('DEC-203: Văn phòng dùng size Giám định chọn', () => {
 });
 
 // DEC-204: Giám định Hạ vỏ nhập số cont trước + API hãng tàu; GIÁM ĐỊNH SAU (trên kệ) cont MSK theo eEIR
-import { equipmentPrefill, lookupEquipment } from '../src/services/equipmentInfo';
+import { equipmentPrefill, lookupEquipment } from '../src/services/carriers/equipment';
 import { stuffingOptions as lineStuffing } from '../src/services/stuffing';
 describe('DEC-204: số cont Giám định + thông tin API hãng tàu', () => {
   it('số cont Giám định nhập lưu vào hồ sơ (chữ hoa); sai định dạng → chặn; bỏ trống được', () => {
@@ -2632,7 +2632,7 @@ describe('DEC-204: Giám định trên kệ cont MSK theo eEIR', () => {
 });
 
 // Người dùng duyệt 2026-11-02: CURRENT MOVE tự gán theo tác nghiệp (1 nguồn cho phiếu eEIR + màn Giám định)
-import { eeirCurrentMove, eeirLocationLabel } from '../src/services/edi/eeir';
+import { eeirCurrentMove, eeirLocationLabel } from '../src/services/carriers/maersk/eeir';
 describe('eEIR: CURRENT MOVE • LOCATION theo tác nghiệp', () => {
   it('đúng danh sách app eEIR cho 5 tác nghiệp; LOCATION = mã shop + tên depot', () => {
     expect(eeirCurrentMove('HA_VO')).toBe('IN-EMPTY-IMPORT_RETURN');
@@ -2723,5 +2723,24 @@ describe('DEC-206: danh mục CODE CEDEX theo hãng tàu', () => {
     ws.getCell('F2').numFmt = '0000';
     const back = await readRepairExcel((await wb.xlsx.writeBuffer()) as ArrayBuffer);
     expect(back.rows[0]).toMatchObject({ itemName: 'DR002', repairCode: '0003', manHour: 0.1 });
+  });
+});
+
+// Kiến trúc nhiều hãng tàu (docs/CODE_STRUCTURE.md): nghiệp vụ chung chỉ hỏi carriers/registry
+import { CARRIERS, carrierBookingProblem, carrierOf, carrierUses, linesWith } from '../src/services/carriers/registry';
+describe('Hồ sơ hãng tàu (carriers/registry)', () => {
+  it('MSK bật form eEIR + ảnh cấp vỏ + quy tắc booking; hãng khác dùng quy trình chung', () => {
+    expect(carrierOf('MSK')?.key).toBe('maersk');
+    expect(carrierUses('MSK', 'inspectionSurvey') && carrierUses('MSK', 'releasePhoto')).toBe(true);
+    expect(carrierUses('ONE', 'inspectionSurvey') || carrierUses(undefined, 'releasePhoto')).toBe(false);
+    expect(linesWith('releasePhoto')).toEqual(['MSK']);
+    expect(carrierBookingProblem('MSK', 'BK-1')).toMatch(/9–11/);
+    expect(carrierBookingProblem('MSK', '123456789')).toBeNull();
+    expect(carrierBookingProblem('ONE', 'BK-1')).toBeNull();
+  });
+  it('mỗi mã hãng chỉ thuộc 1 hồ sơ, key = tên thư mục duy nhất', () => {
+    const codes = CARRIERS.flatMap((c) => c.lineCodes);
+    expect(new Set(codes).size).toBe(codes.length);
+    expect(new Set(CARRIERS.map((c) => c.key)).size).toBe(CARRIERS.length);
   });
 });

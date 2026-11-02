@@ -27,7 +27,7 @@ import { peekNextCode } from '../../services/codes';
 import { formatDateTime } from '../../services/datetime';
 import { priorityShippingLine, stuffingOptions } from '../../services/stuffing';
 import { damageSourceLabel, damageTypeLabel, EMPTY_SURVEY, surveyCondition, usesInspectionSurvey } from '../../services/inspectionSurvey';
-import { equipmentPrefill, EquipmentLookup, hasEquipmentSource, isContainerNoFormat, lookupEquipment, cleanContainerNo } from '../../services/equipmentInfo';
+import { equipmentPrefill, EquipmentLookup, hasEquipmentSource, isContainerNoFormat, lookupEquipment, cleanContainerNo } from '../../services/carriers/equipment';
 import type { InspectionSurvey } from '../../types/depot';
 import { conditionLabel } from '../../types/depot';
 
