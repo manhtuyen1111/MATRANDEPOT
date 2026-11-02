@@ -2630,3 +2630,17 @@ describe('DEC-204: Giám định trên kệ cont MSK theo eEIR', () => {
     expect(() => rack('DAMAGE', { noDamagePhotos: [], wearTearPhotos: [], damages: [] })).toThrow(/phải là AV/);
   });
 });
+
+// Người dùng duyệt 2026-11-02: CURRENT MOVE tự gán theo tác nghiệp (1 nguồn cho phiếu eEIR + màn Giám định)
+import { eeirCurrentMove, eeirLocationLabel } from '../src/services/edi/eeir';
+describe('eEIR: CURRENT MOVE • LOCATION theo tác nghiệp', () => {
+  it('đúng danh sách app eEIR cho 5 tác nghiệp; LOCATION = mã shop + tên depot', () => {
+    expect(eeirCurrentMove('HA_VO')).toBe('IN-EMPTY-IMPORT_RETURN');
+    expect(eeirCurrentMove('NHAP_TAU')).toBe('IN-EMPTY-POSITION');
+    expect(eeirCurrentMove('CAP_VO')).toBe('OUT-EMPTY-EXPORT');
+    expect(eeirCurrentMove('CAP_SALE')).toBe('OUT-EMPTY-POSITION');
+    expect(eeirCurrentMove('XUAT_TAU')).toBe('OUT-EMPTY-POSITION');
+    expect(eeirLocationLabel(createDemoState())).toBe('3HY - MATRAN DEPOT');
+    expect(eeirLocationLabel({ companyProfile: { shortName: '' } } as never)).toBe('3HY');
+  });
+});

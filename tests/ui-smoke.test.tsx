@@ -1357,3 +1357,16 @@ describe('DEC-205: PWA cài như ứng dụng', () => {
     expect(isIosSafari('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0 Safari/537.36')).toBe(false);
   });
 });
+
+// Dòng CURRENT MOVE • LOCATION trên màn Giám định cont MSK (người dùng duyệt 2026-11-02)
+import { EeirMoveLine } from '../src/components/EeirMoveLine';
+describe('eEIR: dòng CURRENT MOVE trên màn Giám định', () => {
+  it('Hạ vỏ / Cấp sale hiện đúng Current Move + Location, chỉ đọc', () => {
+    const st = createDemoState();
+    const hv = renderToString(<EeirMoveLine state={st} source="HA_VO" />).replace(/<!-- -->/g, '');
+    expect(hv).toContain('IN-EMPTY-IMPORT_RETURN');
+    expect(hv).toContain('3HY - MATRAN DEPOT');
+    expect(hv).not.toMatch(/<(input|select|button)/);
+    expect(renderToString(<EeirMoveLine state={st} source="CAP_SALE" />)).toContain('OUT-EMPTY-POSITION');
+  });
+});

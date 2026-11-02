@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { completeRackInspection, deleteGateInFieldRecord, recordGateInFieldStep } from '../../services/api';
 import { EMPTY_INSPECTION, InspectionFields, InspectionValue, inspectionRemarks, isInspectionComplete } from '../../components/InspectionFields';
 import { ContainerNo, LocationText, linkCls, PhotoGallery } from '../../components/shared';
+import { EeirMoveLine } from '../../components/EeirMoveLine';
 import {
   ArrowLeft,
   ArrowRight,
@@ -368,6 +369,7 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                 {open && (
                   <div className="space-y-3 border-t border-line p-3">
                     {onDossierLink(c.masterDossierCode)}
+                    {usesInspectionSurvey(c.shippingLineCode) && <EeirMoveLine state={state} source="HA_VO" />}
                     <InspectionFields
                       value={rackInsp}
                       onChange={setRackInsp}
@@ -840,6 +842,8 @@ export const InspectorHaVoMobile: React.FC<Props> = ({
                     Sửa
                   </button>
                 </div>
+
+                {surveyMode && <EeirMoveLine state={state} source="HA_VO" />}
 
                 {/* DEC-204: GIÁM ĐỊNH TRỰC TIẾP (form eEIR / AV-DAMAGE) | GIÁM ĐỊNH SAU (W-SURVEY lên kệ — chỉ chọn Vệ sinh) */}
                 <div className="grid grid-cols-2 gap-2" data-testid="inspector-mode">
